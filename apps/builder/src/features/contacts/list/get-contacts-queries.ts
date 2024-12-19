@@ -46,7 +46,6 @@ export async function getContacts(input: GetContactsSchema): Promise<{ data: Con
 
       return { data, pageCount }
     } catch (err) {
-      console.log("errrrrrrrrrr", err)
       return { data: [], pageCount: 0 }
     }
   }, [JSON.stringify(input)], {
