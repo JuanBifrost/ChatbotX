@@ -9,7 +9,7 @@ import {
 import { authActionClient } from "@/lib/safe-action";
 import { findChatbotOrFail } from "@/lib/user-permissions";
 import { prisma } from "@ahachat.ai/database";
-import { Folder, User } from "@prisma/client";
+import { Folder, User } from "@ahachat.ai/database";
 import { revalidateTag } from "next/cache";
 
 export const createFolderAction = authActionClient

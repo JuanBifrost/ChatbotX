@@ -2,7 +2,7 @@
 
 import { DataTableColumnHeader } from "@/components/data-table/data-table-column-header"
 import { Checkbox } from "@/components/ui/checkbox"
-import { Contact } from "@prisma/client"
+import { Contact } from "@ahachat.ai/database"
 import { type ColumnDef } from "@tanstack/react-table"
 import { format, formatDistance } from "date-fns"
 

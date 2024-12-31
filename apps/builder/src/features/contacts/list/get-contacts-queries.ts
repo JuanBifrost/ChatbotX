@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { GetContactsSchema } from "./get-contacts-schema";
 import { prisma } from "@ahachat.ai/database";
-import { Contact, Prisma } from "@prisma/client";
+import { Contact, Prisma } from "@ahachat.ai/database";
 import { getCurrentUserId } from "@/auth";
 import { findChatbotOrFail } from "@/lib/user-permissions";
 

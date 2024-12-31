@@ -14,7 +14,7 @@ import { editFolderAction } from "@/features/folders/actions/edit-folder-action"
 import { editFolderSchema, EditFolderSchema } from "@/features/folders/schemas/edit-folder-schema";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks";
-import { Folder } from "@prisma/client";
+import { Folder } from "@ahachat.ai/database";
 import { useTranslate } from '@tolgee/react';
 import { Loader2 } from "lucide-react";
 import { toast } from "sonner";

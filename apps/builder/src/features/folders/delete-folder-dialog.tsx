@@ -34,7 +34,6 @@ export function DeleteFolderDialog({
 
   const [isDeletePending, startDeleteTransition] = useTransition()
   const onDelete = () => {
-    console.log("folderdddddd", folder)
     if (!folder) {
       return
     }

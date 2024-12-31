@@ -226,7 +226,7 @@ importers:
         specifier: ^2.2.2
         version: 2.2.2
       '@prisma/client':
-        specifier: 6.1.0
+        specifier: ^6.1.0
         version: 6.1.0(prisma@6.1.0)
     devDependencies:
       '@ahachat.ai/typescript-config':
