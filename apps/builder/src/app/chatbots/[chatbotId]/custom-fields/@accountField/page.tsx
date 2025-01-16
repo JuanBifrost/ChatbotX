@@ -1,8 +1,6 @@
 import { DataTableSkeleton } from "@/components/data-table/data-table-skeleton"
-import { Calendar } from "@/components/ui/calendar"
-import { CreateCustomFieldDialog } from "@/features/fields/create-custom-field-dialog"
-// import { CreateCustomFieldDialog } from "@/features/fields/create-custom-field-dialog"
-import { CustomFieldsTable } from "@/features/fields/custom-field-table"
+import { AccountFieldsTable } from "@/features/fields/account-field-table"
+import { CreateAccountFieldDialog } from "@/features/fields/create-account-field-dialog"
 import { getFields } from "@/features/fields/queries"
 import { getFieldsSearchParamsCache } from "@/features/fields/schemas/get-fields-schema"
 import { getFoldersSearchParamsCache } from "@/features/folders/schemas/get-folders-schema"
@@ -11,7 +9,7 @@ import { FieldType } from "@ahachat.ai/database"
 import type { SearchParams } from "nuqs/server"
 import { Suspense } from "react"
 
-export default async function CustomFieldsPage(props: {
+export default async function AccountFieldsPage(props: {
   params: Promise<{ chatbotId: string }>
   searchParams: Promise<SearchParams>
 }) {
@@ -25,16 +23,17 @@ export default async function CustomFieldsPage(props: {
       ...search,
       chatbotId: params.chatbotId,
       folderId: folderId,
-      fieldType: FieldType.CustomField,
+      fieldType: FieldType.AccountField,
     }),
   ])
+
   return (
-    <>
+    <div>
       <div className="flex items-center">
         <h3 className="font-bold flex-1">
-          <T keyName="customField.header" />
+          <T keyName="accountField.title" />
         </h3>
-        <CreateCustomFieldDialog
+        <CreateAccountFieldDialog
           chatbotId={params.chatbotId}
           folderId={folderId}
         />
@@ -50,8 +49,8 @@ export default async function CustomFieldsPage(props: {
           />
         }
       >
-        <CustomFieldsTable promises={promises} chatbotId={params.chatbotId} />
+        <AccountFieldsTable promises={promises} chatbotId={params.chatbotId} />
       </Suspense>
-    </>
+    </div>
   )
 }

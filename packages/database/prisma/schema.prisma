@@ -91,6 +91,7 @@ model Chatbot {
   contacts       Contact[]
   logs           Log[]
   folders        Folder[]
+  fields         Field[]
   tags           Tag[]
 }
 
@@ -217,6 +218,7 @@ model Folder {
   children Folder[] @relation("ParentChild")
   chatbot  Chatbot  @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
   tags     Tag[]
+  fields   Field[]
 
   @@index([chatbotId])
   @@index([parentId])
@@ -236,6 +238,37 @@ model Tag {
   contacts Contact[]
 
   @@index([folderId])
+}
+
+model Field {
+  id              String          @id @default(cuid(2))
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt
+  name            String
+  customFieldType CustomFieldType
+  description     String?
+  folderId        String?
+  fieldType       FieldType
+  value           String?
+  showInInbox     Boolean
+  chatbotId       String
+
+  chatbot Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  folder  Folder? @relation(fields: [folderId], references: [id])
+}
+
+enum CustomFieldType {
+  ShortText
+  Number
+  Date
+  DateTime
+  Boolean
+  LongText
+}
+
+enum FieldType {
+  AccountField
+  CustomField
 }
 
 enum FolderType {

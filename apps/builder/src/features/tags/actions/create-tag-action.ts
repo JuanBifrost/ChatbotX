@@ -1,5 +1,6 @@
 "use server"
 
+import { ensureFolderIdIsExists } from "@/features/folders/actions/utils"
 import { authActionClient } from "@/lib/safe-action"
 import { findChatbotOrFail } from "@/lib/user-permissions"
 import { FolderType, type User, prisma } from "@ahachat.ai/database"
@@ -43,19 +44,7 @@ export const createTagAction = authActionClient
       }
 
       if (folderId) {
-        const existingFolder = await prisma.folder.findFirst({
-          select: {
-            id: true,
-          },
-          where: {
-            chatbotId,
-            id: folderId,
-            folderType: FolderType.Tag,
-          },
-        })
-        if (!existingFolder) {
-          throw new TagException("Folder does not exists.")
-        }
+        await ensureFolderIdIsExists(folderId, chatbotId, FolderType.Tag)
       }
 
       await prisma.tag.create({

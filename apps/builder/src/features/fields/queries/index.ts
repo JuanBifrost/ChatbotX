@@ -1,13 +1,12 @@
 import { getCurrentUserId } from "@/auth"
 import { findChatbotOrFail } from "@/lib/user-permissions"
-import { type Tag, prisma } from "@ahachat.ai/database"
-import type { Prisma } from "@ahachat.ai/database"
+import { type Field, type Prisma, prisma } from "@ahachat.ai/database"
 import { unstable_cache } from "next/cache"
-import type { GetTagsSchema } from "../schemas/get-tags-schema"
+import type { GetFieldsSchema } from "../schemas/get-fields-schema"
 
-export async function getTags(
-  input: GetTagsSchema,
-): Promise<{ data: Tag[]; pageCount: number }> {
+export async function getFields(
+  input: GetFieldsSchema,
+): Promise<{ data: Field[]; pageCount: number }> {
   const userId = await getCurrentUserId()
 
   await findChatbotOrFail(userId, input.chatbotId)
@@ -15,8 +14,9 @@ export async function getTags(
   return await unstable_cache(
     async () => {
       try {
-        const where: Prisma.TagWhereInput = {
+        const where: Prisma.FieldWhereInput = {
           chatbotId: input.chatbotId,
+          fieldType: input.fieldType,
         }
 
         if (input.folderId !== undefined) {
@@ -42,20 +42,13 @@ export async function getTags(
         }))
 
         const [data, total] = await prisma.$transaction([
-          prisma.tag.findMany({
+          prisma.field.findMany({
             skip: (input.page - 1) * input.perPage,
             take: input.perPage,
             where,
             orderBy,
-            include: {
-              _count: {
-                select: {
-                  contacts: true,
-                },
-              },
-            },
           }),
-          prisma.tag.count({ where }),
+          prisma.field.count({ where }),
         ])
 
         const pageCount = Math.ceil(total / input.perPage)
@@ -68,7 +61,7 @@ export async function getTags(
     [JSON.stringify(input)],
     {
       revalidate: 3600,
-      tags: [`${userId}#tags`],
+      tags: [`${userId}#fields#${input.fieldType}`],
     },
   )()
 }
