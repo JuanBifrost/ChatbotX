@@ -1,4 +1,13 @@
 import { markEmailVerifiedBlockSchema } from "@/features/flows/react-flow/blocks/mark-email-verified/schema"
+import { openAIAnalyzeImageSchema } from "@/features/flows/react-flow/blocks/open-ai-analyze-image/schema"
+import { openAIDeleteMessageHistorySchema } from "@/features/flows/react-flow/blocks/open-ai-delete-message-history/schema"
+import { openAIGenerateImageSchema } from "@/features/flows/react-flow/blocks/open-ai-generate-image/schema"
+import { openAIGenerateTextAdvancedSchema } from "@/features/flows/react-flow/blocks/open-ai-generate-text-advanced/schema"
+import { openAIGenerateTextAgentSchema } from "@/features/flows/react-flow/blocks/open-ai-generate-text-agent/schema"
+import { openAIGenerateTextAssistantSchema } from "@/features/flows/react-flow/blocks/open-ai-generate-text-assistant/schema"
+import { openAIGenerateTextSchema } from "@/features/flows/react-flow/blocks/open-ai-generate-text/schema"
+import { openAISpeechToTextSchema } from "@/features/flows/react-flow/blocks/open-ai-speech-to-text/schema"
+import { openAITextToSpeechSchema } from "@/features/flows/react-flow/blocks/open-ai-text-to-speech/schema"
 import { optInEmailBlockSchema } from "@/features/flows/react-flow/blocks/opt-in-email/schema"
 import { optOutEmailBlockSchema } from "@/features/flows/react-flow/blocks/opt-out-email/schema"
 import { sendAudioBlockSchema } from "@/features/flows/react-flow/blocks/send-audio/schema"
@@ -21,6 +30,15 @@ export const sendMessageNodeSchema = z.object({
       sendVideoBlockSchema,
       sendAudioBlockSchema,
       sendCarouselBlockSchema,
+      openAIGenerateTextSchema,
+      openAIGenerateTextAgentSchema,
+      openAIGenerateTextAdvancedSchema,
+      openAIGenerateTextAssistantSchema,
+      openAIGenerateImageSchema,
+      openAIAnalyzeImageSchema,
+      openAISpeechToTextSchema,
+      openAITextToSpeechSchema,
+      openAIDeleteMessageHistorySchema,
       markEmailVerifiedBlockSchema,
       optInEmailBlockSchema,
       optOutEmailBlockSchema,
