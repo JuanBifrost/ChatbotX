@@ -5,8 +5,8 @@ export type IntegrationOpenAIResource = IntegrationOpenAI
 
 export const connectOpenAISchema = z.object({
   apiKey: z.string(),
-  temperature: z.number().min(0).max(2),
-  maxTokens: z.number().int().min(1).max(8192),
+  temperature: z.coerce.number().min(0).max(2),
+  maxTokens: z.coerce.number().int().min(1).max(8192),
 })
 export type ConnectOpenAISchema = z.infer<typeof connectOpenAISchema>
 
@@ -20,6 +20,12 @@ export enum OpenAIModel {
   ChatGPT4oLatest = "chat-gpt-4o-latest",
   O1Preview = "o1-preview",
   O1Mini = "o1-mini",
+}
+
+export enum OpenAIMessageRole {
+  Assistant = "assistant",
+  Developer = "developer",
+  User = "user",
 }
 
 export const openAIModelOptions: { value: string; label: string }[] = [

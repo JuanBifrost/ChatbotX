@@ -45,7 +45,7 @@ export const connectOpenAIAction = authActionClient
           )
         }
 
-        tx.integration.create({
+        await tx.integration.create({
           data: {
             chatbotId,
             integrationType: IntegrationType.OpenAI,
@@ -59,8 +59,8 @@ export const connectOpenAIAction = authActionClient
                   secretText: parsedInput.apiKey,
                 } as SecretTextAuthSchema,
                 automatedResponse: false,
-                temperature: parsedInput.temperature ?? 1.0,
-                maxTokens: parsedInput.maxTokens ?? 200,
+                temperature: parsedInput.temperature,
+                maxTokens: parsedInput.maxTokens,
               },
             },
           },
