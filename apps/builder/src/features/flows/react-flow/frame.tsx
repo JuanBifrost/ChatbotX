@@ -1,13 +1,10 @@
 "use client"
 
-import { buttonBlockDefaultValue } from "@/features/flows/react-flow/blocks/button/schema"
-import { sendTextBlockDefaultValue } from "@/features/flows/react-flow/blocks/send-text/schema"
+import type { findFlow } from "@/features/flows/queries"
 import AddNotesNode from "@/features/flows/react-flow/nodes/add-notes/add-notes-node"
 import type { AddNotesNodeSchema } from "@/features/flows/react-flow/nodes/add-notes/schema"
 import type { SendMessageNodeSchema } from "@/features/flows/react-flow/nodes/send-message/schema"
 import SendMessageNodeViewer from "@/features/flows/react-flow/nodes/send-message/viewer"
-// import { splitTrafficNodeDefaultValue } from '@/features/flows/react-flow/nodes/split-traffic/schema';
-// import SplitTrafficNodeViewer from '@/features/flows/react-flow/nodes/split-traffic/viewer';
 import { AddBlockButton } from "@/features/flows/react-flow/panels/add-block"
 import { NodeDetailSheet } from "@/features/flows/react-flow/panels/node-detail-sheet"
 import { PanelAction } from "@/features/flows/react-flow/types"
@@ -27,48 +24,44 @@ import {
   useNodesState,
 } from "@xyflow/react"
 import "@xyflow/react/dist/style.css"
-import { useCallback, useState } from "react"
+import { useOptimisticAction } from "next-safe-action/hooks"
+import { notFound } from "next/navigation"
+import { use, useCallback, useEffect, useState } from "react"
+import { useDebouncedCallback } from "use-debounce"
+import { updateDraftFlowVersionAction } from "../actions/update-draft-flow-version-action"
+import { MessageType } from "../schemas/types"
 
 const nodeTypes = {
   [PanelAction.SendMessage]: SendMessageNodeViewer,
-  // [PanelAction.SplitTraffic]: SplitTrafficNodeViewer,
   [PanelAction.AddNotes]: AddNotesNode,
 }
 
-const data: SendMessageNodeSchema = {
-  id: createId(),
-  name: "Send Message",
-  messageType: "Whatsapp",
-  blocks: [
-    sendTextBlockDefaultValue("ok chuaw", [
-      buttonBlockDefaultValue("bt1"),
-      buttonBlockDefaultValue("bt2"),
-    ]),
-  ],
+interface ReactFlowFrameProps {
+  promises: Promise<Awaited<ReturnType<typeof findFlow>>>
+  flowVersionId?: string
 }
 
-const initialNodes: Node[] = [
-  {
-    id: "1",
-    type: PanelAction.SendMessage,
-    position: { x: 200, y: 200 },
-    data,
-  },
-  // {
-  //   id: '2',
-  //   type: PanelAction.SplitTraffic,
-  //   position: { x: 300, y: 300 },
-  //   data: splitTrafficNodeDefaultValue()
-  // }
-]
-
-const initialEdges: Edge[] = []
-
-export default function FlowPage({ children }: { children: React.ReactNode }) {
+export function ReactFlowFrame({ promises }: ReactFlowFrameProps) {
+  const { data: flow } = use(promises)
   const { t } = useTranslate()
 
-  const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes)
-  const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges)
+  if (!flow) {
+    return notFound()
+  }
+
+  // if flowVersionId is not specified, use draft version
+  const targetFlowVersion = flow.flowVersions?.find((v) => v.isDraft)
+  if (!targetFlowVersion) {
+    return notFound()
+  }
+
+  const [nodes, setNodes, onNodesChange] = useNodesState(
+    targetFlowVersion.nodes as unknown as Node[],
+  )
+  const [edges, setEdges, onEdgesChange] = useEdgesState(
+    targetFlowVersion.edges as unknown as Edge[],
+  )
+
   const [activeNode, setActiveNode] = useState<Node | null>(null)
   const [openNodeDetailSheet, setOpenNodeDetailSheet] = useState<boolean>(false)
 
@@ -77,6 +70,31 @@ export default function FlowPage({ children }: { children: React.ReactNode }) {
     (params: any) => setEdges((eds) => addEdge(params, eds)),
     [setEdges],
   )
+
+  const { execute: savingDraft } = useOptimisticAction(
+    updateDraftFlowVersionAction.bind(null, targetFlowVersion.id),
+    {
+      currentState: { targetFlowVersion },
+      updateFn: (state, updatedData) => {
+        return {
+          targetFlowVersion: {
+            ...state.targetFlowVersion,
+            ...updatedData,
+          },
+        }
+      },
+    },
+  )
+
+  const handleChanges = useDebouncedCallback((nodes, edges) => {
+    savingDraft({ nodes, edges })
+  }, 1000)
+
+  useEffect(() => {
+    handleChanges(nodes, edges)
+  }, [nodes, edges, handleChanges])
+
+  // const updateTemporaryFlow = useDebouncedCallback(executeDraft, 300)
 
   const onChooseAction = (name: PanelAction) => {
     let newNode: Node<SendMessageNodeSchema | AddNotesNodeSchema> | undefined
@@ -106,7 +124,7 @@ export default function FlowPage({ children }: { children: React.ReactNode }) {
         data: {
           id: createId(),
           name: `Send Message #${labelVersion + 1}`,
-          messageType: "Messenger",
+          messageType: MessageType.Omnichannel,
           blocks: [],
         },
       }

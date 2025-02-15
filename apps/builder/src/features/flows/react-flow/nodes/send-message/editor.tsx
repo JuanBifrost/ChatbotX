@@ -133,7 +133,7 @@ export default function SendMessageNodeEditor({
 }) {
   const { t } = useTranslate()
 
-  const { setNodes } = useReactFlow()
+  const { setNodes, setEdges } = useReactFlow()
   const onChange = useCallback(
     // biome-ignore lint/suspicious/noExplicitAny: <explanation>
     (data: any) => {
@@ -246,140 +246,138 @@ export default function SendMessageNodeEditor({
     }
   }
 
-  // biome-ignore lint/suspicious/noExplicitAny: <explanation>
-  const onSubmit = (data: any) => {
-    console.log("Form Data:", data)
-  }
+  // const removeBlock = (field: object, index: number) => {
+  //   remove(index)
+  //   if (!field.buttons?.length) {
+  //     return
+  //   }
+  //   for (const button of field.buttons) {
+  //     setEdges((edges) => {
+  //       return edges.filter(
+  //         (edge) =>
+  //           edge.targetHandle !== button.id && edge.sourceHandle !== button.id,
+  //       )
+  //     })
+  //   }
+  // }
 
   return (
     <>
       <Form {...form} getValues={getValues} control={control} watch={watch}>
-        <form onSubmit={form.handleSubmit(onSubmit)}>
-          <FormField
-            control={control}
-            name="messageType"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>
-                  {t("flows.SendMessageNodeViewer.channel")}
-                </FormLabel>
-                <Select
-                  onValueChange={field.onChange}
-                  defaultValue={field.value}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select channel" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="Omnichannel">Omnichannel</SelectItem>
-                    <SelectItem value="Messenger">Messenger</SelectItem>
-                    <SelectItem value="Whatsapp">Whatsapp</SelectItem>
-                    <SelectItem value="Webchat">Webchat</SelectItem>
-                  </SelectContent>
-                </Select>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+        <FormField
+          control={control}
+          name="messageType"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>{t("flows.SendMessageNodeViewer.channel")}</FormLabel>
+              <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <FormControl>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select channel" />
+                  </SelectTrigger>
+                </FormControl>
+                <SelectContent>
+                  <SelectItem value="Omnichannel">Omnichannel</SelectItem>
+                  <SelectItem value="Messenger">Messenger</SelectItem>
+                  <SelectItem value="Whatsapp">Whatsapp</SelectItem>
+                  <SelectItem value="Webchat">Webchat</SelectItem>
+                </SelectContent>
+              </Select>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
 
-          <Separator />
+        <Separator />
 
-          <div className="flex flex-col flex-1 gap-2 my-2">
-            <Sortable
-              value={fields}
-              onMove={({ activeIndex, overIndex }) =>
-                move(activeIndex, overIndex)
-              }
-              overlay={<div className="w-full h-32 rounded-sm bg-primary/10" />}
-            >
-              <div className="flex w-full flex-col gap-4">
-                {fields.map((field, index) => (
-                  <SortableItem key={field.id} value={field.id} asChild>
+        <div className="flex flex-col flex-1 gap-2 my-2">
+          <Sortable
+            value={fields}
+            onMove={({ activeIndex, overIndex }) =>
+              move(activeIndex, overIndex)
+            }
+            overlay={<div className="w-full h-32 rounded-sm bg-primary/10" />}
+          >
+            <div className="flex w-full flex-col gap-4">
+              {fields.map((field, index) => (
+                <SortableItem key={field.id} value={field.id} asChild>
+                  <div
+                    className={cn(
+                      "flex gap-2 items-center",
+                      field.actionType === ActionType.SendCarousel
+                        ? "relative"
+                        : "",
+                    )}
+                  >
+                    {form.formState.errors.blocks?.[index] ? (
+                      <ErrorAlert
+                        message={
+                          typeof form.formState.errors.blocks?.[index]
+                            ?.message === "object"
+                            ? ((
+                                form.formState.errors.blocks?.[index]
+                                  ?.message as { message: string }
+                              ).message as string)
+                            : ""
+                        }
+                      />
+                    ) : (
+                      <div className="w-4">{"\u00A0"}</div>
+                    )}
                     <div
                       className={cn(
-                        "flex gap-2 items-center",
+                        "flex-1 break-all",
                         field.actionType === ActionType.SendCarousel
-                          ? "relative"
+                          ? "overflow-hidden"
                           : "",
                       )}
                     >
-                      {form.formState.errors.blocks?.[index] ? (
-                        <ErrorAlert
-                          message={
-                            typeof form.formState.errors.blocks?.[index]
-                              ?.message === "object"
-                              ? ((
-                                  form.formState.errors.blocks?.[index]
-                                    ?.message as { message: string }
-                                ).message as string)
-                              : ""
-                          }
-                        />
-                      ) : (
-                        <div className="w-4">{"\u00A0"}</div>
-                      )}
-                      <div
-                        className={cn(
-                          "flex-1 break-all",
-                          field.actionType === ActionType.SendCarousel
-                            ? "overflow-hidden"
-                            : "",
-                        )}
+                      {field.actionType in ActionType
+                        ? maps[field.actionType as ActionType]({
+                            key: field.id,
+                            parentName: `blocks.${index}`,
+                          })
+                        : null}
+                    </div>
+                    <div className="flex flex-col">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0"
                       >
-                        {field.actionType in ActionType
-                          ? maps[field.actionType as ActionType]({
-                              key: field.id,
-                              parentName: `blocks.${index}`,
-                            })
-                          : null}
-                      </div>
-                      <div className="flex flex-col">
+                        <XIcon className="size-4" aria-hidden="true" />
+                      </Button>
+                      <SortableDragHandle
+                        variant="ghost"
+                        size="icon"
+                        className="size-8 shrink-0"
+                      >
+                        <MoveVerticalIcon
+                          className="size-4"
+                          aria-hidden="true"
+                        />
+                      </SortableDragHandle>
+                      {!disabledCopyActionTypes.includes(field.actionType) && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="icon"
                           className="size-8 shrink-0"
-                          onClick={() => remove(index)}
+                          onClick={() => onCopy(index)}
                         >
-                          <XIcon className="size-4" aria-hidden="true" />
+                          <CopyIcon className="size-4" aria-hidden="true" />
                         </Button>
-                        <SortableDragHandle
-                          variant="ghost"
-                          size="icon"
-                          className="size-8 shrink-0"
-                        >
-                          <MoveVerticalIcon
-                            className="size-4"
-                            aria-hidden="true"
-                          />
-                        </SortableDragHandle>
-                        {!disabledCopyActionTypes.includes(
-                          field.actionType,
-                        ) && (
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            size="icon"
-                            className="size-8 shrink-0"
-                            onClick={() => onCopy(index)}
-                          >
-                            <CopyIcon className="size-4" aria-hidden="true" />
-                          </Button>
-                        )}
-                      </div>
+                      )}
                     </div>
-                  </SortableItem>
-                ))}
-              </div>
-            </Sortable>
-          </div>
+                  </div>
+                </SortableItem>
+              ))}
+            </div>
+          </Sortable>
+        </div>
 
-          <Button>Test Form Submit</Button>
-
-          <SendMessageEditorAction onClick={onClickAction} />
-        </form>
+        <SendMessageEditorAction onClick={onClickAction} />
       </Form>
     </>
   )
