@@ -56,7 +56,7 @@ import { SendTextBlockEditor } from "../../blocks/send-text/editor"
 import { sendTextBlockDefaultValue } from "../../blocks/send-text/schema"
 import { messageTypeLabels } from "../../types"
 import { getAllIds } from "../../utils"
-import { type SendMessageNodeSchema, sendMessageNodeDataSchema } from "./schema"
+import { type SendMessageNodeSchema, sendMessageNodeSchema } from "./schema"
 import SendMessageEditorAction from "./send-message-editor-action"
 
 const maps: Record<
@@ -144,7 +144,7 @@ export default function SendMessageNodeEditor({
   )
 
   const form = useForm<SendMessageNodeSchema["data"]>({
-    resolver: zodResolver(sendMessageNodeDataSchema),
+    resolver: zodResolver(sendMessageNodeSchema.shape.data),
     defaultValues: activeNode.data,
     mode: "onBlur",
   })
