@@ -1,11 +1,11 @@
 import { getCurrentUserId } from "@/auth"
-import type { ListAIAgentsSchema } from "@/features/integrations/ai-agents/schemas/get.schema"
+import type { ListAIAgentsRequest } from "@/features/integrations/ai-agents/schemas/list.schema"
 import { findChatbotOrFail } from "@/lib/user-permissions"
 import { type AIAgent, type Prisma, prisma } from "@ahachat.ai/database"
 import { unstable_cache } from "next/cache"
 
 export async function getAIAgents(
-  input: ListAIAgentsSchema,
+  input: ListAIAgentsRequest,
 ): Promise<{ data: AIAgent[]; pageCount: number }> {
   const userId = await getCurrentUserId()
   await findChatbotOrFail(userId, input.chatbotId)
@@ -18,14 +18,10 @@ export async function getAIAgents(
         }
 
         if (input.name) {
-          where.AND = [
-            {
-              name: {
-                contains: input.name,
-                mode: "insensitive",
-              },
-            },
-          ]
+          where.name = {
+            contains: input.name,
+            mode: "insensitive",
+          }
         }
 
         const orderBy = input.sort.map((sortItem) => ({
@@ -52,7 +48,7 @@ export async function getAIAgents(
     [JSON.stringify(input)],
     {
       revalidate: 3600,
-      tags: [`${userId}#aiAgents`],
+      tags: [`chatbot:${input.chatbotId}#aiAgents`],
     },
   )()
 }

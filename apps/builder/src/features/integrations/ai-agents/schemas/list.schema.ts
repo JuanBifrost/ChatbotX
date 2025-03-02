@@ -6,18 +6,17 @@ import {
   parseAsString,
 } from "nuqs/server"
 
-export const getAIAgentSearchParamsCache = createSearchParamsCache({
+export const listAIAgentRequest = createSearchParamsCache({
   page: parseAsInteger.withDefault(1),
   perPage: parseAsInteger.withDefault(10),
   sort: getSortingStateParser<AIAgent>().withDefault([
     { id: "createdAt", desc: true },
   ]),
   name: parseAsString.withDefault(""),
-  promptId: parseAsString,
 })
 
-export type ListAIAgentsSchema = Awaited<
-  ReturnType<typeof getAIAgentSearchParamsCache.parse>
+export type ListAIAgentsRequest = Awaited<
+  ReturnType<typeof listAIAgentRequest.parse>
 > & {
   chatbotId: string
 }

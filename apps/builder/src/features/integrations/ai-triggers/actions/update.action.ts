@@ -9,12 +9,12 @@ import {
   type UpdateAITriggerRequest,
   updateAITriggerRequest,
 } from "@/features/integrations/ai-triggers/schemas/update.schema"
-import { authActionClient } from "@/lib/safe-action"
+import { chatbotActionClient } from "@/lib/safe-action"
 import { type User, prisma } from "@ahachat.ai/database"
 import type { JsonObject } from "@prisma/client/runtime/binary"
 import { revalidateTag } from "next/cache"
 
-export const updateAITriggerAction = authActionClient
+export const updateAITriggerAction = chatbotActionClient
   .bindArgsSchemas(chatbotIdAndIdRequestParams.items)
   .schema(updateAITriggerRequest)
   .action(

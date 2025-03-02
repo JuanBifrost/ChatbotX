@@ -4,12 +4,12 @@ import {
   type ChatbotIdAndIdRequestParams,
   chatbotIdAndIdRequestParams,
 } from "@/features/common/schemas"
-import { authActionClient } from "@/lib/safe-action"
+import { chatbotActionClient } from "@/lib/safe-action"
 import { prisma } from "@ahachat.ai/database"
 import type { InputJsonValue } from "@prisma/client/runtime/binary"
 import { revalidateTag } from "next/cache"
 
-export const duplicateAITriggerAction = authActionClient
+export const duplicateAITriggerAction = chatbotActionClient
   .bindArgsSchemas(chatbotIdAndIdRequestParams.items)
   .action(
     async ({
