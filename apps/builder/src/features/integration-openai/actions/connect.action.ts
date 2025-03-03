@@ -18,7 +18,7 @@ import {
 } from "../schemas"
 
 export const connectOpenAIAction = authActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+  .bindArgsSchemas(chatbotIdRequestParams.items)
   .schema(connectOpenAISchema)
   .action(
     async ({

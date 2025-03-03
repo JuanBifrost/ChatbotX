@@ -1,13 +1,13 @@
 import { getCurrentUserId } from "@/auth"
 import { findChatbotOrFail } from "@/lib/user-permissions"
 import { prisma } from "@ahachat.ai/database"
-import type { Contact, Prisma } from "@ahachat.ai/database"
+import type { Broadcast, Prisma } from "@ahachat.ai/database"
 import { unstable_cache } from "next/cache"
-import type { GetContactsSchema } from "../schemas/get-contacts-schema"
+import type { GetBroadcastsSchema } from "../schemas/get-broadcasts-schema"
 
-export async function getContacts(
-  input: GetContactsSchema,
-): Promise<{ data: Contact[]; pageCount: number }> {
+export async function listBroadcasts(
+  input: GetBroadcastsSchema,
+): Promise<{ data: Broadcast[]; pageCount: number }> {
   const userId = await getCurrentUserId()
 
   await findChatbotOrFail(userId, input.chatbotId)
@@ -15,34 +15,24 @@ export async function getContacts(
   return await unstable_cache(
     async () => {
       try {
-        const where: Prisma.ContactWhereInput = {
+        const where: Prisma.BroadcastWhereInput = {
           chatbotId: input.chatbotId,
         }
 
-        if (input.keyword) {
-          where.OR = [
-            {
-              firstName: {
-                contains: input.keyword,
-                mode: "insensitive",
-              },
-            },
-            {
-              lastName: {
-                contains: input.keyword,
-                mode: "insensitive",
-              },
-            },
-          ]
-        }
-
         const [data, total] = await prisma.$transaction([
-          prisma.contact.findMany({
+          prisma.broadcast.findMany({
             skip: (input.page - 1) * input.perPage,
             take: input.perPage,
             where,
+            include: {
+              _count: {
+                select: {
+                  contacts: true,
+                },
+              },
+            },
           }),
-          prisma.contact.count({ where }),
+          prisma.broadcast.count({ where }),
         ])
 
         const pageCount = Math.ceil(total / input.perPage)
@@ -55,7 +45,7 @@ export async function getContacts(
     [JSON.stringify(input)],
     {
       revalidate: 3600,
-      tags: [`${userId}#contacts`],
+      tags: [`${userId}#broadcasts`],
     },
   )()
 }
