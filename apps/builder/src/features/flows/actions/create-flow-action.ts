@@ -41,7 +41,7 @@ export const createFlowAction = chatbotActionClient
           flowVersions: {
             create: [
               {
-                chatbotId: parsedInput.chatbotId,
+                chatbotId,
                 nodes: [
                   {
                     id: createId(),
@@ -51,7 +51,7 @@ export const createFlowAction = chatbotActionClient
                       id: createId(),
                       name: "Send Message #1",
                       messageType: MessageType.Omnichannel,
-                      blocks: [],
+                      steps: [],
                     },
                   },
                 ],
