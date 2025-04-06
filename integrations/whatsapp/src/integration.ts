@@ -12,6 +12,11 @@ import type {
   WhatsappAuthValue,
   WhatsappConfig,
 } from "./schemas"
+import { sendOutgoingMessage } from "./outgoing-message"
+
+// type WhatsappIntegrationDefinition = IntegrationDefinition<
+//   WhatsappConfig, WhatsappAuthValue, WhatsappActions
+// >
 
 const config: IntegrationDefinition<
   WhatsappConfig,
@@ -21,16 +26,16 @@ const config: IntegrationDefinition<
   name: "whatsapp",
   actions: {
     verifyAccessToken: async ({ ctx }) => {
-      return await verifyAccessToken(ctx.auth)
+      return await verifyAccessToken(ctx)
     },
     receiveMessage: async ({ ctx, data }) => {
       const whatsappClient = getWhatsappClient(ctx.auth)
 
       return await parseIncomingMessage(ctx, whatsappClient, data)
     },
-    // sendMessage: async ({ ctx, message, conversation }) => {
-    //   await sendOutgoingMessage(ctx, conversation, message)
-    // },
+    sendMessage: async ({ ctx, message, conversation }) => {
+      await sendOutgoingMessage(ctx, conversation, message)
+    },
   },
   handleRequest: async (props) => {
     const segments = new URL(props.req.url).pathname.split("/")
@@ -45,4 +50,6 @@ const config: IntegrationDefinition<
   },
 }
 
-export const integration = new Integration(config)
+export const integration = new Integration<
+  IntegrationDefinition<WhatsappConfig, WhatsappAuthValue, WhatsappActions>
+>(config)

@@ -46,4 +46,9 @@ export const baseNodeSchema = z.object({
 export type NodeData = SendMessageNodeSchema["data"]
 // | AddNotesNodeSchema["data"]
 
+// export type StepData =
+//   | SendMessageNodeSchema["data"]["blocks"][number]
+//   | StartFlowNodeSchema["data"]["blocks"][number]
+//   | WaitNodeSchema["data"]["blocks"][number]
+
 export type FlowNode = Node<NodeData>

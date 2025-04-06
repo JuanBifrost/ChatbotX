@@ -127,6 +127,7 @@ model Chatbot {
   tags                     Tag[]
   workspace                Workspace                 @relation(fields: [workspaceId], references: [id])
   automatedResponses       AutomatedResponse[]
+  flowRuns                 FlowRun[]
 }
 
 model ChatbotMember {
@@ -365,6 +366,7 @@ model Conversation {
   conversationAttributes Json?
   contactLastSeenAt      DateTime?
   agentLastSeenAt        DateTime?
+  currentFlowRunId       String?
   lastActivityAt         DateTime  @default(now())
 
   chatbot                  Chatbot                   @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
@@ -373,6 +375,7 @@ model Conversation {
   messages                 Message[]
   conversationParticipants ConversationParticipant[]
   attachment               Attachment[]
+  flowRuns                 FlowRun[]
 
   @@index([chatbotId, sourceId])
 }
@@ -591,20 +594,39 @@ model Flow {
   folder       Folder?       @relation(fields: [folderId], references: [id])
   flowVersions FlowVersion[]
   broadcasts   Broadcast[]
+  flowRuns     FlowRun[]
 }
 
 model FlowVersion {
-  id        String   @id @default(cuid(2))
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  chatbotId String
-  flowId    String
-  nodes     Json
-  edges     Json
-  isDraft   Boolean
+  id          String   @id @default(cuid(2))
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  chatbotId   String
+  flowId      String
+  nodes       Json
+  edges       Json
+  isDraft     Boolean
+  startNodeId String?
 
-  chatbot Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
-  flow    Flow    @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  chatbot  Chatbot   @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  flow     Flow      @relation(fields: [flowId], references: [id], onDelete: Cascade)
+
+  flowRuns FlowRun[]
+}
+
+model FlowRun {
+  id             String   @id @default(cuid(2))
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  chatbotId      String
+  flowId         String
+  flowVersionId  String
+  conversationId String?
+
+  chatbot      Chatbot       @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+  flow         Flow          @relation(fields: [flowId], references: [id], onDelete: Cascade)
+  flowVersion  FlowVersion   @relation(fields: [flowVersionId], references: [id], onDelete: Cascade)
+  conversation Conversation? @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 }
 
 model Broadcast {
@@ -734,20 +756,14 @@ enum MessageType {
 
 enum ContentType {
   TEXT
+  LOCATION
 }
 
 enum FileType {
   IMAGE
   AUDIO
   VIDEO
-  FILE
-}
-
-enum AttachmentType {
-  IMAGE
-  AUDIO
-  VIDEO
-  FILE
+  DOCUMENT
 }
 
 enum BroadcastStatus {

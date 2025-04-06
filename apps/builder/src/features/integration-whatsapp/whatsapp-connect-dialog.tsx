@@ -1,7 +1,7 @@
 "use client"
 
 import { FormInput } from "@/components/form-input"
-import WhastsappIcon from "@/components/icons/whatsapp"
+import WhatsappIcon from "@/components/icons/whatsapp"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -18,15 +18,14 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { T } from "@tolgee/react"
 import { Loader2Icon } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { connectWhatsappAction } from "./actions/connect.action"
 import { connectWhatsappSchema } from "./schemas"
+import { useRouter } from "next/navigation"
 
 export function WhatsappConnectDialog({ chatbotId }: { chatbotId: string }) {
   const [open, setOpen] = useState(false)
-
   const router = useRouter()
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
@@ -65,7 +64,7 @@ export function WhatsappConnectDialog({ chatbotId }: { chatbotId: string }) {
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            <WhastsappIcon />
+            <WhatsappIcon />
             <span>Whatsapp</span>
           </DialogTitle>
           <DialogDescription />
