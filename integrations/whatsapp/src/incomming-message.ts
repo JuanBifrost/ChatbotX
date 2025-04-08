@@ -7,6 +7,7 @@ import {
   type MessageEntity,
   SdkException,
 } from "@ahachat.ai/sdk"
+import { createId } from "@paralleldrive/cuid2"
 import fetch from "cross-fetch"
 import imageSize from "image-size"
 import type { WhatsAppAPI } from "whatsapp-api-js"
@@ -24,7 +25,6 @@ import type {
   ServerVideoMessage,
 } from "whatsapp-api-js/types"
 import type { WhatsappAuthValue } from "./schemas"
-import { createId } from "@paralleldrive/cuid2"
 
 export const parseIncomingMessage = async (
   ctx: Context<WhatsappAuthValue>,

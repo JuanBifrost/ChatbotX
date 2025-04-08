@@ -18,11 +18,11 @@ import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { T } from "@tolgee/react"
 import { Loader2Icon } from "lucide-react"
+import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { toast } from "sonner"
 import { connectWhatsappAction } from "./actions/connect.action"
 import { connectWhatsappSchema } from "./schemas"
-import { useRouter } from "next/navigation"
 
 export function WhatsappConnectDialog({ chatbotId }: { chatbotId: string }) {
   const [open, setOpen] = useState(false)

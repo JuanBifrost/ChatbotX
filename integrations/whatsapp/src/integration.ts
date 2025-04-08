@@ -4,19 +4,21 @@ import {
   type IntegrationDefinition,
   SdkException,
 } from "@ahachat.ai/sdk"
-import { getWhatsappClient, verifyAccessToken } from "./client"
+import { getWhatsappClient, uploadMedia, verifyAccessToken } from "./client"
+import { getFlows } from "./flows"
 import { webhookHandler } from "./handlers/webhook"
+import { getIceBreakers, updateIceBreaker } from "./ice-breaker"
 import { parseIncomingMessage } from "./incomming-message"
+import {
+  createMessageTemplate,
+  listMessageTemplates,
+} from "./message-templates"
+import { sendOutgoingMessage } from "./outgoing-message"
 import type {
   WhatsappActions,
   WhatsappAuthValue,
   WhatsappConfig,
 } from "./schemas"
-import { sendOutgoingMessage } from "./outgoing-message"
-
-// type WhatsappIntegrationDefinition = IntegrationDefinition<
-//   WhatsappConfig, WhatsappAuthValue, WhatsappActions
-// >
 
 const config: IntegrationDefinition<
   WhatsappConfig,
@@ -28,6 +30,9 @@ const config: IntegrationDefinition<
     verifyAccessToken: async ({ ctx }) => {
       return await verifyAccessToken(ctx)
     },
+    uploadMedia: async ({ ctx, file }) => {
+      return await uploadMedia(ctx.auth, file)
+    },
     receiveMessage: async ({ ctx, data }) => {
       const whatsappClient = getWhatsappClient(ctx.auth)
 
@@ -35,6 +40,21 @@ const config: IntegrationDefinition<
     },
     sendMessage: async ({ ctx, message, conversation }) => {
       await sendOutgoingMessage(ctx, conversation, message)
+    },
+    listMessageTemplates: async ({ ctx, params }) => {
+      return await listMessageTemplates(ctx.auth, params)
+    },
+    createMessageTemplate: async ({ ctx, data }) => {
+      return await createMessageTemplate(ctx.auth, data)
+    },
+    getFlows: async ({ ctx, params }) => {
+      return await getFlows(ctx.auth, params)
+    },
+    getIceBreakers: async ({ ctx }) => {
+      return await getIceBreakers(ctx.auth)
+    },
+    updateIceBreaker: async ({ ctx, prompts }) => {
+      return await updateIceBreaker(ctx.auth, prompts)
     },
   },
   handleRequest: async (props) => {

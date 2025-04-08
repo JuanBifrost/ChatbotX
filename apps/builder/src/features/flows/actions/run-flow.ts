@@ -7,11 +7,6 @@ import type {
   EdgeSchema,
   NodeSchema,
 } from "@/features/flows/react-flow/nodes/schema"
-import {
-  ActionType,
-  waitUserReplyActionTypes,
-} from "@/features/flows/react-flow/action-type"
-import type { StepData } from "@/features/flows/react-flow/types"
 import type { ButtonStepSchema } from "@/features/flows/react-flow/steps/button/schema"
 import type { SendTextStepSchema } from "@/features/flows/react-flow/steps/send-text/schema"
 import {
@@ -36,8 +31,6 @@ import type { OpenAIDeleteMessageHistorySchema } from "@/features/flows/react-fl
 import type { OpenAIGenerateTextAssistantSchema } from "@/features/flows/react-flow/steps/open-ai-generate-text-assistant/schema"
 import type { OpenAIGenerateTextAgentSchema } from "@/features/flows/react-flow/steps/open-ai-generate-text-agent/schema"
 import type { OpenAIGenerateTextAdvancedSchema } from "@/features/flows/react-flow/steps/open-ai-generate-text-advanced/schema"
-import type { StartFlowStepSchema } from "@/features/flows/react-flow/steps/start-flow/schema"
-import type { WaitStepSchema } from "@/features/flows/react-flow/steps/wait/schema"
 import type { UserInputStepSchema } from "@/features/flows/react-flow/steps/user-input/schema"
 import type { OpenAISpeechToTextSchema } from "@/features/flows/react-flow/steps/open-ai-speech-to-text/schema"
 import type { OpenAITextToSpeechSchema } from "@/features/flows/react-flow/steps/open-ai-text-to-speech/schema"
@@ -45,6 +38,7 @@ import { integrations } from "@/integration"
 import type { WhatsappAuthValue } from "@ahachat.ai/integration-whatsapp"
 import { uploader } from "@ahachat.ai/filesystem"
 import { getLogger } from "@/lib/log"
+import { StepType } from "../react-flow/steps/step-action"
 
 const messagePayloadSchema = z.object({
   nodeId: z.string().cuid2(),
@@ -56,7 +50,7 @@ type MessagePayloadSchema = z.infer<typeof messagePayloadSchema>
 
 const handlers = {
   // Send message blocks
-  [`handle${ActionType.SendText}`]: async (
+  [`handle${StepType.SendText}`]: async (
     conversation: Conversation,
     block: SendTextStepSchema,
     flowVersion: FlowVersion,
@@ -65,7 +59,7 @@ const handlers = {
 
     return
   },
-  [`handle${ActionType.SendImage}`]: async (
+  [`handle${StepType.SendImage}`]: async (
     conversation: Conversation,
     block: SendTextStepSchema,
     flowVersion: FlowVersion,
@@ -74,7 +68,7 @@ const handlers = {
 
     return
   },
-  [`handle${ActionType.SendCard}`]: async (
+  [`handle${StepType.SendCard}`]: async (
     conversation: Conversation,
     block: SendCardStepSchema,
     flowVersion: FlowVersion,
@@ -83,7 +77,7 @@ const handlers = {
 
     return
   },
-  [`handle${ActionType.SendCarousel}`]: async (
+  [`handle${StepType.SendCarousel}`]: async (
     conversation: Conversation,
     block: SendCarouselStepSchema,
     flowVersion: FlowVersion,
@@ -92,14 +86,14 @@ const handlers = {
 
     return
   },
-  [`handle${ActionType.SendVideo}`]: async (
+  [`handle${StepType.SendVideo}`]: async (
     _conversation: Conversation,
     _block: SendVideoStepSchema,
   ) => {
     // todo send message video
     return
   },
-  [`handle${ActionType.SendAudio}`]: async (
+  [`handle${StepType.SendAudio}`]: async (
     _conversation: Conversation,
     _block: SendAudioStepSchema,
   ) => {
@@ -107,7 +101,7 @@ const handlers = {
     return
   },
 
-  [`handle${ActionType.UserInput}`]: async (
+  [`handle${StepType.UserInput}`]: async (
     _conversation: Conversation,
     _block: UserInputStepSchema,
   ) => {
@@ -116,21 +110,21 @@ const handlers = {
   },
 
   // Action Email
-  [`handle${ActionType.MarkEmailVerified}`]: async (
+  [`handle${StepType.MarkEmailVerified}`]: async (
     _conversation: Conversation,
     _block: MarkEmailVerifiedStepSchema,
   ) => {
     // TODO: Implement Mark Email Verified logic
     return
   },
-  [`handle${ActionType.OptInEmail}`]: async (
+  [`handle${StepType.OptInEmail}`]: async (
     _conversation: Conversation,
     _block: OptInEmailStepSchema,
   ) => {
     // TODO: Implement Opt-In Email logic
     return
   },
-  [`handle${ActionType.OptOutEmail}`]: async (
+  [`handle${StepType.OptOutEmail}`]: async (
     _conversation: Conversation,
     _block: OptOutEmailStepSchema,
   ) => {
@@ -139,85 +133,67 @@ const handlers = {
   },
 
   // Action OpenAI Generate
-  [`handle${ActionType.OpenAIGenerateText}`]: async (
+  [`handle${StepType.OpenAIGenerateText}`]: async (
     _conversation: Conversation,
     _block: OpenAIGenerateTextSchema,
   ) => {
     // TODO: Implement OpenAI Generate Text logic
     return
   },
-  [`handle${ActionType.OpenAIGenerateImage}`]: async (
+  [`handle${StepType.OpenAIGenerateImage}`]: async (
     _conversation: Conversation,
     _block: OpenAIGenerateImageSchema,
   ) => {
     // TODO: Implement OpenAI Generate Image logic
     return
   },
-  [`handle${ActionType.OpenAIAnalyzeImage}`]: async (
+  [`handle${StepType.OpenAIAnalyzeImage}`]: async (
     _conversation: Conversation,
     _block: OpenAIAnalyzeImageSchema,
   ) => {
     // TODO: Implement OpenAI Analyze Image logic
     return
   },
-  [`handle${ActionType.OpenAIDeleteMessageHistory}`]: async (
+  [`handle${StepType.OpenAIDeleteMessageHistory}`]: async (
     _conversation: Conversation,
     _block: OpenAIDeleteMessageHistorySchema,
   ) => {
     // TODO: Implement OpenAI Delete Message History logic
     return
   },
-  [`handle${ActionType.OpenAIGenerateTextAssistant}`]: async (
+  [`handle${StepType.OpenAIGenerateTextAssistant}`]: async (
     _conversation: Conversation,
     _block: OpenAIGenerateTextAssistantSchema,
   ) => {
     // TODO: Implement OpenAI Generate Text Assistant logic
     return
   },
-  [`handle${ActionType.OpenAIGenerateTextAgent}`]: async (
+  [`handle${StepType.OpenAIGenerateTextAgent}`]: async (
     _conversation: Conversation,
     _block: OpenAIGenerateTextAgentSchema,
   ) => {
     // TODO: Implement OpenAI Generate Text Agent logic
     return
   },
-  [`handle${ActionType.OpenAIGenerateTextAdvanced}`]: async (
+  [`handle${StepType.OpenAIGenerateTextAdvanced}`]: async (
     _conversation: Conversation,
     _block: OpenAIGenerateTextAdvancedSchema,
   ) => {
     // TODO: Implement OpenAI Generate Text Advanced logic
     return
   },
-  [`handle${ActionType.OpenAISpeechToText}`]: async (
+  [`handle${StepType.OpenAISpeechToText}`]: async (
     _conversation: Conversation,
     _block: OpenAISpeechToTextSchema,
   ) => {
     // TODO: Implement OpenAI Generate Text Advanced logic
     return
   },
-  [`handle${ActionType.OpenAITextToSpeech}`]: async (
+  [`handle${StepType.OpenAITextToSpeech}`]: async (
     _conversation: Conversation,
     _block: OpenAITextToSpeechSchema,
   ) => {
     // TODO: Implement OpenAI Generate Text Advanced logic
-    return
-  },
-
-  // Start Flow
-  [`handle${ActionType.StartFlow}`]: async (
-    _conversation: Conversation,
-    _block: StartFlowStepSchema,
-  ) => {
-    // TODO: Implement Start Flow logic
-    return
-  },
-
-  // Wait
-  [`handle${ActionType.Wait}`]: async (
-    _conversation: Conversation,
-    _block: WaitStepSchema,
-  ) => {
-    // TODO: Implement Wait logic
     return
   },
 }
@@ -311,19 +287,19 @@ async function main(
 async function replyMessage(block: StepData, payload: MessagePayloadSchema) {
   // TODO create message text
 
-  switch (block.actionType) {
-    case ActionType.SendText:
-    case ActionType.SendImage:
-    case ActionType.SendVideo:
-    case ActionType.SendCard:
-    case ActionType.SendAudio:
+  switch (block.StepType) {
+    case StepType.SendText:
+    case StepType.SendImage:
+    case StepType.SendVideo:
+    case StepType.SendCard:
+    case StepType.SendAudio:
       return block.buttons?.find(
         (button: ButtonStepSchema) => button.label === payload.text,
       )?.id
 
     // Check case reply to trigger next block.
     // See apps/builder/src/features/flows/react-flow/action-type.ts waitUserReplyActionTypes
-    case ActionType.UserInput:
+    case StepType.UserInput:
       // todo Parse text data
       return
     default:
@@ -345,7 +321,7 @@ async function handleFlowExecution(
   }
 
   // If empty node, check next node
-  if (!node.data.blocks?.length) {
+  if (!node.data.steps?.length) {
     await triggerNextNode(conversation, flowVersion, payload.nodeId)
     return
   }
@@ -353,13 +329,13 @@ async function handleFlowExecution(
   // If empty blockId, check first block or find block by blockId
   const blockIndex = !payload.blockId
     ? 0
-    : node.data.blocks.findIndex((obj: StepData) => obj.id === payload.blockId)
+    : node.data.steps.findIndex((obj: StepData) => obj.id === payload.blockId)
   if (blockIndex === -1) {
     console.error("StepId not exists on current version")
     return
   }
 
-  const block = node.data.blocks[blockIndex]
+  const block = node.data.steps[blockIndex]
   // Check is reply message from user.
   if (payload.text) {
     const handleId = await replyMessage(block, payload)
@@ -375,7 +351,7 @@ async function handleFlowExecution(
    * Handle action logic for this block, create message if need
    * Trigger next block
    */
-  const handlerName = `handle${block.actionType}` as keyof typeof handlers
+  const handlerName = `handle${block.StepType}` as keyof typeof handlers
 
   if (typeof handlers[handlerName] === "function") {
     console.log("handleCurrentStep", handlerName, block.id)
@@ -383,7 +359,7 @@ async function handleFlowExecution(
   }
 
   // If block type is wait user reply, skip loop trigger next block.
-  if (waitUserReplyActionTypes.includes(block.actionType)) {
+  if (waitUserReplyActionTypes.includes(block.StepType)) {
     console.log("Skip trigger next block when wait user reply")
     return
   }

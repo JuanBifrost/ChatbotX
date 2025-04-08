@@ -8,6 +8,12 @@ import type {
   SendMessageProps,
 } from "@ahachat.ai/sdk"
 import type { OnMessageArgs } from "whatsapp-api-js/emitters"
+import type { ListFlowsResponse } from "./flows"
+import type {
+  CreateMessageTemplateProps,
+  ListMessageTemplatesReponse,
+  MessageTemplateEntity,
+} from "./message-templates"
 import type { WhatsappPhoneNumber } from "./types"
 
 export type WhatsappConfig = BaseConfig & {
@@ -18,6 +24,7 @@ export type WhatsappConfig = BaseConfig & {
 export type WhatsappAuthValue = Oauth2AuthValue & {
   metadata: {
     wabaId: string
+    businessId?: string
     phoneNumber?: WhatsappPhoneNumber
   }
 }
@@ -29,6 +36,7 @@ export type WhatsappActions = {
     },
     WhatsappPhoneNumber
   >
+  uploadMedia: Handler<{ ctx: Context<WhatsappAuthValue>; file: File }, string>
   receiveMessage: Handler<
     {
       ctx: Context<WhatsappAuthValue>
@@ -41,4 +49,38 @@ export type WhatsappActions = {
     }
   >
   sendMessage: (props: SendMessageProps<WhatsappAuthValue>) => Promise<void>
+  listMessageTemplates: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+      params: { limit: number }
+    },
+    ListMessageTemplatesReponse
+  >
+  createMessageTemplate: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+      data: CreateMessageTemplateProps
+    },
+    MessageTemplateEntity
+  >
+  getFlows: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+      params: { limit: number }
+    },
+    ListFlowsResponse
+  >
+  getIceBreakers: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+    },
+    string[]
+  >
+  updateIceBreaker: Handler<
+    {
+      ctx: Context<WhatsappAuthValue>
+      prompts: string[]
+    },
+    void
+  >
 }

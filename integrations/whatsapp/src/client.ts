@@ -58,3 +58,60 @@ export const verifyAccessToken = async (
     throw new SdkException(`Unable to get phone number: ${err}`)
   }
 }
+
+/**
+ * Start an upload file
+ * @see https://developers.facebook.com/docs/graph-api/guides/upload#step-1
+ * @see https://developers.facebook.com/docs/graph-api/guides/upload#step-2
+ *
+ * @param auth WhatsappAuthValue
+ * @param file File
+ * @returns string uploadedFileId
+ */
+export const uploadMedia = async (
+  auth: WhatsappAuthValue,
+  file: File,
+): Promise<string> => {
+  const client = getWhatsappClient(auth)
+  const resSession = await client.$$apiFetch$$(
+    `https://graph.facebook.com/${DEFAULT_API_VERSION}/${auth.clientId}/uploads`,
+    {
+      method: "POST",
+      body: new URLSearchParams({
+        file_name: file.name,
+        file_type: file.type,
+        access_token: auth.tokens.accessToken,
+      }),
+    },
+  )
+  if (!resSession.ok) {
+    throw new SdkException("File is not valid")
+  }
+
+  const { id: sessionId } = await resSession.json()
+  if (!sessionId) {
+    throw new SdkException("Upload session is not created")
+  }
+
+  const res = await client.$$apiFetch$$(
+    `https://graph.facebook.com/${DEFAULT_API_VERSION}/${sessionId}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `OAuth ${auth.tokens.accessToken}`,
+        file_offset: "0",
+      },
+      body: file,
+    },
+  )
+  if (!res.ok) {
+    throw new SdkException("Access token is not valid")
+  }
+
+  const { h: uploadedFileId } = await res.json()
+  if (!uploadedFileId) {
+    throw new SdkException("Upload file can't upload")
+  }
+
+  return uploadedFileId
+}

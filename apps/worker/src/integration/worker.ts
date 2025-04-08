@@ -5,11 +5,11 @@ import {
 } from "@ahachat.ai/worker-config"
 import { Worker } from "bullmq"
 import { logger } from "../lib/log"
-import { receiveMessage } from "./handlers/received-message"
 import { triggerAutomatedResponse } from "./handlers/automated-response"
+import { receiveMessage } from "./handlers/received-message"
+import { triggerFlowNode } from "./handlers/trigger-flow-node"
 import { triggerMessage } from "./handlers/trigger-message"
 import { IntegrationAction } from "./types"
-import { triggerFlowNode } from "./handlers/trigger-flow-node"
 
 const worker = new Worker(
   QueueName.INTEGRATION,
