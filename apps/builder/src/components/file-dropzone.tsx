@@ -24,7 +24,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip"
-import { FileType } from "@ahachat.ai/database"
+import { FileType } from "@ahachat.ai/database/browser"
 
 type FileDropzoneConfigs = {
   uploadKeyName: string

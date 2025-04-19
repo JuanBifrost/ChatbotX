@@ -33,31 +33,32 @@ export function CreateFolderDialog({
   const { t } = useTranslate()
   const [open, setOpen] = useState(false)
 
-  const { form, handleSubmitWithAction } = useHookFormAction(
-    createFolderAction.bind(null, chatbotId),
-    zodResolver(createFolderSchema),
-    {
-      actionProps: {
-        onSuccess: () => {
-          toast.success(t("folders.created"))
-
-          setOpen(false)
+  const { form, handleSubmitWithAction, resetFormAndAction } =
+    useHookFormAction(
+      createFolderAction.bind(null, chatbotId),
+      zodResolver(createFolderSchema),
+      {
+        actionProps: {
+          onSuccess: () => {
+            toast.success(t("folders.created"))
+            resetFormAndAction()
+            setOpen(false)
+          },
+          onError: ({ error }) => {
+            error.serverError && toast.error(error.serverError)
+          },
         },
-        onError: ({ error }) => {
-          error.serverError && toast.error(error.serverError)
+        formProps: {
+          mode: "onChange",
+          defaultValues: {
+            name: "",
+            folderType,
+            parentId: parentId === "" ? null : parentId,
+          },
         },
+        errorMapProps: {},
       },
-      formProps: {
-        mode: "onChange",
-        defaultValues: {
-          name: "",
-          folderType,
-          parentId: parentId === "" ? null : parentId,
-        },
-      },
-      errorMapProps: {},
-    },
-  )
+    )
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>

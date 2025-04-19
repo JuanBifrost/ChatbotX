@@ -2,6 +2,7 @@
 
 import { CheckboxGroupField } from "@/components/form/checkbox-field"
 import { InputField } from "@/components/form/input-field"
+import { InputNumberField } from "@/components/form/input-number-field"
 import { TextareaField } from "@/components/form/textarea-field"
 import { AITriggersMultipleSelect } from "@/features/ai-triggers/ai-trigger-select"
 import { CustomFieldSelect } from "@/features/fields/custom-field-select"
@@ -43,19 +44,17 @@ export const OpenAIGenerateTextAdvancedEditor = ({
         options={[{ value: "1", label: "Remember Conversation" }]}
       />
 
-      <InputField
-        type="number"
+      <InputNumberField
         name={`${parentName}.temperature`}
         label="Temperature"
-        defaultValue={"0.4"}
+        defaultValue={0.4}
       />
 
-      <InputField
-        type="number"
+      <InputNumberField
         name={`${parentName}.maxTokens`}
         label="Maximum number of output tokens"
         isRequired={false}
-        defaultValue={"250"}
+        defaultValue={250}
       />
     </OpenAIDialog>
   )

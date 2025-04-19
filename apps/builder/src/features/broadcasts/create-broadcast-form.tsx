@@ -64,7 +64,6 @@ export function CreateBroadcastForm({
       actionProps: {
         onSuccess: () => {
           toast.success("Broadcast created successfully")
-
           resetFormAndAction()
         },
         onError: ({ error }) => {

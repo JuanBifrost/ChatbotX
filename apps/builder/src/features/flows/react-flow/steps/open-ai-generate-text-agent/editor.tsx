@@ -7,6 +7,7 @@ import { AITriggersMultipleSelect } from "@/features/ai-triggers/ai-trigger-sele
 import { CustomFieldSelect } from "@/features/fields/custom-field-select"
 import { OpenAIDialog } from "@/features/flows/react-flow/steps/open-ai/components/dialog"
 import { OpenAIModel } from "../open-ai/open-ai-model-select"
+import { InputNumberField } from "@/components/form/input-number-field"
 
 interface OpenAIGenerateTextAgentEditorProps {
   parentName: string
@@ -35,18 +36,17 @@ export const OpenAIGenerateTextAgentEditor = ({
         options={[{ value: "1", label: "Remember Conversation" }]}
       />
 
-      <InputField
-        type="number"
+      <InputNumberField
         name={`${parentName}.temperature`}
         label="Temperature"
-        defaultValue="0.4"
+        defaultValue={0.4}
       />
 
-      <InputField
+      <InputNumberField
         name={`${parentName}.maxTokens`}
         label="Maximum number of output tokens"
         isRequired={false}
-        defaultValue="250"
+        defaultValue={250}
       />
     </OpenAIDialog>
   )

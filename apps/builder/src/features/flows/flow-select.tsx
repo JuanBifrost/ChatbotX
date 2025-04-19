@@ -9,15 +9,14 @@ export const FlowSelect = ({
   isRequired = false,
 }: {
   name: string
-  label: string
+  label?: string
   isRequired?: boolean
 }) => {
   const params = useParams<{ chatbotId: string }>()
 
-  const custormFieldsUrl = `/api/chatbots/${params.chatbotId}/flows?perPage=9999`
-  const { data } = callAPI<FlowCollection>(custormFieldsUrl)
-
-  const flowOptions = (data?.data || []).map((v) => ({
+  const flowUrl = `/api/chatbots/${params.chatbotId}/flows?perPage=9999`
+  const { data } = callAPI<FlowCollection>(flowUrl)
+  const flowOptions = (data?.data ?? []).map((v) => ({
     label: v.name,
     value: v.id,
   }))

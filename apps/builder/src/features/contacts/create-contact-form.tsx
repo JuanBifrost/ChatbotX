@@ -24,33 +24,34 @@ export function CreateContactForm({
 }) {
   const { t } = useTranslate()
 
-  const { form, handleSubmitWithAction } = useHookFormAction(
-    createContactAction.bind(null, chatbotId),
-    zodResolver(createContactSchema),
-    {
-      actionProps: {
-        onSuccess: () => {
-          toast.success("Contact created successfully")
-
-          onSubmmited?.()
+  const { form, handleSubmitWithAction, resetFormAndAction } =
+    useHookFormAction(
+      createContactAction.bind(null, chatbotId),
+      zodResolver(createContactSchema),
+      {
+        actionProps: {
+          onSuccess: () => {
+            resetFormAndAction()
+            toast.success("Contact created successfully")
+            onSubmmited?.()
+          },
+          onError: ({ error }) => {
+            error.serverError && toast.error(error.serverError)
+          },
         },
-        onError: ({ error }) => {
-          error.serverError && toast.error(error.serverError)
+        formProps: {
+          mode: "onChange",
+          defaultValues: {
+            phoneNumber: "",
+            email: "",
+            firstName: "",
+            lastName: "",
+            gender: Gender.UNKNOWN,
+          },
         },
+        errorMapProps: {},
       },
-      formProps: {
-        mode: "onChange",
-        defaultValues: {
-          phoneNumber: "",
-          email: "",
-          firstName: "",
-          lastName: "",
-          gender: Gender.UNKNOWN,
-        },
-      },
-      errorMapProps: {},
-    },
-  )
+    )
 
   const genderLabels = [
     {

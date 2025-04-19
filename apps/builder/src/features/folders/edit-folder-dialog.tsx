@@ -33,29 +33,30 @@ export function EditFolderDialog({
 }) {
   const { t } = useTranslate()
 
-  const { form, handleSubmitWithAction } = useHookFormAction(
-    editFolderAction.bind(null, chatbotId, folder?.id ?? ""),
-    zodResolver(editFolderSchema),
-    {
-      actionProps: {
-        onSuccess: () => {
-          toast.success(t("folders.editAction.successMessage"))
-
-          onOpenChange(false)
+  const { form, handleSubmitWithAction, resetFormAndAction } =
+    useHookFormAction(
+      editFolderAction.bind(null, chatbotId, folder?.id ?? ""),
+      zodResolver(editFolderSchema),
+      {
+        actionProps: {
+          onSuccess: () => {
+            toast.success(t("folders.editAction.successMessage"))
+            resetFormAndAction()
+            onOpenChange(false)
+          },
+          onError: ({ error }) => {
+            error.serverError && toast.error(error.serverError)
+          },
         },
-        onError: ({ error }) => {
-          error.serverError && toast.error(error.serverError)
+        formProps: {
+          mode: "onChange",
+          defaultValues: {
+            name: folder?.name ?? "",
+          },
         },
+        errorMapProps: {},
       },
-      formProps: {
-        mode: "onChange",
-        defaultValues: {
-          name: folder?.name ?? "",
-        },
-      },
-      errorMapProps: {},
-    },
-  )
+    )
 
   useEffect(() => {
     form.reset({ name: folder?.name })

@@ -35,12 +35,12 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { useTranslate } from "@tolgee/react"
 import { format } from "date-fns"
 import { Loader2Icon, PlusIcon } from "lucide-react"
+import { useSearchParams } from "next/navigation"
 import { useState } from "react"
 import { Controller } from "react-hook-form"
 import { toast } from "sonner"
-import { createAccountFieldRequest } from "./schemas/create-account-field.schema"
 import { createAccountFieldAction } from "./actions/create-account-field.action"
-import { useSearchParams } from "next/navigation"
+import { createAccountFieldRequest } from "./schemas/create-account-field.schema"
 
 export function CreateAccountFieldDialog({
   chatbotId,
@@ -91,7 +91,6 @@ export function CreateAccountFieldDialog({
       actionProps: {
         onSuccess: () => {
           toast.success(t("accountFields.created"))
-
           setOpen(false)
           resetFormAndAction()
         },

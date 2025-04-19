@@ -38,6 +38,7 @@ export function RenameFlowDialog({
   const {
     form,
     handleSubmitWithAction,
+    resetFormAndAction,
     form: { setValue },
   } = useHookFormAction(
     updateFlowAction.bind(null, flow?.chatbotId ?? "", flow?.id ?? ""),
@@ -46,7 +47,7 @@ export function RenameFlowDialog({
       actionProps: {
         onSuccess: () => {
           toast.success("Flow update successfully")
-
+          resetFormAndAction()
           onOpenChange(false)
           router.refresh()
         },

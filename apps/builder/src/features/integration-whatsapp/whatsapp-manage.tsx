@@ -2,7 +2,7 @@
 
 import { SettingRow } from "@/components/setting-row"
 import { Button } from "@/components/ui/button"
-import { T } from "@tolgee/react"
+import { T, useTranslate } from "@tolgee/react"
 import { use } from "react"
 import type { getWhastappIntegration } from "./queries"
 import { WhatsappConnectDialog } from "./whatsapp-connect-dialog"
@@ -16,11 +16,12 @@ type WhatsappManageProps = {
 
 export function WhatsappManage({ chatbotId, promises }: WhatsappManageProps) {
   const [integrationWhatsapp] = use(promises)
+  const { t } = useTranslate()
 
   return (
     <SettingRow
-      label={<T keyName="Integration.Whatsapp.Title" />}
-      description={<T keyName="Integration.Whatsapp.Descriptions" />}
+      label={t("Integration.Whatsapp.Title")}
+      description={t("Integration.Whatsapp.Descriptions")}
     >
       {integrationWhatsapp ? (
         <div className="flex flex-col gap-2">

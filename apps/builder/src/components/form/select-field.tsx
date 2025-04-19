@@ -37,13 +37,12 @@ export function SelectField<T extends FieldValues>({
     >
       {(field) => (
         <Select
-          onValueChange={(val) => {
-            field.onChange(val as T[FieldPath<T>])
-          }}
-          value={field.value ? String(field.value) : ""}
+          onValueChange={field.onChange}
+          defaultValue={field.value}
           {...props}
+          {...field}
         >
-          <SelectTrigger>
+          <SelectTrigger className="w-full">
             <SelectValue placeholder={placeholder} />
           </SelectTrigger>
           <SelectContent>
