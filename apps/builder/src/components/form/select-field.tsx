@@ -1,4 +1,4 @@
-import type { FieldPath, FieldValues } from "react-hook-form"
+import type { FieldPath, FieldValues, Path } from "react-hook-form"
 import { MultiSelect } from "../multi-select"
 import {
   Select,
@@ -77,7 +77,7 @@ export function MultiSelectField<T extends FieldValues>({
       {(field) => (
         <MultiSelect
           options={options}
-          onValueChange={() => {}}
+          onValueChange={(value) => field.onChange(value as T[Path<T>])}
           {...props}
           {...field}
         />
