@@ -16,7 +16,10 @@ import {
 import type { AttachmentEntity } from "@ahachat.ai/sdk"
 import { getLogger } from "../../lib/log"
 import { uploader } from "@ahachat.ai/filesystem"
-import ky from "ky"
+import {
+  broadcastToChatbotParty,
+  RealtimeEventType,
+} from "@ahachat.ai/party-config"
 
 export const receiveMessage = async ({
   integrationName,
@@ -131,17 +134,10 @@ export const receiveMessage = async ({
 
     // emit new message to socket
     try {
-      await ky.post(
-        `${process.env.PARTYSOCKET_URL}/parties/conversations/${newConversation.id}`,
-        {
-          headers: {
-            "X-API-KEY": process.env.PARTYSOCKET_API_KEY,
-          },
-          json: {
-            message: newMessage,
-          },
-        },
-      )
+      broadcastToChatbotParty(newConversation.chatbotId, {
+        eventType: RealtimeEventType.CREATE_MESSAGE,
+        data: newMessage,
+      })
     } catch (error) {
       logger.warn("Unable to emit realtime message", error)
     }

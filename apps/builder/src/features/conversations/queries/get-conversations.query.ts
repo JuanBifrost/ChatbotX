@@ -12,7 +12,6 @@ import {
   type Conversation,
   type Message,
   type Prisma,
-  SenderType,
   prisma,
 } from "@ahachat.ai/database"
 import { unstable_cache } from "next/cache"
@@ -35,18 +34,6 @@ export const listConversations = async (
     include: {
       contact: true,
       inbox: true,
-      _count: {
-        select: {
-          messages: {
-            where: {
-              senderType: SenderType.USER,
-              // createdAt: {
-              //   gt: prisma.conversation.fields.contactLastSeenAt
-              // }
-            },
-          },
-        },
-      },
     },
     take: perPage,
     where,
@@ -130,22 +117,10 @@ export const findConversation = async (
       const conversation = await prisma.conversation.findFirstOrThrow({
         include: {
           contact: true,
-          //   messages: {
-          //     orderBy: {
-          //       createdAt: "desc",
-          //     },
-          //     take: 1,
-          //   },
+          inbox: true,
         },
         where: input,
       })
-      // const { messages, ...rest } = data
-
-      // const conversation = {
-      //   ...rest,
-      //   latestMessage: messages[0] || null,
-      //   unreadCount: 0,
-      // }
 
       return { data: conversation as ConversationResource }
     },

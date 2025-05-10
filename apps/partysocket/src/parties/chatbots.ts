@@ -1,29 +1,20 @@
 import type * as Party from "partykit/server"
 import { getNextAuthSession } from "../utils/auth"
 
-export default class UserParty implements Party.Server {
+export default class ChatbotParty implements Party.Server {
   constructor(readonly room: Party.Room) {}
 
-  async onStart() {}
-
   async onConnect(
-    _connection: Party.Connection,
+    connection: Party.Connection,
     { request }: Party.ConnectionContext,
   ) {
     const userId = request.headers.get("X-User-ID")
-    this.room.broadcast(`Hello ${userId} from party!`)
+    if (!userId) return connection.close(1008, "Unauthorized")
   }
-
-  async onMessage(message: string | ArrayBuffer, sender: Party.Connection) {
-    console.log("message from", sender, message)
-  }
-
-  // async onClose(connection: Party.Connection) {}
-
-  // async onError(connection: Party.Connection, error: Error) {}
 
   async onRequest(req: Party.Request) {
-    console.log("received emit from HTTP request", await req.json())
+    const payload = await req.json()
+    this.room.broadcast(JSON.stringify(payload))
 
     return new Response("ok", { status: 200 })
   }

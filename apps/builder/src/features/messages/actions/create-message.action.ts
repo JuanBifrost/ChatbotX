@@ -26,6 +26,10 @@ import type { AttachmentResource } from "@/features/attachments/schemas/get-atta
 import { createId } from "@paralleldrive/cuid2"
 import imageSize from "image-size"
 import { logger } from "@/lib/log"
+import {
+  broadcastToChatbotParty,
+  RealtimeEventType,
+} from "@ahachat.ai/party-config"
 import type {
   AttachmentEntity,
   ConversationEntity,
@@ -124,21 +128,30 @@ export const createMessageAction = chatbotActionClient
         return message
       })
 
-      // (message as MessageResource).clientId = parsedInput.clientId
-      await chatQueue.add(ChatJobAction.SEND_MESSAGE, {
-        type: ChatJobAction.SEND_MESSAGE,
-        data: {
-          conversation: conversation as ConversationEntity,
-          message: {
+      // Broadcast and send
+      await Promise.all([
+        broadcastToChatbotParty(message.chatbotId, {
+          eventType: RealtimeEventType.CREATE_MESSAGE,
+          data: {
             ...message,
             clientId: parsedInput.clientId,
-            sourceId: message.sourceId || "",
-            contentType: message.contentType as unknown as SdkContentType,
-            content: message.content ?? "",
-            attachments: message.attachments as AttachmentEntity[],
           },
-        },
-      })
+        }),
+        chatQueue.add(ChatJobAction.SEND_MESSAGE, {
+          type: ChatJobAction.SEND_MESSAGE,
+          data: {
+            conversation: conversation as ConversationEntity,
+            message: {
+              ...message,
+              clientId: parsedInput.clientId,
+              sourceId: message.sourceId || "",
+              contentType: message.contentType as unknown as SdkContentType,
+              content: message.content ?? "",
+              attachments: message.attachments as AttachmentEntity[],
+            },
+          },
+        }),
+      ])
 
       revalidateTag(`chatbots:${chatbotId}:conversations`)
     },
