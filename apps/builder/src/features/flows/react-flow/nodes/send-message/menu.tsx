@@ -1,10 +1,26 @@
 import { T } from "@tolgee/react"
 import {
+  ArchiveIcon,
   ImageIcon,
+  MessageCircleMoreIcon,
+  MessagesSquareIcon,
   SaveIcon,
   SaveOffIcon,
   TextIcon,
   ZapIcon,
+  MessageCircleOffIcon,
+  MessageCirclePlusIcon,
+  UserRoundXIcon,
+  UserIcon,
+  BotIcon,
+  StarIcon,
+  MailIcon,
+  CircleCheckIcon,
+  BellRingIcon,
+  BellOffIcon,
+  PackageOpenIcon,
+  MessageCircleXIcon,
+  StarOffIcon,
 } from "lucide-react"
 import type { MenuItem } from "../types"
 import { StepType } from "@ahachat.ai/flow-config"
@@ -13,12 +29,12 @@ export const sendMessageEditorMenus: MenuItem[] = [
   {
     label: <T keyName="flows.StepType.SendText" />,
     icon: TextIcon,
-    stepType: StepType.SendText,
+    stepType: StepType.SEND_TEXT,
   },
   {
     label: <T keyName="flows.StepType.SendImage" />,
     icon: ImageIcon,
-    stepType: StepType.SendImage,
+    stepType: StepType.SEND_IMAGE,
   },
   // {
   //   label: <T keyName="flows.StepType.SendCard" />,
@@ -72,68 +88,68 @@ export const sendMessageEditorMenus: MenuItem[] = [
     icon: ZapIcon,
     stepType: null,
     children: [
-      //     {
-      //       label: <T keyName="flows.StepType.InboxActions" />,
-      //       icon: MessagesSquareIcon,
-      //       stepType: null,
-      //       children: [
-      //         {
-      //           label: <T keyName="flows.StepType.DisableBot" />,
-      //           icon: UserIcon,
-      //           stepType: StepType.DisableBot,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.EnableBot" />,
-      //           icon: BotIcon,
-      //           stepType: StepType.EnableBot,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.AssignConversation" />,
-      //           icon: MessageCirclePlusIcon,
-      //           stepType: StepType.AssignConversation,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.AutoAssignConversation" />,
-      //           icon: MessageCirclePlusIcon,
-      //           stepType: StepType.AutoAssignConversation,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.UnassignConversation" />,
-      //           icon: MessageCircleXIcon,
-      //           stepType: StepType.UnassignConversation,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.AddNote" />,
-      //           icon: MessageCircleMoreIcon,
-      //           stepType: StepType.AddNote,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.FollowConversation" />,
-      //           icon: StarIcon,
-      //           stepType: StepType.FollowConversation,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.UnfollowConversation" />,
-      //           icon: StarOffIcon,
-      //           stepType: StepType.UnfollowConversation,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.ArchiveConversation" />,
-      //           icon: ArchiveIcon,
-      //           stepType: StepType.ArchiveConversation,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.UnarchiveConversation" />,
-      //           icon: PackageOpenIcon,
-      //           stepType: StepType.UnarchiveConversation,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.StepContact" />,
-      //           icon: UserRoundXIcon,
-      //           stepType: StepType.StepContact,
-      //         },
-      //       ],
-      //     },
+      {
+        label: <T keyName="flows.StepType.InboxActions" />,
+        icon: MessagesSquareIcon,
+        stepType: null,
+        children: [
+          {
+            label: <T keyName="flows.StepType.DisableBot" />,
+            icon: UserIcon,
+            stepType: StepType.DISABLE_BOT,
+          },
+          {
+            label: <T keyName="flows.StepType.EnableBot" />,
+            icon: BotIcon,
+            stepType: StepType.ENABLE_BOT,
+          },
+          {
+            label: <T keyName="flows.StepType.AssignConversation" />,
+            icon: MessageCirclePlusIcon,
+            stepType: StepType.ASSIGN_CONVERSATION,
+          },
+          {
+            label: <T keyName="flows.StepType.AutoAssignConversation" />,
+            icon: MessageCirclePlusIcon,
+            stepType: StepType.AUTO_ASSIGN_CONVERSATION,
+          },
+          {
+            label: <T keyName="flows.StepType.UnassignConversation" />,
+            icon: MessageCircleXIcon,
+            stepType: StepType.UNASSIGN_CONVERSATION,
+          },
+          {
+            label: <T keyName="flows.StepType.AddNotes" />,
+            icon: MessageCircleMoreIcon,
+            stepType: StepType.ADD_NOTES,
+          },
+          {
+            label: <T keyName="flows.StepType.FollowConversation" />,
+            icon: StarIcon,
+            stepType: StepType.FOLLOW_CONVERSATION,
+          },
+          {
+            label: <T keyName="flows.StepType.UnfollowConversation" />,
+            icon: StarOffIcon,
+            stepType: StepType.UNFOLLOW_CONVERSATION,
+          },
+          {
+            label: <T keyName="flows.StepType.ArchiveConversation" />,
+            icon: ArchiveIcon,
+            stepType: StepType.ARCHIVE_CONVERSATION,
+          },
+          {
+            label: <T keyName="flows.StepType.UnarchiveConversation" />,
+            icon: PackageOpenIcon,
+            stepType: StepType.UNARCHIVE_CONVERSATION,
+          },
+          {
+            label: <T keyName="flows.StepType.BlockContact" />,
+            icon: UserRoundXIcon,
+            stepType: StepType.BLOCK_CONTACT,
+          },
+        ],
+      },
       //     {
       //       label: <T keyName="flows.StepType.AddTag" />,
       //       icon: TagIcon,
@@ -189,53 +205,53 @@ export const sendMessageEditorMenus: MenuItem[] = [
       //           icon: SpeechIcon,
       //           stepType: StepType.OpenAITextToSpeech,
       //         },
-      //         {
-      //           label: <T keyName="flows.StepType.DeleteMessageHistory" />,
-      //           icon: MessageCircleOffIcon,
-      //           stepType: StepType.OpenAIDeleteMessageHistory,
-      //         },
+      {
+        label: <T keyName="flows.StepType.DeleteMessageHistory" />,
+        icon: MessageCircleOffIcon,
+        stepType: StepType.OPENAI_DELETE_MESSAGE_HISTORY,
+      },
       //       ],
       //     },
 
-      //     {
-      //       label: <T keyName="flows.StepType.EmailActions" />,
-      //       icon: MailIcon,
-      //       stepType: null,
-      //       children: [
-      //         {
-      //           label: <T keyName="flows.StepType.MarkEmailVerified" />,
-      //           icon: CircleCheckIcon,
-      //           stepType: StepType.MarkEmailVerified,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.OptInEmail" />,
-      //           icon: BellRingIcon,
-      //           stepType: StepType.OptInEmail,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.OptOutEmail" />,
-      //           icon: BellOffIcon,
-      //           stepType: StepType.OptOutEmail,
-      //         },
-      //       ],
-      //     },
-      //     {
-      //       label: <T keyName="flows.StepType.MessengerActions" />,
-      //       icon: MessageSquareIcon,
-      //       stepType: null,
-      //       children: [
-      //         {
-      //           label: <T keyName="flows.StepType.AddMessengerCustomAudience" />,
-      //           icon: AudioLinesIcon,
-      //           stepType: StepType.AddMessengerCustomAudience,
-      //         },
-      //         {
-      //           label: <T keyName="flows.StepType.AddMessengerRichmenu" />,
-      //           icon: LogsIcon,
-      //           stepType: StepType.AddMessengerRichmenu,
-      //         },
-      //       ],
-      //     },
+      {
+        label: <T keyName="flows.StepType.EmailActions" />,
+        icon: MailIcon,
+        stepType: null,
+        children: [
+          {
+            label: <T keyName="flows.StepType.MarkEmailVerified" />,
+            icon: CircleCheckIcon,
+            stepType: StepType.MARK_EMAIL_VERIFIED,
+          },
+          {
+            label: <T keyName="flows.StepType.OptInEmail" />,
+            icon: BellRingIcon,
+            stepType: StepType.OPT_IN_EMAIL,
+          },
+          {
+            label: <T keyName="flows.StepType.OptOutEmail" />,
+            icon: BellOffIcon,
+            stepType: StepType.OPT_OUT_EMAIL,
+          },
+          //       ],
+          //     },
+          //     {
+          //       label: <T keyName="flows.StepType.MessengerActions" />,
+          //       icon: MessageSquareIcon,
+          //       stepType: null,
+          //       children: [
+          //         {
+          //           label: <T keyName="flows.StepType.AddMessengerCustomAudience" />,
+          //           icon: AudioLinesIcon,
+          //           stepType: StepType.AddMessengerCustomAudience,
+          //         },
+          //         {
+          //           label: <T keyName="flows.StepType.AddMessengerRichmenu" />,
+          //           icon: LogsIcon,
+          //           stepType: StepType.AddMessengerRichmenu,
+          //         },
+        ],
+      },
       //     {
       //       label: <T keyName="flows.StepType.NotifyAgent" />,
       //       icon: BellIcon,
