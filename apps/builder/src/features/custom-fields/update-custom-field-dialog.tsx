@@ -11,7 +11,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Form } from "@/components/ui/form"
-import type { Field } from "@ahachat.ai/database/types"
+import type { FieldModel } from "@ahachat.ai/database/types"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useTranslate } from "@tolgee/react"
@@ -31,7 +31,7 @@ export function UpdateCustomFieldDialog({
   open: boolean
   onOpenChange: (val: boolean) => void
   chatbotId: string
-  customField: Field | null
+  customField: FieldModel | null
 }) {
   const { t } = useTranslate()
   const router = useRouter()
