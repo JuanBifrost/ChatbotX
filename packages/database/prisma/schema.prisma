@@ -9,24 +9,14 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Workspace {
-  id     String @id @default(cuid(2))
-  name   String
-  domain String @unique
-
-  users    User[]
-  chatbots Chatbot[]
-}
-
 model User {
-  id            String    @id @default(cuid(2))
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
+  id            String   @id @default(cuid(2))
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
   name          String?
-  email         String    @unique
-  emailVerified DateTime?
+  email         String   @unique
+  emailVerified Boolean  @default(false)
   image         String?
-  workspaceId   String
 
   accounts                 Account[]
   activityLogs             ActivityLog[]
@@ -35,48 +25,93 @@ model User {
   logs                     Log[]
   sessions                 Session[]
   inboxTeamMembers         InboxTeamMember[]
-  workspace                Workspace                 @relation(fields: [workspaceId], references: [id])
   contactNotes             ContactNote[]
   assignedConversations    Conversation[]
+  members                  OrganizationMember[]
+  invitations              OrganizationInvitation[]
 }
 
 model Account {
-  userId            String
-  type              String
-  provider          String
-  providerAccountId String
-  refresh_token     String?
-  access_token      String?
-  expires_at        Int?
-  token_type        String?
-  scope             String?
-  id_token          String?
-  session_state     String?
+  id                    String    @id @default(cuid(2))
+  accountId             String
+  providerId            String
+  accessToken           String?
+  accessTokenExpiresAt  DateTime?
+  refreshToken          String?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  idToken               String?
+  password              String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@id([provider, providerAccountId])
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Session {
-  sessionToken String   @unique
-  userId       String
-  expires      DateTime
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-
+  id        String   @id @default(cuid(2))
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  expiresAt DateTime
+  token     String   @unique
+  ipAddress String?
+  userAgent String?
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-model VerificationToken {
+model Verification {
+  id         String   @id @default(cuid(2))
   identifier String
-  token      String
-  expires    DateTime
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
 
-  @@id([identifier, token])
+model Organization {
+  id                      String                   @id @default(cuid(2))
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  name                    String
+  slug                    String?
+  logo                    String?
+  metadata                String?
+  organizationMembers     OrganizationMember[]
+  organizationInvitations OrganizationInvitation[]
+  chatbots                Chatbot[]
+
+  @@unique([slug])
+}
+
+model OrganizationMember {
+  id        String   @id @default(cuid(2))
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  role      String
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model OrganizationInvitation {
+  id        String   @id @default(cuid(2))
+  email     String
+  role      String?
+  status    String
+  expiresAt DateTime
+
+  inviterId String
+  user      User   @relation(fields: [inviterId], references: [id], onDelete: Cascade)
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 }
 
 model Chatbot {
@@ -92,7 +127,9 @@ model Chatbot {
   developmentMode Boolean     @default(false)
   logo            String?
   plan            ChatbotPlan
-  workspaceId     String
+
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id])
 
   activityLogs             ActivityLog[]
   aiAgents                 AIAgent[]
@@ -121,7 +158,6 @@ model Chatbot {
   messages                 Message[]
   spreadsheets             Spreadsheet[]
   tags                     Tag[]
-  workspace                Workspace                 @relation(fields: [workspaceId], references: [id])
   automatedResponses       AutomatedResponse[]
   flowRuns                 FlowRun[]
 }
@@ -188,6 +224,7 @@ model ActivityLog {
 model Log {
   id        String   @id @default(cuid(2))
   createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
   logType   LogType
   action    String
   detail    String
@@ -392,6 +429,7 @@ model Conversation {
 }
 
 model ConversationParticipant {
+  id             String   @id @default(cuid(2))
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
   chatbotId      String
@@ -402,7 +440,7 @@ model ConversationParticipant {
   conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@id([conversationId, userId])
+  @@unique([conversationId, userId])
   @@index([chatbotId])
   @@index([conversationId])
 }
