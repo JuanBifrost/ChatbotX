@@ -1,6 +1,6 @@
-# AhaChat.ai
+# Aha.Chat
 
-This is offical source code for AhaChat.ai
+This is offical source code for Aha.Chat
 
 ### Prerequisites
 
@@ -38,7 +38,7 @@ pnpm turbo db:migrate && turbo db:seed
 pnpm turbo dev
 ```
 
-The seeder mad default user `admin@ahachat.ai` with email provider
+The seeder mad default user `admin@aha.chat` with email provider
 
 ### Folder structure
 
