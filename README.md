@@ -19,11 +19,11 @@ This project is using docker to boost up development experience.
 # start development
 docker compose up -d
 
-# make sure corepack is enabled
-corepack enable
+# install latest corepack
+npm install -g corepack@latest
 
-# switch to nodejs version
-pnpm env use --global 22
+# use pnpm as package manager
+corepack enable pnpm
 
 # install dependencies
 pnpm install
@@ -38,7 +38,7 @@ pnpm turbo db:migrate && turbo db:seed
 pnpm turbo dev
 ```
 
-The seeder mad default user `admin@aha.chat` with email provider
+The seeder makes default user `demo@aha.chat | Ahachat@1234`
 
 ### Folder structure
 
