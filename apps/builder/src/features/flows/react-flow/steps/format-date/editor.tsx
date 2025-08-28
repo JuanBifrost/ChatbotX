@@ -71,7 +71,9 @@ function FormatDateDialog({ parentName }: { parentName: string }) {
           </Button>
         </div>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent
+        className={"max-h-screen overflow-y-scroll lg:max-w-screen-lg"}
+      >
         <DialogHeader>
           <DialogTitle>{t("flows.stepType.formatDate")}</DialogTitle>
           <DialogDescription />
@@ -88,7 +90,11 @@ function FormatDateDialog({ parentName }: { parentName: string }) {
               name="inputCustomFieldId"
             />
 
-            <InputField isRequired label="Format" name="format" />
+            <InputField
+              isRequired
+              label={t("fields.format.label")}
+              name="format"
+            />
 
             <CustomFieldSelect
               allowCreate={true}
