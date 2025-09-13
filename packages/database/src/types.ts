@@ -37,11 +37,16 @@ export type AIMcpServerAuthType = "NONE" | "TOKEN" | "HEADERS"
 export type AIMessageRole = "user" | "assistant" | "system"
 
 export type OrganizationSettings = {
-  whatsappClientId: string
-  whatsappClientSecret: string
-  whatsappVerifyToken: string
+  whatsappClientId?: string
+  whatsappClientSecret?: string
+  whatsappVerifyToken?: string
 
-  googleClientId: string
-  googleClientSecret: string
-  googleVerifyToken: string
+  googleClientId?: string
+  googleClientSecret?: string
+  googleVerifyToken?: string
+
+  messengerClientId?: string
+  messengerClientSecret?: string
+  messengerVersion?: string
+  messengerVerifyToken?: string
 }

@@ -409,6 +409,7 @@
     "manage": "Manage",
     "more": "More",
     "connect": "Connect",
+    "reconnect": "Reconnect",
     "disconnect": "Disconnect",
     "getID": "Get ID",
     "insertLink": "Insert link",
@@ -747,10 +748,8 @@
   },
 
   "whatsapp": {
-    "setting": {
-      "title": "Whatsapp",
-      "description": "Whatsapp description"
-    },
+    "title": "WhatsApp",
+    "description": "Whatspp description",
     "category": {
       "makerting": {
         "label": "Marketing",
@@ -905,5 +904,10 @@
     "light": "Light",
     "dark": "Dark",
     "system": "System"
+  },
+  "messenger": {
+    "title": "Facebook Messenger",
+    "description": "This integration lets you create Messenger bots.",
+    "selectFacebookPage": "Select Facebook Page"
   }
 }

@@ -47,6 +47,9 @@ importers:
       '@aha.chat/integration-google-sheets':
         specifier: workspace:*
         version: link:../../integrations/google-sheets
+      '@aha.chat/integration-messenger':
+        specifier: workspace:*
+        version: link:../../integrations/messenger
       '@aha.chat/integration-whatsapp':
         specifier: workspace:*
         version: link:../../integrations/whatsapp
@@ -98,9 +101,15 @@ importers:
       '@emoji-mart/react':
         specifier: ^1.1.1
         version: 1.1.1(emoji-mart@5.6.0)(react@19.1.0)
+      '@greatsumini/react-facebook-login':
+        specifier: ^3.4.0
+        version: 3.4.0(react@19.1.0)
       '@hookform/resolvers':
         specifier: ^5.1.1
         version: 5.1.1(react-hook-form@7.59.0(react@19.1.0))
+      '@icons-pack/react-simple-icons':
+        specifier: ^13.7.0
+        version: 13.7.0(react@19.1.0)
       '@modelcontextprotocol/sdk':
         specifier: ^1.17.4
         version: 1.17.4
@@ -197,6 +206,9 @@ importers:
       '@tanstack/react-table':
         specifier: ^8.21.3
         version: 8.21.3(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
+      '@types/facebook-js-sdk':
+        specifier: ^3.3.12
+        version: 3.3.12
       '@xyflow/react':
         specifier: ^12.8.1
         version: 12.8.1(@types/react@19.1.0)(immer@10.1.1)(react-dom@19.1.0(react@19.1.0))(react@19.1.0)
@@ -535,6 +547,28 @@ importers:
         specifier: 5.8.3
         version: 5.8.3
 
+  integrations/messenger:
+    dependencies:
+      '@aha.chat/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      ky:
+        specifier: ^1.8.1
+        version: 1.8.1
+      remeda:
+        specifier: ^2.23.3
+        version: 2.23.3
+      zod:
+        specifier: ^3.25.71
+        version: 3.25.71
+    devDependencies:
+      '@aha.chat/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      typescript:
+        specifier: 5.8.3
+        version: 5.8.3
+
   integrations/openai:
     dependencies:
       '@aha.chat/sdk':
@@ -542,10 +576,10 @@ importers:
         version: link:../../packages/sdk
       '@ai-sdk/openai':
         specifier: ^2.0.21
-        version: 2.0.21(zod@3.25.71)
+        version: 2.0.21(zod@4.0.15)
       ai:
         specifier: ^5.0.24
-        version: 5.0.24(zod@3.25.71)
+        version: 5.0.24(zod@4.0.15)
     devDependencies:
       '@aha.chat/typescript-config':
         specifier: workspace:*
@@ -2101,6 +2135,11 @@ packages:
   '@formatjs/intl-localematcher@0.6.1':
     resolution: {integrity: sha512-ePEgLgVCqi2BBFnTMWPfIghu6FkbZnnBVhO2sSxvLfrdFw7wCHAHiDoM2h4NRgjbaY7+B7HgOLZGkK187pZTZg==}
 
+  '@greatsumini/react-facebook-login@3.4.0':
+    resolution: {integrity: sha512-NJYqTOcDghZ6zLppC+LJVLep7Xi3gfx9ssQFRd7EhDTU07lC15SG/eZ3ZyvUPsuPBkbhVl6E/Py0w4M5m7Lh9Q==}
+    peerDependencies:
+      react: ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0
+
   '@hexagon/base64@1.1.28':
     resolution: {integrity: sha512-lhqDEAvWixy3bZ+UOYbPwUbBkwBq5C1LAJ/xPC8Oi+lL54oyakv/npbA0aU2hgCsx/1NUd4IBvV03+aUBWxerw==}
 
@@ -2108,6 +2147,11 @@ packages:
     resolution: {integrity: sha512-J/NVING3LMAEvexJkyTLjruSm7aOFx7QX21pzkiJfMoNG0wl5aFEjLTl7ay7IQb9EWY6AkrBy7tHL2Alijpdcg==}
     peerDependencies:
       react-hook-form: ^7.55.0
+
+  '@icons-pack/react-simple-icons@13.7.0':
+    resolution: {integrity: sha512-Vx5mnIm/3gD/9dpCfw/EdCXwzCswmvWnvMjL6zUJTbpk2PuyCdx5zSfiX8KQKYszD/1Z2mfaiBtqCxlHuDcpuA==}
+    peerDependencies:
+      react: ^16.13 || ^17 || ^18 || ^19
 
   '@img/sharp-darwin-arm64@0.34.1':
     resolution: {integrity: sha512-pn44xgBtgpEbZsu+lWf2KNb6OAf70X68k+yk69Ic2Xz11zHR/w24/U49XT7AeRwJ0Px+mhALhU5LPci1Aymk7A==}
@@ -5058,6 +5102,9 @@ packages:
 
   '@types/estree@1.0.8':
     resolution: {integrity: sha512-dWHzHa2WqEXI/O1E9OjrocMTKJl2mSrEolh1Iomrv6U+JuNwaHXsXx9bLu5gG7BUWFIN0skIQJQ/L1rIex4X6w==}
+
+  '@types/facebook-js-sdk@3.3.12':
+    resolution: {integrity: sha512-X1JKH2s0rxsayEmS/NExj96byj59DNOk7jJIzkaqJUO1EM85+J4cS8run45Z4fgG7uFsZPkkdBBkNCxs5QA3Vw==}
 
   '@types/json-schema@7.0.15':
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
@@ -8642,6 +8689,12 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.6(zod@3.25.71)
       zod: 3.25.71
 
+  '@ai-sdk/gateway@1.0.13(zod@4.0.15)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.6(zod@4.0.15)
+      zod: 4.0.15
+
   '@ai-sdk/google@2.0.8(zod@3.25.71)':
     dependencies:
       '@ai-sdk/provider': 2.0.0
@@ -8653,6 +8706,12 @@ snapshots:
       '@ai-sdk/provider': 2.0.0
       '@ai-sdk/provider-utils': 3.0.6(zod@3.25.71)
       zod: 3.25.71
+
+  '@ai-sdk/openai@2.0.21(zod@4.0.15)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.6(zod@4.0.15)
+      zod: 4.0.15
 
   '@ai-sdk/provider-utils@3.0.5(zod@3.25.71)':
     dependencies:
@@ -8668,6 +8727,13 @@ snapshots:
       '@standard-schema/spec': 1.0.0
       eventsource-parser: 3.0.5
       zod: 3.25.71
+
+  '@ai-sdk/provider-utils@3.0.6(zod@4.0.15)':
+    dependencies:
+      '@ai-sdk/provider': 2.0.0
+      '@standard-schema/spec': 1.0.0
+      eventsource-parser: 3.0.5
+      zod: 4.0.15
 
   '@ai-sdk/provider@2.0.0':
     dependencies:
@@ -9869,12 +9935,20 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@greatsumini/react-facebook-login@3.4.0(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
+
   '@hexagon/base64@1.1.28': {}
 
   '@hookform/resolvers@5.1.1(react-hook-form@7.59.0(react@19.1.0))':
     dependencies:
       '@standard-schema/utils': 0.3.0
       react-hook-form: 7.59.0(react@19.1.0)
+
+  '@icons-pack/react-simple-icons@13.7.0(react@19.1.0)':
+    dependencies:
+      react: 19.1.0
 
   '@img/sharp-darwin-arm64@0.34.1':
     optionalDependencies:
@@ -13121,6 +13195,8 @@ snapshots:
 
   '@types/estree@1.0.8': {}
 
+  '@types/facebook-js-sdk@3.3.12': {}
+
   '@types/json-schema@7.0.15': {}
 
   '@types/node@22.14.1':
@@ -13365,6 +13441,14 @@ snapshots:
       '@ai-sdk/provider-utils': 3.0.6(zod@3.25.71)
       '@opentelemetry/api': 1.9.0
       zod: 3.25.71
+
+  ai@5.0.24(zod@4.0.15):
+    dependencies:
+      '@ai-sdk/gateway': 1.0.13(zod@4.0.15)
+      '@ai-sdk/provider': 2.0.0
+      '@ai-sdk/provider-utils': 3.0.6(zod@4.0.15)
+      '@opentelemetry/api': 1.9.0
+      zod: 4.0.15
 
   ajv-formats@2.1.1(ajv@8.17.1):
     optionalDependencies:

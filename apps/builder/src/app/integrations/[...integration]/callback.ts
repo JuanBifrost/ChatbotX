@@ -51,8 +51,8 @@ export const handleCallback = async (integrationName: string, req: Request) => {
     case IntegrationType.GOOGLE_SHEETS: {
       authResult = integrations.GOOGLE_SHEETS.integration.handleRequest?.({
         config: {
-          clientId: organizationSettings.googleClientId,
-          clientSecret: organizationSettings.googleClientSecret,
+          clientId: organizationSettings.googleClientId as string,
+          clientSecret: organizationSettings.googleClientSecret as string,
           redirectUri: new URL(
             "/integrations/google-sheets/callback",
             env.NEXT_PUBLIC_BUILDER_URL,
@@ -71,6 +71,7 @@ export const handleCallback = async (integrationName: string, req: Request) => {
       }
       break
     }
+
     default:
       return notFound()
   }
