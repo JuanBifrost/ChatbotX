@@ -74,6 +74,14 @@ export const organizationSettingsSchema = z.object({
       version: z.string(),
     })
     .optional(),
+  zalo: z
+    .object({
+      clientId: z.string(),
+      clientSecret: z.string(),
+      verifyToken: z.string(),
+      version: z.string(),
+    })
+    .optional(),
 })
 export type OrganizationSettings = z.infer<typeof organizationSettingsSchema>
 
