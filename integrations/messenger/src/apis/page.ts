@@ -1,7 +1,17 @@
-import ky from "ky"
-import { API_URL, DEFAULT_API_VERSION } from "../constants"
+import {
+  type AttachmentEntity,
+  type Context,
+  guessFileTypeFromMimeType,
+} from "@aha.chat/sdk"
+import { createId } from "@paralleldrive/cuid2"
+import fetch from "cross-fetch"
+import imageSize from "image-size"
+import { DEFAULT_API_VERSION } from "../constants"
+import { MessengerAPIException } from "../exception"
+import { facebookGraphClient } from "../lib/http-client"
 import { logger } from "../lib/logger"
 import type {
+  FacebookMessageAttachment,
   FacebookSendMessageRequest,
   FacebookSendMessageResponse,
   MessengerAuthValue,
@@ -33,16 +43,17 @@ export const exchangeLongLivedToken = async (
 ): Promise<string> => {
   const { version = DEFAULT_API_VERSION } = settings
 
-  const res: { access_token: string } = await ky
-    .get(`${API_URL}/${version}/oauth/access_token`, {
+  const res: { access_token: string } = await facebookGraphClient.get(
+    `${version}/oauth/access_token`,
+    {
       searchParams: {
         grant_type: "fb_exchange_token",
         client_id: settings.clientId as string,
         client_secret: settings.clientSecret as string,
         fb_exchange_token: accessToken,
       },
-    })
-    .json()
+    },
+  )
 
   return res.access_token
 }
@@ -54,10 +65,12 @@ export const subscribePageToAppWebhook = async (props: {
 }): Promise<void> => {
   const { version = DEFAULT_API_VERSION } = props
 
-  await ky.post(`${API_URL}/${version}/${props.pageId}/subscribed_apps`, {
+  await facebookGraphClient.post(`${version}/${props.pageId}/subscribed_apps`, {
+    headers: {
+      Authorization: `Bearer ${props.accessToken}`,
+    },
     json: {
       subscribed_fields: PAGE_SUBSCRIBE_SCOPES.join(","),
-      access_token: props.accessToken,
     },
   })
 }
@@ -70,13 +83,20 @@ export const unsubscribePageFromAppWebhook = async (props: {
   const { version = DEFAULT_API_VERSION } = props
 
   try {
-    await ky
-      .delete(`${API_URL}/${version}/${props.pageId}/subscribed_apps`, {
-        searchParams: { access_token: props.accessToken },
-      })
-      .json()
+    await facebookGraphClient.delete(
+      `${version}/${props.pageId}/subscribed_apps`,
+      {
+        headers: {
+          Authorization: `Bearer ${props.accessToken}`,
+        },
+      },
+    )
   } catch (error) {
-    logger.error("unsubscribePageFromAppWebhook error", error)
+    logger.error("Unsubscribe Page From AppWebhook failed", error)
+    throw new MessengerAPIException(
+      "Unsubscribe Page From AppWebhook failed",
+      `${version}/${props.pageId}/subscribed_apps`,
+    )
   }
 }
 
@@ -87,18 +107,71 @@ export const sendMessage = async (
   const { version = DEFAULT_API_VERSION } = auth
 
   try {
-    return await ky
-      .post(`${API_URL}/${version}/${auth.metadata.pageId}/messages`, {
+    return await facebookGraphClient.post(
+      `${version}/${auth.metadata.pageId}/messages`,
+      {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${auth.tokens.accessToken}`,
         },
         json: payload,
-      })
-      .json()
+      },
+    )
   } catch (error) {
-    logger.error("sendMessage error", error)
+    logger.error("Send Message error", error)
+    throw new MessengerAPIException(
+      "An error occurred while sending the message",
+      `${version}/${auth.metadata.pageId}/messages`,
+    )
+  }
+}
 
-    throw new Error(`Facebook Graph API request failed: ${error}`)
+export const getMessageAttachmentEntity = async ({
+  ctx,
+  attachment,
+}: {
+  ctx: Context<MessengerAuthValue>
+  attachment: FacebookMessageAttachment
+}): Promise<AttachmentEntity | undefined> => {
+  if (!attachment.payload.url) {
+    throw new Error("No attachment URL found")
+  }
+  const response = await fetch(attachment.payload.url as string, {
+    headers: {
+      Authorization: `Bearer ${ctx.auth.tokens.accessToken}`,
+      "User-Agent": "node",
+    },
+  })
+  if (response.ok && response.body) {
+    const originPath = `public/chatbots/${ctx.chatbot?.id ?? ""}/${createId()}`
+    const bytes = await response.arrayBuffer()
+    const mimeType = response.headers.get("content-type") ?? "image/png"
+    const fileType = guessFileTypeFromMimeType(attachment.type)
+
+    await ctx.uploader?.putObject(originPath, Buffer.from(bytes), {
+      ACL: "public-read",
+      ContentType: mimeType,
+    })
+
+    const imageProperties: {
+      width?: number
+      height?: number
+    } = {}
+    if (mimeType.startsWith("image/")) {
+      // Retrieve width / height
+      const arrayBytes = new Uint8Array(bytes)
+      const dimensions = imageSize(arrayBytes)
+      imageProperties.width = dimensions.width
+      imageProperties.height = dimensions.height
+    }
+
+    return {
+      sourceId: createId(),
+      originPath,
+      fileType,
+      mimeType,
+      size: Number.parseInt(response.headers.get("content-length") ?? "0", 10),
+      ...imageProperties,
+    }
   }
 }
