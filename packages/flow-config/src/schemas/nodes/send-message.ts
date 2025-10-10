@@ -93,6 +93,7 @@ export const sendMessageNodeSchema = baseNodeSchema.extend({
         addContactTagStepSchema,
         removeContactTagStepSchema,
         deleteContactStepSchema,
+        sendFileStepSchema,
         // sendCardStepSchema,
         sendVideoStepSchema,
         sendAudioStepSchema,

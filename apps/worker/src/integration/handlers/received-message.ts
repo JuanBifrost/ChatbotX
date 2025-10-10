@@ -44,15 +44,20 @@ const getDBIntegration = async (
           chatbot: true,
         },
       })
-    case InboxType.ZALO:
+    case InboxType.ZALO: {
+      const input = payload as ZaloWebhookEvent
+
       return await prisma.integrationZalo.findFirstOrThrow({
         where: {
-          oaId: (payload as ZaloWebhookEvent).recipient.id,
+          oaId: input.event_name.includes("user_send")
+            ? input.recipient.id
+            : input.sender.id,
         },
         include: {
           chatbot: true,
         },
       })
+    }
     default:
       throw new Error(`Unsupported integration: ${integrationName}`)
   }
@@ -82,7 +87,7 @@ export const receiveMessage = async ({
     uploader,
   }
   const parsedMessage = await allIntegrations[
-    integrationName as keyof typeof allIntegrations
+    integrationName.toUpperCase() as keyof typeof allIntegrations
   ]?.actions.receiveMessage({
     ctx,
     data: payload,
