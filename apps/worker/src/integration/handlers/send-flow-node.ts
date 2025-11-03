@@ -78,7 +78,7 @@ const flowStepHandlers: Record<
   [StepType.sendCard]: undefined,
   [StepType.sendCarousel]: undefined,
   [StepType.sendFile]: dispatchFlowStep,
-  [StepType.sendGif]: undefined,
+  [StepType.sendGif]: dispatchFlowStep,
   [StepType.sendImage]: dispatchFlowStep,
   [StepType.sendMessengerOtn]: undefined,
   [StepType.sendText]: dispatchFlowStep,
