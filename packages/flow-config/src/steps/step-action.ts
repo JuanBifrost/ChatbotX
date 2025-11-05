@@ -79,6 +79,13 @@ export const StepType = {
   // Broadcast Operations (B_)
   subscribeBroadcast: "B01",
   unsubscribeBroadcast: "B02",
+
+  // Google Sheets Operations (G_)
+  spreadsheetSendData: "G01",
+  spreadsheetGetRow: "G02",
+  spreadsheetGetRandomRow: "G03",
+  spreadsheetUpdateRow: "G04",
+  spreadsheetClearRow: "G05",
 } as const
 
 export type StepType = (typeof StepType)[keyof typeof StepType]

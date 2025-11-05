@@ -814,11 +814,16 @@ model Spreadsheet {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  name String
-  url  String
+  name          String
+  url           String
+  spreadsheetId String
 
   chatbotId String
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
+
+  @@index([chatbotId])
+  @@index([spreadsheetId])
+  @@index([chatbotId, spreadsheetId])
 }
 
 model Flow {

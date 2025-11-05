@@ -18,6 +18,7 @@ import {
   PackageOpenIcon,
   SaveIcon,
   SaveOffIcon,
+  SheetIcon,
   ShuffleIcon,
   StarIcon,
   StarOffIcon,
@@ -27,6 +28,34 @@ import {
   ZapIcon,
 } from "lucide-react"
 import type { MenuItem, TranslationFn } from "../types"
+
+const sheetsMenus = (t: TranslationFn): MenuItem[] => [
+  {
+    label: t("flows.actions.spreadsheetGetRow"),
+    icon: SheetIcon,
+    stepType: StepType.spreadsheetGetRow,
+  },
+  {
+    label: t("flows.actions.spreadsheetGetRandomRow"),
+    icon: SheetIcon,
+    stepType: StepType.spreadsheetGetRandomRow,
+  },
+  {
+    label: t("flows.actions.spreadsheetUpdateRow"),
+    icon: SheetIcon,
+    stepType: StepType.spreadsheetUpdateRow,
+  },
+  {
+    label: t("flows.actions.spreadsheetClearRow"),
+    icon: SheetIcon,
+    stepType: StepType.spreadsheetClearRow,
+  },
+  {
+    label: t("flows.actions.spreadsheetSendData"),
+    icon: SheetIcon,
+    stepType: StepType.spreadsheetSendData,
+  },
+]
 
 export const performActionMenus = (t: TranslationFn): MenuItem[] => [
   {
@@ -161,6 +190,12 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         stepType: StepType.optOutEmail,
       },
     ],
+  },
+  {
+    label: t("fields.googleSheets.label"),
+    icon: SheetIcon,
+    stepType: null,
+    children: sheetsMenus(t),
   },
   {
     label: t("flows.actions.flowActions"),

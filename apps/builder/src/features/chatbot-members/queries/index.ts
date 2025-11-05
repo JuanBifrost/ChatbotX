@@ -3,6 +3,7 @@ import { prisma } from "@aha.chat/database"
 import { unstable_cache } from "next/cache"
 import type { ChatbotResource } from "@/features/chatbots/schemas"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
+import { getPaginationFromInput } from "@/lib/pagination"
 import type { ChatbotMemberCollection, ChatbotMemberResource } from "../schemas"
 import type { GetChatbotMembersSchema } from "../schemas/get-chatbot-members-schema"
 
@@ -10,6 +11,8 @@ export async function getAgents(
   input: GetChatbotMembersSchema,
 ): Promise<ChatbotMemberCollection> {
   await assertCurrentUserCanAccessChatbot(input.chatbotId)
+
+  const pagination = getPaginationFromInput(input)
 
   return await unstable_cache(
     async () => {
@@ -27,8 +30,7 @@ export async function getAgents(
 
       const [data, total] = await prisma.$transaction([
         prisma.chatbotMember.findMany({
-          skip: (input.page - 1) * input.perPage,
-          take: input.perPage,
+          ...pagination,
           where,
           include: {
             user: true,
@@ -38,7 +40,7 @@ export async function getAgents(
           where,
         }),
       ])
-      const pageCount = Math.ceil(total / input.perPage)
+      const pageCount = Math.ceil(total / (pagination.take ?? 10))
 
       return { data, pageCount }
     },

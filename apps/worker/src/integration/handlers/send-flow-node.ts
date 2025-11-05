@@ -29,6 +29,13 @@ import {
   unassignConversation,
   unfollowConversation,
 } from "./conversation-handler"
+import {
+  clearSpreadsheetRow,
+  getSpreadsheetRandomRow,
+  getSpreadsheetRow,
+  sendSpreadsheetData,
+  updateSpreadsheetRow,
+} from "./spreadsheet-handler"
 import { dispatchFlowStep, type FlowStepProps } from "./step-handler"
 import {
   countCharacters,
@@ -99,6 +106,11 @@ const flowStepHandlers: Record<
   [StepType.startAnotherNode]: undefined,
   [StepType.startExternalNode]: undefined,
   [StepType.addNotes]: undefined,
+  [StepType.spreadsheetGetRow]: getSpreadsheetRow,
+  [StepType.spreadsheetClearRow]: clearSpreadsheetRow,
+  [StepType.spreadsheetGetRandomRow]: getSpreadsheetRandomRow,
+  [StepType.spreadsheetSendData]: sendSpreadsheetData,
+  [StepType.spreadsheetUpdateRow]: updateSpreadsheetRow,
   [StepType.waitUserReply]: undefined,
 }
 

@@ -47,7 +47,6 @@ export const handleCallback = async (
 
   let authResult: BaseAuthValue
   let additionalIntegrationCreationData = {}
-
   switch (integrationType) {
     case IntegrationType.Zalo: {
       if (!organizationSettings.zalo) {
@@ -97,7 +96,7 @@ export const handleCallback = async (
         config: {
           ...organizationSettings.googleSheets,
           redirectUrl: new URL(
-            "/integrations/google-sheets/callback",
+            "/integrations/GoogleSheets/callback",
             req.url,
           ).toString(),
         },

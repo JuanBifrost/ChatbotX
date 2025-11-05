@@ -33,6 +33,11 @@ import sendImageStep from "./send-image"
 import sendTextStep from "./send-text"
 import { sendVideoStep } from "./send-video"
 import { setCustomFieldStep } from "./set-custom-field"
+import { spreadsheetClearRowStep } from "./spreadsheet-clear-row"
+import { spreadsheetGetRandomRowStep } from "./spreadsheet-get-random-row"
+import { spreadsheetGetRowStep } from "./spreadsheet-get-row"
+import { spreadsheetSendDataStep } from "./spreadsheet-send-data"
+import { spreadsheetUpdateRowStep } from "./spreadsheet-update-row"
 import startAnotherNodeStep from "./start-another-node"
 import { sendExternalFlowStep } from "./start-external-flow"
 import { sendExternalNodeStep } from "./start-external-node"
@@ -102,6 +107,11 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [StepType.aiSpeechToText]: undefined,
   [StepType.aiTextToSpeech]: undefined,
   [StepType.aiDeleteMessageHistory]: undefined,
+  [StepType.spreadsheetGetRow]: spreadsheetGetRowStep,
+  [StepType.spreadsheetGetRandomRow]: spreadsheetGetRandomRowStep,
+  [StepType.spreadsheetUpdateRow]: spreadsheetUpdateRowStep,
+  [StepType.spreadsheetClearRow]: spreadsheetClearRowStep,
+  [StepType.spreadsheetSendData]: spreadsheetSendDataStep,
 }
 
 export const DynamicStepEditor = memo(

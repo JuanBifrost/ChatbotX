@@ -1,6 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { getAgents } from "@/features/chatbot-members/queries"
-import { getChatbotMembersSearchParamsCache } from "@/features/chatbot-members/schemas/get-chatbot-members-schema"
+import { listChatbotMembersRequest } from "@/features/chatbot-members/schemas/get-chatbot-members-schema"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import { serverErrorHandler } from "@/lib/errors/server-handler"
 
@@ -12,13 +12,12 @@ export async function GET(
     const { chatbotId } = await params
     await assertCurrentUserCanAccessChatbot(chatbotId)
 
-    const searchParams = getChatbotMembersSearchParamsCache.parse(
-      Object.fromEntries(request.nextUrl.searchParams),
-    )
-    const data = await getAgents({
+    const searchParams = listChatbotMembersRequest.parse({
+      ...Object.fromEntries(request.nextUrl.searchParams),
       chatbotId,
-      ...searchParams,
     })
+
+    const data = await getAgents(searchParams)
 
     return NextResponse.json(data)
   } catch (e) {
