@@ -1,5 +1,6 @@
-import { prisma } from "@aha.chat/database"
+import { AIEmbeddingStatus, prisma } from "@aha.chat/database"
 import { unstable_cache } from "next/cache"
+import { env } from "@/env"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import { calcCacheTags } from "@/lib/cache-helper"
 import type { AIFileCollection, GetAIFilesRequest } from "../schemas"
@@ -15,9 +16,41 @@ export async function getAIFiles(
         where: {
           chatbotId: input.chatbotId,
         },
+        include: {
+          aiEmbeddings: {
+            select: {
+              id: true,
+              status: true,
+            },
+          },
+        },
       })
 
-      return { data }
+      const transformedData = data.map((file) => {
+        const embeddings = file.aiEmbeddings
+        const hasEmbeddings = embeddings.length > 0
+
+        let processingStatus: AIEmbeddingStatus = AIEmbeddingStatus.pending
+        if (hasEmbeddings) {
+          const statusSet = new Set(embeddings.map((e) => e.status))
+          if (statusSet.has(AIEmbeddingStatus.error)) {
+            processingStatus = AIEmbeddingStatus.error
+          } else if (statusSet.has(AIEmbeddingStatus.pending)) {
+            processingStatus = AIEmbeddingStatus.processing
+          } else {
+            processingStatus = AIEmbeddingStatus.success
+          }
+        }
+
+        return {
+          ...file,
+          url: new URL(file.path, env.NEXT_PUBLIC_ASSET_URL).toString(),
+          chunksCount: embeddings.length,
+          processingStatus,
+        }
+      })
+
+      return { data: transformedData }
     },
     [JSON.stringify(input)],
     calcCacheTags(`chatbots:${input.chatbotId}#aiFiles`),

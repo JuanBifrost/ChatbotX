@@ -9,6 +9,7 @@
   },
   "devDependencies": {
     "@aha.chat/typescript-config": "workspace:*",
+    "@paralleldrive/cuid2": "^3.0.4",
     "@prisma/client": "^7.0.0",
     "@types/node": "^24.10.1",
     "dotenv-cli": "^11.0.0",
@@ -18,7 +19,7 @@
     "make:migration": "dotenv -e ../../.env -- ./scripts/make-migration.sh",
     "db:studio": "dotenv -e ../../.env -- prisma studio",
     "db:seed": "dotenv -e ../../.env -- tsx src/seed/index.ts",
-    "db:client": "dotenv -e ../../.env -- prisma generate",
+    "db:client": "dotenv -e ../../.env -- prisma generate --sql",
     "db:reset": "dotenv -e ../../.env -- prisma migrate reset --force",
     "db:setup": "pnpm migrate && pnpm db:client && pnpm db:seed",
     "db:rollback": "dotenv -e ../../.env -- ./scripts/db-rollback.sh",

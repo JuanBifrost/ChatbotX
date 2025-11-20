@@ -82,6 +82,14 @@ export const prisma =
           },
         },
       },
+      aIFile: {
+        url: {
+          needs: { path: true },
+          compute(aIFile) {
+            return new URL(aIFile.path, env.NEXT_PUBLIC_ASSET_URL)
+          },
+        },
+      },
     },
   })
 
@@ -91,3 +99,4 @@ if (env.NODE_ENV !== "production") {
 
 export { Prisma } from "./generated/prisma/client"
 export * from "./generated/prisma/enums"
+export * from "./generated/prisma/sql"
