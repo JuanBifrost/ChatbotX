@@ -190,10 +190,6 @@
     "name": {
       "label": "AI Trigger name"
     },
-    "setting": {
-      "description": "AI Triggers description",
-      "label": "AI Triggers"
-    },
     "update": {
       "title": "Update AI Trigger"
     }
@@ -865,6 +861,9 @@
       "emailAndPhone": "Email and Phone",
       "broadcast": "Broadcast",
       "ecommerce": "Ecommerce"
+    },
+    "member": {
+      "label": "Member"
     }
   },
   "flows": {
@@ -1200,8 +1199,7 @@
     },
     "connectExisting": "Connect an existing WhatsApp Business Account",
     "conversationStarters": {
-      "description1": "Conversation starters are used to start a conversation with a user.",
-      "description2": "Conversation starters are used to start a conversation with a user.",
+      "description": "Conversation starters are used to start a conversation with a user.",
       "label": "Conversation Starters"
     },
     "description": "WhatsApp description",
@@ -1286,5 +1284,8 @@
     "chatbotInvitationDescription2": "{userName} has invited you to join {chatbotName} on {organizationName}.",
     "organizationInvitationDescription1": "Join {organizationName}",
     "organizationInvitationDescription2": "{userName} has invited you to join {organizationName}."
+  },
+  "inboxTeams": {
+    "title": "Inbox Teams"
   }
 }
