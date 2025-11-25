@@ -907,12 +907,12 @@ model Broadcast {
   updatedAt DateTime @updatedAt
 
   name          String
-  inboxType     InboxType?
-  subaction     BroadcastSubaction?
+  inboxType     String                 @default("omnichannel")
+  subaction     String                 @default("BSOO")
   status        BroadcastStatus
   schedulesType BroadcastSchedulesType
   schedulesAt   DateTime
-  conditions    Json?
+  contactFilter Json?
 
   chatbotId String
   chatbot   Chatbot @relation(fields: [chatbotId], references: [id], onDelete: Cascade)
@@ -925,6 +925,7 @@ model Broadcast {
   @@index([chatbotId])
   @@index([flowId])
   @@index([schedulesAt])
+  @@index([inboxType])
 }
 
 model ContactsOnBroadcasts {
@@ -1112,10 +1113,4 @@ enum BroadcastStatus {
 enum BroadcastSchedulesType {
   now
   future
-}
-
-enum BroadcastSubaction {
-  templateMessage
-  recentContacts
-  allContacts
 }

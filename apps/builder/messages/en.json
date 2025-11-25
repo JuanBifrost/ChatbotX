@@ -136,7 +136,10 @@
     "connectFeature": "Connect {feature}",
     "scanQRCode": "Scan me with your camera",
     "inviteFeature": "Invite {feature}",
-    "joinTheTeam": "Join the team"
+    "joinTheTeam": "Join the team",
+    "chooseChannel": "Choose Channel",
+    "chooseSubaction": "Choose Subaction",
+    "resend": "Resend"
   },
   "admins": {
     "title": "Admins"
@@ -222,9 +225,129 @@
     "title": "Billing"
   },
   "broadcasts": {
-    "scheduleSendMessage": "Schedule send message",
     "update": {
       "title": "Update Broadcast"
+    },
+    "inboxType": {
+      "messenger": "Messenger",
+      "whatsapp": "WhatsApp",
+      "zalo": "Zalo"
+    },
+    "status": {
+      "scheduled": "Scheduled",
+      "sent": "Sent"
+    },
+    "messengerList": {
+      "title": "Messenger List",
+      "description": "May contain promotions, and it will send only to people that subscribed to your Messenger list."
+    },
+    "messengerActiveContacts": {
+      "title": "Messenger Active Contacts",
+      "description": "May contain promotions and will only be sent to users who messaged your bot within the last 24h."
+    },
+    "messengerAccountUpdate": {
+      "title": "Messenger Account Update",
+      "description": "Notify the user of a non-recurring change to their application or account."
+    },
+    "messengerConfirmedEventUpdate": {
+      "title": "Messenger Confirmed Event Update",
+      "description": "Send the user reminders or updates for an event they have registered for (e.g., purchased tickets). This tag may be used for upcoming events and events in progress."
+    },
+    "messengerPostPurchaseUpdate": {
+      "title": "Messenger Post Purchase Update",
+      "description": "Notify the user of an update on a recent purchase. Confirmation of transaction, such as invoices or receipts, Notifications of shipment status, such as product in-transit, shipped, delivered, or delayed."
+    },
+    "allContacts": {
+      "title": "All Contacts",
+      "description": "Send a flow to all contacts."
+    },
+    "details": "Broadcast Details"
+  },
+  "condition": {
+    "add": "Add Condition",
+    "title": "Condition",
+    "fields": {
+      "language": "Language",
+      "fullName": "Full name",
+      "country": "Country",
+      "continent": "Continent",
+      "gender": "Gender",
+      "subscribedToBroadcast": "Subscribed to broadcast",
+      "contactCreatedDate": "Contact created date",
+      "contactCreatedDateMinutesAgo": "Contact created date (minutes ago)",
+      "source": "Source",
+      "conversationTransferredToHuman": "Conversation transferred to human",
+      "interactedInLast24H": "Interacted in last 24 hours",
+      "existingContact": "Existing contact",
+      "isGuestUser": "Is guest user",
+      "currentChannel": "Current channel",
+      "timezone": "Time zone",
+      "hasOpportunity": "Has opportunity",
+      "hasOpenOpportunity": "Has open opportunity",
+      "hasWonOpportunity": "Has won opportunity",
+      "hasLostOpportunity": "Has lost opportunity",
+      "followsBusinessOnInstagram": "Follows business on Instagram",
+      "businessFollowsUserOnInstagram": "Business follows user on Instagram",
+      "verifiedAccountOnInstagram": "Verified account on Instagram",
+      "followerCountOnInstagram": "Follower count on Instagram",
+      "lastSent": "Last sent",
+      "lastDelivered": "Last delivered",
+      "lastSeen": "Last seen",
+      "lastSeenMinutesAgo": "Last seen (minutes ago)",
+      "lastInteraction": "Last interaction",
+      "lastInteractionMinutesAgo": "Last interaction (minutes ago)",
+      "noAdminReply": "No admin reply",
+      "tags": "Tags",
+      "getDataFromJSON": "Get data from JSON",
+      "messengerList": "Messenger list",
+      "subscribedToDripCampaign": "Subscribed to drip campaign",
+      "conversationAssigned": "Conversation assigned",
+      "emptyPointsLinks": "Empty points links",
+      "sentMessage": "Sent message",
+      "automatedResponseReceived": "Automated response received",
+      "executedFlow": "Executed flow",
+      "executedStep": "Executed step",
+      "questionnaireStarted": "Questionnaire started",
+      "questionnaireInProgress": "Questionnaire in progress",
+      "questionnaireFinished": "Questionnaire finished",
+      "votedOnThePoll": "Voted on the poll",
+      "commentedOnThePost": "Commented on the post",
+      "phone": "Phone",
+      "phoneWasVerified": "Phone was verified",
+      "optedInForSMS": "Opted in for SMS",
+      "broadcastSent": "Broadcast sent",
+      "broadcastDelivered": "Broadcast delivered",
+      "broadcastSeen": "Broadcast seen",
+      "broadcastClicked": "Broadcast clicked",
+      "broadcastFailed": "Broadcast failed",
+      "email": "Email",
+      "emailWasVerified": "Email was verified",
+      "optedInForEmail": "Opted in for email",
+      "emailSent": "Email sent",
+      "emailDelivered": "Email delivered",
+      "emailOpened": "Email opened",
+      "emailClicked": "Email clicked",
+      "bought": "Bought",
+      "boughtTheItems": "Bought the items",
+      "totalSpent": "Total spent",
+      "numberOfOrders": "Number of orders",
+      "shoppingCartTotal": "Shopping cart total",
+      "shoppingCartSubTotal": "Shopping cart subtotal",
+      "shoppingCartIsEmpty": "Shopping cart is empty",
+      "shoppingCartContainsItems": "Shopping cart contains items",
+      "lastUserInput": "Last user input",
+      "lastUserInputType": "Last user input type"
+    },
+    "groups": {
+      "instagram": "Instagram",
+      "analysis": "Analysis",
+      "facebookInstagramComment": "Facebook & Instagram Comment",
+      "sms": "SMS",
+      "broadcastWhatsApp": "Broadcast WhatsApp",
+      "email": "Email",
+      "ecommerce": "Ecommerce",
+      "customFields": "Custom Fields",
+      "systemFields": "System Fields"
     }
   },
   "channel": {
@@ -279,6 +402,62 @@
     }
   },
   "fields": {
+    "omnichannel": {
+      "label": "Omnichannel"
+    },
+    "messenger": {
+      "label": "Messenger"
+    },
+    "zalo": {
+      "label": "Zalo"
+    },
+    "matchAll": {
+      "label": "Match all the conditions below"
+    },
+    "matchAny": {
+      "label": "Match one of the conditions below"
+    },
+    "condition": {
+      "label": "Condition"
+    },
+    "operator": {
+      "label": "Operator",
+      "is": "Is",
+      "isNot": "Is not",
+      "hasAnyValue": "Has any value",
+      "hasNoValue": "Has no value",
+      "greaterThan": "Greater than",
+      "lessThan": "Less than",
+      "greaterThanOrEqualTo": "Greater than or equal to",
+      "lessThanOrEqualTo": "Less than or equal to",
+      "contains": "Contains",
+      "doesNotContain": "Does not contain",
+      "startsWith": "Starts with",
+      "endsWith": "Ends with",
+      "interval": "Interval",
+      "notInterval": "Not interval"
+    },
+    "contactFilter": {
+      "label": "Contact filter"
+    },
+    "chooseTime": {
+      "label": "Choose time"
+    },
+    "fullName": {
+      "label": "Full name"
+    },
+    "continent": {
+      "label": "Continent"
+    },
+    "subscribedToBroadcast": {
+      "label": "Subscribed to broadcast"
+    },
+    "createdAtMinutesAgo": {
+      "label": "Created at (minutes ago)"
+    },
+    "source": {
+      "label": "Source"
+    },
     "notificationType": {
       "label": "Notification Type",
       "notifyAdmin": "Notify Admin",
@@ -864,6 +1043,11 @@
     },
     "member": {
       "label": "Member"
+    },
+    "schedule": {
+      "label": "Schedule",
+      "now": "Now",
+      "scheduled": "Schedule for later"
     }
   },
   "flows": {
@@ -1094,7 +1278,10 @@
     "signOutConfirmation": "Are you sure you want to sign out?",
     "unableToConnectFeature": "Unable to connect {feature}. Please send logs to developer team.",
     "copyInvitationUrlSuccess": "Copy the link below and send to the person that you want to add as admin.",
-    "noAIIntegrationFound": "No AI integration found. Please connect an AI integration to use AI agents."
+    "noAIIntegrationFound": "No AI integration found. Please connect an AI integration to use AI agents.",
+    "resendFeature": "Resend {feature}",
+    "resendFeatureDescription": "Resend the {feature} to the contacts that have not received it yet.",
+    "resendSuccess": "Resend successfully"
   },
   "messenger": {
     "description": "This integration lets you create Messenger bots.",
