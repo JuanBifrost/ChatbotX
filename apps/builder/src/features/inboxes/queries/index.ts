@@ -21,7 +21,7 @@ export async function listInboxes(
       skip,
       take,
       where,
-      include: input.includes?.includes("intergration")
+      include: input.includes?.includes("integration")
         ? {
             integrationWhatsapp: true,
             integrationWebchat: true,
