@@ -403,6 +403,9 @@
     "condition": {
       "label": "Condition"
     },
+    "assignedId": {
+      "label": "Assign To"
+    },
     "operator": {
       "label": "Operator",
       "is": "Is",
@@ -1466,5 +1469,10 @@
   },
   "inboxTeams": {
     "title": "Inbox Teams"
+  },
+  "errorLog": {
+    "heading": {
+      "title": "Error Logs"
+    }
   }
 }
