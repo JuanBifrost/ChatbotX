@@ -29,6 +29,7 @@ export const createWebchatMessageRequest = z
   .union([
     z.object({
       content: z.string().trim().min(1).max(1000),
+      postback: z.string().trim().optional(),
       flowId: z.cuid2().optional(),
     }),
     z.object({
@@ -45,6 +46,7 @@ export const createWebchatMessageRequest = z
     z.object({
       clientId: z.cuid2(),
       chatbotId: z.cuid2(),
+      webchatId: z.cuid2(),
       guestConversationId: z
         .string()
         .refine((id) => id.startsWith(WEBCHAT_SOURCE_PREFIX), {

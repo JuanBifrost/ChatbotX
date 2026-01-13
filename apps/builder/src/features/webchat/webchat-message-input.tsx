@@ -1,6 +1,5 @@
 "use client"
 
-import { ContentType, MessageType, SenderType } from "@aha.chat/database/types"
 import { Button } from "@aha.chat/ui/components/ui/button"
 import { Form } from "@aha.chat/ui/components/ui/form"
 import { Textarea } from "@aha.chat/ui/components/ui/textarea"
@@ -19,12 +18,14 @@ import { useGuestSessionStore } from "./providers/store/guest-session-provider"
 
 type WebchatMessageInputProps = {
   chatbotId: string
+  webchatId: string
 }
 
 export const WebchatMessageInput = ({
   chatbotId,
+  webchatId,
 }: WebchatMessageInputProps) => {
-  const { appendMessage, guestConversationId } = useGuestSessionStore(
+  const { sendMessage, guestConversationId } = useGuestSessionStore(
     (state) => state,
   )
 
@@ -43,22 +44,7 @@ export const WebchatMessageInput = ({
         onExecute: ({ input }) => {
           // try to push raw message to store
           if ("content" in input && input.content) {
-            appendMessage({
-              content: input.content as string,
-              id: createId(),
-              createdAt: new Date(),
-              updatedAt: new Date(),
-              chatbotId: "",
-              inboxId: "",
-              sourceId: null,
-              conversationId: "",
-              contentAttributes: null,
-              messageType: MessageType.incoming,
-              contentType: ContentType.text,
-              senderType: SenderType.contact,
-              senderId: "",
-              clientId: input.clientId,
-            })
+            sendMessage(input.content)
           }
 
           resetField("content")
@@ -70,6 +56,7 @@ export const WebchatMessageInput = ({
 
           setValue("clientId", createId())
           setValue("chatbotId", chatbotId)
+          setValue("webchatId", webchatId)
           setValue(
             "guestConversationId",
             localStorage.getItem("x-conversation-id") ?? "",
@@ -81,7 +68,8 @@ export const WebchatMessageInput = ({
           content: "",
           files: [],
           clientId: createId(),
-          chatbotId: chatbotId ?? "",
+          chatbotId,
+          webchatId,
           guestConversationId: guestConversationId ?? "",
         },
       },
@@ -162,7 +150,7 @@ export const WebchatMessageInput = ({
           </div>
           <div className="flex w-full items-center pl-2.5">
             <div className="flex-1">
-              <WebchatMessageMenu chatbotId={chatbotId} />
+              <WebchatMessageMenu chatbotId={chatbotId} webchatId={webchatId} />
             </div>
             <div className="message-toolbar flex items-center">
               <Button
