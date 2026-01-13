@@ -13,8 +13,6 @@ export const handleWebhook = async (
   integrationType: string,
   req: NextRequest,
 ) => {
-  logger.debug("webhookData", await req.text())
-
   const domain = await getDomainFromHeader()
   const organization = await findOrganization({
     domain,
