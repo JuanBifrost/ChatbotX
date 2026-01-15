@@ -46,6 +46,8 @@ export const receiveMessage = async ({
     uploader,
   }
 
+  logger.debug("receiveMessage", JSON.stringify(payload))
+
   const parsedMessage = await allIntegrations[
     integrationType as IntegrationType
   ]?.actions.receiveMessage({
@@ -58,6 +60,8 @@ export const receiveMessage = async ({
 
   const { message, conversation, postbackAction, quickReplyAction } =
     parsedMessage
+
+  logger.debug("parsedMessage", JSON.stringify(parsedMessage))
 
   const result = await prisma.$transaction(async (tx) => {
     let newContact = await tx.contact.findUnique({
