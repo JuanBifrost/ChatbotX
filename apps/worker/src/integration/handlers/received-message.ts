@@ -18,11 +18,7 @@ import {
   RealtimeEventType,
 } from "@aha.chat/partysocket-config"
 import type { AttachmentEntity, AuthValue, Context } from "@aha.chat/sdk"
-import {
-  getRedisConnection,
-  IntegrationJobAction,
-  integrationQueue,
-} from "@aha.chat/worker-config"
+import { IntegrationJobAction, integrationQueue } from "@aha.chat/worker-config"
 import { logger } from "../../lib/logger"
 import { allIntegrations, getDBIntegration } from "../../shared/integrations"
 
@@ -186,10 +182,6 @@ export const receiveMessage = async ({
 
     return { message: newMessage, conversation: newConversation }
   })
-
-  logger.debug("process.env", JSON.stringify(process.env))
-  logger.debug("integrationQueue", integrationQueue)
-  logger.debug("IntegrationJobAction.sendFlowPostback", getRedisConnection())
 
   if (postbackAction) {
     await integrationQueue.add(IntegrationJobAction.sendFlowPostback, {
