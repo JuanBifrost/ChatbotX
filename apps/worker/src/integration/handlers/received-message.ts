@@ -18,7 +18,11 @@ import {
   RealtimeEventType,
 } from "@aha.chat/partysocket-config"
 import type { AttachmentEntity, AuthValue, Context } from "@aha.chat/sdk"
-import { IntegrationJobAction, integrationQueue } from "@aha.chat/worker-config"
+import {
+  getRedisConnection,
+  IntegrationJobAction,
+  integrationQueue,
+} from "@aha.chat/worker-config"
 import { logger } from "../../lib/logger"
 import { allIntegrations, getDBIntegration } from "../../shared/integrations"
 
@@ -46,8 +50,6 @@ export const receiveMessage = async ({
     uploader,
   }
 
-  logger.debug("receiveMessage", JSON.stringify(payload))
-
   const parsedMessage = await allIntegrations[
     integrationType as IntegrationType
   ]?.actions.receiveMessage({
@@ -60,8 +62,6 @@ export const receiveMessage = async ({
 
   const { message, conversation, postbackAction, quickReplyAction } =
     parsedMessage
-
-  logger.debug("parsedMessage", JSON.stringify(parsedMessage))
 
   const result = await prisma.$transaction(async (tx) => {
     let newContact = await tx.contact.findUnique({
@@ -186,6 +186,10 @@ export const receiveMessage = async ({
 
     return { message: newMessage, conversation: newConversation }
   })
+
+  logger.debug("process.env", JSON.stringify(process.env))
+  logger.debug("integrationQueue", integrationQueue)
+  logger.debug("IntegrationJobAction.sendFlowPostback", getRedisConnection())
 
   if (postbackAction) {
     await integrationQueue.add(IntegrationJobAction.sendFlowPostback, {
