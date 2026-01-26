@@ -4,7 +4,7 @@ import { listConversationsRequest } from "@/features/conversations/schemas/query
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import { serverErrorHandler } from "@/lib/errors/server-handler"
 
-export async function GET(
+export async function POST(
   req: NextRequest,
   { params }: { params: Promise<{ chatbotId: string }> },
 ) {
@@ -12,7 +12,7 @@ export async function GET(
     const { chatbotId } = await params
     await assertCurrentUserCanAccessChatbot(chatbotId)
 
-    const searchParams = Object.fromEntries(req.nextUrl.searchParams)
+    const searchParams = await req.json()
     const { data } = listConversationsRequest.safeParse(searchParams)
 
     const result = await listConversations(chatbotId, data)

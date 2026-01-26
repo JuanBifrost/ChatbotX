@@ -7,30 +7,49 @@ import {
   AvatarImage,
 } from "@aha.chat/ui/components/ui/avatar"
 import { Button } from "@aha.chat/ui/components/ui/button"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@aha.chat/ui/components/ui/tooltip"
 import { cn } from "@aha.chat/ui/lib/utils"
-import { formatDistanceToNowStrict } from "date-fns"
-import { UsersRoundIcon } from "lucide-react"
-import { useMemo, useState } from "react"
+import { formatDistanceToNowStrict, isAfter } from "date-fns"
+import { StarIcon, UsersRoundIcon } from "lucide-react"
+import { useParams } from "next/navigation"
+import { useAction } from "next-safe-action/hooks"
+import { useEffect, useMemo, useState } from "react"
+import { toast } from "sonner"
+import { useChatStore } from "../chat/store/chat-store-provider"
 import { getAvatarUrl, getFullName } from "../contacts/utils"
 import { InboxIcon } from "../inboxes/components/inbox-icon"
 import type { MessageResource } from "../messages/schemas"
+import { readConversationAction } from "./actions/read-conversation.action"
 import type { ConversationResource } from "./schemas/resource"
 
 type ConversationItemProps = {
   conversation: ConversationResource
-  isActive: boolean
   onSelect: () => void
 }
 
 const assignedIcon = (conversation: ConversationResource) => {
   if (conversation.assignedUserId) {
     return (
-      <Avatar className="size-4">
-        <AvatarImage src={conversation.assignedUser?.image ?? ""} />
-        <AvatarFallback className="text-[9px]">
-          {conversation.assignedUser?.name?.slice(0, 2) ?? " "}
-        </AvatarFallback>
-      </Avatar>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Avatar className="size-4">
+            <AvatarImage src={conversation.assignedUser?.image ?? ""} />
+
+            <AvatarFallback className="text-xs">
+              {conversation.assignedUser?.name?.slice(0, 2) ?? " "}
+            </AvatarFallback>
+          </Avatar>
+        </TooltipTrigger>
+        <TooltipContent align="center" side="bottom">
+          {conversation.assignedUser?.name ||
+            conversation.assignedUser?.email ||
+            "User"}
+        </TooltipContent>
+      </Tooltip>
     )
   }
   if (conversation.assignedInboxTeamId) {
@@ -45,16 +64,16 @@ const assignedIcon = (conversation: ConversationResource) => {
 
 export default function ConversationItem({
   conversation,
-  isActive,
   onSelect,
 }: ConversationItemProps) {
+  const { chatbotId } = useParams<{ chatbotId: string }>()
   const [lastMessage, _setLastMessage] = useState<MessageResource | undefined>(
     conversation.messages?.[0],
   )
-  const [isSeen, _setIsSeen] = useState(
-    (conversation.agentLastSeenAt ?? new Date()) >=
-      (lastMessage?.createdAt ?? new Date()),
+  const { activeConversationId, readConversation } = useChatStore(
+    (state) => state,
   )
+  const isActive = conversation.id === activeConversationId
 
   const contactFullName = useMemo(
     () => getFullName(conversation.contact),
@@ -77,6 +96,27 @@ export default function ConversationItem({
     [conversation.contact],
   )
 
+  const { execute } = useAction(
+    readConversationAction.bind(null, chatbotId, conversation.id),
+    {
+      onSuccess: () => {
+        readConversation(conversation.id)
+      },
+      onError: ({ error }) => {
+        if (error.serverError) {
+          toast.error(error.serverError)
+        }
+      },
+    },
+  )
+
+  // biome-ignore lint/correctness/useExhaustiveDependencies: execute is not a dependency
+  useEffect(() => {
+    if (isActive) {
+      execute()
+    }
+  }, [isActive])
+
   return (
     <div className="w-full">
       <Button
@@ -85,7 +125,8 @@ export default function ConversationItem({
           isActive ? "bg-zinc-200 dark:bg-muted!" : "",
         )}
         onClick={() => onSelect()}
-        variant={"ghost"}
+        type="button"
+        variant={isActive ? "secondary" : "ghost"}
       >
         <div className="relative">
           {contactAvatar}
@@ -98,6 +139,11 @@ export default function ConversationItem({
               showLabel={false}
             />
           </div>
+          {conversation.followed && (
+            <div className="absolute bottom-0 left-0 transform">
+              <StarIcon className="fill-yellow-400 text-yellow-400" />
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-hidden">
@@ -106,8 +152,18 @@ export default function ConversationItem({
           </div>
           <div
             className={cn(
-              "w-full truncate text-left text-neutral-400 text-sm",
-              isSeen ? "font-medium" : "",
+              "w-full truncate text-left text-sm",
+              !(
+                conversation.agentLastSeenAt && conversation.contactLastSeenAt
+              ) ||
+                (conversation.agentLastSeenAt &&
+                  conversation.contactLastSeenAt &&
+                  isAfter(
+                    conversation.agentLastSeenAt,
+                    conversation.contactLastSeenAt,
+                  ))
+                ? "text-gray-500"
+                : "font-semibold",
             )}
           >
             {conversation.messages?.[0]?.content ?? " "}
@@ -119,15 +175,6 @@ export default function ConversationItem({
               )}
             </span>
           </p>
-          {/* <div className="flex gap-2 items-center"> */}
-          {/* {hasSeen ? (
-              <div className="absolute bottom-2.5 right-2.5">
-                {contactAvatar}
-              </div>
-            ) : (
-              <CheckCircleIcon size={13} color="gray" />
-            )} */}
-          {/* </div> */}
         </div>
       </Button>
     </div>
