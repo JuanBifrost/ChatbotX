@@ -1,5 +1,6 @@
 import path from "node:path"
-import { PassThrough } from "node:stream"
+import { PassThrough, Readable } from "node:stream"
+import type { ReadableStream } from "node:stream/web"
 import type { ObjectCannedACL } from "@aws-sdk/client-s3"
 import { createId } from "@paralleldrive/cuid2"
 import imageSize from "image-size"
@@ -98,18 +99,28 @@ export async function uploadFileFromUrl(
   acl = "public-read",
 ): Promise<UploadedFile> {
   const response = await fetch(url, { redirect: "follow" as const })
-  if (!response.ok) {
+  if (!(response.ok && response.body)) {
     throw new Error(`Failed to download image: ${response.status}`)
   }
+
+  const nodeStream = Readable.fromWeb(
+    response.body as unknown as ReadableStream<Uint8Array>,
+  )
 
   // 1. Create two PassThrough streams to "split" the incoming data
   const s3Stream = new PassThrough()
   const probeStream = new PassThrough()
+  nodeStream.pipe(s3Stream)
+  nodeStream.pipe(probeStream)
 
   // 2. Start the S3 Upload immediately
   const upload = uploader.putObject(path, s3Stream, {
     ACL: acl as ObjectCannedACL,
     ContentType: response.headers.get("content-type") || DEFAULT_MIME_TYPE,
+    ContentLength: Number.parseInt(
+      response.headers.get("content-length") ?? "0",
+      10,
+    ),
   })
 
   // 3. Probe the stream for dimensions simultaneously
@@ -117,6 +128,7 @@ export async function uploadFileFromUrl(
   const dimensionsPromise = probe(probeStream)
 
   // Wait for both tasks to complete
+
   const [dimensions] = await Promise.all([dimensionsPromise, upload])
   // Detect filename from URL if possible
   let name = createId()
@@ -126,7 +138,8 @@ export async function uploadFileFromUrl(
     if (last) {
       name = decodeURIComponent(last)
     }
-  } catch {
+  } catch (error) {
+    console.error("error", error)
     // safe return
   }
 

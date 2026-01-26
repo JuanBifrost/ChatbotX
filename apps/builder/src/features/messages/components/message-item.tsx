@@ -182,24 +182,21 @@ const RenderContentAttributes = (props: MessageItemProps) => {
             >
               <CarouselContent className="ml-0">
                 {contentAttributes.payload.cards.map((card, _) => (
-                  <CarouselItem
-                    className="w-32 pl-0 md:basis-1/2 lg:basis-1/3"
-                    key={card.id}
-                  >
+                  <CarouselItem className="w-32 pl-0" key={card.id}>
                     <div className="p-1">
                       <Card className="py-0">
                         <CardContent className="flex aspect-square flex-col items-center justify-center overflow-hidden p-0">
-                          <div className="flex flex-1 flex-col gap-1">
+                          <div className="flex w-full flex-1 flex-col gap-1">
                             {"imageUrl" in card && card.imageUrl && (
                               <Image
                                 alt={card.title || "Attachment"}
-                                className="max-h-20 w-full object-contain"
+                                className="max-h-64 w-full object-contain"
                                 height={100}
                                 src={card.imageUrl}
                                 width={100}
                               />
                             )}
-                            <span className="truncate font-semibold text-4xl">
+                            <span className="truncate px-2 font-semibold">
                               {card.title}
                             </span>
                             {"subtitle" in card && card.subtitle && (

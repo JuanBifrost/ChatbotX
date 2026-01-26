@@ -48,6 +48,7 @@ export default function GetFlowLinkDialog({
         break
     }
 
+    console.log("copied url", url)
     await copy(url)
     toast.success(t("messages.copiedToClipboard"))
   }
