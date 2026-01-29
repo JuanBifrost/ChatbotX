@@ -27,7 +27,7 @@ type TiptapEditorProps = {
 
 export const TiptapEditor = ({
   defaultValue,
-  // onChange,
+  onChange,
   placeholder = "Type a message...",
 }: TiptapEditorProps) => {
   const [isOpenEmoji, setIsOpenEmoji] = useState(false)
@@ -60,10 +60,10 @@ export const TiptapEditor = ({
     content: defaultValue,
     // Don't render immediately on the server to avoid SSR issues
     immediatelyRender: false,
-    // onUpdate: ({ editor }) => {
-    //   const text = editor.getText()
-    //   onChange?.(text)
-    // },
+    onUpdate: ({ editor }) => {
+      const text = editor.getText()
+      onChange?.(text)
+    },
     onFocus: () => {
       setIsEditorFocused(true)
     },
