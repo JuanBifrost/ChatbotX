@@ -25,7 +25,7 @@ export default function SettingIntegrationLayout({
 
   const integrationItems = [
     {
-      keyName: t("openAI.title"),
+      keyName: t("openai.title"),
       icon: BotIcon,
       content: openAI,
     },

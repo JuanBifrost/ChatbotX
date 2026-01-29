@@ -5,6 +5,7 @@ import type {
   OrganizationSettings,
 } from "@aha.chat/database/types"
 import { ReactFlowProvider } from "@xyflow/react"
+import { AIToolsStoreProvider } from "../ai-triggers/provider/ai-tools-store-context"
 import { CustomFieldStoreProvider } from "../custom-fields/provider/custom-field-store-context"
 import { InboxStoreProvider } from "../inboxes/provider/inbox-store-context"
 import { TagStoreProvider } from "../tags/provider/tag-store-context"
@@ -39,7 +40,9 @@ export function FlowDetail({
             <TagStoreProvider chatbotId={flow.chatbotId}>
               <UserStoreProvider chatbotId={flow.chatbotId}>
                 <CustomFieldStoreProvider chatbotId={flow.chatbotId}>
-                  <ReactFlowFrame flow={flow} flowVersion={flowVersion} />
+                  <AIToolsStoreProvider chatbotId={flow.chatbotId}>
+                    <ReactFlowFrame flow={flow} flowVersion={flowVersion} />
+                  </AIToolsStoreProvider>
                 </CustomFieldStoreProvider>
               </UserStoreProvider>
             </TagStoreProvider>

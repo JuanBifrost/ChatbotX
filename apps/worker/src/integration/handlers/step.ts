@@ -35,6 +35,7 @@ import {
   unfollowConversation,
 } from "./conversation"
 import type { ExecuteStepProps } from "./flow"
+import { handleAIGenerateText } from "./generate-text"
 import { getUserData } from "./get-user-data"
 import {
   clearSpreadsheetRow,
@@ -141,7 +142,7 @@ export const flowStepHandlers: Record<
   [StepType.aiDeleteMessageHistory]: undefined,
   [StepType.aiGenerateImage]: undefined,
   [StepType.aiGenerateTextAgent]: undefined,
-  [StepType.aiGenerateText]: undefined,
+  [StepType.aiGenerateText]: handleAIGenerateText,
   [StepType.aiSpeechToText]: undefined,
   [StepType.aiTextToSpeech]: undefined,
   [StepType.optInEmail]: optInEmail,

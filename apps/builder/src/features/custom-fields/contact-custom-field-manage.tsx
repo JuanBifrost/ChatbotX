@@ -65,7 +65,7 @@ export function ContactCustomFieldManage({
             chatbotId={chatbotId}
             folderId={null}
             onSuccess={() => {
-              getAllCustomFields(chatbotId)
+              getAllCustomFields()
               setOpen(false)
             }}
             triggerButton={
