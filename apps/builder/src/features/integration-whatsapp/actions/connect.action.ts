@@ -3,7 +3,12 @@
 import { type Prisma, prisma } from "@aha.chat/database"
 import { InboxStatus } from "@aha.chat/database/enums"
 import { IntegrationType, type UserModel } from "@aha.chat/database/types"
-import type { WhatsappAuthValue } from "@aha.chat/integration-whatsapp"
+import {
+  addSystemUser,
+  registerPhoneNumber,
+  shareCreditLine,
+  type WhatsappAuthValue,
+} from "@aha.chat/integration-whatsapp"
 import { exchangeAccessToken } from "@aha.chat/integration-whatsapp/api/auth"
 import { listPhoneNumbers as whatsappListPhoneNumbers } from "@aha.chat/integration-whatsapp/api/phone-number"
 import { subscribeWebhook } from "@aha.chat/integration-whatsapp/api/webhook"
@@ -102,6 +107,22 @@ export const connectWhatsappAction = authActionClient
             webhookUrl: `${proxyUrl}/integrations/whatsapp/webhook`,
           },
         }
+
+        await addSystemUser({
+          auth,
+          whatsappSettings,
+        })
+
+        if (whatsappSettings.businessId) {
+          await shareCreditLine({
+            auth,
+            whatsappSettings,
+          })
+        }
+
+        await registerPhoneNumber({
+          auth,
+        })
 
         await subscribeWebhook({
           auth,
