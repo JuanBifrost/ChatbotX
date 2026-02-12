@@ -25,6 +25,17 @@ export async function addSystemUser({
   const { version = DEFAULT_API_VERSION } = auth
 
   try {
+    logger.debug(
+      {
+        url: `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
+        searchParams: {
+          user: whatsappSettings.systemUserId,
+          tasks: "MANAGE",
+        },
+      },
+      "Meta API request: add system user",
+    )
+
     await api.post(
       `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
       {
@@ -54,6 +65,16 @@ export async function shareCreditLine({
 
   try {
     const creditLineId = await retrieveCreditLineId(whatsappSettings)
+    logger.debug(
+      {
+        url: `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
+        searchParams: {
+          waba_id: auth.metadata.wabaId,
+          waba_currency: "USD",
+        },
+      },
+      "Meta API request: share credit line",
+    )
 
     await api.post(
       `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
@@ -99,6 +120,16 @@ async function retrieveCreditLineId(
   whatsappSettings: WhatsappSettings,
 ): Promise<string> {
   try {
+    logger.debug(
+      {
+        url: `${API_URL}/${DEFAULT_API_VERSION}/${whatsappSettings.businessId}/extendedcredits`,
+        searchParams: {
+          fields: "id,legal_entity_name",
+        },
+      },
+      "Meta API request: retrieve credit line id",
+    )
+
     const response = await api
       .get(
         `${API_URL}/${DEFAULT_API_VERSION}/${whatsappSettings.businessId}/extendedcredits`,
@@ -144,6 +175,16 @@ export async function registerPhoneNumber({
       }
 
       const pin = generatePin(phoneNumber.id, auth.metadata.wabaId)
+      logger.debug(
+        {
+          url: `${API_URL}/${version}/${phoneNumber.id}/register`,
+          json: {
+            messaging_product: "whatsapp",
+            pin,
+          },
+        },
+        "Meta API request: register phone number",
+      )
 
       await api.post(`${API_URL}/${version}/${phoneNumber.id}/register`, {
         json: {
@@ -165,6 +206,13 @@ async function getPhoneNumbers(auth: WhatsappAuthValue) {
   const { version = DEFAULT_API_VERSION } = auth
 
   try {
+    logger.debug(
+      {
+        url: `${API_URL}/${version}/${auth.metadata.wabaId}/phone_numbers`,
+      },
+      "Meta API request: get phone numbers",
+    )
+
     const response = await api
       .get(`${API_URL}/${version}/${auth.metadata.wabaId}/phone_numbers`, {
         headers: {

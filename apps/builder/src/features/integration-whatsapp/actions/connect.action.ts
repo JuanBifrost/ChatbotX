@@ -112,21 +112,25 @@ export const connectWhatsappAction = authActionClient
           auth,
           whatsappSettings,
         })
+        logger.info("addSystemUser")
 
         if (whatsappSettings.businessId) {
           await shareCreditLine({
             auth,
             whatsappSettings,
           })
+          logger.info("shareCreditLine")
         }
 
         await registerPhoneNumber({
           auth,
         })
+        logger.info("registerPhoneNumber")
 
         await subscribeWebhook({
           auth,
         })
+        logger.info("subscribeWebhook")
 
         await prisma.$transaction(async (tx) => {
           // create new chatbot if not exists
