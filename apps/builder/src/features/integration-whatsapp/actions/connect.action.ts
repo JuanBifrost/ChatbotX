@@ -20,7 +20,6 @@ import { identifyChatbotAndOrganizationFromRequest } from "@/features/integratio
 import { verifyOrganizationSettings } from "@/features/organization/queries"
 import { revalidateCacheTags } from "@/lib/cache-helper"
 import { BaseException } from "@/lib/errors/exception"
-import { logger } from "@/lib/log"
 import { authActionClient } from "@/lib/safe-action"
 import { type ConnectWhatsappSchema, connectWhatsappSchema } from "../schemas"
 
@@ -191,7 +190,7 @@ export const connectWhatsappAction = authActionClient
           redirectUrl: `/chatbots/${chatbotId}/dashboard`,
         }
       } catch (err: unknown) {
-        logger.error(err, "Unable to verify whatsapp token")
+        console.error(err, "Unable to verify whatsapp token")
 
         throw new BaseException("Unable to verify Whatsapp token")
       }
