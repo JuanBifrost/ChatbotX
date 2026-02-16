@@ -47,12 +47,18 @@ importers:
       '@aha.chat/flow-config':
         specifier: workspace:*
         version: link:../../packages/flow-config
+      '@aha.chat/integration-chatbotx':
+        specifier: workspace:*
+        version: link:../../integrations/chatbotx
       '@aha.chat/integration-google-sheets':
         specifier: workspace:*
         version: link:../../integrations/google-sheets
       '@aha.chat/integration-messenger':
         specifier: workspace:*
         version: link:../../integrations/messenger
+      '@aha.chat/integration-webchat':
+        specifier: workspace:*
+        version: link:../../integrations/webchat
       '@aha.chat/integration-whatsapp':
         specifier: workspace:*
         version: link:../../integrations/whatsapp
@@ -349,6 +355,9 @@ importers:
       '@aha.chat/flow-config':
         specifier: workspace:*
         version: link:../../packages/flow-config
+      '@aha.chat/integration-chatbotx':
+        specifier: workspace:*
+        version: link:../../integrations/chatbotx
       '@aha.chat/integration-google-sheets':
         specifier: workspace:*
         version: link:../../integrations/google-sheets
@@ -465,6 +474,31 @@ importers:
         specifier: ^0.20.3
         version: 0.20.3(oxc-resolver@11.17.1)(typescript@5.9.3)
 
+  integrations/chatbotx:
+    dependencies:
+      '@aha.chat/partysocket-config':
+        specifier: workspace:*
+        version: link:../../packages/partysocket-config
+      '@aha.chat/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      ky:
+        specifier: ^1.14.3
+        version: 1.14.3
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@aha.chat/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      '@types/node':
+        specifier: ^24.10.4
+        version: 24.10.13
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
   integrations/google-sheets:
     dependencies:
       '@aha.chat/logger':
@@ -541,6 +575,25 @@ importers:
       ai:
         specifier: ^6.0.86
         version: 6.0.86(zod@4.3.6)
+    devDependencies:
+      '@aha.chat/typescript-config':
+        specifier: workspace:*
+        version: link:../../packages/typescript-config
+      '@types/node':
+        specifier: ^24.10.4
+        version: 24.10.13
+      typescript:
+        specifier: 5.9.3
+        version: 5.9.3
+
+  integrations/webchat:
+    dependencies:
+      '@aha.chat/sdk':
+        specifier: workspace:*
+        version: link:../../packages/sdk
+      ky:
+        specifier: ^1.14.3
+        version: 1.14.3
     devDependencies:
       '@aha.chat/typescript-config':
         specifier: workspace:*
@@ -717,9 +770,6 @@ importers:
 
   packages/flow-config:
     dependencies:
-      '@aha.chat/database':
-        specifier: workspace:*
-        version: link:../database
       '@paralleldrive/cuid2':
         specifier: ^3.3.0
         version: 3.3.0
@@ -1083,6 +1133,9 @@ importers:
 
   packages/worker-config:
     dependencies:
+      '@aha.chat/database':
+        specifier: workspace:*
+        version: link:../database
       '@aha.chat/flow-config':
         specifier: workspace:*
         version: link:../flow-config

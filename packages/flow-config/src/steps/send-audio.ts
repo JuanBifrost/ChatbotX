@@ -14,10 +14,13 @@ export const sendAudioStepSchema = z.object({
 
 export type SendAudioStepSchema = z.infer<typeof sendAudioStepSchema>
 
-export const sendAudioStepDefaultFn = (): SendAudioStepSchema => ({
+export const sendAudioStepDefaultFn = (
+  props?: Partial<SendAudioStepSchema>,
+): SendAudioStepSchema => ({
   id: createId(),
-  stepType: StepType.sendAudio,
-  mode: UploadMode.file,
+  mode: "file",
   url: "",
   buttons: [],
+  ...props,
+  stepType: StepType.sendAudio,
 })
