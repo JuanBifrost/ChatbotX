@@ -1,4 +1,13 @@
 {
+  "accountField": {
+    "createDialog": {
+      "title": "Create Account Field"
+    },
+    "title": "Account Fields",
+    "updateForm": {
+      "title": "Update Account Field"
+    }
+  },
   "actions": {
     "copy": "Copy",
     "copyUrl": "Copy URL",
@@ -11,6 +20,8 @@
     "addFlowReply": "Add flow reply",
     "addMore": "Add more",
     "addTag": "Add Tag",
+    "addAction": "Add Action",
+    "addCondition": "Add Condition",
     "addTextReply": "Add text reply",
     "appendToEnd": "Append to the end",
     "markAsFollowUp": "Mark as Follow Up",
@@ -371,6 +382,29 @@
       "title": "Custom Fields"
     }
   },
+  "dialog": {
+    "archiveConversation": {
+      "description": "Are you sure to archive those conversations?",
+      "title": "Archive Conversation"
+    },
+    "clearCustomField": "Clear Custom Field",
+    "connect": {
+      "title": "Connect {feature}"
+    },
+    "deleteConfirmation": "Are you absolutely sure?\nThis action cannot be undone.\nThis will permanently delete your {feature} from our servers.",
+    "disableBot": {
+      "description": "Are you sure to disable bot?",
+      "title": "Disable Bot"
+    },
+    "disconnect": {
+      "description": "Are you sure to disconnect {feature}?",
+      "title": "Disconnect {feature}"
+    },
+    "enable": {
+      "description": "Are you sure to enable {feature}?",
+      "title": "Enable {feature}"
+    }
+  },
   "fields": {
     "omnichannel": {
       "label": "Omnichannel"
@@ -389,6 +423,27 @@
     },
     "condition": {
       "label": "Condition"
+    },
+    "actions": {
+      "label": "Actions"
+    },
+    "tags": {
+      "label": "Tags"
+    },
+    "customFields": {
+      "label": "Custom Fields"
+    },
+    "pipelines": {
+      "label": "Pipelines"
+    },
+    "sequences": {
+      "label": "Sequences"
+    },
+    "ecommerce": {
+      "label": "Ecommerce"
+    },
+    "entryPointLink": {
+      "label": "Entry Point Link"
     },
     "assignedId": {
       "label": "Assign To"
@@ -529,6 +584,12 @@
     },
     "broadcasts": {
       "label": "Broadcasts"
+    },
+    "trigger": {
+      "label": "Trigger"
+    },
+    "webhook": {
+      "label": "Webhook"
     },
     "button": {
       "label": "Button",
@@ -886,7 +947,38 @@
       "placeholder": "Search..."
     },
     "settings": {
-      "label": "Settings"
+      "label": "Settings",
+      "agents": {
+        "description": "AI Agents description",
+        "title": "AI Agents"
+      },
+      "aiTriggers": {
+        "description": "AI Triggers description",
+        "title": "AI Triggers"
+      },
+      "automatedResponses": {
+        "title": "Keywords"
+      },
+      "openAI": {
+        "description": "OpenAI integration description",
+        "title": "OpenAI Integration"
+      },
+      "title": "Settings"
+    },
+    "signIn": {
+      "acceptTermsAndPolicy": "By clicking continue, you agree to our",
+      "and": "and",
+      "email": "Email",
+      "password": "Password",
+      "privacyPolicy": "Privacy Policy",
+      "termsOfService": "Terms of Service",
+      "title": "Sign in to {name}",
+      "checkYourEmail": "Check your email",
+      "magicLinkSent": "We sent verification URL to your email",
+      "magicLinkSentDescription": "Click the link in your email to continue.",
+      "backToSignIn": "Back to sign in",
+      "didNotReceiveEmail": "Didn't receive the email? Check your spam folder.",
+      "trySigningInAgain": "You can also try signing in again with a different email."
     },
     "showLogo": {
       "label": "Show Personal Logo"
@@ -1132,12 +1224,6 @@
     "moreOptions": {
       "label": "More Options"
     },
-    "customFields": {
-      "label": "Custom Fields"
-    },
-    "tags": {
-      "label": "Tags"
-    },
     "botFields": {
       "label": "Bot Fields"
     },
@@ -1145,6 +1231,9 @@
       "label": "Keyword",
       "placeholder": "Enter keyword",
       "searchPlaceholder": "Search keyword..."
+    },
+    "accountFields": {
+      "label": "Account Fields"
     }
   },
   "flows": {
@@ -1284,6 +1373,18 @@
     "title": "General"
   },
   "googleSheets": {
+    "spreadsheet": "Spreadsheet",
+    "name": "Spreadsheet Name",
+    "link": "Spreadsheet Link",
+    "add": {
+      "title": "Add Spreadsheet"
+    },
+    "confirmDeleteDesc": "Are you sure you want to delete this Google Sheets?",
+    "update": {
+      "dialog_title": "Update Spreadsheet"
+    },
+    "deleted": "Google Sheets deleted successfully",
+    "length": "Google Sheets length",
     "setting": {
       "description": "Google Sheets description",
       "label": "Google Sheets"
@@ -1291,7 +1392,37 @@
     "header": "Column Header",
     "title": "Google Sheets"
   },
+  "inboxTeam": {
+    "updateAction": {
+      "heading": {
+        "label": "Rename Inbox Team"
+      }
+    }
+  },
+  "integration": {
+    "disconnectConfirm": "Are you sure you want to disconnect?",
+    "disconnectDescription": "This action cannot be undone."
+  },
   "integrations": {
+    "gemini": {
+      "apiKey": "Gemini API Key",
+      "button": {
+        "connect": "Connect"
+      }
+    },
+    "googleSheets": {
+      "button": {
+        "connect": "Connect"
+      }
+    },
+    "openAI": {
+      "apiKey": "OpenAI API Key",
+      "button": {
+        "connect": "Connect"
+      },
+      "maxTokens": "Max Tokens",
+      "temperature": "Temperature"
+    },
     "title": "Integrations"
   },
   "messages": {
@@ -1378,6 +1509,17 @@
   },
   "omnichannel": {
     "title": "Omnichannel"
+  },
+  "openAI": {
+    "connect": {
+      "description": "Respond to users naturally with AI powered by your business data.",
+      "title": "OpenAI"
+    },
+    "setting": {
+      "description": "OpenAI integration description",
+      "label": "OpenAI Integration"
+    },
+    "title": "OpenAI"
   },
   "openai": {
     "connect": {
@@ -1530,7 +1672,8 @@
     "minLength": "Minimum length is {min} characters",
     "minValue": "Minimum value is {min}",
     "passwordMismatch": "Passwords do not match",
-    "required": "This field is required"
+    "required": "This field is required",
+    "maxItemsReached": "Maximum {max} {feature} allowed per chatbot"
   },
   "webchat": {
     "description": "Let your customers get instant automated responses from your business directly from your website",
@@ -1642,28 +1785,6 @@
   "inboxTeams": {
     "title": "Inbox Teams"
   },
-  "errorLogs": {
-    "title": "Error Logs"
-  },
-  "chatbotToken": {
-    "title": "ChatbotX API Access Token",
-    "description": "Generate a token to allow your chatbot to access ChatbotX APIs. Keep this token secret and do not share it with anyone."
-  },
-  "contacts": {
-    "title": "Contacts"
-  },
-  "auditLogs": {
-    "title": "Audit Logs"
-  },
-  "customFields": {
-    "title": "Custom Fields"
-  },
-  "aiHub": {
-    "title": "AI Hub"
-  },
-  "keywords": {
-    "title": "Keywords"
-  },
   "messengerList": {
     "title": "Messenger List",
     "description": "Build your list and send daily broadcasts to increase engagement and sales. It can be time-sensitive marketing campaigns, drip campaigns, promotions..."
@@ -1723,5 +1844,95 @@
   "reflinks": {
     "title": "Reflinks",
     "description": "Share your bot on websites, social media platforms, or other messaging apps as an entry point for users to start a conversation with the bot."
+  },
+  "errorLog": {
+    "heading": {
+      "title": "Error Logs"
+    }
+  },
+  "trigger": {
+    "when": "When this happens",
+    "conditions": {
+      "tagApplied": "Tag Applied",
+      "tagRemoved": "Tag Removed",
+      "dateTimeBasedTrigger": "DateTime Based Trigger",
+      "customFieldValueChanged": "Custom Field Changed",
+      "conversationTransferredToHuman": "Conversation transferred to human",
+      "conversationTransferredToBot": "Conversation transferred to bot",
+      "newContact": "New Contact",
+      "contactUnsubscribedFormBroadcast": "Contact Unsubscribed From Broadcast",
+      "archived": "Archived",
+      "followUp": "Follow Up",
+      "conversationAssigned": "Conversation Assigned",
+      "conversationUnassigned": "Conversation Unassigned",
+      "incomingCall": "Incoming Call",
+      "missedAudioCall": "Missed Audio Call",
+      "callEnded": "Call Ended",
+      "ticketCreated": "Ticket Created",
+      "ticketMovedToStage": "Ticket Moved To Stage",
+      "ticketValueChanged": "Ticket Value Changed",
+      "ticketStatusChanged": "Ticket Status Changed",
+      "ticketPriorityChanged": "Ticket Priority Changed",
+      "subscribedToSequence": "Subscribed To Sequence",
+      "unsubscribedFromSequence": "Unsubscribed From Sequence",
+      "WhatsappShoppingCartSent": "Whatsapp Shopping Cart Sent",
+      "userAskedAboutProduct": "User Asked About Product",
+      "cartAbandoned": "Cart Abandoned",
+      "newOrder": "New Order",
+      "orderAccepted": "Order Accepted",
+      "orderShipped": "Order Shipped",
+      "orderConcluded": "Order Concluded",
+      "orderCancelled": "Order Cancelled",
+      "categoryAddedToCart": "Category Added To Cart",
+      "productAddedToCart": "Product Added To Cart",
+      "productRemovedFromCart": "Product Removed From Cart",
+      "productOrdered": "Product Ordered",
+      "contactReferredANewContact": "Contact Referred A New Contact",
+      "contactReferredExistingContact": "Contact Referred Existing Contact"
+    },
+    "actions": {
+      "addTag": "Add Tag",
+      "removeTag": "Remove Tag",
+      "setCustomField": "Set Custom Field",
+      "clearCustomField": "Clear Custom Field",
+      "startAnotherFlow": "Start Another Flow",
+      "notifyAdmins": "Notify Admins",
+      "transferConversationToHuman": "Transfer Conversation to Human"
+    },
+    "triggerGoesOff": "Trigger goes off",
+    "before": "Before",
+    "after": "After",
+    "atTheDayOf": "At the day of",
+    "day": "Day",
+    "hour": "Hour",
+    "minute": "Minute",
+    "at": "At"
+  },
+  "teams": {
+    "create": {
+      "title": "Create Inbox Team"
+    }
+  },
+  "errorLogs": {
+    "title": "Error Logs"
+  },
+  "chatbotToken": {
+    "title": "ChatbotX API Access Token",
+    "description": "Generate a token to allow your chatbot to access ChatbotX APIs. Keep this token secret and do not share it with anyone."
+  },
+  "contacts": {
+    "title": "Contacts"
+  },
+  "auditLogs": {
+    "title": "Audit Logs"
+  },
+  "customFields": {
+    "title": "Custom Fields"
+  },
+  "aiHub": {
+    "title": "AI Hub"
+  },
+  "keywords": {
+    "title": "Keywords"
   }
 }

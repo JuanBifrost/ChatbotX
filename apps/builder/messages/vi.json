@@ -1,7 +1,15 @@
 {
+  "accountField": {
+    "createDialog": {
+      "title": "Tạo trường tài khoản"
+    },
+    "title": "Trường tài khoản",
+    "updateForm": {
+      "title": "Cập nhật trường tài khoản"
+    }
+  },
   "actions": {
     "copy": "Sao chép",
-    "copyUrl": "Sao chép URL",
     "actions": "Hành động",
     "add": "Thêm",
     "addContactNotes": "Thêm ghi chú liên hệ",
@@ -11,6 +19,8 @@
     "addFlowReply": "Thêm phản hồi luồng",
     "addMore": "Thêm nữa",
     "addTag": "Thêm thẻ",
+    "addAction": "Thêm hành động",
+    "addCondition": "Thêm điều kiện",
     "addTextReply": "Thêm phản hồi văn bản",
     "appendToEnd": "Thêm vào cuối",
     "markAsFollowUp": "Đánh dấu theo dõi",
@@ -374,6 +384,29 @@
       "title": "Trường tùy chỉnh"
     }
   },
+  "dialog": {
+    "archiveConversation": {
+      "description": "Bạn có chắc chắn muốn lưu trữ các cuộc trò chuyện này?",
+      "title": "Lưu trữ cuộc trò chuyện"
+    },
+    "clearCustomField": "Xóa trường tùy chỉnh",
+    "connect": {
+      "title": "Kết nối {feature}"
+    },
+    "deleteConfirmation": "Bạn có thực sự chắc chắn?\nHành động này không thể hoàn tác.\nĐiều này sẽ xóa vĩnh viễn {feature} khỏi máy chủ của chúng tôi.",
+    "disableBot": {
+      "description": "Bạn có chắc chắn muốn tắt bot?",
+      "title": "Tắt Bot"
+    },
+    "disconnect": {
+      "description": "Bạn có chắc chắn muốn ngắt kết nối {feature}?",
+      "title": "Ngắt kết nối {feature}"
+    },
+    "enable": {
+      "description": "Bạn có chắc chắn muốn bật {feature}?",
+      "title": "Bật {feature}"
+    }
+  },
   "fields": {
     "omnichannel": {
       "label": "Đa kênh"
@@ -392,6 +425,18 @@
     },
     "condition": {
       "label": "Điều kiện"
+    },
+    "actions": {
+      "label": "Hành động"
+    },
+    "pipelines": {
+      "label": "Pipeline"
+    },
+    "sequences": {
+      "label": "Chuỗi"
+    },
+    "entryPointLink": {
+      "label": "Liên kết điểm vào"
     },
     "assignedId": {
       "label": "Gán cho"
@@ -532,6 +577,12 @@
     },
     "broadcasts": {
       "label": "Phát sóng"
+    },
+    "trigger": {
+      "label": "Trigger"
+    },
+    "webhook": {
+      "label": "Webhook"
     },
     "button": {
       "label": "Nút",
@@ -1282,6 +1333,18 @@
     "title": "Chung"
   },
   "googleSheets": {
+    "spreadsheet": "Bảng tính",
+    "name": "Tên bảng tính",
+    "link": "Liên kết bảng tính",
+    "add": {
+      "title": "Thêm bảng tính"
+    },
+    "confirmDeleteDesc": "Bạn có chắc chắn muốn xóa Google Sheets này?",
+    "update": {
+      "dialog_title": "Cập nhật bảng tính"
+    },
+    "deleted": "Google Sheets đã được xóa thành công",
+    "length": "Số lượng Google Sheets",
     "setting": {
       "description": "Mô tả Google Sheets",
       "label": "Google Sheets"
@@ -1289,7 +1352,37 @@
     "header": "Tiêu đề cột",
     "title": "Google Sheets"
   },
+  "inboxTeam": {
+    "updateAction": {
+      "heading": {
+        "label": "Đổi tên nhóm hộp thư"
+      }
+    }
+  },
+  "integration": {
+    "disconnectConfirm": "Bạn có chắc chắn muốn ngắt kết nối?",
+    "disconnectDescription": "Hành động này không thể hoàn tác."
+  },
   "integrations": {
+    "gemini": {
+      "apiKey": "Khóa API Gemini",
+      "button": {
+        "connect": "Kết nối"
+      }
+    },
+    "googleSheets": {
+      "button": {
+        "connect": "Kết nối"
+      }
+    },
+    "openAI": {
+      "apiKey": "Khóa API OpenAI",
+      "button": {
+        "connect": "Kết nối"
+      },
+      "maxTokens": "Token tối đa",
+      "temperature": "Nhiệt độ"
+    },
     "title": "Tích hợp"
   },
   "messages": {
@@ -1463,7 +1556,8 @@
     "minLength": "Độ dài tối thiểu là {min} ký tự",
     "minValue": "Giá trị tối thiểu là {min}",
     "passwordMismatch": "Mật khẩu không khớp",
-    "required": "Trường này là bắt buộc"
+    "required": "Trường này là bắt buộc",
+    "maxItemsReached": "Tối đa {max} {feature} cho mỗi chatbot"
   },
   "webchat": {
     "description": "Cho phép khách hàng của bạn nhận phản hồi tự động ngay lập tức từ doanh nghiệp của bạn trực tiếp từ trang web của bạn",
@@ -1578,6 +1672,69 @@
   "errorLog": {
     "heading": {
       "title": "Nhật ký lỗi"
+    }
+  },
+  "trigger": {
+    "when": "Khi điều này xảy ra",
+    "conditions": {
+      "tagApplied": "Thẻ được áp dụng",
+      "tagRemoved": "Thẻ bị xóa",
+      "dateTimeBasedTrigger": "Trigger dựa trên ngày giờ",
+      "customFieldValueChanged": "Trường tùy chỉnh thay đổi",
+      "conversationTransferredToHuman": "Cuộc trò chuyện được chuyển cho người",
+      "conversationTransferredToBot": "Cuộc trò chuyện được chuyển cho bot",
+      "newContact": "Liên hệ mới",
+      "contactUnsubscribedFormBroadcast": "Liên hệ hủy đăng ký phát sóng",
+      "archived": "Đã lưu trữ",
+      "followUp": "Theo dõi",
+      "conversationAssigned": "Cuộc trò chuyện được gán",
+      "conversationUnassigned": "Cuộc trò chuyện bị bỏ gán",
+      "incomingCall": "Cuộc gọi đến",
+      "missedAudioCall": "Cuộc gọi âm thanh nhỡ",
+      "callEnded": "Cuộc gọi kết thúc",
+      "ticketCreated": "Phiếu được tạo",
+      "ticketMovedToStage": "Phiếu được chuyển giai đoạn",
+      "ticketValueChanged": "Giá trị phiếu thay đổi",
+      "ticketStatusChanged": "Trạng thái phiếu thay đổi",
+      "ticketPriorityChanged": "Ưu tiên phiếu thay đổi",
+      "subscribedToSequence": "Đăng ký chuỗi",
+      "unsubscribedFromSequence": "Hủy đăng ký chuỗi",
+      "WhatsappShoppingCartSent": "Giỏ hàng WhatsApp đã gửi",
+      "userAskedAboutProduct": "Người dùng hỏi về sản phẩm",
+      "cartAbandoned": "Giỏ hàng bị bỏ rơi",
+      "newOrder": "Đơn hàng mới",
+      "orderAccepted": "Đơn hàng được chấp nhận",
+      "orderShipped": "Đơn hàng đã giao",
+      "orderConcluded": "Đơn hàng hoàn tất",
+      "orderCancelled": "Đơn hàng bị hủy",
+      "categoryAddedToCart": "Danh mục thêm vào giỏ",
+      "productAddedToCart": "Sản phẩm thêm vào giỏ",
+      "productRemovedFromCart": "Sản phẩm xóa khỏi giỏ",
+      "productOrdered": "Sản phẩm đã đặt",
+      "contactReferredANewContact": "Liên hệ giới thiệu liên hệ mới",
+      "contactReferredExistingContact": "Liên hệ giới thiệu liên hệ hiện có"
+    },
+    "actions": {
+      "addTag": "Thêm thẻ",
+      "removeTag": "Xóa thẻ",
+      "setCustomField": "Thiết lập trường tùy chỉnh",
+      "clearCustomField": "Xóa trường tùy chỉnh",
+      "startAnotherFlow": "Bắt đầu luồng khác",
+      "notifyAdmins": "Thông báo quản trị viên",
+      "transferConversationToHuman": "Chuyển cuộc trò chuyện cho người"
+    },
+    "triggerGoesOff": "Trigger kích hoạt",
+    "before": "Trước",
+    "after": "Sau",
+    "atTheDayOf": "Vào ngày của",
+    "day": "Ngày",
+    "hour": "Giờ",
+    "minute": "Phút",
+    "at": "Lúc"
+  },
+  "teams": {
+    "create": {
+      "title": "Tạo nhóm hộp thư"
     }
   },
   "chatbotToken": {
