@@ -64,6 +64,15 @@ export class WebhookMatcherService {
         eventData,
         chatbot,
       )
+      if (eventType === 10) {
+        console.log({
+          chatbotId,
+          eventType,
+          metadata,
+          webhook,
+          isMatch,
+        })
+      }
 
       if (isMatch) {
         try {
@@ -107,12 +116,12 @@ export class WebhookMatcherService {
         chatbot,
       })
 
-      if (!isMatch) {
-        return false
+      if (isMatch) {
+        return true
       }
     }
 
-    return true
+    return false
   }
 
   private mapEventTypeToConditionTypes(eventType: number): number[] {
