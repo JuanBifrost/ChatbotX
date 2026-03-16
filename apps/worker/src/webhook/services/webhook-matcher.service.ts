@@ -64,15 +64,6 @@ export class WebhookMatcherService {
         eventData,
         chatbot,
       )
-      if (eventType === 10) {
-        console.log({
-          chatbotId,
-          eventType,
-          metadata,
-          webhook,
-          isMatch,
-        })
-      }
 
       if (isMatch) {
         try {
