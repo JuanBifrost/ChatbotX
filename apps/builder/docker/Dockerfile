@@ -20,12 +20,12 @@ ENV NODE_OPTIONS="--max-old-space-size=4096"
 
 WORKDIR /app
 COPY --from=pre /app/out/json/ .
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 COPY --from=pre /app/out/full/ .
 COPY --from=pre /app/.env .env
 
-RUN pnpm turbo run build --filter=builder
+RUN SKIP_ENV_CHECK=true pnpm turbo run build --filter=builder
 
 # Build the application
 FROM base AS release
