@@ -39,6 +39,7 @@ COPY apps/builder/docker/rootfs/ /
 # # Automatically leverage output traces to reduce image size
 # # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=deps /app/packages/database /app/packages/database
+COPY --from=deps /app/packages/clickhouse /app/packages/clickhouse
 COPY --from=deps --chown=nextjs:nodejs /app/apps/builder/.next/standalone ./
 COPY --from=deps --chown=nextjs:nodejs /app/apps/builder/.next/static ./apps/builder/.next/static
 # COPY --from=deps --chown=nextjs:nodejs /app/apps/builder/.next/cache ./apps/builder/.next/cache
