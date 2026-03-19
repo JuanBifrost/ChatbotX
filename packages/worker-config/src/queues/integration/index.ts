@@ -7,6 +7,7 @@ import {
   getRedisConnection,
 } from "../../lib/connection"
 import { queueName } from "../../lib/types"
+import type { BotResponseTrackingContext } from "../types"
 
 export const IntegrationJobAction = {
   sendFlow: "sendFlow",
@@ -38,9 +39,10 @@ export type IntegrationJobRunFlowNode = {
   type: typeof IntegrationJobAction.sendFlow
   data: {
     conversationId: string
-    flowId: string
+    flowId?: string
     flowVersionId?: string
     nodeId?: string
+    trackingContext?: BotResponseTrackingContext
   }
 }
 
@@ -165,9 +167,9 @@ export type IntegrationJobData =
   | IntegrationJobCreateMessage
 
 export const integrationQueue =
-  process.env.NEXT_PHASE !== "phase-production-build"
-    ? new Queue<IntegrationJobData>(queueName.integration, {
+  process.env.NEXT_PHASE === "phase-production-build"
+    ? fakeQueue
+    : new Queue<IntegrationJobData>(queueName.integration, {
         connection: getRedisConnection(),
         defaultJobOptions,
       })
-    : fakeQueue

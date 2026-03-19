@@ -35,6 +35,7 @@ import {
   emitContactCreated,
   setWebhookExecutionContext,
 } from "@chatbotx/events"
+import { contactTrackingService } from "@chatbotx.io/analytics"
 import { createId } from "@paralleldrive/cuid2"
 import { allIntegrations, getDBIntegration } from "../../lib/integrations"
 import { logger } from "../../lib/logger"
@@ -246,6 +247,53 @@ export const receiveMessage = async (
     } catch (error) {
       console.error("Failed to emit contactCreated event:", error)
     }
+    contactTrackingService
+      .trackEvent({
+        chatbotId,
+        contactId: conversation.contact.sourceId,
+        eventType: "contact_created",
+        occurredAt: result.message.createdAt,
+        source: integrationType,
+        sourceId: conversation.contact.sourceId,
+        channel: inbox.inboxType,
+        metadata: {
+          triggerContext: {
+            triggerSource: "worker",
+            triggerHandler: "receiveMessage",
+            triggerType: "contact_created",
+          },
+        },
+      })
+      .catch((error) => {
+        logger.error(error, "[receiveMessage] Failed to track contact_created")
+      })
+  }
+
+  if (conversation.contact.sourceId) {
+    contactTrackingService
+      .trackEvent({
+        chatbotId,
+        contactId: conversation.contact.sourceId,
+        eventType: "contact_message_in",
+        senderType: "human",
+        occurredAt: result.message.createdAt,
+        source: integrationType,
+        sourceId: conversation.contact.sourceId,
+        channel: inbox.inboxType,
+        metadata: {
+          triggerContext: {
+            triggerSource: "worker",
+            triggerHandler: "receiveMessage",
+            triggerType: "contact_message_in",
+          },
+        },
+      })
+      .catch((error) => {
+        logger.error(
+          error,
+          "[receiveMessage] Failed to track contact_message_in",
+        )
+      })
   }
 
   if (postbackAction) {
@@ -266,6 +314,39 @@ export const receiveMessage = async (
         conversationId: result.conversation.id,
         action: quickReplyAction,
         ref,
+      },
+    })
+  }
+
+  if (result.isNewContact && conversation.contact.sourceId) {
+    await contactTrackingService.trackEvent({
+      chatbotId,
+      contactId: conversation.contact.sourceId,
+      eventType: "contact_created",
+      occurredAt: new Date(),
+      source: integrationType,
+      sourceId: conversation.contact.sourceId,
+      channel: inbox.inboxType,
+      country: undefined,
+      metadata: {
+        inboxId,
+      },
+    })
+  }
+
+  if (conversation.contact.sourceId && message.messageType === "incoming") {
+    await contactTrackingService.trackEvent({
+      chatbotId,
+      contactId: conversation.contact.sourceId,
+      eventType: "contact_message_in",
+      occurredAt: new Date(),
+      source: integrationType,
+      sourceId: conversation.contact.sourceId,
+      channel: inbox.inboxType,
+      country: undefined,
+      metadata: {
+        inboxId,
+        messageId: result.message.id,
       },
     })
   }

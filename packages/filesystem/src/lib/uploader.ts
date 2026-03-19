@@ -1,8 +1,11 @@
 import type { Readable } from "node:stream"
 import {
+  CopyObjectCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
+  type ListObjectsV2CommandInput,
   PutObjectCommand,
   type PutObjectCommandInput,
   S3Client,
@@ -12,7 +15,7 @@ import { keys } from "../keys"
 
 const env = keys()
 
-class Uploader {
+export class Uploader {
   readonly #client: S3Client
   readonly #bucketName: string
 
@@ -32,6 +35,22 @@ class Uploader {
       forcePathStyle: Boolean(env.S3_ENDPOINT),
     })
     this.#bucketName = env.S3_BUCKET
+  }
+
+  get client(): S3Client {
+    return this.#client
+  }
+
+  get bucketName(): string {
+    return this.#bucketName
+  }
+
+  get accessKeyId(): string {
+    return env.S3_ACCESS_KEY_ID ?? ""
+  }
+
+  get secretAccessKey(): string {
+    return env.S3_SECRET_ACCESS_KEY ?? ""
   }
 
   static getInstance(): Uploader {
@@ -124,10 +143,37 @@ class Uploader {
     return response.Body as Readable
   }
 
+  async copyObject(sourcePath: string, destinationPath: string) {
+    const encodedSource = sourcePath
+      .split("/")
+      .map((segment) => encodeURIComponent(segment))
+      .join("/")
+
+    const command = new CopyObjectCommand({
+      Bucket: env.S3_BUCKET,
+      Key: destinationPath,
+      CopySource: `${env.S3_BUCKET}/${encodedSource}`,
+    })
+
+    return await this.#client.send(command)
+  }
+
   async deleteObject(path: string) {
     const command = new DeleteObjectCommand({
       Bucket: env.S3_BUCKET,
       Key: path,
+    })
+    return await this.#client.send(command)
+  }
+
+  async listObjects(
+    prefix: string,
+    options: Partial<ListObjectsV2CommandInput> = {},
+  ) {
+    const command = new ListObjectsV2Command({
+      ...options,
+      Bucket: env.S3_BUCKET,
+      Prefix: prefix,
     })
     return await this.#client.send(command)
   }

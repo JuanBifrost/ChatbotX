@@ -35,6 +35,7 @@ import {
   emitConversationTransferredToHuman,
   emitConversationUnassigned,
 } from "@chatbotx/events"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { subHours } from "date-fns"
 import { getInboxWithAuthFromInboxId } from "../../lib/inbox"
 import { allIntegrations } from "../../lib/integrations"
@@ -321,6 +322,26 @@ export async function stepUnassignConversation({
   } catch (error) {
     console.error("Failed to emit conversationUnassigned event:", error)
   }
+
+  conversationTrackingService
+    .trackEvent({
+      chatbotId: conversation.chatbotId,
+      conversationId: conversation.id,
+      eventType: "conversation_unassigned",
+      fromAssignee:
+        conversation.assignedUserId || conversation.assignedInboxTeamId || "",
+      occurredAt: new Date(),
+      metadata: {
+        triggerContext: {
+          triggerSource: "worker",
+          triggerHandler: "stepUnassignConversation",
+          triggerType: "flow_action",
+        },
+      },
+    })
+    .catch((error) => {
+      console.error("[stepUnassignConversation] Failed to track", error)
+    })
 }
 
 export async function stepFollowConversation({

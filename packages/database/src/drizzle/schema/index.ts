@@ -75,6 +75,11 @@ export const aiEmbeddingStatus = pgEnum("AIEmbeddingStatus", [
   "error",
   "processing",
 ])
+export const analyticsManifestStatusEnum = pgEnum("AnalyticsManifestStatus", [
+  "processing",
+  "ingested",
+  "failed",
+])
 
 export const aiTriggerToIntegrationOpenAIModel = pgTable(
   "_AITriggerToIntegrationOpenAI",
@@ -1222,6 +1227,30 @@ export const integrationWhatsappModel = pgTable(
     ),
   ],
 )
+
+export const analyticsManifestStatusModel = pgTable("AnalyticsManifestStatus", {
+  objectKey: varchar("objectKey", { length: 255 }).primaryKey(),
+  status: analyticsManifestStatusEnum("status").notNull(),
+  attempts: integer("attempts").notNull().default(0),
+  ingestedAt: timestamp("ingestedAt"),
+  lastError: text("lastError"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().notNull(),
+})
+
+export const inboxContactStatsModel = pgTable("InboxContactStats", {
+  inboxId: text("inboxId")
+    .primaryKey()
+    .references(() => inboxModel.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+      name: "InboxContactStats_inboxId_fkey",
+    }),
+  totalContacts: integer("totalContacts").notNull().default(0),
+  updatedAt: timestamp("updatedAt", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+})
 
 export const integrationZaloModel = pgTable(
   "IntegrationZalo",

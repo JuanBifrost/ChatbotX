@@ -9,6 +9,7 @@ import {
 } from "@aha.chat/database/schema"
 import type { ChatbotUsageModel, InboxModel } from "@aha.chat/database/types"
 import { emitContactCreated } from "@chatbotx/events"
+import { contactTrackingService } from "@chatbotx.io/analytics"
 import { createId } from "@paralleldrive/cuid2"
 import { returnValidationErrors } from "next-safe-action"
 import {
@@ -122,6 +123,29 @@ export const createContact = async ({
     )
   } catch (error) {
     console.error("Failed to emit contactCreated event:", error)
+  }
+
+  if (contact.sourceId) {
+    await contactTrackingService.trackEvent(
+      {
+        chatbotId,
+        contactId: contact.sourceId,
+        eventType: "contact_created",
+        occurredAt: contact.createdAt,
+        source: contact.source,
+        sourceId: contact.sourceId,
+        channel: inbox.inboxType,
+        country: undefined,
+        metadata: {
+          triggerContext: {
+            triggerSource: "api",
+            triggerHandler: "createContact",
+            triggerType: "contact_created",
+          },
+        },
+      },
+      { skipSpooler: true },
+    )
   }
 
   revalidateCacheTags([

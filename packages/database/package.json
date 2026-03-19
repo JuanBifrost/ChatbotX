@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
-    "@t3-oss/env-nextjs": "^0.13.10",
+    "@t3-oss/env-core": "^0.13.10",
     "drizzle-cuid2": "^2.2.0",
     "drizzle-orm": "1.0.0-beta.15-859cf75",
-    "pg": "^8.19.0",
+    "pg": "^8.20.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -20,10 +20,10 @@
   "scripts": {
     "introspect": "dotenv -e ../../.env -- drizzle-kit introspect",
     "make:migration": "dotenv -e ../../.env -- ./scripts/make-migration.sh",
-    "migrate": "dotenv -e ../../.env -- drizzle-kit migrate",
+    "db:migrate": "dotenv -e ../../.env -- drizzle-kit migrate",
     "db:studio": "dotenv -e ../../.env -- drizzle-kit studio",
     "db:seed": "dotenv -e ../../.env -- tsx src/seed/index.ts",
-    "db:setup": "pnpm migrate && pnpm db:seed",
+    "db:setup": "pnpm db:migrate && pnpm db:seed",
     "db:check": "dotenv -e ../../.env -- drizzle-kit check"
   },
   "exports": {

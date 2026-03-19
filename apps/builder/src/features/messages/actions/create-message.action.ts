@@ -3,10 +3,12 @@
 import { db, eq, findOrFail } from "@aha.chat/database/client"
 import {
   attachmentModel,
+  contactModel,
   conversationModel,
   messageModel,
 } from "@aha.chat/database/schema"
 import {
+  type ContactModel,
   type ConversationModel,
   type UserModel,
   WEBCHAT_SOURCE_PREFIX,
@@ -25,6 +27,7 @@ import {
   IntegrationJobAction,
   integrationQueue,
 } from "@aha.chat/worker-config"
+import { contactTrackingService } from "@chatbotx.io/analytics"
 import { createId } from "@paralleldrive/cuid2"
 import type { AttachmentResource } from "@/features/attachments/schemas"
 import {
@@ -60,15 +63,21 @@ export const createMessageAction = chatbotActionClient
         },
       )
 
-      return createMessage(conversation, parsedInput, ctx.user)
+      return createMessage({
+        conversation,
+        parsedInput,
+        user: ctx.user,
+      })
     },
   )
 
-export const createMessage = async (
-  conversation: ConversationModel,
-  parsedInput: CreateMessageRequest,
-  user: UserModel | null = null,
-) => {
+export const createMessage = async (props: {
+  conversation: ConversationModel
+  parsedInput: CreateMessageRequest
+  user?: UserModel
+}) => {
+  const { conversation, parsedInput, user } = props
+
   // Handle send flow
   if ("flowId" in parsedInput) {
     await integrationQueue.add(IntegrationJobAction.sendFlow, {
@@ -106,7 +115,7 @@ export const createMessage = async (
         messageType: "outgoing",
         chatbotId: conversation.chatbotId,
         conversationId: conversation.id,
-        senderType: "user",
+        senderType: user ? "user" : "api",
         senderId: user?.id,
         inboxId: conversation.inboxId,
         contentType: "text",
@@ -159,6 +168,36 @@ export const createMessage = async (
       },
     }),
   ]
+
+  const contact = await findOrFail<ContactModel>(
+    contactModel,
+    {
+      where: {
+        id: conversation.contactId,
+      },
+    },
+    "Contact not found",
+  )
+
+  if (contact.sourceId) {
+    promises.push(
+      contactTrackingService.trackEvent({
+        chatbotId: message.chatbotId,
+        contactId: contact.sourceId,
+        eventType: "contact_message_out",
+        occurredAt: new Date(),
+        source: contact.source,
+        sourceId: contact.sourceId,
+        channel: conversation.inboxType,
+        country: undefined,
+        metadata: {
+          messageId: message.id,
+          conversationId: message.conversationId,
+        },
+      }),
+    )
+  }
+
   if (conversation.sourceId?.startsWith(WEBCHAT_SOURCE_PREFIX)) {
     promises.push(
       broadcastToGuestParty(conversation.sourceId, {
@@ -179,6 +218,27 @@ export const createMessage = async (
             ...message,
             clientId: parsedInput.clientId,
           } as OutgoingMessage,
+        },
+      }),
+    )
+  }
+
+  if (contact.sourceId) {
+    promises.push(
+      contactTrackingService.trackEvent({
+        chatbotId: message.chatbotId,
+        contactId: contact.sourceId,
+        eventType: "contact_message_out",
+        senderType: "human",
+        occurredAt: new Date(),
+        source: contact.source,
+        sourceId: contact.sourceId,
+        channel: conversation.inboxType,
+        country: undefined,
+        metadata: {
+          messageId: message.id,
+          conversationId: message.conversationId,
+          adminId: user?.id ?? "",
         },
       }),
     )
