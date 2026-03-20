@@ -34,15 +34,15 @@ export function NavMain({
           return (
             <SidebarMenuItem key={item.title}>
               <SidebarMenuButton
-                className="h-9"
+                className="h-9 cursor-pointer p-0"
                 isActive={isActive}
                 tooltip={item.title}
               >
                 <Link
-                  className={`flex items-center gap-2 ${isActive ? "dark:text-gray-50" : "dark:text-gray-400"}`}
+                  className={`flex w-full items-center gap-2 p-2 ${isActive ? "dark:text-gray-50" : "dark:text-gray-400"}`}
                   href={item.url}
                 >
-                  {item.icon && <item.icon className="size-5" />}
+                  {item.icon && <item.icon className="size-5 shrink-0" />}
                   <span>{item.title}</span>
                 </Link>
               </SidebarMenuButton>

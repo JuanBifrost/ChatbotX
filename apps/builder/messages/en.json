@@ -78,6 +78,8 @@
     "filter": "Filter",
     "selectFile": "Select file",
     "insertLink": "Insert link",
+    "addNew": "Add new",
+    "send": "Send",
     "loginWithMagicLink": "Login with Magic Link",
     "manage": "Manage",
     "markEmailVerified": "Mark Email Verified",
@@ -799,12 +801,17 @@
         "label": "{aiName}: Generate Text"
       },
       "label": "Flows",
+      "placeholder": "Select flow",
       "sendMessage": {
         "label": "Send Message"
       }
     },
     "flowToSend": {
       "label": "Flow to send"
+    },
+    "steps": {
+      "label": "Steps",
+      "placeholder": "Select step"
     },
     "folder": {
       "label": "Folder"
@@ -1314,6 +1321,15 @@
     },
     "customRange": {
       "label": "Custom Range"
+    },
+    "messages": {
+      "label": "Messages"
+    },
+    "shortcut": {
+      "label": "Shortcut"
+    },
+    "savedReplies": {
+      "label": "Saved Replies"
     }
   },
   "flows": {
