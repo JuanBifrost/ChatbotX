@@ -1,7 +1,6 @@
 import { db } from "@aha.chat/database/client"
 import {
   accountModel,
-  jwkModel,
   sessionModel,
   userModel,
   verificationModel,
@@ -14,8 +13,9 @@ import {
 import { createId } from "@paralleldrive/cuid2"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
-import { anonymous, jwt, magicLink, oneTimeToken } from "better-auth/plugins"
+import { anonymous, magicLink, oneTimeToken } from "better-auth/plugins"
 import { env } from "@/env"
+
 import { googleSignInConfig } from "./auth-config"
 
 export const auth = betterAuth({
@@ -26,7 +26,6 @@ export const auth = betterAuth({
       verification: verificationModel,
       session: sessionModel,
       account: accountModel,
-      jwks: jwkModel,
     },
   }),
   socialProviders: {
@@ -92,7 +91,6 @@ export const auth = betterAuth({
       emailDomainName: "anonymous.aha.chat",
       generateName: () => `Anonymous ${createId()}`,
     }),
-    jwt(),
   ],
   session: {
     cookieCache: {

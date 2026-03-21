@@ -15,9 +15,11 @@ import {
   varchar,
   vector,
 } from "drizzle-orm/pg-core"
+import type { OrganizationSettings } from "./organization-settings"
 import { sharedColumns, timestampConfig } from "./shared"
 
 export * from "drizzle-orm/zod"
+export * from "./enterprise"
 
 export const logType = pgEnum("LogType", ["error", "audit"])
 export const customFieldType = pgEnum("CustomFieldType", [
@@ -80,7 +82,6 @@ export const analyticsStatusEnum = pgEnum("AnalyticsStatus", [
   "ingested",
   "failed",
 ])
-
 export const aiTriggerToIntegrationOpenAIModel = pgTable(
   "_AITriggerToIntegrationOpenAI",
   {
@@ -1344,26 +1345,6 @@ export const errorLogModel = pgTable("ErrorLog", {
   }),
 })
 
-export const auditLogModel = pgTable("AuditLog", {
-  ...sharedColumns,
-  action: text().notNull(),
-  detail: text().notNull(),
-  chatbotId: text()
-    .notNull()
-    .references(() => chatbotModel.id, {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-      name: "AuditLog_chatbotId_fkey",
-    }),
-  userId: text()
-    .notNull()
-    .references(() => userModel.id, {
-      onDelete: "set null",
-      onUpdate: "cascade",
-      name: "AuditLog_userId_fkey",
-    }),
-})
-
 export const savedReplyModel = pgTable("SavedReply", {
   ...sharedColumns,
   shortcut: text().notNull(),
@@ -1446,7 +1427,7 @@ export const organizationModel = pgTable(
     metadata: text(),
     domain: text(),
     supportEmail: text(),
-    settings: jsonb().default({}).notNull(),
+    settings: jsonb().$type<OrganizationSettings>().default({}).notNull(),
     defaultMaxContacts: integer().default(999_999_999).notNull(),
   },
   (table) => [
