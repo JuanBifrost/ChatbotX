@@ -25,6 +25,7 @@ export class ContactTrackingService extends BaseService {
       contact_id: event.contactId,
       event_type: event.eventType,
       sender_type: event.senderType || "",
+      admin_id: event.adminId || "",
       occurred_at: Math.floor(event.occurredAt.getTime() / 1000),
       source: event.source || null,
       source_id: event.sourceId || null,

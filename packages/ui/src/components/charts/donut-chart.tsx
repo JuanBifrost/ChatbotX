@@ -25,7 +25,7 @@ export function DonutChart({
   helpText,
 }: DonutChartProps) {
   const chartData =
-    data.length === 0 ? [{ name: "No data", value: 1, color: "#e5e7eb" }] : data
+    data.length === 0 ? [{ name: "No data", value: 0, color: "#e5e7eb" }] : data
 
   return (
     <Card className="flex-1">

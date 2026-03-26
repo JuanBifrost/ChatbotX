@@ -13,9 +13,7 @@ export async function findInvitation({ code }: { code: string }) {
   const invitation = await findOrFail(
     invitationModel,
     {
-      where: {
-        code,
-      },
+      code,
     },
     "Invitation not found",
   )
@@ -26,9 +24,7 @@ export async function findInvitation({ code }: { code: string }) {
   const user = await findOrFail(
     userModel,
     {
-      where: {
-        id: invitation.invitedBy,
-      },
+      id: invitation.invitedBy,
     },
     "User not found",
   )
@@ -46,9 +42,7 @@ export async function findInvitation({ code }: { code: string }) {
   const organization = await findOrFail(
     organizationModel,
     {
-      where: {
-        id: invitation.organizationId,
-      },
+      id: invitation.organizationId,
     },
     "Organization not found",
   )

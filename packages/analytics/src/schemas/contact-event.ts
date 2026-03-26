@@ -12,6 +12,7 @@ export const contactSenderTypeSchema = z.enum(["bot", "human", ""])
 export type ContactSenderType = z.infer<typeof contactSenderTypeSchema>
 
 export const contactEventSchema = z.object({
+  adminId: z.string().optional(),
   channel: z.string().optional(),
   chatbotId: z.string(),
   contactId: z.string(),

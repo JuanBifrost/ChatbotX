@@ -49,6 +49,13 @@ export class Uploader {
     return env.S3_ACCESS_KEY_ID ?? ""
   }
 
+  get endpoint(): string | undefined {
+    return env.S3_ENDPOINT
+  }
+  get region(): string {
+    return env.S3_REGION
+  }
+
   get secretAccessKey(): string {
     return env.S3_SECRET_ACCESS_KEY ?? ""
   }

@@ -8,6 +8,10 @@ import {
 } from "@chatbotx.io/analytics/schemas"
 import { os } from "@orpc/server"
 import z from "zod"
+import {
+  getHumanAgentStatsResponseSchema,
+  getMessagesByAdminStatsResponseSchema,
+} from "../../../analytics/src/schemas/contact-stats"
 
 export const analyticsContactRoutes = os.router({
   contactCountsPerDayAnalyticsAPI: os
@@ -105,6 +109,32 @@ export const analyticsContactRoutes = os.router({
           data = []
       }
 
+      return { data }
+    }),
+  messagesByAdminAnalyticsAPI: os
+    .route({
+      method: "GET",
+      path: "/analytics/messages-by-admin",
+      summary: "Get messages sent by admin",
+      tags: ["Analytics"],
+    })
+    .input(timeRangeQuerySchema)
+    .output(getMessagesByAdminStatsResponseSchema)
+    .handler(async ({ input }) => {
+      const data = await contactAnalyticsService.getMessagesByAdmin(input)
+      return { data }
+    }),
+  humanAgentStatsAnalyticsAPI: os
+    .route({
+      method: "GET",
+      path: "/analytics/human-agent-stats",
+      summary: "Get human agent statistics",
+      tags: ["Analytics"],
+    })
+    .input(timeRangeQuerySchema)
+    .output(getHumanAgentStatsResponseSchema)
+    .handler(async ({ input }) => {
+      const data = await contactAnalyticsService.getHumanAgentStats(input)
       return { data }
     }),
 })

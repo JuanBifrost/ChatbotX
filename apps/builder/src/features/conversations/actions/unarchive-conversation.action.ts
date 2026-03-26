@@ -2,6 +2,8 @@
 
 import { and, db, eq, inArray } from "@aha.chat/database/client"
 import { conversationModel } from "@aha.chat/database/schema"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
+import { createId } from "@paralleldrive/cuid2"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -22,6 +24,19 @@ export const unarchiveConversationAction = chatbotActionClient
       bindArgsParsedInputs: ChatbotIdRequestParams
       parsedInput: BulkUpdateIdsRequest
     }) => {
+      const conversations = await db.query.conversationModel.findMany({
+        where: {
+          chatbotId,
+          id: {
+            in: parsedInput.ids,
+          },
+        },
+        columns: {
+          id: true,
+          channel: true,
+        },
+      })
+
       await db
         .update(conversationModel)
         .set({
@@ -33,6 +48,27 @@ export const unarchiveConversationAction = chatbotActionClient
             inArray(conversationModel.id, parsedInput.ids),
           ),
         )
+
+      for (const conv of conversations) {
+        await conversationTrackingService.trackEvent(
+          {
+            chatbotId,
+            conversationId: conv.id,
+            eventType: "conversation_unarchived",
+            eventId: createId(),
+            channel: conv.channel,
+            occurredAt: new Date(),
+            metadata: {
+              triggerContext: {
+                triggerSource: "api",
+                triggerHandler: "unarchiveConversationAction",
+                triggerType: "conversation_unarchived",
+              },
+            },
+          },
+          { skipSpooler: true },
+        )
+      }
 
       revalidateCacheTags(`chatbots:${chatbotId}#conversations`)
     },

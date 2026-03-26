@@ -2,6 +2,8 @@
 
 import { and, db, eq } from "@aha.chat/database/client"
 import { conversationModel } from "@aha.chat/database/schema"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
+import { createId } from "@paralleldrive/cuid2"
 import {
   type ChatbotIdAndIdRequestParams,
   chatbotIdAndIdRequestParams,
@@ -17,6 +19,21 @@ export const unfollowConversationAction = chatbotActionClient
     }: {
       bindArgsParsedInputs: ChatbotIdAndIdRequestParams
     }) => {
+      const conversation = await db.query.conversationModel.findFirst({
+        where: {
+          id,
+          chatbotId,
+        },
+        columns: {
+          id: true,
+          channel: true,
+        },
+      })
+
+      if (!conversation) {
+        throw new Error("Conversation not found")
+      }
+
       await db
         .update(conversationModel)
         .set({
@@ -28,6 +45,25 @@ export const unfollowConversationAction = chatbotActionClient
             eq(conversationModel.chatbotId, chatbotId),
           ),
         )
+
+      await conversationTrackingService.trackEvent(
+        {
+          chatbotId,
+          conversationId: conversation.id,
+          eventType: "conversation_unfollowed",
+          eventId: createId(),
+          channel: conversation.channel,
+          occurredAt: new Date(),
+          metadata: {
+            triggerContext: {
+              triggerSource: "api",
+              triggerHandler: "unfollowConversationAction",
+              triggerType: "conversation_unfollowed",
+            },
+          },
+        },
+        { skipSpooler: true },
+      )
 
       revalidateCacheTags([
         `chatbots:${chatbotId}#contacts`,

@@ -1,60 +1,44 @@
 "use client"
 
 import BarChart from "@aha.chat/ui/components/charts/bar-chart"
+import { eachDayOfInterval, format } from "date-fns"
 import { useTranslations } from "next-intl"
+import { useMemo } from "react"
+import { useAnalysisStore } from "../../provider/analysis-store-context"
 
 export function ArchivedConversationChart() {
   const t = useTranslations()
-  return (
-    <BarChart
-      data={[
-        {
-          name: "Jan 7",
-          value: [
-            {
-              label: t("analytics.conversations"),
-              value: 1,
-            },
-          ],
-        },
-        {
-          name: "Jan 8",
-          value: [
-            {
-              label: t("analytics.conversations"),
-              value: 2,
-            },
-          ],
-        },
-        {
-          name: "Jan 9",
-          value: [
-            {
-              label: t("analytics.conversations"),
-              value: 0,
-            },
-          ],
-        },
-        {
-          name: "Jan 10",
-          value: [
-            {
-              label: t("analytics.conversations"),
-              value: 3,
-            },
-          ],
-        },
-        {
-          name: "Jan 11",
-          value: [
-            {
-              label: t("analytics.conversations"),
-              value: 1,
-            },
-          ],
-        },
-      ]}
-      title={t("analytics.archivedConversations")}
-    />
+  const conversationArchived = useAnalysisStore(
+    (state) => state.conversationArchived,
   )
+  const from = useAnalysisStore((state) => state.from)
+  const to = useAnalysisStore((state) => state.to)
+
+  const data = useMemo(() => {
+    const groupedByDate = new Map<string, number>()
+
+    for (const stat of conversationArchived) {
+      const dateKey = format(new Date(stat.timestamp), "MMM d, yyyy")
+      const existing = groupedByDate.get(dateKey) || 0
+      groupedByDate.set(dateKey, existing + stat.count)
+    }
+
+    const allDates = eachDayOfInterval({ start: from, end: to })
+
+    return allDates.map((date) => {
+      const dateKey = format(date, "MMM d, yyyy")
+      const count = groupedByDate.get(dateKey) || 0
+      return {
+        name: dateKey,
+        value: [
+          {
+            label: t("analytics.conversations"),
+            value: count,
+          },
+        ],
+      }
+    })
+  }, [conversationArchived, from, to, t])
+
+  return <BarChart data={data} title={t("analytics.archivedConversations")} />
 }

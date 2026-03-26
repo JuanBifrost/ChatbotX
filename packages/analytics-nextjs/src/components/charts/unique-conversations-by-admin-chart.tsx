@@ -2,26 +2,28 @@
 
 import { DonutChart } from "@aha.chat/ui/components/charts/donut-chart"
 import { useTranslations } from "next-intl"
+import { useMemo } from "react"
+import { useAnalysisStore } from "../../provider/analysis-store-context"
 
 export function UniqueConversationsByAdminChart() {
   const t = useTranslations()
+  const uniqueConversationsByAdmin = useAnalysisStore(
+    (state) => state.uniqueConversationsByAdmin,
+  )
+
+  const data = useMemo(() => {
+    return uniqueConversationsByAdmin.map((stat) => ({
+      name: stat.userName || stat.userEmail || stat.toAssignee,
+      value: stat.count,
+    }))
+  }, [uniqueConversationsByAdmin])
+
   return (
     <DonutChart
-      data={[
-        { name: "A", value: 400 },
-        { name: "B", value: 300 },
-        { name: "C", value: 300 },
-        { name: "D", value: 200 },
-        {
-          name: "E",
-          value: 278,
-        },
-        { name: "F", value: 189 },
-        { name: "G", value: 100 },
-      ]}
+      data={data}
       helpText={t("analytics.uniqueConversationsByAdminsHelp")}
       title={t("analytics.uniqueConversationsByAdmins")}
-      valueLabel={t("analytics.contacts")}
+      valueLabel={t("analytics.conversations")}
     />
   )
 }

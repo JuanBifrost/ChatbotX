@@ -4,6 +4,8 @@ import { and, db, eq, inArray } from "@aha.chat/database/client"
 import { conversationModel } from "@aha.chat/database/schema"
 import type { UserModel } from "@aha.chat/database/types"
 import { emitConversationTransferredToBot } from "@chatbotx/events"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
+import { createId } from "@paralleldrive/cuid2"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -37,6 +39,7 @@ export const enableBotAction = chatbotActionClient
         columns: {
           id: true,
           contactId: true,
+          channel: true,
         },
       })
 
@@ -67,6 +70,27 @@ export const enableBotAction = chatbotActionClient
             error,
           )
         }
+      }
+
+      for (const conv of conversations) {
+        await conversationTrackingService.trackEvent(
+          {
+            chatbotId,
+            conversationId: conv.id,
+            eventType: "conversation_transferred_to_bot",
+            eventId: createId(),
+            channel: conv.channel,
+            occurredAt: new Date(),
+            metadata: {
+              triggerContext: {
+                triggerSource: "api",
+                triggerHandler: "enableBotAction",
+                triggerType: "conversation_transferred_to_bot",
+              },
+            },
+          },
+          { skipSpooler: true },
+        )
       }
 
       revalidateCacheTags(`chatbots:${chatbotId}#conversations`)

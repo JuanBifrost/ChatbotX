@@ -19,6 +19,7 @@ import {
 
 import baseLogger from "@aha.chat/logger"
 import { IntegrationJobAction, integrationQueue } from "@aha.chat/worker-config"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { createId } from "@paralleldrive/cuid2"
 import {
   clearSpreadsheetRow,
@@ -215,6 +216,28 @@ export class ActionExecutor {
           .update(conversationModel)
           .set({ liveChatEnabled: true })
           .where(eq(conversationModel.id, conversation.id))
+        conversationTrackingService
+          .trackEvent({
+            eventId: createId(),
+            chatbotId,
+            conversationId: conversation.id,
+            eventType: "conversation_transferred_to_human",
+            channel: conversation.channel,
+            occurredAt: new Date(),
+            metadata: {
+              triggerContext: {
+                triggerSource: "worker",
+                triggerHandler: "actionExecutor.disableBot",
+                triggerType: "trigger_action",
+              },
+            },
+          })
+          .catch((error) => {
+            baseLogger.error(
+              error,
+              "[actionExecutor.disableBot] Failed to track",
+            )
+          })
         break
 
       case TriggerAction.enableBot:
@@ -222,6 +245,28 @@ export class ActionExecutor {
           .update(conversationModel)
           .set({ liveChatEnabled: false })
           .where(eq(conversationModel.id, conversation.id))
+        conversationTrackingService
+          .trackEvent({
+            eventId: createId(),
+            chatbotId,
+            conversationId: conversation.id,
+            eventType: "conversation_transferred_to_bot",
+            channel: conversation.channel,
+            occurredAt: new Date(),
+            metadata: {
+              triggerContext: {
+                triggerSource: "worker",
+                triggerHandler: "actionExecutor.enableBot",
+                triggerType: "trigger_action",
+              },
+            },
+          })
+          .catch((error) => {
+            baseLogger.error(
+              error,
+              "[actionExecutor.enableBot] Failed to track",
+            )
+          })
         break
 
       case TriggerAction.transferConversationToHuman:
@@ -234,6 +279,28 @@ export class ActionExecutor {
             `Notifying admins for conversation ${conversation.id}`,
           )
         }
+        conversationTrackingService
+          .trackEvent({
+            eventId: createId(),
+            chatbotId,
+            conversationId: conversation.id,
+            eventType: "conversation_transferred_to_human",
+            channel: conversation.channel,
+            occurredAt: new Date(),
+            metadata: {
+              triggerContext: {
+                triggerSource: "worker",
+                triggerHandler: "actionExecutor.transferConversationToHuman",
+                triggerType: "trigger_action",
+              },
+            },
+          })
+          .catch((error) => {
+            baseLogger.error(
+              error,
+              "[actionExecutor.transferConversationToHuman] Failed to track",
+            )
+          })
         break
 
       case TriggerAction.runGoogleSheet: {

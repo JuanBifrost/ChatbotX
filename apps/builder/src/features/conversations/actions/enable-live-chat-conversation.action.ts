@@ -2,6 +2,8 @@ import { and, db, eq, inArray } from "@aha.chat/database/client"
 import { conversationModel } from "@aha.chat/database/schema"
 import type { UserModel } from "@aha.chat/database/types"
 import { emitConversationTransferredToHuman } from "@chatbotx/events"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
+import { createId } from "@paralleldrive/cuid2"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -35,6 +37,7 @@ export const enableLiveChatConversationAction = chatbotActionClient
         columns: {
           id: true,
           contactId: true,
+          channel: true,
         },
       })
 
@@ -65,6 +68,27 @@ export const enableLiveChatConversationAction = chatbotActionClient
             error,
           )
         }
+      }
+
+      for (const conv of conversations) {
+        await conversationTrackingService.trackEvent(
+          {
+            chatbotId,
+            conversationId: conv.id,
+            eventType: "conversation_transferred_to_human",
+            eventId: createId(),
+            channel: conv.channel,
+            occurredAt: new Date(),
+            metadata: {
+              triggerContext: {
+                triggerSource: "api",
+                triggerHandler: "enableLiveChatConversationAction",
+                triggerType: "conversation_transferred_to_human",
+              },
+            },
+          },
+          { skipSpooler: true },
+        )
       }
 
       revalidateCacheTags([

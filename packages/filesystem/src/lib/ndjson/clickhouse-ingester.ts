@@ -108,7 +108,7 @@ export class ClickhouseIngester {
         return
       }
 
-      const s3Url = `${this.s3Client.bucketName}/${this.config.s3Prefix}/${objectKey}`
+      const s3Url = `${this.s3Client.endpoint}/${this.s3Client.bucketName}/${objectKey}`
 
       const query = `
         INSERT INTO ${this.config.clickhouseDatabase}.${this.config.clickhouseTable}

@@ -169,31 +169,10 @@ export const createMessage = async (props: {
   const contact = await findOrFail(
     contactModel,
     {
-      where: {
-        id: conversation.contactId,
-      },
+      id: conversation.contactId,
     },
     "Contact not found",
   )
-
-  if (contact.sourceId) {
-    promises.push(
-      contactTrackingService.trackEvent({
-        chatbotId: message.chatbotId,
-        contactId: contact.sourceId,
-        eventType: "contact_message_out",
-        occurredAt: new Date(),
-        source: contact.source,
-        sourceId: contact.sourceId,
-        channel: conversation.channel,
-        country: undefined,
-        metadata: {
-          messageId: message.id,
-          conversationId: message.conversationId,
-        },
-      }),
-    )
-  }
 
   if (conversation.sourceId?.startsWith(WEBCHAT_SOURCE_PREFIX)) {
     promises.push(
@@ -227,6 +206,7 @@ export const createMessage = async (props: {
         contactId: contact.sourceId,
         eventType: "contact_message_out",
         senderType: "human",
+        adminId: user?.id ?? "",
         occurredAt: new Date(),
         source: contact.source,
         sourceId: contact.sourceId,
@@ -235,7 +215,6 @@ export const createMessage = async (props: {
         metadata: {
           messageId: message.id,
           conversationId: message.conversationId,
-          adminId: user?.id ?? "",
         },
       }),
     )

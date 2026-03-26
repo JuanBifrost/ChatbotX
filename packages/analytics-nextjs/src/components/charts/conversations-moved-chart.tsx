@@ -1,7 +1,7 @@
 "use client"
 
 import BarChart from "@aha.chat/ui/components/charts/bar-chart"
-import { format } from "date-fns"
+import { eachDayOfInterval, format } from "date-fns"
 import { useTranslations } from "next-intl"
 import { useMemo } from "react"
 import { useAnalysisStore } from "../../provider/analysis-store-context"
@@ -11,6 +11,8 @@ export function ConversationsMovedChart() {
   const conversationHandoffs = useAnalysisStore(
     (state) => state.conversationHandoffs,
   )
+  const from = useAnalysisStore((state) => state.from)
+  const to = useAnalysisStore((state) => state.to)
 
   const data = useMemo(() => {
     const groupedByDate = new Map<
@@ -18,24 +20,15 @@ export function ConversationsMovedChart() {
       {
         to_human: number
         to_bot: number
-        firstTimestampMs: number
       }
     >()
 
     for (const item of conversationHandoffs) {
-      const timestampMs = new Date(item.timestamp).getTime()
-      const dateKey = format(new Date(item.timestamp), "MMM d")
-      const existing =
-        groupedByDate.get(dateKey) ||
-        ({
-          to_human: 0,
-          to_bot: 0,
-          firstTimestampMs: timestampMs,
-        } as {
-          to_human: number
-          to_bot: number
-          firstTimestampMs: number
-        })
+      const dateKey = format(new Date(item.timestamp), "MMM d, yyyy")
+      const existing = groupedByDate.get(dateKey) || {
+        to_human: 0,
+        to_bot: 0,
+      }
 
       if (item.direction === "to_human") {
         existing.to_human += item.count
@@ -43,22 +36,26 @@ export function ConversationsMovedChart() {
         existing.to_bot += item.count
       }
 
-      groupedByDate.set(dateKey, {
-        ...existing,
-        firstTimestampMs: Math.min(existing.firstTimestampMs, timestampMs),
-      })
+      groupedByDate.set(dateKey, existing)
     }
 
-    return Array.from(groupedByDate.entries())
-      .sort((a, b) => a[1].firstTimestampMs - b[1].firstTimestampMs)
-      .map(([date, counts]) => ({
-        name: date,
+    const allDates = eachDayOfInterval({ start: from, end: to })
+
+    return allDates.map((date) => {
+      const dateKey = format(date, "MMM d, yyyy")
+      const counts = groupedByDate.get(dateKey) || {
+        to_human: 0,
+        to_bot: 0,
+      }
+      return {
+        name: dateKey,
         value: [
           { label: t("analytics.human"), value: counts.to_human },
           { label: t("analytics.bot"), value: counts.to_bot },
         ],
-      }))
-  }, [conversationHandoffs, t])
+      }
+    })
+  }, [conversationHandoffs, from, to, t])
 
   return (
     <BarChart

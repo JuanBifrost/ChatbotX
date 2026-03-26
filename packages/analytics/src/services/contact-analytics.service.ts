@@ -7,6 +7,10 @@ import type {
   MessagesBySenderStats,
   TimeRangeQuery,
 } from "../schemas"
+import type {
+  HumanAgentStats,
+  MessagesByAdminStats,
+} from "../schemas/contact-stats"
 
 export class ContactAnalyticsService {
   getStatsByMinute(
@@ -69,6 +73,14 @@ export class ContactAnalyticsService {
     },
   ): Promise<MessagesBySenderStats[]> {
     return contactStatsRepository.getMessagesBySender(props)
+  }
+
+  getMessagesByAdmin(props: TimeRangeQuery): Promise<MessagesByAdminStats[]> {
+    return contactStatsRepository.getMessagesByAdmin(props)
+  }
+
+  getHumanAgentStats(props: TimeRangeQuery): Promise<HumanAgentStats[]> {
+    return contactStatsRepository.getHumanAgentStats(props)
   }
 }
 

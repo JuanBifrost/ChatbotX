@@ -4,6 +4,8 @@ import { and, db, eq } from "@aha.chat/database/client"
 import { conversationModel } from "@aha.chat/database/schema"
 import type { UserModel } from "@aha.chat/database/types"
 import { emitConversationFollowUp } from "@chatbotx/events"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
+import { createId } from "@paralleldrive/cuid2"
 import {
   type ChatbotIdAndIdRequestParams,
   chatbotIdAndIdRequestParams,
@@ -30,6 +32,7 @@ export const followConversationAction = chatbotActionClient
         columns: {
           id: true,
           contactId: true,
+          channel: true,
         },
       })
 
@@ -60,17 +63,24 @@ export const followConversationAction = chatbotActionClient
         console.error("Failed to emit conversationFollowUp event:", error)
       }
 
-      // Emit conversation follow up event
-      try {
-        await emitConversationFollowUp(
+      await conversationTrackingService.trackEvent(
+        {
           chatbotId,
-          conversation.contactId,
-          conversation.id,
-          ctx.user.id,
-        )
-      } catch (error) {
-        console.error("Failed to emit conversationFollowUp event:", error)
-      }
+          conversationId: conversation.id,
+          eventType: "conversation_followed",
+          eventId: createId(),
+          channel: conversation.channel,
+          occurredAt: new Date(),
+          metadata: {
+            triggerContext: {
+              triggerSource: "api",
+              triggerHandler: "followConversationAction",
+              triggerType: "conversation_followed",
+            },
+          },
+        },
+        { skipSpooler: true },
+      )
 
       revalidateCacheTags([
         `chatbots:${chatbotId}#contacts`,

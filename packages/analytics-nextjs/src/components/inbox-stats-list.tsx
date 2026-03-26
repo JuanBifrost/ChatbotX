@@ -40,7 +40,7 @@ export default function InboxStatsList() {
         </CardContent>
       </Card>
 
-      <Card className="flex-1 py-4">
+      {/* <Card className="flex-1 py-4">
         <CardContent className="flex flex-col items-center justify-center gap-2 px-4">
           <h3 className="text-sm">{t("analytics.responseTime")}</h3>
           <p className="font-bold text-sm">Coming soon</p>
@@ -52,7 +52,7 @@ export default function InboxStatsList() {
           <h3 className="text-sm">{t("analytics.firstResponseTime")}</h3>
           <p className="font-bold text-sm">Coming soon</p>
         </CardContent>
-      </Card>
+      </Card> */}
     </div>
   )
 }

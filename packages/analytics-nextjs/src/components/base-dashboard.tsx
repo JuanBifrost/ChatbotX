@@ -4,10 +4,6 @@ import { AllContactsByChannelChart } from "./charts/all-contacts-by-channel-char
 import { ArchivedConversationChart } from "./charts/archived-conversation-chart"
 import { AssignedConversationsByAdminChart } from "./charts/assigned-conversations-by-admin-chart"
 import { AssignedConversationsChart } from "./charts/assigned-conversations-chart"
-import { AvgConversationDurationChart } from "./charts/avg-conversation-duration-chart"
-import { AvgFirstResponseMinutesByAdminChart } from "./charts/avg-first-response-minutes-by-admin-chart"
-import { AvgResponseMinutesByAdminChart } from "./charts/avg-response-minutes-by-admin-chart"
-import { AvgResponseMinutesChart } from "./charts/avg-response-minutes-chart"
 import { BlockedContactsChart } from "./charts/blocked-contacts-chart"
 import { BotMessagesByResultChart } from "./charts/bot-messages-by-result-chart"
 import { ContactCountsChart } from "./charts/contact-counts-chart"
@@ -36,47 +32,25 @@ export function BaseDashboard({
       <div className="grid grid-cols-2 gap-4">
         <ContactCountsChart />
         <NewContactCountsChart />
-        <AvgResponseMinutesChart />
-        <AvgFirstResponseMinutesByAdminChart />
-        <AvgResponseMinutesByAdminChart />
-        <AvgConversationDurationChart />
-        <AdminsAnalysis />
-        <BotMessagesByResultChart />
-        <MessagesBySenderChart />
-        <ConversationsMovedChart />
-        <UniqueConversationsByAdminChart />
-        <MessagesSentByAdminsChart />
         <AllContactsByChannelChart />
         <ContactsByChannelChart />
         <ContactsBySourceChart />
+        <ContactsByCountryChart />
+        <BlockedContactsChart />
+        {/* <AvgResponseMinutesChart /> */}
+        {/* <AvgFirstResponseMinutesByAdminChart /> */}
+        {/* <AvgResponseMinutesByAdminChart /> */}
+        {/* <AvgConversationDurationChart /> */}
+        <BotMessagesByResultChart />
+        <MessagesBySenderChart />
+        <ConversationsMovedChart />
+        <AdminsAnalysis />
+        <UniqueConversationsByAdminChart />
+        <MessagesSentByAdminsChart />
         <AssignedConversationsByAdminChart />
         <AssignedConversationsChart />
         <FollowUpConversations />
         <ArchivedConversationChart />
-        <BlockedContactsChart />
-        <ContactsByCountryChart />
-      </div>
-    </AnalysisStoreProvider>
-  )
-}
-
-export function Base2Dashboard({
-  defaultSearchParams,
-}: {
-  defaultSearchParams: { [x: string]: string }
-}) {
-  return (
-    <AnalysisStoreProvider defaultSearchParams={defaultSearchParams}>
-      asdfasfsdf
-      <AnalysisFilterForm defaultPreset="last7" />
-      <InboxStatsList />
-      <div className="grid grid-cols-2 gap-4">
-        <ContactCountsChart />
-        <NewContactCountsChart />
-        <AvgResponseMinutesChart />
-        <AvgFirstResponseMinutesByAdminChart />
-        <AvgResponseMinutesByAdminChart />
-        <AvgConversationDurationChart />
       </div>
     </AnalysisStoreProvider>
   )

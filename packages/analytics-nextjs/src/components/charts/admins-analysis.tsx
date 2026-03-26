@@ -1,6 +1,5 @@
 "use client"
 
-import type { ChatbotMemberModel, UserModel } from "@aha.chat/database/types"
 import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
 import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
 import {
@@ -11,69 +10,33 @@ import {
 } from "@aha.chat/ui/components/ui/card"
 import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
 import type { ColumnDef } from "@aha.chat/ui/types/data-table"
+import type { HumanAgentStats } from "@chatbotx.io/analytics"
 import { useTranslations } from "next-intl"
 import { useMemo } from "react"
+import { useAnalysisStore } from "../../provider/analysis-store-context"
 
-type AdminsAnalysisData = ChatbotMemberModel & {
-  messagesSent: number
-  contacts: number
-  responseTime: number
-  firstResponseTime: number
-  assignedConversations: number
-  user: UserModel
-}
+type AdminsAnalysisData = HumanAgentStats
 
 export function AdminsAnalysis() {
   const t = useTranslations()
+  const humanAgentStats = useAnalysisStore((state) => state.humanAgentStats)
 
-  const data = [
-    {
-      id: "1",
-      user: {
-        name: "John Doe",
-      },
-      messagesSent: 150,
-      contacts: 75,
-      responseTime: 30,
-      firstResponseTime: 20,
-      assignedConversations: 10,
-    },
-    {
-      id: "2",
-      user: {
-        name: "Jane Smith",
-      },
-      messagesSent: 200,
-      contacts: 100,
-      responseTime: 25,
-      firstResponseTime: 15,
-      assignedConversations: 20,
-    },
-    {
-      id: "3",
-      user: {
-        name: "Alice Johnson",
-      },
-      messagesSent: 180,
-      contacts: 90,
-      responseTime: 28,
-      firstResponseTime: 18,
-      assignedConversations: 15,
-    },
-  ] as unknown as AdminsAnalysisData[]
+  const data = useMemo(() => humanAgentStats, [humanAgentStats])
 
   const columns = useMemo<ColumnDef<AdminsAnalysisData>[]>(
     () => [
       {
         id: "name",
-        accessorKey: "name",
+        accessorKey: "userName",
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Name" />
         ),
         cell: ({ row }) => (
-          <>
-            <div>{(row.original.user as UserModel).name}</div>
-          </>
+          <div>
+            {row.original.userName ||
+              row.original.userEmail ||
+              row.original.adminId}
+          </div>
         ),
         enableSorting: true,
         enableHiding: false,
@@ -88,38 +51,38 @@ export function AdminsAnalysis() {
         enableHiding: false,
       },
       {
-        id: "contacts",
-        accessorKey: "contacts",
+        id: "uniqueContacts",
+        accessorKey: "uniqueContacts",
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title="Contacts" />
         ),
         enableSorting: true,
         enableHiding: false,
       },
-      {
-        id: "responseTime",
-        accessorKey: "responseTime",
-        header: ({ column }) => (
-          <DataTableColumnHeader
-            column={column}
-            title="Avg. Response Time (mins)"
-          />
-        ),
-        enableSorting: true,
-        enableHiding: false,
-      },
-      {
-        id: "firstResponseTime",
-        accessorKey: "firstResponseTime",
-        header: ({ column }) => (
-          <DataTableColumnHeader
-            column={column}
-            title="Avg. First Response Time (mins)"
-          />
-        ),
-        enableSorting: true,
-        enableHiding: false,
-      },
+      // {
+      //   id: "responseTime",
+      //   accessorKey: "responseTime",
+      //   header: ({ column }) => (
+      //     <DataTableColumnHeader
+      //       column={column}
+      //       title="Avg. Response Time (mins)"
+      //     />
+      //   ),
+      //   enableSorting: true,
+      //   enableHiding: false,
+      // },
+      // {
+      //   id: "firstResponseTime",
+      //   accessorKey: "firstResponseTime",
+      //   header: ({ column }) => (
+      //     <DataTableColumnHeader
+      //       column={column}
+      //       title="Avg. First Response Time (mins)"
+      //     />
+      //   ),
+      //   enableSorting: true,
+      //   enableHiding: false,
+      // },
       {
         id: "assignedConversations",
         accessorKey: "assignedConversations",
@@ -141,10 +104,10 @@ export function AdminsAnalysis() {
     columns,
     pageCount: 1,
     initialState: {
-      sorting: [{ id: "createdAt", desc: true }],
+      sorting: [{ id: "messagesSent", desc: true }],
       columnPinning: { right: ["actions"] },
     },
-    getRowId: (originalRow) => originalRow.id,
+    getRowId: (originalRow) => originalRow.adminId,
     shallow: false,
     clearOnDefault: true,
   })
