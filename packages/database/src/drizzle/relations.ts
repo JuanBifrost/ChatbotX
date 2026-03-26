@@ -58,6 +58,11 @@ export const relations = defineRelations(schema, (r) => ({
     errorLogs: r.many.errorLogModel(),
     contactCustomFields: r.many.contactCustomFieldModel(),
     contactNotes: r.many.contactNoteModel(),
+    contactsOnSequences: r.many.contactsOnSequenceModel(),
+    sequences: r.many.sequenceModel({
+      from: r.contactModel.id.through(r.contactsOnSequenceModel.contactId),
+      to: r.sequenceModel.id.through(r.contactsOnSequenceModel.sequenceId),
+    }),
   },
   tagModel: {
     contactsToTags: r.many.contactsToTagsModel({
@@ -190,6 +195,13 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.folderModel.id.through(r.tagModel.folderId),
       alias: "chatbot_id_folder_id_via_tag",
     }),
+    sequences: r.many.sequenceModel(),
+    contactsOnSequences: r.many.contactsOnSequenceModel(),
+    triggers: r.many.triggerModel(),
+    webhooks: r.many.webhookModel(),
+    triggerStats: r.many.triggerStatsModel(),
+    triggerContactHistories: r.many.triggerContactHistoryModel(),
+    triggerExecutions: r.many.triggerExecutionModel(),
   },
   aiAgentModel: {
     chatbot: r.one.chatbotModel({
@@ -234,6 +246,7 @@ export const relations = defineRelations(schema, (r) => ({
     integrationWebchats: r.many.integrationWebchatModel(),
     integrationZalos: r.many.integrationZaloModel(),
     reflinks: r.many.reflinkModel(),
+    sequenceSteps: r.many.sequenceStepModel(),
   },
   aiMCPServerModel: {
     chatbot: r.one.chatbotModel({
@@ -647,28 +660,93 @@ export const relations = defineRelations(schema, (r) => ({
       to: r.customFieldModel.id,
     }),
   },
-  triggerModel: {
-    conditions: r.many.conditionModel(),
+  sequenceModel: {
+    folder: r.one.folderModel({
+      from: r.sequenceModel.folderId,
+      to: r.folderModel.id,
+    }),
     chatbot: r.one.chatbotModel({
-      from: r.triggerModel.chatbotId,
+      from: r.sequenceModel.chatbotId,
       to: r.chatbotModel.id,
+      optional: false,
+    }),
+    sequenceSteps: r.many.sequenceStepModel(),
+    contactsOnSequences: r.many.contactsOnSequenceModel(),
+    contacts: r.many.contactModel({
+      from: r.sequenceModel.id.through(r.contactsOnSequenceModel.sequenceId),
+      to: r.contactModel.id.through(r.contactsOnSequenceModel.contactId),
     }),
   },
-  webhookModel: {
-    conditions: r.many.conditionModel(),
-    chatbot: r.one.chatbotModel({
-      from: r.webhookModel.chatbotId,
-      to: r.chatbotModel.id,
+  sequenceStepModel: {
+    flow: r.one.flowModel({
+      from: r.sequenceStepModel.flowId,
+      to: r.flowModel.id,
+    }),
+    sequence: r.one.sequenceModel({
+      from: r.sequenceStepModel.sequenceId,
+      to: r.sequenceModel.id,
+      optional: false,
     }),
   },
-  conditionModel: {
-    trigger: r.one.triggerModel({
-      from: r.conditionModel.triggerId,
-      to: r.triggerModel.id,
+  contactsOnSequenceModel: {
+    contact: r.one.contactModel({
+      from: r.contactsOnSequenceModel.contactId,
+      to: r.contactModel.id,
+      optional: false,
     }),
-    webhook: r.one.webhookModel({
-      from: r.conditionModel.webhookId,
-      to: r.webhookModel.id,
+    sequence: r.one.sequenceModel({
+      from: r.contactsOnSequenceModel.sequenceId,
+      to: r.sequenceModel.id,
+      optional: false,
+    }),
+    chatbot: r.one.chatbotModel({
+      from: r.contactsOnSequenceModel.chatbotId,
+      to: r.chatbotModel.id,
+      optional: false,
+    }),
+  },
+  sequenceEventModel: {
+    chatbot: r.one.chatbotModel({
+      from: r.sequenceEventModel.chatbotId,
+      to: r.chatbotModel.id,
+      optional: false,
+    }),
+    sequence: r.one.sequenceModel({
+      from: r.sequenceEventModel.sequenceId,
+      to: r.sequenceModel.id,
+      optional: false,
+    }),
+    contact: r.one.contactModel({
+      from: r.sequenceEventModel.contactId,
+      to: r.contactModel.id,
+      optional: false,
+    }),
+  },
+  sequenceDispatchModel: {
+    chatbot: r.one.chatbotModel({
+      from: r.sequenceDispatchModel.chatbotId,
+      to: r.chatbotModel.id,
+      optional: false,
+    }),
+    sequence: r.one.sequenceModel({
+      from: r.sequenceDispatchModel.sequenceId,
+      to: r.sequenceModel.id,
+      optional: false,
+    }),
+    contact: r.one.contactModel({
+      from: r.sequenceDispatchModel.contactId,
+      to: r.contactModel.id,
+      optional: false,
+    }),
+    enrollment: r.one.contactsOnSequenceModel({
+      from: r.sequenceDispatchModel.enrollmentId,
+      to: r.contactsOnSequenceModel.id,
+      optional: false,
+    }),
+    step: r.one.sequenceStepModel({
+      from: r.sequenceDispatchModel.stepId,
+      to: r.sequenceStepModel.id,
+      optional: false,
     }),
   },
   inboxContactStatsModel: {
@@ -692,6 +770,84 @@ export const relations = defineRelations(schema, (r) => ({
     user: r.one.userModel({
       from: r.organizationMemberModel.userId,
       to: r.userModel.id,
+      optional: false,
+    }),
+  },
+  triggerModel: {
+    conditions: r.many.conditionModel(),
+    chatbot: r.one.chatbotModel({
+      from: r.triggerModel.chatbotId,
+      to: r.chatbotModel.id,
+    }),
+    folder: r.one.folderModel({
+      from: r.triggerModel.folderId,
+      to: r.folderModel.id,
+    }),
+  },
+  webhookModel: {
+    conditions: r.many.conditionModel(),
+    chatbot: r.one.chatbotModel({
+      from: r.webhookModel.chatbotId,
+      to: r.chatbotModel.id,
+    }),
+    folder: r.one.folderModel({
+      from: r.webhookModel.folderId,
+      to: r.folderModel.id,
+    }),
+  },
+  conditionModel: {
+    trigger: r.one.triggerModel({
+      from: r.conditionModel.triggerId,
+      to: r.triggerModel.id,
+    }),
+    webhook: r.one.webhookModel({
+      from: r.conditionModel.webhookId,
+      to: r.webhookModel.id,
+    }),
+  },
+  triggerStatsModel: {
+    trigger: r.one.triggerModel({
+      from: r.triggerStatsModel.triggerId,
+      to: r.triggerModel.id,
+      optional: false,
+    }),
+    chatbot: r.one.chatbotModel({
+      from: r.triggerStatsModel.chatbotId,
+      to: r.chatbotModel.id,
+      optional: false,
+    }),
+  },
+  triggerContactHistoryModel: {
+    trigger: r.one.triggerModel({
+      from: r.triggerContactHistoryModel.triggerId,
+      to: r.triggerModel.id,
+      optional: false,
+    }),
+    contact: r.one.contactModel({
+      from: r.triggerContactHistoryModel.contactId,
+      to: r.contactModel.id,
+      optional: false,
+    }),
+    chatbot: r.one.chatbotModel({
+      from: r.triggerContactHistoryModel.chatbotId,
+      to: r.chatbotModel.id,
+      optional: false,
+    }),
+  },
+  triggerExecutionModel: {
+    trigger: r.one.triggerModel({
+      from: r.triggerExecutionModel.triggerId,
+      to: r.triggerModel.id,
+      optional: false,
+    }),
+    contact: r.one.contactModel({
+      from: r.triggerExecutionModel.contactId,
+      to: r.contactModel.id,
+      optional: false,
+    }),
+    chatbot: r.one.chatbotModel({
+      from: r.triggerExecutionModel.chatbotId,
+      to: r.chatbotModel.id,
       optional: false,
     }),
   },

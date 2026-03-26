@@ -187,6 +187,7 @@ export const FolderType = {
   automatedResponse: "automatedResponse",
   trigger: "trigger",
   webhook: "webhook",
+  sequence: "sequence",
 } as const
 export type FolderType = (typeof FolderType)[keyof typeof FolderType]
 

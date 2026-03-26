@@ -167,7 +167,13 @@
     "addNotes": "Thêm ghi chú",
     "generate": "Tạo",
     "regenerate": "Tạo lại",
-    "qrCode": "Mã QR"
+    "qrCode": "Mã QR",
+    "addSequence": "Thêm chăm sóc",
+    "removeSequence": "Xóa chăm sóc",
+    "activate": "Kích hoạt",
+    "deactivate": "Tắt",
+    "saving": "Đang lưu...",
+    "creating": "Đang tạo..."
   },
   "states": {
     "success": "Thành công",
@@ -1369,6 +1375,9 @@
     },
     "savedReplies": {
       "label": "Phản hồi đã lưu"
+    },
+    "sequence": {
+      "label": "Chăm sóc"
     }
   },
   "flows": {
@@ -1453,7 +1462,10 @@
       "emailSpacing": "Khoảng cách",
       "emailCode": "Mã",
       "emailHeader": "Tiêu đề",
-      "typing": "Đang gõ"
+      "typing": "Đang gõ",
+      "sequenceActions": "Hành động chăm sóc",
+      "subscribeSequence": "Đăng ký chăm sóc",
+      "unsubscribeSequence": "Hủy đăng ký chăm sóc"
     },
     "additionalSteps": "Các bước bổ sung",
     "button": {
@@ -1737,9 +1749,6 @@
     "resetPasswordDescription": "Nhập mật khẩu mới của bạn bên dưới.",
     "signUpTitle": "Đăng ký vào {name}"
   },
-  "tools": {
-    "title": "Công cụ"
-  },
   "tags": {
     "title": "Thẻ",
     "heading": {
@@ -2021,5 +2030,192 @@
   "reflinks": {
     "title": "Liên kết giới thiệu",
     "description": "Chia sẻ bot của bạn trên trang web, mạng xã hội hoặc ứng dụng nhắn tin khác làm điểm vào để người dùng bắt đầu cuộc trò chuyện với bot."
+  },
+  "sequences": {
+    "heading": {
+      "title": "Chăm sóc"
+    },
+    "field": {
+      "placeholder": "Chọn",
+      "searchPlaceholder": "Tìm kiếm",
+      "emptyMessage": "Không tìm thấy"
+    },
+    "subscribers": "Người đăng ký",
+    "steps": "Các tin nhắn",
+    "step": "Tin nhắn",
+    "addStep": "Thêm tin nhắn",
+    "addFirstStep": "Thêm tin nhắn đầu tiên",
+    "noSteps": "Chưa có tin nhắn nào. Thêm tin nhắn đầu tiên để bắt đầu.",
+    "delayDays": "Độ trễ (Ngày)",
+    "delayHours": "Độ trễ (Giờ)",
+    "createNewReply": "Tạo kịch bản mới",
+    "selectExisting": "Chọn kịch bản có sẵn",
+    "selectFlow": "Chọn kịch bản",
+    "selectedFlow": "Kịch bản đã chọn",
+    "searchFlow": "Tìm kiếm kịch bản...",
+    "delay": "Độ trễ",
+    "delayValue": "Giá trị",
+    "after": "Sau tin nhắn",
+    "afterEnrollment": "Sau khi tham gia",
+    "pleaseSelectFlow": "Vui lòng chọn kịch bản",
+    "confirmDeleteStep": "Bạn có chắc chắn muốn xóa tin nhắn này?",
+    "delayUnits": {
+      "immediate": "Ngay lập tức",
+      "minutes": "Phút",
+      "hours": "Giờ",
+      "days": "Ngày",
+      "specificTime": "Thời gian chính xác"
+    },
+    "specificDateTime": "Ngày & Giờ",
+    "timeValidation": "Thời gian tin nhắn này phải sau tin nhắn trước",
+    "validation": {
+      "exception": "Lỗi xác thực",
+      "nameExists": "Tên chuỗi chăm sóc đã tồn tại",
+      "folderNameExists": "Tên thư mục đã tồn tại",
+      "maxDepthExceeded": "Vượt quá độ sâu thư mục tối đa ({depth} cấp)"
+    },
+    "maxOneFolder": "Một chuỗi chăm sóc chỉ có thể trong một thư mục",
+    "minOneSequenceRequired": "Cần ít nhất một chuỗi chăm sóc",
+    "activated": "Kích hoạt chăm sóc thành công",
+    "deactivated": "Tắt chăm sóc thành công",
+    "noFlowSelected": "Chưa chọn kịch bản",
+    "sendLabel": "Gửi",
+    "selectFlowFirst": "Vui lòng chọn kịch bản trước khi bật tin nhắn",
+    "delayValueRequired": "Vui lòng nhập giá trị thời gian chờ",
+    "specificTimeRequired": "Vui lòng chọn thời gian cụ thể",
+    "timeRangeRequired": "Vui lòng chọn khoảng thời gian gửi",
+    "invalidTimeRange": "Thời gian bắt đầu phải nhỏ hơn thời gian kết thúc",
+    "schedule": "Lịch trình",
+    "scheduleDescription": "Thiết lập thời gian gửi tin nhắn",
+    "sendTime": "Thời gian gửi",
+    "sendTimeDescription": "Tin nhắn chỉ được gửi trong khoảng thời gian này",
+    "timezone": "Múi giờ",
+    "timezoneDescription": "Tất cả thời gian theo múi giờ của chatbot",
+    "enableSchedule": "Bật lịch trình",
+    "startTime": "Thời gian bắt đầu",
+    "endTime": "Thời gian kết thúc",
+    "allDay": "Cả ngày",
+    "customTime": "Tùy chỉnh thời gian",
+    "enrollmentSettings": "Cài đặt đăng ký",
+    "enrollmentDescription": "Kiểm soát cách liên hệ được đăng ký vào chuỗi chăm sóc này",
+    "allowReEnrollment": "Cho phép đăng ký lại",
+    "allowReEnrollmentDescription": "Liên hệ có thể được đăng ký nhiều lần",
+    "skipWeekends": "Bỏ qua cuối tuần",
+    "skipWeekendsDescription": "Không gửi tin nhắn vào thứ Bảy và Chủ Nhật",
+    "unenrollOnReply": "Hủy đăng ký khi trả lời",
+    "unenrollOnReplyDescription": "Xóa liên hệ khỏi chuỗi chăm sóc khi họ trả lời",
+    "performance": "Hiệu suất",
+    "enrolled": "Đã đăng ký",
+    "completed": "Hoàn thành",
+    "openRate": "Tỷ lệ mở",
+    "clickRate": "Tỷ lệ nhấp",
+    "replyRate": "Tỷ lệ trả lời",
+    "unsubscribeRate": "Tỷ lệ hủy đăng ký",
+    "overview": "Tổng quan",
+    "analytics": "Phân tích",
+    "settings": "Cài đặt",
+    "flow": "Kịch bản",
+    "active": "Hoạt động",
+    "messageSentAtLeast": "Tin nhắn này sẽ được gửi ít nhất",
+    "afterPreviousMessage": "sau tin nhắn trước đó (ngày = 24h)",
+    "anyTime": "Bất kỳ lúc nào",
+    "setTimeRange": "Đặt khoảng thời gian gửi",
+    "sendBetween": "Gửi trong khoảng",
+    "from": "Từ",
+    "to": "đến",
+    "selectDays": "Chọn ngày",
+    "anyDay": "Bất kỳ ngày nào",
+    "allDays": "Tất cả các ngày",
+    "deselectAll": "Bỏ chọn tất cả",
+    "saveUpdateSchedule": "Lưu & Cập nhật lịch trình",
+    "monday": "Thứ Hai",
+    "tuesday": "Thứ Ba",
+    "wednesday": "Thứ Tư",
+    "thursday": "Thứ Năm",
+    "friday": "Thứ Sáu",
+    "saturday": "Thứ Bảy",
+    "sunday": "Chủ Nhật",
+    "mon": "T2",
+    "tue": "T3",
+    "wed": "T4",
+    "thu": "T5",
+    "fri": "T6",
+    "sat": "T7",
+    "sun": "CN",
+    "afterText": "Sau",
+    "folders": {
+      "title": "Thư mục",
+      "allSequences": "Tất cả chăm sóc",
+      "createNew": "Tạo thư mục mới",
+      "created": "Đã tạo thư mục thành công",
+      "renamed": "Đã đổi tên thư mục thành công",
+      "folderDeleted": "Đã xóa thư mục thành công",
+      "nameRequired": "Tên thư mục là bắt buộc",
+      "confirmDeleteFolder": "Bạn có chắc chắn muốn xóa thư mục này?",
+      "confirmDeleteFolderWithName": "Bạn có chắc chắn muốn xóa thư mục \"{name}\"?",
+      "sequenceCount": "{count} chăm sóc",
+      "createDescription": "Tạo thư mục mới để tổ chức các chăm sóc của bạn",
+      "rename": "Đổi tên thư mục",
+      "renameDescription": "Nhập tên mới cho thư mục",
+      "moveToFolder": "Di chuyển vào thư mục",
+      "selectFolder": "Chọn thư mục",
+      "pleaseSelectFolder": "Vui lòng chọn thư mục",
+      "noFolder": "Không có thư mục",
+      "movedToFolder": "Đã di chuyển chăm sóc vào thư mục",
+      "bulkMoved": "Đã di chuyển {count} chăm sóc thành công",
+      "bulkMoveTitle": "Di chuyển {count} chăm sóc vào thư mục",
+      "selectMultipleHint": "Chọn nhiều thư mục bằng cách tick vào checkbox"
+    },
+    "addContactSequenceDialog": {
+      "title": "Thêm chăm sóc",
+      "description": "Thêm chăm sóc vào các liên hệ đã chọn",
+      "sequencesField": {
+        "label": "Chăm sóc",
+        "placeholder": "Chọn chăm sóc"
+      },
+      "submit": "Thêm chăm sóc",
+      "success": "Đã thêm chăm sóc thành công",
+      "error": "Không thể thêm chăm sóc"
+    },
+    "removeContactSequenceDialog": {
+      "title": "Xóa chăm sóc",
+      "description": "Xóa chăm sóc khỏi các liên hệ đã chọn",
+      "sequencesField": {
+        "label": "Chăm sóc",
+        "placeholder": "Chọn chăm sóc"
+      },
+      "submit": "Xóa chăm sóc",
+      "success": "Đã xóa chăm sóc thành công",
+      "error": "Không thể xóa chăm sóc"
+    }
+  },
+  "tools": {
+    "title": "Công cụ"
+  },
+  "signIn": {
+    "acceptTermsAndPolicy": "Bằng cách nhấn tiếp tục, bạn đồng ý với",
+    "and": "và",
+    "privacyPolicy": "Chính sách bảo mật",
+    "termsOfService": "Điều khoản dịch vụ",
+    "signInTitle": "Đăng nhập vào {name}",
+    "forgotPasswordTitle": "Quên mật khẩu?",
+    "forgotPasswordDescription": "Đừng lo! Chúng tôi sẽ gửi cho bạn liên kết hướng dẫn đặt lại mật khẩu.",
+    "checkYourEmail": "Kiểm tra email của bạn",
+    "magicLinkSent": "Chúng tôi đã gửi URL xác minh đến email của bạn",
+    "magicLinkSentDescription": "Nhấp vào liên kết trong email của bạn để tiếp tục.",
+    "backToSignIn": "Quay lại đăng nhập",
+    "didNotReceiveEmail": "Không nhận được email? Kiểm tra thư mục spam.",
+    "trySigningInAgain": "Bạn cũng có thể thử đăng nhập lại bằng email khác.",
+    "sentMagicLink": "Chúng tôi đã gửi magic link đến email của bạn. Vui lòng kiểm tra email và nhấp vào liên kết để tiếp tục.",
+    "signIn": "Đăng nhập",
+    "signUpSuccess": "Đăng ký thành công. Vui lòng kiểm tra email để xác minh.",
+    "forgotPassword": "Quên mật khẩu?",
+    "rememberedPassword": "Đã nhớ mật khẩu?",
+    "forgotPasswordEmailSent": "Chúng tôi đã gửi email hướng dẫn đặt lại mật khẩu cho bạn.",
+    "magicLinkSentTitle": "Đã gửi magic link",
+    "passwordResetSuccess": "Đặt lại mật khẩu thành công",
+    "resetPasswordTitle": "Đặt lại mật khẩu",
+    "resetPasswordDescription": "Nhập mật khẩu mới của bạn bên dưới.",
+    "signUpTitle": "Đăng ký vào {name}"
   }
 }

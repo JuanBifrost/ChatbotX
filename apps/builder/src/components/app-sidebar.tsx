@@ -10,6 +10,7 @@ import {
   AtomIcon,
   BrainIcon,
   ChartPieIcon,
+  ChevronsRight,
   LightbulbIcon,
   MessageCircleMoreIcon,
   RadioIcon,
@@ -19,6 +20,7 @@ import {
   WorkflowIcon,
   WrenchIcon,
 } from "lucide-react"
+
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { type ComponentProps, use } from "react"
@@ -84,11 +86,15 @@ export function AppSidebar({
         icon: RadioIcon,
       },
       {
+        title: t("sequences.title"),
+        url: `/chatbots/${chatbotId}/sequences`,
+        icon: ChevronsRight,
+      },
+      {
         title: t("triggers.title"),
         url: `/chatbots/${chatbotId}/triggers`,
         icon: LightbulbIcon,
       },
-
       {
         title: t("webhooks.title"),
         url: `/chatbots/${chatbotId}/webhooks`,

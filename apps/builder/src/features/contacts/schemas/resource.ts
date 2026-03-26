@@ -1,7 +1,7 @@
 import { contactModel, createSelectSchema } from "@aha.chat/database/schema"
 import type { CustomFieldType } from "@aha.chat/database/types"
 import type { LucideIcon } from "lucide-react"
-import type { z } from "zod"
+import type z from "zod"
 
 export const contactResource = createSelectSchema(contactModel)
 export type ContactResource = z.infer<typeof contactResource>

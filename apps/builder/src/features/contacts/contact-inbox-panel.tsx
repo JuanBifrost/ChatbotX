@@ -10,10 +10,11 @@ import { useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { useChatStore } from "../chat/store/chat-store-provider"
 import { ContactNotesManage } from "../contact-notes/contact-notes-manage"
+import { ContactSequencesManage } from "../contact-sequences/contact-sequences-manage"
+import type { ListConversationItemResource } from "../conversations/schemas/resource"
 import { TagStoreProvider } from "../tags/provider/tag-store-context"
 import UpdateContactTagField from "./components/update-contact-tag-field"
 import { ContactDetail } from "./contact-detail"
-import type { ContactResource } from "./schemas/resource"
 
 type InboxModule = {
   readonly keyName: string
@@ -25,7 +26,8 @@ export const ContactInboxPanel = () => {
   const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const { activeConversationId, conversations } = useChatStore((state) => state)
-  const [contact, setContact] = useState<ContactResource | null>(null)
+  const [contact, setContact] =
+    useState<ListConversationItemResource["contact"]>(null)
   const [contactNotes, setContactNotes] = useState<ContactNoteModel[]>([])
   const [tags, setTags] = useState<TagModel[]>([])
 
@@ -37,11 +39,8 @@ export const ContactInboxPanel = () => {
 
       if (conversation?.contact) {
         setContact(conversation.contact)
-        // TODO: get contact notes and tags from conversation
         setContactNotes([] as ContactNoteModel[])
         setTags([] as TagModel[])
-        // setContactNotes(conversation.contact.contactNotes || [])
-        // setTags(conversation.contact.tags || [])
       } else {
         setContact(null)
       }
@@ -83,13 +82,15 @@ export const ContactInboxPanel = () => {
               key={module.keyName}
               value={module.keyName}
             >
-              <AccordionTrigger className="rounded-none border-t p-2 transition-all hover:bg-muted hover:no-underline data-[state=open]:bg-muted">
+              <AccordionTrigger className="rounded-none border-t p-2 transition-all hover:bg-gray-200 hover:no-underline data-[state=open]:bg-gray-200">
                 <div className="flex items-center gap-2">{module.keyName}</div>
               </AccordionTrigger>
               <AccordionContent>{module.content}</AccordionContent>
             </AccordionItem>
           ))}
         </Accordion>
+
+        {contact && <ContactSequencesManage contact={contact} />}
       </div>
     )
   )

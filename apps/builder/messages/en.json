@@ -167,7 +167,13 @@
     "addNotes": "Add Notes",
     "generate": "Generate",
     "regenerate": "Regenerate",
-    "qrCode": "QR Code"
+    "qrCode": "QR Code",
+    "addSequence": "Add Sequence",
+    "removeSequence": "Remove Sequence",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "saving": "Saving...",
+    "creating": "Creating..."
   },
   "states": {
     "success": "Success",
@@ -1433,6 +1439,9 @@
     },
     "pricing": {
       "label": "Pricing"
+    },
+    "sequence": {
+      "label": "Sequence"
     }
   },
   "flows": {
@@ -1518,7 +1527,10 @@
       "emailSpacing": "Spacing",
       "emailCode": "Code",
       "emailHeader": "Header",
-      "typing": "Typing"
+      "typing": "Typing",
+      "sequenceActions": "Sequence Actions",
+      "subscribeSequence": "Subscribe Sequence",
+      "unsubscribeSequence": "Unsubscribe Sequence"
     },
     "additionalSteps": "Additional steps",
     "button": {
@@ -1776,7 +1788,12 @@
     "orContinueWith": "Or continue with",
     "dontHaveAnAccount": "Don't have an account?",
     "alreadyHaveAnAccount": "Already have an account?",
-    "signUp": "Sign up",
+    "signUp": "Sign up"
+  },
+  "tools": {
+    "title": "Tools"
+  },
+  "signIn": {
     "acceptTermsAndPolicy": "By clicking continue, you agree to our",
     "and": "and",
     "privacyPolicy": "Privacy Policy",
@@ -1801,9 +1818,6 @@
     "resetPasswordTitle": "Reset your password",
     "resetPasswordDescription": "Enter your new password below.",
     "signUpTitle": "Sign up to {name}"
-  },
-  "tools": {
-    "title": "Tools"
   },
   "tags": {
     "title": "Tags",
@@ -2095,5 +2109,189 @@
   },
   "subscriptions": {
     "title": "Subscriptions"
+  },
+  "aiHub": {
+    "title": "AI Hub"
+  },
+  "sequences": {
+    "title": "Sequences",
+    "subscribers": "Subscibers",
+    "steps": "Messages",
+    "step": "Message",
+    "addStep": "Add Message",
+    "addFirstStep": "Add First Message",
+    "noSteps": "No messages yet. Add your first message to get started.",
+    "delayDays": "Delay (Days)",
+    "delayHours": "Delay (Hours)",
+    "createNewReply": "Create New Reply",
+    "selectExisting": "Select Existing",
+    "selectFlow": "Select Flow",
+    "selectedFlow": "Selected flow",
+    "searchFlow": "Search flow...",
+    "delay": "Delay",
+    "delayValue": "Value",
+    "after": "After Message",
+    "afterEnrollment": "After Enrollment",
+    "pleaseSelectFlow": "Please select a flow",
+    "confirmDeleteStep": "Are you sure you want to delete this message?",
+    "delayUnits": {
+      "immediate": "Immediately",
+      "minutes": "Minutes",
+      "hours": "Hours",
+      "days": "Days",
+      "specificTime": "Specific Time"
+    },
+    "specificDateTime": "Date & Time",
+    "timeValidation": "Message time must be after the previous message",
+    "validation": {
+      "exception": "Validation Exception",
+      "nameExists": "Sequence name already exists",
+      "folderNameExists": "Folder name already exists",
+      "maxDepthExceeded": "Maximum folder depth ({depth} levels) exceeded"
+    },
+    "maxOneFolder": "A sequence can only be in one folder",
+    "minOneSequenceRequired": "At least one sequence is required",
+    "activated": "Sequence activated successfully",
+    "deactivated": "Sequence deactivated successfully",
+    "noFlowSelected": "No flow selected",
+    "sendLabel": "Send",
+    "selectFlowFirst": "Please select a flow before activating the message",
+    "delayValueRequired": "Please enter a delay value",
+    "specificTimeRequired": "Please select a specific time",
+    "timeRangeRequired": "Please select a time range",
+    "invalidTimeRange": "Start time must be before end time",
+    "schedule": "Schedule",
+    "scheduleDescription": "Set up when messages should be sent",
+    "sendTime": "Send time",
+    "sendTimeDescription": "Messages will only be sent during this time range",
+    "timezone": "Timezone",
+    "timezoneDescription": "All times are in your chatbot's timezone",
+    "enableSchedule": "Enable schedule",
+    "startTime": "Start time",
+    "endTime": "End time",
+    "allDay": "All day",
+    "customTime": "Custom time",
+    "enrollmentSettings": "Enrollment Settings",
+    "enrollmentDescription": "Control how contacts are enrolled in this sequence",
+    "allowReEnrollment": "Allow re-enrollment",
+    "allowReEnrollmentDescription": "Contacts can be enrolled multiple times",
+    "skipWeekends": "Skip weekends",
+    "skipWeekendsDescription": "Don't send messages on Saturday and Sunday",
+    "unenrollOnReply": "Unenroll on reply",
+    "unenrollOnReplyDescription": "Remove contact from sequence when they reply",
+    "performance": "Performance",
+    "enrolled": "Enrolled",
+    "completed": "Completed",
+    "openRate": "Open rate",
+    "clickRate": "Click rate",
+    "replyRate": "Reply rate",
+    "unsubscribeRate": "Unsubscribe rate",
+    "overview": "Overview",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "flow": "Flow",
+    "active": "Active",
+    "messageSentAtLeast": "This message will be sent at least",
+    "afterPreviousMessage": "after the previous message (day = 24h)",
+    "anyTime": "Any time",
+    "setTimeRange": "Set time range",
+    "sendBetween": "Send between",
+    "from": "From",
+    "to": "to",
+    "selectDays": "Select days",
+    "anyDay": "Any Day",
+    "allDays": "All Days",
+    "deselectAll": "Deselect All",
+    "saveUpdateSchedule": "Save & Update Schedule",
+    "monday": "Monday",
+    "tuesday": "Tuesday",
+    "wednesday": "Wednesday",
+    "thursday": "Thursday",
+    "friday": "Friday",
+    "saturday": "Saturday",
+    "sunday": "Sunday",
+    "mon": "Mon",
+    "tue": "Tue",
+    "wed": "Wed",
+    "thu": "Thu",
+    "fri": "Fri",
+    "sat": "Sat",
+    "sun": "Sun",
+    "afterText": "After",
+    "folders": {
+      "title": "Folders",
+      "allSequences": "All Sequences",
+      "createNew": "Create New Folder",
+      "created": "Folder created successfully",
+      "renamed": "Folder renamed successfully",
+      "folderDeleted": "Folder deleted successfully",
+      "nameRequired": "Folder name is required",
+      "confirmDeleteFolder": "Are you sure you want to delete this folder?",
+      "confirmDeleteFolderWithName": "Are you sure you want to delete the folder \"{name}\"?"
+    },
+    "addContactSequenceDialog": {
+      "title": "Add Sequence",
+      "description": "Add sequences to selected contacts",
+      "confirmDeleteFolderWithName": "Are you sure you want to delete folder \"{name}\"?",
+      "sequenceCount": "{count} sequences",
+      "createDescription": "Create a new folder to organize your sequences",
+      "rename": "Rename folder",
+      "renameDescription": "Enter a new name for the folder",
+      "moveToFolder": "Move to folder",
+      "selectFolder": "Select folder",
+      "pleaseSelectFolder": "Please select a folder",
+      "noFolder": "No folder",
+      "movedToFolder": "Sequence moved to folder",
+      "bulkMoved": "Moved {count} sequences successfully",
+      "bulkMoveTitle": "Move {count} sequences to folder",
+      "selectMultipleHint": "Select multiple folders by checking the checkboxes"
+    },
+    "removeContactSequenceDialog": {
+      "title": "Remove Sequence",
+      "description": "Remove sequence from selected contacts",
+      "sequencesField": {
+        "label": "Sequences",
+        "placeholder": "Select sequences"
+      },
+      "submit": "Remove Sequence",
+      "success": "Sequence removed successfully",
+      "error": "Failed to remove sequence"
+    },
+    "spreadsheet": {
+      "label": "Spreadsheet"
+    },
+    "conversationType": {
+      "label": "Conversation Type"
+    },
+    "source": {
+      "label": "Source"
+    },
+    "password": {
+      "label": "Password"
+    },
+    "passwordConfirmation": {
+      "label": "Re-enter password"
+    },
+    "newPassword": {
+      "label": "New Password"
+    },
+    "chatbotToken": {
+      "label": "API Access Token"
+    },
+    "fullName": {
+      "label": "Full Name"
+    },
+    "moreOptions": {
+      "label": "More Options"
+    },
+    "customFields": {
+      "label": "Custom Fields"
+    },
+    "tags": {
+      "label": "Tags"
+    },
+    "botFields": {
+      "label": "Bot Fields"
+    }
   }
 }
