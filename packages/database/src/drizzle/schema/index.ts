@@ -15,11 +15,18 @@ import {
   varchar,
   vector,
 } from "drizzle-orm/pg-core"
+import type {
+  MessengerConversationStarter,
+  MessengerGreetingMessage,
+  MessengerPersistentMenu,
+  MessengerPersona,
+} from "./integrations/messenger"
 import type { OrganizationSettings } from "./organization-settings"
 import { sharedColumns, timestampConfig } from "./shared"
 
 export * from "drizzle-orm/zod"
 export * from "./enterprise"
+export * from "./integrations"
 
 export const logType = pgEnum("LogType", ["error", "audit"])
 export const customFieldType = pgEnum("CustomFieldType", [
@@ -1075,6 +1082,26 @@ export const integrationMessengerModel = pgTable(
     auth: jsonb().notNull(),
     pageId: text().notNull(),
     name: text().notNull(),
+    conversationStarters: jsonb()
+      .$type<MessengerConversationStarter>()
+      .array()
+      .notNull()
+      .default(sql`[]`),
+    persistentMenus: jsonb()
+      .$type<MessengerPersistentMenu>()
+      .array()
+      .notNull()
+      .default(sql`[]`),
+    greetingMessages: jsonb()
+      .$type<MessengerGreetingMessage>()
+      .array()
+      .notNull()
+      .default(sql`[]`),
+    personas: jsonb()
+      .$type<MessengerPersona>()
+      .array()
+      .notNull()
+      .default(sql`[]`),
     chatbotId: text()
       .notNull()
       .references(() => chatbotModel.id, {
@@ -1089,10 +1116,10 @@ export const integrationMessengerModel = pgTable(
         onUpdate: "cascade",
         name: "IntegrationMessenger_inboxId_fkey",
       }),
-    fallbackFlowId: text().references(() => flowModel.id, {
+    welcomeFlowId: text().references(() => flowModel.id, {
       onDelete: "set null",
       onUpdate: "cascade",
-      name: "IntegrationMessenger_fallbackFlowId_fkey",
+      name: "IntegrationMessenger_welcomeFlowId_fkey",
     }),
   },
   (table) => [
@@ -1100,9 +1127,9 @@ export const integrationMessengerModel = pgTable(
       "btree",
       table.chatbotId.asc().nullsLast().op("text_ops"),
     ),
-    index("IntegrationMessenger_fallbackFlowId_idx").using(
+    index("IntegrationMessenger_welcomeFlowId_idx").using(
       "btree",
-      table.fallbackFlowId.asc().nullsLast().op("text_ops"),
+      table.welcomeFlowId.asc().nullsLast().op("text_ops"),
     ),
     uniqueIndex("IntegrationMessenger_inboxId_key").using(
       "btree",

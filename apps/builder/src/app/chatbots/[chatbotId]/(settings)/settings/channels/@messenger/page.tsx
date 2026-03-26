@@ -1,7 +1,7 @@
 import { db } from "@aha.chat/database/client"
 import { notFound } from "next/navigation"
 import { MessengerManage } from "@/features/integration-messenger/messenger-manage"
-import { findIntegrationMessenger } from "@/features/integration-messenger/queries"
+import { listIntegrationMessengers } from "@/features/integration-messenger/queries"
 import { findOrganization } from "@/features/organization/queries"
 
 export default async function SettingChannelMessengerPage(props: {
@@ -19,7 +19,7 @@ export default async function SettingChannelMessengerPage(props: {
   }
 
   const promises = Promise.all([
-    findIntegrationMessenger({
+    listIntegrationMessengers({
       chatbotId: params.chatbotId,
     }),
     findOrganization({
@@ -27,5 +27,5 @@ export default async function SettingChannelMessengerPage(props: {
     }),
   ])
 
-  return <MessengerManage promises={promises} />
+  return <MessengerManage chatbotId={params.chatbotId} promises={promises} />
 }

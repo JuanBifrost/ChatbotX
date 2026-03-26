@@ -26,7 +26,7 @@ import { flowStepHandlers } from "./step"
 
 export type ExecuteMultipleStepsProps = {
   conversation: ConversationModel
-  flowVersion?: FlowVersionModel
+  flowVersion: FlowVersionModel
   useLatestFlowVersion?: boolean
   targetType?: "node" | "button" | "step" | "quickReply"
   targetId?: string
@@ -71,6 +71,11 @@ export const seekConnectedNode = (
 }
 
 export const runFlowNode = async (props: IntegrationJobRunFlowNode) => {
+  if (!props.data.flowId) {
+    logger.debug({ props }, "runFlowNode is called without flowId")
+    return
+  }
+
   const { trackingContext } = props.data
   const { conversation, flowVersion, useLatestFlowVersion } =
     await findConversationAndFlowVersion({
@@ -253,6 +258,18 @@ export async function runFlowPostback(
   const parsedAction = decodeButtonPayload(data.action)
   if (!parsedAction) {
     throw new SdkException("Invalid postback action")
+  }
+
+  if (!parsedAction.buttonId) {
+    await runFlowNode({
+      type: "sendFlow",
+      data: {
+        conversationId: data.conversationId,
+        flowId: parsedAction.flowId,
+        flowVersionId: parsedAction.flowVersionId,
+      },
+    })
+    return
   }
 
   const { conversation, flowVersion } = await findConversationAndFlowVersion({
