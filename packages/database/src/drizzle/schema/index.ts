@@ -71,11 +71,18 @@ export const aiEmbeddingStatus = pgEnum("AIEmbeddingStatus", [
   "error",
   "processing",
 ])
+
 export const analyticsStatusEnum = pgEnum("AnalyticsStatus", [
   "processing",
   "ingested",
   "failed",
 ])
+export const conditionOwnerType = pgEnum("ConditionOwnerType", [
+  "trigger",
+  "webhook",
+  "broadcast",
+])
+
 export const aiTriggerToIntegrationOpenAIModel = pgTable(
   "_AITriggerToIntegrationOpenAI",
   {
@@ -386,13 +393,21 @@ export const broadcastModel = pgTable(
         onUpdate: "cascade",
         name: "Broadcast_chatbotId_fkey",
       }),
-    flowId: text()
-      .notNull()
-      .references(() => flowModel.id, {
-        onDelete: "cascade",
+    flowId: text().references(() => flowModel.id, {
+      onDelete: "cascade",
+      onUpdate: "cascade",
+      name: "Broadcast_flowId_fkey",
+    }),
+    integrationWhatsappId: text().references(
+      () => integrationWhatsappModel.id,
+      {
+        onDelete: "set null",
         onUpdate: "cascade",
-        name: "Broadcast_flowId_fkey",
-      }),
+        name: "Broadcast_integrationWhatsappId_fkey",
+      },
+    ),
+    templateId: text(),
+    templateData: jsonb().notNull().default("{}"),
     status: broadcastStatus().notNull(),
     schedulesType: broadcastSchedulesType().notNull(),
     schedulesAt: timestamp(timestampConfig).notNull(),
@@ -1595,22 +1610,6 @@ export const whatsappFlowModel = pgTable("WhatsappFlow", {
   isCompleted: boolean().notNull(),
 })
 
-export const whatsappMessageTemplateModel = pgTable("WhatsappMessageTemplate", {
-  ...sharedColumns,
-  name: text().notNull(),
-  integrationWhatsappId: text()
-    .notNull()
-    .references(() => integrationWhatsappModel.id, {
-      onDelete: "cascade",
-      onUpdate: "cascade",
-      name: "WhatsappMessageTemplate_integrationWhatsappId_fkey",
-    }),
-  sourceId: text().notNull(),
-  language: text().notNull(),
-  category: text().notNull(),
-  status: text().notNull(),
-})
-
 export const jwkModel = pgTable("jwks", {
   id: text().primaryKey(),
   publicKey: text().notNull(),
@@ -1911,6 +1910,35 @@ export const triggerExecutionModel = pgTable(
     index("TriggerExecution_chatbotId_idx").using(
       "btree",
       table.chatbotId.asc().nullsLast().op("text_ops"),
+    ),
+  ],
+)
+
+export const whatsappMessageTemplateModel = pgTable(
+  "WhatsappMessageTemplate",
+  {
+    ...sharedColumns,
+    name: text().notNull(),
+    integrationWhatsappId: text()
+      .notNull()
+      .references(() => integrationWhatsappModel.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+        name: "WhatsappMessageTemplate_integrationWhatsappId_fkey",
+      }),
+    sourceId: text().notNull(),
+    language: text().notNull(),
+    category: text().notNull(),
+    status: text().notNull(),
+    components: jsonb().notNull().default(sql`'[]'::jsonb`),
+  },
+  (table) => [
+    uniqueIndex(
+      "WhatsappMessageTemplate_integrationWhatsappId_sourceId_key",
+    ).using(
+      "btree",
+      table.integrationWhatsappId.asc().nullsLast().op("text_ops"),
+      table.sourceId.asc().nullsLast().op("text_ops"),
     ),
   ],
 )

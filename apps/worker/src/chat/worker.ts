@@ -11,6 +11,7 @@ import { ensureBootstrapped } from "../lib/bootstrap"
 import { logger } from "../lib/logger"
 import { sendChatMessage, sendFlowStep } from "./handlers/send-flow-step"
 import { sendMessageToExternal } from "./handlers/send-message"
+import { sendWhatsappTemplateMessage } from "./handlers/send-whatsapp-template"
 
 async function startChatWorker() {
   try {
@@ -33,6 +34,9 @@ async function startChatWorker() {
           return
         case ChatJobAction.sendChatMessage:
           await sendChatMessage(job.data.data)
+          return
+        case ChatJobAction.sendWhatsappTemplateMessage:
+          await sendWhatsappTemplateMessage(job.data.data)
           return
         default:
           throw new SdkException("ChatJobAction action is not defined")

@@ -366,7 +366,26 @@
       "title": "Tất cả liên hệ",
       "description": "Gửi luồng đến tất cả liên hệ."
     },
-    "details": "Chi tiết phát sóng"
+    "details": "Chi tiết phát sóng",
+    "whatsappTemplateMessage": {
+      "title": "Tin nhắn mẫu WhatsApp",
+      "description": "Gửi tin nhắn mẫu WhatsApp đến các liên hệ của bạn"
+    },
+    "whatsappWithin24Hours": {
+      "title": "Liên hệ hoạt động trong 24 giờ",
+      "description": "Có thể chứa khuyến mãi và sẽ chỉ được gửi cho người dùng đã nhắn tin cho bot của bạn trong vòng 24 giờ qua."
+    },
+    "flowType": {
+      "title": "Loại luồng",
+      "flow": {
+        "title": "Luồng",
+        "description": "Gửi luồng đến các liên hệ của bạn"
+      },
+      "template": {
+        "title": "Template",
+        "description": "Gửi template đến các liên hệ của bạn"
+      }
+    }
   },
   "condition": {
     "add": "Thêm điều kiện",
@@ -1329,6 +1348,12 @@
     "customRange": {
       "label": "Khoảng tùy chỉnh"
     },
+    "templateId": {
+      "label": "WhatsApp Template"
+    },
+    "whatsappChannel": {
+      "label": "Kênh WhatsApp"
+    },
     "messages": {
       "label": "Tin nhắn"
     },
@@ -1388,6 +1413,7 @@
       "sendNode": "Bắt đầu nút khác",
       "sendText": "Gửi văn bản",
       "sendVideo": "Gửi video",
+      "sendWaTemplateMessage": "Tin nhắn mẫu",
       "setCustomField": "Thiết lập trường tùy chỉnh",
       "startAnotherNode": "Bắt đầu nút khác",
       "startExternalFlow": "Bắt đầu luồng bên ngoài",
@@ -1442,6 +1468,12 @@
     "formatTimezone": {
       "accountTimezone": "Múi giờ tài khoản",
       "contactTimezone": "Múi giờ liên hệ"
+    },
+    "fields": {
+      "selectTemplate": "Chọn mẫu",
+      "selectTemplatePlaceholder": "Chọn mẫu WhatsApp",
+      "templateParameters": "Tham số mẫu",
+      "preview": "Xem trước"
     },
     "name": {
       "label": "Tên luồng"

@@ -1,4 +1,4 @@
-import { db, findOrFail } from "@aha.chat/database/client"
+import { db, eq, findOrFail } from "@aha.chat/database/client"
 import {
   attachmentModel,
   contactModel,
@@ -45,6 +45,7 @@ import { getInboxWithAuthFromInboxId } from "../../lib/inbox"
 import { allIntegrations } from "../../lib/integrations"
 import { logger } from "../../lib/logger"
 import { sendFlowStepToExternal, sendMessageToExternal } from "./send-message"
+import { processWhatsappTemplate } from "./send-whatsapp-template"
 
 const convertButtonsToTemplate = (props: {
   flowId: string
@@ -107,9 +108,35 @@ export async function sendFlowStep({
 }: ChatJobSendFlowStep["data"]) {
   const conversation = await db.query.conversationModel.findFirst({
     where: { id: conversationId },
-    with: { contact: true },
+    with: { contact: true, inbox: { columns: { inboxType: true } } },
   })
   if (!conversation) {
+    return
+  }
+
+  if (step.stepType === StepType.sendWaTemplateMessage) {
+    if (conversation.inbox?.inboxType !== "whatsapp") {
+      return
+    }
+
+    try {
+      await processWhatsappTemplate({
+        conversation,
+        templateId: step.template.id,
+        templateName: step.template.name,
+        templateLanguage: step.template.languageCode,
+        templateParams: step.template.params,
+        flowId,
+        flowVersionId,
+        trackingContext,
+      })
+    } catch (error) {
+      logger.error(
+        error,
+        `sendFlowStep WhatsApp template error for conversationId: ${conversationId}`,
+      )
+    }
+
     return
   }
 
@@ -126,6 +153,7 @@ export async function sendFlowStep({
         sourceId: null,
         content: step.stepType === StepType.sendText ? step.message : null,
       }
+
       if ("buttons" in step && step.buttons.length > 0) {
         messageData.contentAttributes = {
           type: "template",
@@ -208,6 +236,17 @@ export async function sendFlowStep({
           flowId,
           flowVersionId,
           step: step as SendFlowStepData,
+        }).then(async (result) => {
+          const firstMessageId = result?.messageIds?.[0]
+
+          if (firstMessageId && message && typeof message !== "string") {
+            await db
+              .update(messageModel)
+              .set({
+                sourceId: firstMessageId,
+              })
+              .where(eq(messageModel.id, message.id))
+          }
         }),
       )
     }

@@ -10,11 +10,11 @@ import {
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type { GetBroadcastsSchema } from "../schemas/query"
-import type { BroadcastResource } from "../schemas/resource"
+import type { BroadcastResourceWithRelations } from "../schemas/resource"
 
 export async function listBroadcasts(
   input: GetBroadcastsSchema,
-): Promise<PaginatedResponse<BroadcastResource>> {
+): Promise<PaginatedResponse<BroadcastResourceWithRelations>> {
   await assertCurrentUserCanAccessChatbot(input.chatbotId)
 
   const where = {

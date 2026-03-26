@@ -1,0 +1,231 @@
+import { db, eq } from "@aha.chat/database/client"
+import { messageModel } from "@aha.chat/database/schema"
+import type { ConversationModel } from "@aha.chat/database/types"
+import {
+  extractTemplateParams,
+  StepType,
+  type TemplateComponent,
+  type WaTemplateParams,
+} from "@aha.chat/flow-config"
+import {
+  broadcastToChatbotParty,
+  RealtimeEventType,
+} from "@aha.chat/partysocket-config"
+import type {
+  BotResponseTrackingContext,
+  ChatJobSendWhatsappTemplateMessage,
+} from "@aha.chat/worker-config"
+import { createId } from "@paralleldrive/cuid2"
+import {
+  replaceWhatsappTemplateVariables,
+  validateWhatsappTemplate,
+} from "../../integration/handlers/wa-template-handler"
+import { logger } from "../../lib/logger"
+import { sendFlowStepToExternal } from "./send-message"
+
+export interface ProcessWhatsappTemplateParams {
+  broadcastId?: string
+  conversation: ConversationModel
+  flowId?: string
+  flowVersionId?: string
+  templateId: string
+  templateLanguage: string
+  templateName: string
+  templateParams?: WaTemplateParams
+  trackingContext?: BotResponseTrackingContext
+}
+
+export interface ProcessWhatsappTemplateResult {
+  message: typeof messageModel.$inferSelect
+  messageId: string
+  providerMessageId?: string
+}
+
+export async function processWhatsappTemplate(
+  params: ProcessWhatsappTemplateParams,
+): Promise<ProcessWhatsappTemplateResult> {
+  const {
+    conversation,
+    templateId,
+    templateName,
+    templateLanguage,
+    templateParams = { header: [], body: [], button: [] },
+    broadcastId,
+    flowId,
+    flowVersionId,
+    trackingContext,
+  } = params
+
+  const isValid = await validateWhatsappTemplate(
+    {
+      id: templateId,
+      name: templateName,
+      languageCode: templateLanguage,
+      params: templateParams,
+    },
+    conversation.inboxId,
+  )
+
+  if (!isValid) {
+    logger.error(
+      { templateId, inboxId: conversation.inboxId },
+      "Template validation failed - not approved or not found",
+    )
+    throw new Error(`Template validation failed: ${templateId}`)
+  }
+
+  const replacedParams = await replaceWhatsappTemplateVariables(
+    templateParams,
+    conversation.id,
+  )
+
+  const messageData: typeof messageModel.$inferInsert = {
+    id: createId(),
+    inboxId: conversation.inboxId,
+    chatbotId: conversation.chatbotId,
+    conversationId: conversation.id,
+    messageType: "outgoing",
+    contentType: "text",
+    senderType: "bot",
+    sourceId: null,
+    content: `Template: ${templateName}`,
+    contentAttributes: {
+      type: "whatsapp_template",
+      templateName,
+      templateLanguage,
+      templateId,
+      params: replacedParams,
+      ...(broadcastId && { broadcastId }),
+      ...(flowId && { flowId }),
+      ...(flowVersionId && { flowVersionId }),
+      ...(trackingContext && { trackingContext }),
+    },
+  }
+
+  const newMessage = await db
+    .insert(messageModel)
+    .values(messageData)
+    .returning()
+    .then((result) => result[0])
+
+  logger.info(
+    {
+      messageId: newMessage.id,
+      conversationId: conversation.id,
+      templateId,
+      broadcastId,
+    },
+    "WhatsApp template message created in DB",
+  )
+
+  broadcastToChatbotParty(conversation.chatbotId, {
+    eventType: RealtimeEventType.messageCreated,
+    data: newMessage,
+  })
+
+  try {
+    const result = await sendFlowStepToExternal({
+      conversation,
+      flowId: flowId || "",
+      flowVersionId,
+      step: {
+        id: createId(),
+        stepType: StepType.sendWaTemplateMessage,
+        buttons: [],
+        template: {
+          id: templateId,
+          name: templateName,
+          languageCode: templateLanguage,
+          params: replacedParams,
+        },
+      },
+    })
+
+    const providerMessageId = result?.messageIds?.[0]
+
+    if (providerMessageId) {
+      await db
+        .update(messageModel)
+        .set({ sourceId: providerMessageId })
+        .where(eq(messageModel.id, newMessage.id))
+
+      logger.info(
+        {
+          messageId: newMessage.id,
+          providerMessageId,
+          templateId,
+        },
+        "WhatsApp template sent successfully",
+      )
+    }
+
+    return {
+      messageId: newMessage.id,
+      providerMessageId,
+      message: { ...newMessage, sourceId: providerMessageId || null },
+    }
+  } catch (error) {
+    logger.error(
+      {
+        error,
+        messageId: newMessage.id,
+        conversationId: conversation.id,
+        templateId,
+      },
+      "Failed to send WhatsApp template to provider",
+    )
+    throw error
+  }
+}
+
+export async function sendWhatsappTemplateMessage(
+  data: ChatJobSendWhatsappTemplateMessage["data"],
+) {
+  const { conversationId, templateId, broadcastId, templateData } = data
+
+  try {
+    const conversation = await db.query.conversationModel.findFirst({
+      where: { id: conversationId },
+    })
+
+    if (!conversation) {
+      throw new Error(`Conversation not found: ${conversationId}`)
+    }
+
+    const template = await db.query.whatsappMessageTemplateModel.findFirst({
+      where: { id: templateId },
+    })
+
+    if (!template) {
+      throw new Error(`WhatsApp template not found: ${templateId}`)
+    }
+
+    // Use templateData from job if provided, otherwise extract from template components
+    const templateParams =
+      templateData ??
+      extractTemplateParams((template.components as TemplateComponent[]) || [])
+
+    const result = await processWhatsappTemplate({
+      conversation,
+      templateId: template.id,
+      templateName: template.name,
+      templateLanguage: template.language,
+      templateParams,
+      broadcastId,
+    })
+
+    return result
+  } catch (error) {
+    console.error(error)
+    logger.error(
+      {
+        error,
+        conversationId,
+        templateId,
+        broadcastId,
+      },
+      "Error sending WhatsApp template message for broadcast",
+    )
+    throw error
+  }
+}

@@ -8,6 +8,8 @@ import type {
   SendQuickReplyStepSchema,
   SendTextStepSchema,
   SendVideoStepSchema,
+  SendWaTemplateMessageStepSchema,
+  WaTemplateParams,
 } from "@aha.chat/flow-config"
 import type { OutgoingConversation, OutgoingMessage } from "@aha.chat/sdk"
 import { Queue } from "bullmq"
@@ -23,6 +25,7 @@ export const ChatJobAction = {
   sendExternalMessage: "sendExternalMessage",
   sendFlowMessage: "sendFlowMessage",
   sendChatMessage: "sendChatMessage",
+  sendWhatsappTemplateMessage: "sendWhatsappTemplateMessage",
   sendTyping: "sendTyping",
   notifyExportResult: "notifyExportResult",
 } as const
@@ -51,6 +54,7 @@ export type ChatJobSendFlowStep = {
       | SendCardStepSchema
       | SendCarouselStepSchema
       | SendQuickReplyStepSchema
+      | SendWaTemplateMessageStepSchema
     trackingContext?: BotResponseTrackingContext
   }
 }
@@ -70,6 +74,16 @@ export type ChatJobSendChatMessage = {
         url?: string
         trackingContext?: BotResponseTrackingContext
       }
+}
+
+export type ChatJobSendWhatsappTemplateMessage = {
+  type: typeof ChatJobAction.sendWhatsappTemplateMessage
+  data: {
+    conversationId: string
+    templateId: string
+    broadcastId: string
+    templateData?: WaTemplateParams
+  }
 }
 
 export type ChatJobSendTyping = {
@@ -94,6 +108,7 @@ export type ChatJobData =
   | ChatJobSendExternalMessage
   | ChatJobSendFlowStep
   | ChatJobSendChatMessage
+  | ChatJobSendWhatsappTemplateMessage
   | ChatJobSendTyping
   | ChatJobNotifyExportResult
 

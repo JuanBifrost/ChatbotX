@@ -17,6 +17,10 @@ const nextConfig: NextConfig = {
       new URL("**", env.NEXT_PUBLIC_ASSET_URL),
       {
         protocol: "https",
+        hostname: "storage.googleapis.com",
+      },
+      {
+        protocol: "https",
         hostname: "(.*.)?picsum.photos",
       },
       {
@@ -94,6 +98,7 @@ const nextConfig: NextConfig = {
       },
     ]
   },
+  allowedDevOrigins: [env.NEXT_PUBLIC_BUILDER_URL.replace(/https?:\/\//g, "")],
 }
 
 export default withNextIntl(nextConfig)

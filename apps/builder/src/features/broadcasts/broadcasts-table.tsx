@@ -33,7 +33,7 @@ import React, { useMemo, useState } from "react"
 import type { listBroadcasts } from "@/features/broadcasts/queries"
 import { RenameBroadcastDialog } from "./rename-broadcast-dialog"
 import { ResendBroadcastDialog } from "./resend-broadcast-dialog"
-import type { BroadcastResource } from "./schemas/resource"
+import type { BroadcastResourceWithRelations } from "./schemas/resource"
 
 type BroadcastsTableProps = {
   promises: Promise<[Awaited<ReturnType<typeof listBroadcasts>>]>
@@ -47,9 +47,9 @@ export function BroadcastsTable({ promises }: BroadcastsTableProps) {
   const router = useRouter()
 
   const [rowAction, setRowAction] =
-    useState<DataTableRowAction<BroadcastResource> | null>(null)
+    useState<DataTableRowAction<BroadcastResourceWithRelations> | null>(null)
 
-  const columns = useMemo<ColumnDef<BroadcastResource>[]>(
+  const columns = useMemo<ColumnDef<BroadcastResourceWithRelations>[]>(
     () => [
       {
         id: "name",

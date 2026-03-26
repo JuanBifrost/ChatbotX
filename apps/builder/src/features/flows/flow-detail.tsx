@@ -13,6 +13,7 @@ import { TagStoreProvider } from "../tags/provider/tag-store-context"
 import { UserStoreProvider } from "../users/provider/user-store-context"
 import { FlowStoreProvider } from "./provider/flow-store-context"
 import { ReactFlowFrame } from "./react-flow/frame"
+import { FlowActionProvider } from "./react-flow/stores/flow-action-store-provider"
 import { StepStoreProvider } from "./react-flow/stores/step-store-provider"
 import type { FlowResource } from "./schemas/resource"
 
@@ -36,19 +37,21 @@ export function FlowDetail({
           activeFlowId: flow.id,
         }}
       >
-        <InboxStoreProvider chatbotId={flow.chatbotId}>
-          <FlowStoreProvider chatbotId={flow.chatbotId}>
-            <TagStoreProvider chatbotId={flow.chatbotId}>
-              <UserStoreProvider chatbotId={flow.chatbotId}>
-                <CustomFieldStoreProvider chatbotId={flow.chatbotId}>
-                  <AIToolsStoreProvider chatbotId={flow.chatbotId}>
-                    <ReactFlowFrame flow={flow} flowVersion={flowVersion} />
-                  </AIToolsStoreProvider>
-                </CustomFieldStoreProvider>
-              </UserStoreProvider>
-            </TagStoreProvider>
-          </FlowStoreProvider>
-        </InboxStoreProvider>
+        <FlowActionProvider chatbotId={flow.chatbotId}>
+          <InboxStoreProvider chatbotId={flow.chatbotId}>
+            <FlowStoreProvider chatbotId={flow.chatbotId}>
+              <TagStoreProvider chatbotId={flow.chatbotId}>
+                <UserStoreProvider chatbotId={flow.chatbotId}>
+                  <CustomFieldStoreProvider chatbotId={flow.chatbotId}>
+                    <AIToolsStoreProvider chatbotId={flow.chatbotId}>
+                      <ReactFlowFrame flow={flow} flowVersion={flowVersion} />
+                    </AIToolsStoreProvider>
+                  </CustomFieldStoreProvider>
+                </UserStoreProvider>
+              </TagStoreProvider>
+            </FlowStoreProvider>
+          </InboxStoreProvider>
+        </FlowActionProvider>
       </StepStoreProvider>
     </ReactFlowProvider>
   )

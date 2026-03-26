@@ -335,6 +335,10 @@ export const relations = defineRelations(schema, (r) => ({
       ),
       to: r.contactModel.id.through(r.contactsOnBroadcastsModel.contactId),
     }),
+    integrationWhatsapp: r.one.integrationWhatsappModel({
+      from: r.broadcastModel.integrationWhatsappId,
+      to: r.integrationWhatsappModel.id,
+    }),
   },
   inboxTeamModel: {
     conversations: r.many.conversationModel(),

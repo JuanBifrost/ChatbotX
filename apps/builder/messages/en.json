@@ -363,7 +363,26 @@
       "title": "All Contacts",
       "description": "Send a flow to all contacts."
     },
-    "details": "Broadcast Details"
+    "details": "Broadcast Details",
+    "whatsappTemplateMessage": {
+      "title": "Template Message",
+      "description": "Send WhatsApp template message to your contacts"
+    },
+    "whatsappWithin24Hours": {
+      "title": "Active contacts within 24 hours",
+      "description": "May contain promotions and will only be sent to users who messaged your bot within the last 24h."
+    },
+    "flowType": {
+      "title": "Flow Type",
+      "flow": {
+        "title": "Flow",
+        "description": "Send a flow to your contacts"
+      },
+      "template": {
+        "title": "Template",
+        "description": "Send a template to your contacts"
+      }
+    }
   },
   "condition": {
     "add": "Add Condition",
@@ -1318,6 +1337,12 @@
     "customRange": {
       "label": "Custom Range"
     },
+    "templateId": {
+      "label": "WhatsApp Template"
+    },
+    "whatsappChannel": {
+      "label": "WhatsApp Channel"
+    },
     "messages": {
       "label": "Messages"
     },
@@ -1452,6 +1477,8 @@
       "sendNode": "Start Another Node",
       "sendText": "Send Text",
       "sendVideo": "Send Video",
+      "sendWaTemplateMessage": "Template Message",
+      "noTemplatesAvailable": "No templates available",
       "setCustomField": "Set Custom Field",
       "startAnotherNode": "Start Another Node",
       "startExternalFlow": "Start External Flow",
@@ -1506,6 +1533,12 @@
     "formatTimezone": {
       "accountTimezone": "Account Timezone",
       "contactTimezone": "Contact Timezone"
+    },
+    "fields": {
+      "selectTemplate": "Select Template",
+      "selectTemplatePlaceholder": "Choose a WhatsApp template",
+      "templateParameters": "Template Parameters",
+      "preview": "Preview"
     },
     "name": {
       "label": "Flow name"

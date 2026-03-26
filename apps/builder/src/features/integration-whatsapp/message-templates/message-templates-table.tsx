@@ -15,11 +15,12 @@ import { ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import React from "react"
-import type { getMessageTemplates } from "@/features/integration-whatsapp/message-templates/queries"
+import type { MessageTemplate } from "@/features/integration-whatsapp/message-templates/type"
+import { WhatsappMessageTemplatesTableToolbarActions } from "./message-templates-table-toolbar-actions"
 
 type WhatsappMessageTemplatesTableProps = {
   integrationWhatsapp: IntegrationWhatsappModel
-  promises: Promise<[Awaited<ReturnType<typeof getMessageTemplates>>]>
+  promises: Promise<MessageTemplate[]>
 }
 
 export function WhatsappMessageTemplatesTable({
@@ -27,7 +28,7 @@ export function WhatsappMessageTemplatesTable({
   promises,
 }: WhatsappMessageTemplatesTableProps) {
   const t = useTranslations()
-  const [{ data }] = React.use(promises)
+  const data = React.use(promises)
 
   const auth = integrationWhatsapp.auth as unknown as WhatsappAuthValue
 
@@ -80,6 +81,12 @@ export function WhatsappMessageTemplatesTable({
             )}
           </TableBody>
         </Table>
+      </div>
+      <div className="flex flex-col items-center justify-center p-4">
+        <WhatsappMessageTemplatesTableToolbarActions
+          chatbotId={integrationWhatsapp.chatbotId}
+          integrationWhatsappId={integrationWhatsapp.id}
+        />
       </div>
     </div>
   )
