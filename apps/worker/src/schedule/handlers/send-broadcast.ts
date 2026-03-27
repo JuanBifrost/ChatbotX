@@ -32,7 +32,7 @@ export const sendBroadcast = async (schedulesAt: Date) => {
         },
         opts: {
           // Deduplicate fan-out when the scheduler job retries.
-          jobId: `integration-send-broadcast:${broadcast.id}`,
+          jobId: `integration-send-broadcast-${broadcast.id}`,
         },
       })),
     )
