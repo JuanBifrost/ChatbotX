@@ -20,7 +20,7 @@ async function startScheduleWorker() {
     await ensureBootstrapped()
     logger.info("Analytics bootstrapped successfully")
   } catch (err) {
-    logger.error("Failed to bootstrap analytics", err)
+    logger.error(err, "Failed to bootstrap analytics")
     process.exit(1)
   }
 
@@ -39,7 +39,7 @@ async function startScheduleWorker() {
     async (job: Job<ScheduleJobData>) => {
       switch (job.data.type) {
         case ScheduleJobData.sendBroadcast:
-          await sendBroadcast(job.data)
+          await sendBroadcast(job.data.data.schedulesAt)
           return
 
         case ScheduleJobData.evaluateTriggers:
@@ -51,7 +51,7 @@ async function startScheduleWorker() {
           return
 
         default:
-          logger.warn(`Unknown schedule job type: ${job.data.type}`)
+          logger.warn("Unknown schedule job type")
       }
     },
     {
