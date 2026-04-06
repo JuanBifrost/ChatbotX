@@ -1,8 +1,8 @@
 "use client"
 
-import type { FolderType } from "@aha.chat/database/types"
-import { ComboboxField } from "@aha.chat/ui/components/form/combobox-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { FolderType } from "@chatbotx.io/database/partials"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -21,10 +21,10 @@ import { type ReactNode, useEffect } from "react"
 import { toast } from "sonner"
 import { changeFolderAction } from "./actions/change-folder.action"
 import { useFolderSelectOptions } from "./provider/folder-hook"
-import { changeFolderRequest } from "./schemas/action"
+import { changeFolderRequest } from "./schema/action"
 
 export type ChangeFolderDialogProps = {
-  chatbotId: string
+  workspaceId: string
   modelIds: string[] | null
   currentFolderId: string | null
   folderType: FolderType
@@ -35,7 +35,7 @@ export type ChangeFolderDialogProps = {
 
 export function ChangeFolderDialog(props: ChangeFolderDialogProps) {
   const {
-    chatbotId,
+    workspaceId,
     modelIds,
     trigger,
     currentFolderId,
@@ -60,7 +60,6 @@ export function ChangeFolderDialog(props: ChangeFolderDialogProps) {
           <DialogDescription />
         </DialogHeader>
         <ChangeFolderForm
-          chatbotId={chatbotId}
           currentFolderId={currentFolderId}
           folderType={folderType}
           modelIds={modelIds}
@@ -69,6 +68,7 @@ export function ChangeFolderDialog(props: ChangeFolderDialogProps) {
             onOpenChange(false)
             router.refresh()
           }}
+          workspaceId={workspaceId}
         />
       </DialogContent>
     </Dialog>
@@ -76,7 +76,7 @@ export function ChangeFolderDialog(props: ChangeFolderDialogProps) {
 }
 
 export type ChangeFolderFormProps = {
-  chatbotId: string
+  workspaceId: string
   modelIds: string[] | null
   currentFolderId: string | null
   folderType: FolderType
@@ -91,7 +91,7 @@ export function ChangeFolderForm(props: ChangeFolderFormProps) {
   const folderOptions = useFolderSelectOptions()
 
   const {
-    chatbotId,
+    workspaceId,
     modelIds,
     currentFolderId,
     folderType,
@@ -103,7 +103,7 @@ export function ChangeFolderForm(props: ChangeFolderFormProps) {
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      changeFolderAction.bind(null, chatbotId),
+      changeFolderAction.bind(null, workspaceId),
       zodResolver(changeFolderRequest),
       {
         actionProps: {
@@ -130,7 +130,7 @@ export function ChangeFolderForm(props: ChangeFolderFormProps) {
   useEffect(() => {
     if (modelIds) {
       setValue("newFolderId", currentFolderId ?? "")
-      setValue("folderType", folderType as FolderType)
+      setValue("folderType", folderType)
       setValue("modelIds", modelIds)
     }
   }, [modelIds, currentFolderId, folderType, setValue])

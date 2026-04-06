@@ -1,9 +1,9 @@
-import { db, relationsFilterToSQL } from "@aha.chat/database/client"
-import { aiTriggerModel } from "@aha.chat/database/schema"
+import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { aiTriggerModel } from "@chatbotx.io/database/schema"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
-} from "@aha.chat/database/utils"
+} from "@chatbotx.io/database/utils"
 import type {
   AITriggerCollection,
   ListAITriggersRequest,
@@ -13,10 +13,10 @@ import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 export const listAITriggers = async (
   input: ListAITriggersRequest,
 ): Promise<AITriggerCollection> => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     name: input.name
       ? {
           ilike: `%${input.name.toLowerCase()}%`,

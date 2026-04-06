@@ -1,4 +1,4 @@
-import type { IntegrationWhatsappModel } from "@aha.chat/database/types"
+import type { IntegrationWhatsappModel } from "@chatbotx.io/database/types"
 import { z } from "zod"
 
 export type IntegrationWhatsappResource = IntegrationWhatsappModel
@@ -12,7 +12,7 @@ export const connectWhatsappSchema = z
     manualConnect: z.boolean(),
     marketingMessageLite: z.boolean(),
     phoneNumberId: z.string().min(1),
-    chatbotId: z.string().nullish(),
+    workspaceId: z.string().nullish(),
     accessToken: z.string().nullish(),
     code: z.string().nullish(),
   })

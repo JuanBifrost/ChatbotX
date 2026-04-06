@@ -1,11 +1,9 @@
 "use server"
 
-import { db, eq, findOrFail } from "@aha.chat/database/client"
-import { planModel } from "@aha.chat/database/schema"
-import {
-  type OrganizationModel,
-  organizationSettingsSchema,
-} from "@aha.chat/database/types"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import { organizationSettingsSchema } from "@chatbotx.io/database/partials"
+import { planModel } from "@chatbotx.io/database/schema"
+import type { OrganizationModel } from "@chatbotx.io/database/types"
 import { invalidOrganizationSettingsError } from "@/features/organization/utils"
 import { organizationActionClient } from "@/lib/safe-action"
 import { getStripeClient } from "@/lib/stripe"
@@ -29,9 +27,12 @@ export const updatePlan = async (
   organization: OrganizationModel,
   parsedInput: UpdatePlanRequest,
 ) => {
-  const plan = await findOrFail(planModel, {
-    id: parsedInput.id,
-    organizationId: organization.id,
+  const plan = await findOrFail({
+    table: planModel,
+    where: {
+      id: parsedInput.id,
+      organizationId: organization.id,
+    },
   })
 
   const orgSettings = organizationSettingsSchema.parse(organization.settings)

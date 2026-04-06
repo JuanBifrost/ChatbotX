@@ -1,8 +1,8 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 
 type ListAIIntegrationsProps = {
   where: {
-    chatbotId: string
+    workspaceId: string
   }
 }
 
@@ -12,18 +12,18 @@ export async function listAIIntegrations(props: ListAIIntegrationsProps) {
       integrationType: {
         in: ["openai", "gemini"],
       },
-      chatbotId: props.where.chatbotId,
+      workspaceId: props.where.workspaceId,
     },
   })
 }
 
-export async function hasAIIntegration(chatbotId: string): Promise<boolean> {
+export async function hasAIIntegration(workspaceId: string): Promise<boolean> {
   const exists = await db.query.integrationModel.findFirst({
     where: {
       integrationType: {
         in: ["openai", "gemini"],
       },
-      chatbotId,
+      workspaceId,
     },
   })
 

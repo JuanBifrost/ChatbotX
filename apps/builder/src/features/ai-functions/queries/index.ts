@@ -1,14 +1,14 @@
-import { db } from "@aha.chat/database/client"
-import type { AIFunctionModel } from "@aha.chat/database/types"
+import { db } from "@chatbotx.io/database/client"
+import type { AIFunctionModel } from "@chatbotx.io/database/types"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
-import type { GetAIFunctionsRequest } from "../schemas"
+import type { ListAIFunctionsRequest } from "../schema/action"
 
 export async function listAIFunctions(
-  input: GetAIFunctionsRequest,
+  input: ListAIFunctionsRequest,
 ): Promise<PaginatedResponse<AIFunctionModel>> {
   const data = await db.query.aiFunctionModel.findMany({
     where: {
-      chatbotId: input.chatbotId,
+      workspaceId: input.workspaceId,
     },
   })
 

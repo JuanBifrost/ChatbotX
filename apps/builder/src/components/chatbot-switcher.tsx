@@ -1,11 +1,10 @@
 "use client"
 
-import type { ChatbotModel } from "@aha.chat/database/types"
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@aha.chat/ui/components/ui/avatar"
+} from "@chatbotx.io/ui/components/ui/avatar"
 
 import {
   DropdownMenu,
@@ -14,33 +13,40 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
 import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
   useSidebar,
-} from "@aha.chat/ui/components/ui/sidebar"
-import { cn } from "@aha.chat/ui/lib/utils"
+} from "@chatbotx.io/ui/components/ui/sidebar"
+import { cn } from "@chatbotx.io/ui/lib/utils"
 import { ChevronsUpDown, PlusCircle } from "lucide-react"
 import Link from "next/link"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
+import type { WorkspaceResource } from "@/features/workspaces/schema/resource"
+import { useWorkspaceId } from "@/hooks/routing"
 
-export function ChatbotSwitcher({ chatbots }: { chatbots: ChatbotModel[] }) {
+export function ChatbotSwitcher({
+  workspaces,
+}: {
+  workspaces: WorkspaceResource[]
+}) {
   const { isMobile } = useSidebar()
-  const params = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
 
-  const [activeChatbot, setActiveChatbot] = useState<ChatbotModel | null>(null)
+  const [activeChatbot, setActiveChatbot] = useState<WorkspaceResource | null>(
+    null,
+  )
   const t = useTranslations()
 
   useEffect(() => {
-    const foundChatbot = chatbots.find(
-      (chatbot) => chatbot.id === params.chatbotId,
+    const foundChatbot = workspaces.find(
+      (workspace) => workspace.id === workspaceId,
     )
     setActiveChatbot(foundChatbot ?? null)
-  }, [chatbots, params.chatbotId])
+  }, [workspaces, workspaceId])
 
   return (
     <SidebarMenu>
@@ -76,27 +82,30 @@ export function ChatbotSwitcher({ chatbots }: { chatbots: ChatbotModel[] }) {
             sideOffset={4}
           >
             <DropdownMenuLabel className="text-muted-foreground text-xs">
-              {t("chatbots.list.title")}
+              {t("workspaces.list.title")}
             </DropdownMenuLabel>
-            {chatbots.map((chatbot) => (
+            {workspaces.map((workspace) => (
               <DropdownMenuItem
                 asChild
                 className={cn(
                   "gap-2 p-2",
-                  activeChatbot?.id === chatbot.id &&
+                  activeChatbot?.id === workspace.id &&
                     "bg-sidebar-accent text-sidebar-accent-foreground",
                 )}
-                key={chatbot.name}
-                onClick={() => setActiveChatbot(chatbot)}
+                key={workspace.name}
+                onClick={() => setActiveChatbot(workspace)}
               >
-                <Link href={`/chatbots/${chatbot.id}/dashboard`}>
+                <Link href={`/space/${workspace.id}/dashboard`}>
                   <Avatar className="rounded-lg border">
-                    <AvatarImage alt={chatbot.name} src={chatbot.logo ?? ""} />
+                    <AvatarImage
+                      alt={workspace.name}
+                      src={workspace.logo ?? ""}
+                    />
                     <AvatarFallback className="rounded font-medium">
-                      {chatbot.name.slice(0, 2) || "  "}
+                      {workspace.name.slice(0, 2) || "  "}
                     </AvatarFallback>
                   </Avatar>
-                  {chatbot.name}
+                  {workspace.name}
                 </Link>
               </DropdownMenuItem>
             ))}
@@ -108,7 +117,7 @@ export function ChatbotSwitcher({ chatbots }: { chatbots: ChatbotModel[] }) {
               >
                 <PlusCircle className="ml-2 size-4" />
                 {t("actions.addFeature", {
-                  feature: t("fields.chatbot.label"),
+                  feature: t("fields.workspace.label"),
                 })}
               </Link>
             </DropdownMenuItem>

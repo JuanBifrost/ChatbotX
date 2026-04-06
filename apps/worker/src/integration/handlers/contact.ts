@@ -1,4 +1,9 @@
-import { and, db, eq, findOrFail, inArray } from "@aha.chat/database/client"
+import {
+  emitCustomFieldChanged,
+  emitTagApplied,
+  emitTagRemoved,
+} from "@chatbotx/events"
+import { and, db, eq, findOrFail, inArray } from "@chatbotx.io/database/client"
 import {
   contactCustomFieldModel,
   contactModel,
@@ -7,7 +12,7 @@ import {
   contactsToTagsModel,
   conversationModel,
   tagModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import type {
   AddContactTagStepSchema,
   AddNotesStepSchema,
@@ -19,25 +24,20 @@ import type {
   SetCustomFieldStepSchema,
   SubscribeSequenceStepSchema,
   UnsubscribeSequenceStepSchema,
-} from "@aha.chat/flow-config"
+} from "@chatbotx.io/flow-config"
 import {
-  broadcastToChatbotParty,
+  broadcastToWorkspaceParty,
   RealtimeEventType,
-} from "@aha.chat/partysocket-config"
+} from "@chatbotx.io/partysocket-config"
 import {
   cancelPendingDispatches,
   enrollContactInSequence,
-} from "@aha.chat/sequence-scheduler"
+} from "@chatbotx.io/sequence-scheduler"
+import { createId } from "@chatbotx.io/utils"
 import type {
   IntegrationJobBlockContact,
   IntegrationJobUnblockContact,
-} from "@aha.chat/worker-config"
-import {
-  emitCustomFieldChanged,
-  emitTagApplied,
-  emitTagRemoved,
-} from "@chatbotx/events"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/worker-config"
 import { getInboxWithAuthFromInboxId } from "../../lib/inbox"
 import { allIntegrations } from "../../lib/integrations"
 import type { ExecuteStepProps } from "./flow"
@@ -80,7 +80,7 @@ export async function setContactCustomField({
   if (customField) {
     try {
       await emitCustomFieldChanged(
-        conversation.chatbotId,
+        conversation.workspaceId,
         conversation.contactId,
         step.inputCfId,
         customField.name,
@@ -122,7 +122,7 @@ export async function clearContactCustomField({
   if (customField) {
     try {
       await emitCustomFieldChanged(
-        conversation.chatbotId,
+        conversation.workspaceId,
         conversation.contactId,
         step.inputCfId,
         customField.name,
@@ -141,7 +141,7 @@ export async function addContactNotes({
 }: ExecuteStepProps<AddNotesStepSchema>) {
   await db.insert(contactNoteModel).values({
     contactId: conversation.contactId,
-    content: step.content,
+    text: step.text,
     id: createId(),
   })
 }
@@ -191,7 +191,7 @@ export async function addContactTag({
       .values(
         step.tags.map((t) => ({
           name: t,
-          chatbotId: conversation.chatbotId,
+          workspaceId: conversation.workspaceId,
           id: createId(),
         })),
       )
@@ -203,7 +203,7 @@ export async function addContactTag({
       .from(tagModel)
       .where(
         and(
-          eq(tagModel.chatbotId, conversation.chatbotId),
+          eq(tagModel.workspaceId, conversation.workspaceId),
           inArray(tagModel.name, step.tags),
         ),
       )
@@ -227,7 +227,7 @@ export async function addContactTag({
   for (const tag of insertedTags) {
     try {
       await emitTagApplied(
-        conversation.chatbotId,
+        conversation.workspaceId,
         conversation.contactId,
         tag.id,
       )
@@ -243,7 +243,7 @@ export async function removeContactTag({
 }: ExecuteStepProps<AddContactTagStepSchema>) {
   const tags = await db.query.tagModel.findMany({
     where: {
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
       name: {
         in: step.tags,
       },
@@ -270,7 +270,7 @@ export async function removeContactTag({
   for (const tag of tags) {
     try {
       await emitTagRemoved(
-        conversation.chatbotId,
+        conversation.workspaceId,
         conversation.contactId,
         tag.id,
       )
@@ -297,13 +297,13 @@ export async function deleteContact({
 export const broadcastBlockContactEvent = async ({
   contact,
 }: IntegrationJobBlockContact["data"]) => {
-  const firstConversation = await findOrFail(
-    conversationModel,
-    {
+  const firstConversation = await findOrFail({
+    table: conversationModel,
+    where: {
       contactId: contact.id,
     },
-    "Conversation not found",
-  )
+    message: "Conversation not found",
+  })
   const { inbox, auth } = await getInboxWithAuthFromInboxId(
     firstConversation.inboxId,
   )
@@ -311,14 +311,14 @@ export const broadcastBlockContactEvent = async ({
   const promises = [
     allIntegrations[inbox.channel]?.channels?.channel?.contact?.block?.({
       ctx: {
-        chatbot: inbox.chatbot,
+        workspace: inbox.workspace,
         auth,
       },
       data: {
         contact,
       },
     }),
-    broadcastToChatbotParty(inbox.chatbotId, {
+    broadcastToWorkspaceParty(inbox.workspaceId, {
       eventType: RealtimeEventType.contactBlocked,
       data: {
         contactId: contact.id,
@@ -332,13 +332,13 @@ export const broadcastBlockContactEvent = async ({
 export const broadcastUnblockContactEvent = async ({
   contact,
 }: IntegrationJobUnblockContact["data"]) => {
-  const firstConversation = await findOrFail(
-    conversationModel,
-    {
+  const firstConversation = await findOrFail({
+    table: conversationModel,
+    where: {
       contactId: contact.id,
     },
-    "Conversation not found",
-  )
+    message: "Conversation not found",
+  })
   const { inbox, auth } = await getInboxWithAuthFromInboxId(
     firstConversation.inboxId,
   )
@@ -346,14 +346,14 @@ export const broadcastUnblockContactEvent = async ({
   const promises = [
     allIntegrations[inbox.channel]?.channels?.channel?.contact?.unblock?.({
       ctx: {
-        chatbot: inbox.chatbot,
+        workspace: inbox.workspace,
         auth,
       },
       data: {
         contact,
       },
     }),
-    broadcastToChatbotParty(inbox.chatbotId, {
+    broadcastToWorkspaceParty(inbox.workspaceId, {
       eventType: RealtimeEventType.contactUnblocked,
       data: {
         contactId: contact.id,
@@ -376,7 +376,7 @@ export async function addContactSequence({
     where: {
       contactId: conversation.contactId,
       sequenceId: step.sequenceId,
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
     },
     columns: { id: true },
   })
@@ -409,7 +409,7 @@ export async function addContactSequence({
     : now
 
   await enrollContactInSequence({
-    chatbotId: conversation.chatbotId,
+    workspaceId: conversation.workspaceId,
     contactId: conversation.contactId,
     sequenceId: step.sequenceId,
     nextRunAt,
@@ -430,7 +430,7 @@ export async function removeContactSequence({
     where: {
       contactId: conversation.contactId,
       sequenceId: step.sequenceId,
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
     },
     columns: {
       id: true,
@@ -447,14 +447,14 @@ export async function removeContactSequence({
         contactsOnSequenceModel.id,
         enrollments.map((e) => e.id),
       ),
-      eq(contactsOnSequenceModel.chatbotId, conversation.chatbotId),
+      eq(contactsOnSequenceModel.workspaceId, conversation.workspaceId),
     ),
   )
 
   for (const enrollment of enrollments) {
     await cancelPendingDispatches({
       enrollmentId: enrollment.id,
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
       reason: "unsubscribed_via_flow",
     })
   }

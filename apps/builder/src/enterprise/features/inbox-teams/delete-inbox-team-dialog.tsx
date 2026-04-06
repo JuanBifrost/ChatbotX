@@ -1,7 +1,7 @@
 "use client"
 
-import type { InboxTeamModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { InboxTeamModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import { Loader2 } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -20,19 +20,19 @@ import { deleteInboxTeamAction } from "./actions/delete-inbox-team.action"
 export function DeleteInboxTeamDialog({
   open,
   onOpenChange,
-  chatbotId,
+  workspaceId,
   inboxTeam,
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
-  chatbotId: string
+  workspaceId: string
   inboxTeam: InboxTeamModel | null
 }) {
   const t = useTranslations()
   const router = useRouter()
 
   const { execute, isPending } = useAction(
-    deleteInboxTeamAction.bind(null, chatbotId),
+    deleteInboxTeamAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

@@ -1,6 +1,7 @@
-import { and, count, db, eq, isNull } from "@aha.chat/database/client"
-import { webhookModel } from "@aha.chat/database/schema"
-import type { WebhookModel } from "@aha.chat/database/types"
+import { and, count, db, eq, isNull } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
+import { webhookModel } from "@chatbotx.io/database/schema"
+import type { WebhookModel } from "@chatbotx.io/database/types"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type { WebhookCollection } from "../schemas"
 import type { GetWebhooksSchema } from "../schemas/get-webhook-schema"
@@ -8,14 +9,16 @@ import type { GetWebhooksSchema } from "../schemas/get-webhook-schema"
 export async function getWebhooks(
   input: GetWebhooksSchema,
 ): Promise<WebhookCollection> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   // Build SQL conditions
-  const conditions = [eq(webhookModel.chatbotId, input.chatbotId)]
+  const conditions = [eq(webhookModel.workspaceId, input.workspaceId)]
 
   if (input.folderId !== undefined) {
     const folderId =
-      input.folderId === null || input.folderId === "0" ? null : input.folderId
+      input.folderId === null || input.folderId === rootFolderId
+        ? null
+        : input.folderId
     if (folderId === null) {
       conditions.push(isNull(webhookModel.folderId))
     } else {
@@ -63,7 +66,7 @@ export async function getWebhooks(
 
 export async function findWebhook(params: {
   id?: string
-  chatbotId?: string
+  workspaceId?: string
 }): Promise<WebhookModel | null> {
   const where: Record<string, unknown> = {}
 
@@ -71,8 +74,8 @@ export async function findWebhook(params: {
     where.id = params.id
   }
 
-  if (params.chatbotId) {
-    where.chatbotId = params.chatbotId
+  if (params.workspaceId) {
+    where.workspaceId = params.workspaceId
   }
 
   if (Object.keys(where).length === 0) {

@@ -1,13 +1,13 @@
-import type { BotResponseTrackingContext } from "@aha.chat/worker-config"
 import {
   type BotMessageResponseType,
   botMessageTrackingService,
   type TrackBotRequest,
 } from "@chatbotx.io/analytics"
+import type { BotResponseTrackingContext } from "@chatbotx.io/worker-config"
 
 export function createTrackingContext(params: {
   messageId: string
-  chatbotId: string
+  workspaceId: string
   conversationId: string
   responseType: BotMessageResponseType
   aiProvider: string
@@ -22,7 +22,7 @@ export function createTrackingContext(params: {
 export async function trackBotResponse(params: TrackBotRequest) {
   try {
     await botMessageTrackingService.trackEvent({
-      chatbotId: params.chatbotId,
+      workspaceId: params.workspaceId,
       conversationId: params.conversationId,
       messageId: params.messageId,
       occurredAt: new Date(),

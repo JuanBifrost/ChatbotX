@@ -1,10 +1,10 @@
-import { and, db, eq } from "@aha.chat/database/client"
+import { and, db, eq } from "@chatbotx.io/database/client"
 import {
   sequenceDispatchModel,
   sequenceEventModel,
-} from "@aha.chat/database/schema"
-import type { SchedulerClient } from "@aha.chat/scheduler"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/database/schema"
+import type { SchedulerClient } from "@chatbotx.io/scheduler"
+import { createId } from "@chatbotx.io/utils"
 import { logger } from "../../lib/logger"
 import { RETRY_BASE_DELAY_MS } from "./constants"
 import type { DispatchWithRelations } from "./types"
@@ -34,7 +34,7 @@ export class RetrySchedulerService {
       .where(
         and(
           eq(sequenceDispatchModel.id, dispatch.id),
-          eq(sequenceDispatchModel.chatbotId, dispatch.chatbotId),
+          eq(sequenceDispatchModel.workspaceId, dispatch.workspaceId),
         ),
       )
 
@@ -51,7 +51,7 @@ export class RetrySchedulerService {
 
   async markDispatchFailed(
     dispatchId: string,
-    chatbotId: string,
+    workspaceId: string,
     errorMessage: string,
   ): Promise<void> {
     await db
@@ -64,7 +64,7 @@ export class RetrySchedulerService {
       .where(
         and(
           eq(sequenceDispatchModel.id, dispatchId),
-          eq(sequenceDispatchModel.chatbotId, chatbotId),
+          eq(sequenceDispatchModel.workspaceId, workspaceId),
         ),
       )
 
@@ -73,7 +73,7 @@ export class RetrySchedulerService {
 
   async markDispatchCanceled(
     dispatchId: string,
-    chatbotId: string,
+    workspaceId: string,
     _reason: string,
   ): Promise<void> {
     await db
@@ -85,7 +85,7 @@ export class RetrySchedulerService {
       .where(
         and(
           eq(sequenceDispatchModel.id, dispatchId),
-          eq(sequenceDispatchModel.chatbotId, chatbotId),
+          eq(sequenceDispatchModel.workspaceId, workspaceId),
         ),
       )
   }
@@ -99,7 +99,7 @@ export class RetrySchedulerService {
   ): Promise<void> {
     await db.insert(sequenceEventModel).values({
       id: createId(),
-      chatbotId: dispatch.chatbotId,
+      workspaceId: dispatch.workspaceId,
       sequenceId: dispatch.sequenceId,
       contactId: dispatch.contactId,
       stepId: dispatch.stepId,

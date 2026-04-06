@@ -1,19 +1,19 @@
-import { and, db, eq } from "@aha.chat/database/client"
-import { contactsOnSequenceModel } from "@aha.chat/database/schema"
-import type { SchedulerClient } from "@aha.chat/scheduler"
+import { and, db, eq } from "@chatbotx.io/database/client"
+import { contactsOnSequenceModel } from "@chatbotx.io/database/schema"
+import type { SchedulerClient } from "@chatbotx.io/scheduler"
 import {
   calculateNextRunAtFromStep,
   calculateNextValidSendTime,
   createDispatch,
-} from "@aha.chat/sequence-scheduler"
+} from "@chatbotx.io/sequence-scheduler"
 import type { DispatchWithRelations, StepWithRelations } from "./types"
 
 export class EnrollmentAdvancerService {
-  async fetchEnrollment(enrollmentId: string, chatbotId: string) {
+  async fetchEnrollment(enrollmentId: string, workspaceId: string) {
     const enrollment = await db.query.contactsOnSequenceModel.findFirst({
       where: {
         id: enrollmentId,
-        chatbotId,
+        workspaceId,
       },
     })
 
@@ -60,7 +60,7 @@ export class EnrollmentAdvancerService {
 
   async completeEnrollment(
     enrollmentId: string,
-    chatbotId: string,
+    workspaceId: string,
     step: StepWithRelations,
     sentAt: Date,
   ): Promise<void> {
@@ -78,7 +78,7 @@ export class EnrollmentAdvancerService {
       .where(
         and(
           eq(contactsOnSequenceModel.id, enrollmentId),
-          eq(contactsOnSequenceModel.chatbotId, chatbotId),
+          eq(contactsOnSequenceModel.workspaceId, workspaceId),
         ),
       )
   }
@@ -105,12 +105,12 @@ export class EnrollmentAdvancerService {
         .where(
           and(
             eq(contactsOnSequenceModel.id, dispatch.enrollmentId),
-            eq(contactsOnSequenceModel.chatbotId, dispatch.chatbotId),
+            eq(contactsOnSequenceModel.workspaceId, dispatch.workspaceId),
           ),
         )
 
       const nextDispatch = await createDispatch({
-        chatbotId: dispatch.chatbotId,
+        workspaceId: dispatch.workspaceId,
         sequenceId: dispatch.sequenceId,
         contactId: dispatch.contactId,
         stepId: nextStep.id,

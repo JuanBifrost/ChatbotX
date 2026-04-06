@@ -2,14 +2,14 @@ import ky, { HTTPError } from "ky"
 import { createStore } from "zustand/vanilla"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { maxPerPageString } from "@/lib/shared-request"
-import type { InboxResource } from "../schemas/resource"
+import type { InboxResource } from "../schema/resource"
 
 export type InboxState = {
   loading: boolean
   error: string | null
   initialized: boolean
 
-  chatbotId: string
+  workspaceId: string
   inboxes: InboxResource[]
 }
 
@@ -26,7 +26,7 @@ export const createInboxStore = (props: Partial<InboxState>) =>
     error: null,
     initialized: false,
 
-    chatbotId: "",
+    workspaceId: "",
     inboxes: [],
     ...props,
 
@@ -52,9 +52,9 @@ export const createInboxStore = (props: Partial<InboxState>) =>
     },
 
     getAllInboxes: async () => {
-      const { chatbotId, loading } = get()
+      const { workspaceId, loading } = get()
 
-      if (loading || !chatbotId) {
+      if (loading || !workspaceId) {
         return
       }
       set({ loading: true, error: null })
@@ -65,7 +65,7 @@ export const createInboxStore = (props: Partial<InboxState>) =>
         })
         const { data } = await ky
           .get<PaginatedResponse<InboxResource>>(
-            `/api/chatbots/${chatbotId}/inboxes?${searchParams.toString()}`,
+            `/api/workspaces/${workspaceId}/inboxes?${searchParams.toString()}`,
           )
           .json()
 

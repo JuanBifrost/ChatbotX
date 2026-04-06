@@ -1,62 +1,64 @@
 "use server"
 
-import { and, db, eq, findOrFail, inArray } from "@aha.chat/database/client"
-import { tagModel } from "@aha.chat/database/schema"
+import { and, db, eq, findOrFail, inArray } from "@chatbotx.io/database/client"
+import { tagModel } from "@chatbotx.io/database/schema"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const deleteTagAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const deleteTagAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(bulkUpdateIdsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
       parsedInput: BulkUpdateIdsRequest
     }) => {
-      await deleteTags({ chatbotId, ids: parsedInput.ids })
+      await deleteTags({ workspaceId, ids: parsedInput.ids })
     },
   )
 
 export const deleteTags = async ({
-  chatbotId,
+  workspaceId,
   ids,
 }: {
-  chatbotId: string
+  workspaceId: string
   ids: string[]
 }) => {
   await db
     .delete(tagModel)
-    .where(and(eq(tagModel.chatbotId, chatbotId), inArray(tagModel.id, ids)))
+    .where(
+      and(eq(tagModel.workspaceId, workspaceId), inArray(tagModel.id, ids)),
+    )
 
-  revalidateCacheTags(`chatbots:${chatbotId}#tags`)
+  revalidateCacheTags(`workspaces:${workspaceId}#tags`)
 }
 
 export const deleteTag = async ({
-  chatbotId,
+  workspaceId,
   id,
 }: {
-  chatbotId: string
+  workspaceId: string
   id: string
 }) => {
-  const tag = await findOrFail(
-    tagModel,
-    {
-      chatbotId,
+  const tag = await findOrFail({
+    table: tagModel,
+    where: {
+      workspaceId,
       id,
     },
-    "Tag not found",
-  )
+    message: "Tag not found",
+  })
 
   await db.delete(tagModel).where(eq(tagModel.id, tag.id))
 
-  revalidateCacheTags(`chatbots:${chatbotId}#tags`)
+  revalidateCacheTags(`workspaces:${workspaceId}#tags`)
 }

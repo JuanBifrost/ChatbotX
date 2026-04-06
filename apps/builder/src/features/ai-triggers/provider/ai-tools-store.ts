@@ -1,13 +1,8 @@
-import type {
-  AIFileModel,
-  AIFunctionModel,
-  AIMCPServerModel,
-} from "@aha.chat/database/types"
 import ky, { HTTPError } from "ky"
 import { createStore } from "zustand/vanilla"
-import type { AIFileCollection } from "@/features/ai-files/schemas"
-import type { AIFunctionCollection } from "@/features/ai-functions/schemas"
-import type { AIMcpServerCollection } from "@/features/ai-mcp-servers/schemas"
+import type { ListAIFilesResponse } from "@/features/ai-files/schemas"
+import type { ListAIFunctionsResponse } from "@/features/ai-functions/schema/action"
+import type { ListAIMcpServersResponse } from "@/features/ai-mcp-servers/schema/action"
 
 export type AIToolsState = {
   loadingAIFiles: boolean
@@ -16,10 +11,10 @@ export type AIToolsState = {
   error: string | null
   initialized: boolean
 
-  chatbotId: string
-  files: AIFileModel[]
-  functions: AIFunctionModel[]
-  mcpServers: AIMCPServerModel[]
+  workspaceId: string
+  files: ListAIFilesResponse["data"]
+  functions: ListAIFunctionsResponse["data"]
+  mcpServers: ListAIMcpServersResponse["data"]
 }
 
 export type AIToolsActions = {
@@ -39,7 +34,7 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
     error: null,
     initialized: false,
 
-    chatbotId: "",
+    workspaceId: "",
     files: [],
     functions: [],
     mcpServers: [],
@@ -48,7 +43,7 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
     initialize: async () => {
       const { initialized } = get()
 
-      // Skip if already initialized for the same chatbotId or currently loading
+      // Skip if already initialized for the same workspaceId or currently loading
       if (initialized) {
         return
       }
@@ -72,9 +67,9 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
     },
 
     listAIFiles: async () => {
-      const { chatbotId, loadingAIFiles } = get()
+      const { workspaceId, loadingAIFiles } = get()
 
-      if (loadingAIFiles || !chatbotId) {
+      if (loadingAIFiles || !workspaceId) {
         return
       }
 
@@ -82,7 +77,7 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
 
       try {
         const { data } = await ky
-          .get<AIFileCollection>(`/api/chatbots/${chatbotId}/ai-files`)
+          .get<ListAIFilesResponse>(`/api/workspaces/${workspaceId}/ai-files`)
           .json()
 
         set({ files: data })
@@ -99,9 +94,9 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
     },
 
     listAIFunctions: async () => {
-      const { chatbotId, loadingAIFunction } = get()
+      const { workspaceId, loadingAIFunction } = get()
 
-      if (loadingAIFunction || !chatbotId) {
+      if (loadingAIFunction || !workspaceId) {
         return
       }
 
@@ -109,7 +104,9 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
 
       try {
         const { data } = await ky
-          .get<AIFunctionCollection>(`/api/chatbots/${chatbotId}/ai-functions`)
+          .get<ListAIFunctionsResponse>(
+            `/api/workspaces/${workspaceId}/ai-functions`,
+          )
           .json()
 
         set({ functions: data })
@@ -126,9 +123,9 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
     },
 
     getAIMCPServers: async () => {
-      const { chatbotId, loadingAIMCPServer } = get()
+      const { workspaceId, loadingAIMCPServer } = get()
 
-      if (loadingAIMCPServer || !chatbotId) {
+      if (loadingAIMCPServer || !workspaceId) {
         return
       }
 
@@ -136,8 +133,8 @@ export const createAIToolsStore = (props: Partial<AIToolsState>) =>
 
       try {
         const { data } = await ky
-          .get<AIMcpServerCollection>(
-            `/api/chatbots/${chatbotId}/ai-mcp-servers`,
+          .get<ListAIMcpServersResponse>(
+            `/api/workspaces/${workspaceId}/ai-mcp-servers`,
           )
           .json()
 

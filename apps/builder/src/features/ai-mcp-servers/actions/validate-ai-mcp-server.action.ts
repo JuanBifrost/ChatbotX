@@ -1,23 +1,23 @@
 "use server"
 
-import { AIMcpServerAuthType } from "@aha.chat/database/types"
 import {
   experimental_createMCPClient,
   type experimental_MCPClient,
 } from "@ai-sdk/mcp"
+import { aiMcpServerAuthTypes } from "@chatbotx.io/database/partials"
 import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { chatbotIdRequestParams } from "@/features/common/schemas"
-import { chatbotActionClient } from "@/lib/safe-action"
-import { validateAIMcpServerRequest } from "../schemas"
+import { workspaceIdrequestParams } from "@/features/common/schemas"
+import { workspaceActionClient } from "@/lib/safe-action"
+import { validateAIMcpServerRequest } from "../schema/action"
 
-export const validateAIMcpServerAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const validateAIMcpServerAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(validateAIMcpServerRequest)
   .action(async ({ parsedInput }) => {
     const headers: Record<string, string> = {}
-    if (parsedInput.auth.type === AIMcpServerAuthType.token) {
+    if (parsedInput.auth.type === aiMcpServerAuthTypes.enum.token) {
       headers.Authorization = `Bearer ${parsedInput.auth.token}`
-    } else if (parsedInput.auth.type === AIMcpServerAuthType.header) {
+    } else if (parsedInput.auth.type === aiMcpServerAuthTypes.enum.header) {
       for (const header of parsedInput.auth.headers) {
         headers[header.header] = header.value
       }

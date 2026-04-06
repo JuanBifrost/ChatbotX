@@ -1,24 +1,24 @@
 "use server"
 
-import { db } from "@aha.chat/database/client"
-import { aiFunctionModel } from "@aha.chat/database/schema"
-import { createId } from "@paralleldrive/cuid2"
-import { chatbotIdRequestParams } from "@/features/common/schemas"
+import { db } from "@chatbotx.io/database/client"
+import { aiFunctionModel } from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
+import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
-import { createAIFunctionRequest } from "../schemas"
+import { workspaceActionClient } from "@/lib/safe-action"
+import { createAIFunctionRequest } from "../schema/action"
 
-export const createAIFunctionAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const createAIFunctionAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(createAIFunctionRequest)
   .action(async ({ bindArgsParsedInputs, parsedInput }) => {
-    const [chatbotId] = bindArgsParsedInputs
+    const [workspaceId] = bindArgsParsedInputs
 
     await db.insert(aiFunctionModel).values({
       ...parsedInput,
       id: createId(),
-      chatbotId,
+      workspaceId,
     })
 
-    revalidateCacheTags(`chatbots:${chatbotId}#aiFunctions`)
+    revalidateCacheTags(`workspaces:${workspaceId}#aiFunctions`)
   })

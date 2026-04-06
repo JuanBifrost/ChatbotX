@@ -1,7 +1,7 @@
 "use server"
 
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { FolderType, rootFolderId } from "@aha.chat/database/enums"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { folderTypes, rootFolderId } from "@chatbotx.io/database/partials"
 import {
   automatedResponseModel,
   customFieldModel,
@@ -10,18 +10,18 @@ import {
   tagModel,
   triggerModel,
   webhookModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import { returnValidationErrors } from "next-safe-action"
-import { chatbotIdRequestParams } from "@/features/common/schemas"
+import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { ChatbotXException } from "@/lib/errors/exception"
-import { chatbotActionClient } from "@/lib/safe-action"
-import { changeFolderRequest } from "../schemas/action"
+import { workspaceActionClient } from "@/lib/safe-action"
+import { changeFolderRequest } from "../schema/action"
 
-export const changeFolderAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const changeFolderAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(changeFolderRequest)
   .action(async ({ bindArgsParsedInputs, parsedInput }) => {
-    const [chatbotId] = bindArgsParsedInputs
+    const [workspaceId] = bindArgsParsedInputs
 
     const resourceModel = findResourceModel(parsedInput.folderType)
 
@@ -32,7 +32,7 @@ export const changeFolderAction = chatbotActionClient
       .from(resourceModel)
       .where(
         and(
-          eq(resourceModel.chatbotId, chatbotId),
+          eq(resourceModel.workspaceId, workspaceId),
           inArray(resourceModel.id, parsedInput.modelIds),
         ),
       )
@@ -46,7 +46,7 @@ export const changeFolderAction = chatbotActionClient
     if (inputNewFolderId) {
       const targetFolder = await db.query.folderModel.findFirst({
         where: {
-          chatbotId,
+          workspaceId,
           id: parsedInput.newFolderId,
           folderType: parsedInput.folderType,
         },
@@ -73,7 +73,7 @@ export const changeFolderAction = chatbotActionClient
       })
       .where(
         and(
-          eq(resourceModel.chatbotId, chatbotId),
+          eq(resourceModel.workspaceId, workspaceId),
           inArray(resourceModel.id, parsedInput.modelIds),
         ),
       )
@@ -81,19 +81,19 @@ export const changeFolderAction = chatbotActionClient
 
 function findResourceModel(folderType: string) {
   switch (folderType) {
-    case FolderType.tag:
+    case folderTypes.enum.tag:
       return tagModel
-    case FolderType.flow:
+    case folderTypes.enum.flow:
       return flowModel
-    case FolderType.customField:
+    case folderTypes.enum.customField:
       return customFieldModel
-    case FolderType.automatedResponse:
+    case folderTypes.enum.automatedResponse:
       return automatedResponseModel
-    case FolderType.sequence:
+    case folderTypes.enum.sequence:
       return sequenceModel
-    case FolderType.trigger:
+    case folderTypes.enum.trigger:
       return triggerModel
-    case FolderType.webhook:
+    case folderTypes.enum.webhook:
       return webhookModel
     default:
       throw new ChatbotXException("Invalid folder type")

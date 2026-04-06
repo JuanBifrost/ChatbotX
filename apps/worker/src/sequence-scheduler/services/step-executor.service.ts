@@ -1,9 +1,9 @@
-import { and, db, eq } from "@aha.chat/database/client"
+import { and, db, eq } from "@chatbotx.io/database/client"
 import {
   sequenceDispatchModel,
   sequenceEventModel,
-} from "@aha.chat/database/schema"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
 import { sendFlowDirect } from "../../integration/handlers/send-flow-direct"
 import type {
   DispatchWithRelations,
@@ -52,7 +52,7 @@ export class StepExecutorService {
 
     const sentAt = await sendFlowDirect({
       flowId: step.flow.id,
-      chatbotId: dispatch.chatbotId,
+      workspaceId: dispatch.workspaceId,
       contactId: dispatch.contactId,
     })
 
@@ -61,7 +61,7 @@ export class StepExecutorService {
 
   async markDispatchCompleted(
     dispatchId: string,
-    chatbotId: string,
+    workspaceId: string,
     sentAt: Date,
   ): Promise<void> {
     await db
@@ -74,7 +74,7 @@ export class StepExecutorService {
       .where(
         and(
           eq(sequenceDispatchModel.id, dispatchId),
-          eq(sequenceDispatchModel.chatbotId, chatbotId),
+          eq(sequenceDispatchModel.workspaceId, workspaceId),
         ),
       )
   }
@@ -86,7 +86,7 @@ export class StepExecutorService {
   ): Promise<void> {
     await db.insert(sequenceEventModel).values({
       id: createId(),
-      chatbotId: dispatch.chatbotId,
+      workspaceId: dispatch.workspaceId,
       sequenceId: dispatch.sequenceId,
       contactId: dispatch.contactId,
       stepId: dispatch.stepId,

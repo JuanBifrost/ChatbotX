@@ -10,8 +10,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@aha.chat/ui/components/ui/alert-dialog"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/ui/components/ui/alert-dialog"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -21,12 +21,12 @@ import { toast } from "sonner"
 import { disconnectWhatsappAction } from "./actions/disconnect.action"
 
 type WhatsappDisconnectDialogProps = {
-  chatbotId: string
+  workspaceId: string
   integrationWhatsappId: string
 }
 
 export function WhatsappDisconnectDialog({
-  chatbotId,
+  workspaceId,
   integrationWhatsappId,
 }: WhatsappDisconnectDialogProps) {
   const t = useTranslations()
@@ -35,7 +35,7 @@ export function WhatsappDisconnectDialog({
 
   const { executeAsync: onDisconnect, isPending: isPendingDisconnect } =
     useAction(
-      disconnectWhatsappAction.bind(null, chatbotId, integrationWhatsappId),
+      disconnectWhatsappAction.bind(null, workspaceId, integrationWhatsappId),
       {
         onSuccess: () => {
           router.refresh()

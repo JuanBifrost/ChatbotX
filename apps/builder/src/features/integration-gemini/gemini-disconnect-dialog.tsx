@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -10,23 +10,24 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import { Loader2Icon } from "lucide-react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { useState } from "react"
+import { useWorkspaceId } from "@/hooks/routing"
 import { disconnectGeminiAction } from "./actions/disconnect.action"
 
 export const GeminiDisconnectDialog = () => {
   const [open, setOpen] = useState(false)
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
 
   const t = useTranslations()
   const router = useRouter()
 
   const { execute, isPending } = useAction(
-    disconnectGeminiAction.bind(null, chatbotId),
+    disconnectGeminiAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         setOpen(false)

@@ -1,9 +1,9 @@
-import { db, relationsFilterToSQL } from "@aha.chat/database/client"
-import { auditLogModel, errorLogModel } from "@aha.chat/database/schema"
+import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { auditLogModel, errorLogModel } from "@chatbotx.io/database/schema"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
-} from "@aha.chat/database/utils"
+} from "@chatbotx.io/database/utils"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type { AuditLogResource } from "../schemas"
@@ -12,10 +12,10 @@ import type { ListAuditLogsRequest } from "../schemas/query"
 export async function listAuditLogs(
   input: ListAuditLogsRequest,
 ): Promise<PaginatedResponse<AuditLogResource>> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     // userId: input.userId !== null ? input.userId : undefined,
   }
 

@@ -1,15 +1,16 @@
-import { db } from "@aha.chat/database/client"
-import type { FolderModel, FolderType } from "@aha.chat/database/types"
+import { db } from "@chatbotx.io/database/client"
+import { type FolderType, rootFolderId } from "@chatbotx.io/database/partials"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
   GetCurrentFolderSchema,
   ListFoldersSearchParams,
-} from "../schemas/query"
+} from "../schema/query"
+import type { FolderResource, ListFoldersResponse } from "../schema/resource"
 
-export const getFolders = async (
+export const listFolders = async (
   input: ListFoldersSearchParams,
-): Promise<{ data: FolderModel[] }> => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+): Promise<{ data: ListFoldersResponse["data"] }> => {
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const { folderId, ...rest } = input
 
@@ -17,10 +18,12 @@ export const getFolders = async (
     where: {
       ...rest,
       folderType: rest.folderType as FolderType,
-      parentId:
-        !folderId || input.folderId === null
+      parentId: folderId
+        ? // biome-ignore lint/style/noNestedTernary: allow nested ternary
+          folderId === rootFolderId
           ? { isNull: true as const }
-          : input.folderId,
+          : folderId
+        : undefined,
     },
     orderBy: {
       createdAt: "asc",
@@ -32,8 +35,8 @@ export const getFolders = async (
 
 export const getCurrentFolder = async (
   input: GetCurrentFolderSchema,
-): Promise<{ folder: FolderModel | null; parents: FolderModel[] }> => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+): Promise<{ folder: FolderResource | null; parents: FolderResource[] }> => {
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const folder = await db.query.folderModel.findFirst({
     where: input,
@@ -42,7 +45,7 @@ export const getCurrentFolder = async (
     return { folder: null, parents: [] }
   }
 
-  let parents: FolderModel[] = []
+  let parents: FolderResource[] = []
   if (folder.paths.length > 0) {
     const tempParents = await db.query.folderModel.findMany({
       where: {
@@ -53,18 +56,20 @@ export const getCurrentFolder = async (
     // Sort by path's order
     const orderedPaths = folder.paths.reduce(
       (result, value) => {
-        result[value] = null
+        result[value.toString()] = null
         return result
       },
-      {} as Record<string, FolderModel | null>,
+      {} as Record<string, FolderResource | null>,
     )
 
     for (const temp of tempParents) {
-      orderedPaths[temp.id] = temp
+      orderedPaths[temp.id.toString()] = temp
     }
 
     // Remove null value
-    parents = Object.values(orderedPaths).filter((v) => v?.id) as FolderModel[]
+    parents = Object.values(orderedPaths).filter(
+      (v) => v?.id,
+    ) as FolderResource[]
   }
 
   return { folder, parents }

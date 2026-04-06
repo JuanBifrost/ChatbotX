@@ -1,13 +1,13 @@
-import { db } from "@aha.chat/database/client"
-import { errorLogModel } from "@aha.chat/database/schema"
-import type { JobSendErrorLog } from "@aha.chat/worker-config"
-import { createId } from "@paralleldrive/cuid2"
+import { db } from "@chatbotx.io/database/client"
+import { errorLogModel } from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
+import type { JobSendErrorLog } from "@chatbotx.io/worker-config"
 
 export const sendErrorLog = async (data: JobSendErrorLog["data"]) => {
-  const { chatbotId, error } = data
+  const { workspaceId, error } = data
   await db.insert(errorLogModel).values({
     id: createId(),
-    chatbotId,
+    workspaceId,
     action: error.message ?? "Unknown error",
     detail: error.stack ?? "",
     httpCode: "500",

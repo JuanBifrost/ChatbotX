@@ -1,26 +1,25 @@
 "use client"
 
-import { ReplyType } from "@aha.chat/database/types"
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { Checkbox } from "@aha.chat/ui/components/ui/checkbox"
+} from "@chatbotx.io/ui/components/ui/card"
+import { Checkbox } from "@chatbotx.io/ui/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
-import { Switch } from "@aha.chat/ui/components/ui/switch"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
+import { Switch } from "@chatbotx.io/ui/components/ui/switch"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import { format } from "date-fns"
 import {
@@ -41,16 +40,15 @@ import { updateAutomatedResponseAction } from "./actions/update-automated-respon
 import { AddAutomatedResponseButton } from "./components/add-automated-response-button"
 import { DeleteAutomatedResponsesDialog } from "./delete-automated-response-dialog"
 import type { listAutomatedResponses } from "./queries"
-import type { CreateAutomatedResponseRequest } from "./schemas/action"
-import type { AutomatedResponseResource } from "./schemas/resource"
+import type { AutomatedResponseResource } from "./schema/resource"
 
 type AutomatedResponseTableProps = {
-  chatbotId: string
+  workspaceId: string
   promises: Promise<[Awaited<ReturnType<typeof listAutomatedResponses>>]>
 }
 
 export function AutomatedResponsesTable({
-  chatbotId,
+  workspaceId,
   promises,
 }: AutomatedResponseTableProps) {
   const t = useTranslations()
@@ -106,7 +104,7 @@ export function AutomatedResponsesTable({
             <div className="max-w-[200px] truncate">
               <Link
                 className="truncate"
-                href={`/chatbots/${chatbotId}/automated-responses/${id}/edit?${searchParams.toString()}`}
+                href={`/space/${workspaceId}/automated-responses/${id}/edit?${searchParams.toString()}`}
                 title={userMessages.join(",")}
               >
                 {userMessages.join(",")}
@@ -128,37 +126,16 @@ export function AutomatedResponsesTable({
             title={t("fields.botResponse.label")}
           />
         ),
-        cell: ({ cell }) => {
-          const replies = cell.getValue<
-            AutomatedResponseResource["replies"]
-          >() as CreateAutomatedResponseRequest["replies"]
-
-          const displayData: string[] = []
-          for (const reply of replies) {
-            if (reply.type === ReplyType.Message) {
-              displayData.push(`Message: ${reply.message}`)
-            } else {
-              const flow = allFlows.find((f) => f.id === reply.flowId)
-              if (flow) {
-                displayData.push(`Flow: ${flow.name}`)
-              }
+        cell: ({ row }) => {
+          let reply = row.original.text
+          if (!reply) {
+            const flow = allFlows.find((f) => f.id === row.original.flowId)
+            if (flow) {
+              reply = `Flow: ${flow.name}`
             }
           }
 
-          return (
-            <div className="max-w-[200px]">
-              <ul className="list-disc">
-                {displayData.map((reply, idx) => {
-                  return (
-                    // biome-ignore lint/suspicious/noArrayIndexKey: wip
-                    <li className="truncate" key={idx}>
-                      {reply}
-                    </li>
-                  )
-                })}
-              </ul>
-            </div>
-          )
+          return <div className="max-w-[200px] truncate">{reply ?? ""}</div>
         },
         enableSorting: false,
         enableHiding: false,
@@ -178,9 +155,9 @@ export function AutomatedResponsesTable({
         ),
         cell: ({ cell, row }) => (
           <AutomatedResponseStatusCell
-            chatbotId={chatbotId}
             checked={cell.getValue<AutomatedResponseResource["status"]>()}
             id={row.original.id}
+            workspaceId={workspaceId}
           />
         ),
         enableSorting: false,
@@ -224,7 +201,7 @@ export function AutomatedResponsesTable({
             <DropdownMenuContent align="end">
               <DropdownMenuItem asChild>
                 <Link
-                  href={`/chatbots/${chatbotId}/automated-responses/${row.original.id}/edit`}
+                  href={`/space/${workspaceId}/automated-responses/${row.original.id}/edit`}
                 >
                   <PencilIcon />
                   {t("actions.edit")}
@@ -251,7 +228,7 @@ export function AutomatedResponsesTable({
         enableHiding: false,
       },
     ],
-    [chatbotId, t, allFlows, searchParams],
+    [workspaceId, t, allFlows, searchParams],
   )
 
   const { table } = useDataTable({
@@ -285,17 +262,16 @@ export function AutomatedResponsesTable({
           automatedResponses={
             rowAction?.row.original ? [rowAction?.row.original] : []
           }
-          chatbotId={chatbotId}
           onOpenChange={() => setRowAction(null)}
           onSuccess={() => {
             router.refresh()
           }}
           open={rowAction?.variant === "delete"}
           showTrigger={false}
+          workspaceId={workspaceId}
         />
 
         <ChangeFolderDialog
-          chatbotId={chatbotId}
           currentFolderId={rowAction?.row.original?.folderId || null}
           folderType="automatedResponse"
           modelIds={
@@ -303,6 +279,7 @@ export function AutomatedResponsesTable({
           }
           onOpenChange={() => setRowAction(null)}
           open={rowAction?.variant === "move"}
+          workspaceId={workspaceId}
         />
       </CardContent>
     </Card>
@@ -311,11 +288,11 @@ export function AutomatedResponsesTable({
 
 const AutomatedResponseStatusCell = (props: {
   id: string
-  chatbotId: string
+  workspaceId: string
   checked: boolean
 }) => {
   const { execute, isPending } = useAction(
-    updateAutomatedResponseAction.bind(null, props.chatbotId, props.id),
+    updateAutomatedResponseAction.bind(null, props.workspaceId, props.id),
     {
       onError: ({ error }) => {
         if (error.serverError) {

@@ -1,22 +1,22 @@
 "use client"
 
-import type { OrganizationSettings } from "@aha.chat/database/types"
+import type { OrganizationSettings } from "@chatbotx.io/database/partials"
 import type {
   WhatsappPhoneNumber,
   WhatsappPhoneNumberResponse,
-} from "@aha.chat/integration-whatsapp/api/phone-number"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { RadioGroupField } from "@aha.chat/ui/components/form/radio-group-field"
-import { SwitchField } from "@aha.chat/ui/components/form/switch-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/integration-whatsapp/api/phone-number"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { RadioGroupField } from "@chatbotx.io/ui/components/form/radio-group-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/card"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import FacebookLogin, {
   type InitParams,
 } from "@greatsumini/react-facebook-login"
@@ -93,12 +93,12 @@ function usePhoneNumbers() {
 }
 
 type WhatsappCreateProps = {
-  chatbotId?: string | null
+  workspaceId?: string | null
   settings: NonNullable<OrganizationSettings["whatsapp"]>
 }
 
 export default function WhatsappCreate({
-  chatbotId,
+  workspaceId,
   settings,
 }: WhatsappCreateProps) {
   const t = useTranslations()
@@ -129,7 +129,7 @@ export default function WhatsappCreate({
           transferPhoneNumber: false,
           manualConnect: false,
           marketingMessageLite: false,
-          chatbotId: chatbotId ?? "",
+          workspaceId: workspaceId ?? "",
 
           // Main fields
           wabaId: "",

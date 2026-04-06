@@ -1,13 +1,11 @@
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import {
-  contactEventTypeSchema,
-  contactSenderTypeSchema,
-} from "./contact-event"
+import { contactEventTypes, contactSenderTypes } from "./contact-event"
 
 export const contactStatsSchema = z.object({
-  chatbotId: z.string(),
+  workspaceId: z.string(),
   count: z.number(),
-  eventType: contactEventTypeSchema,
+  eventType: contactEventTypes,
   timestamp: z.date(),
   uniqueContacts: z.number(),
 })
@@ -29,9 +27,9 @@ export type GetContactsByDimensionStatsResponseSchema = z.infer<
 
 export const messagesBySenderStatsSchema = z.object({
   channel: z.string(),
-  chatbotId: z.string(),
+  workspaceId: z.string(),
   count: z.number(),
-  senderType: contactSenderTypeSchema,
+  senderType: contactSenderTypes,
   timestamp: z.date(),
 })
 export type MessagesBySenderStats = z.infer<typeof messagesBySenderStatsSchema>
@@ -44,8 +42,8 @@ export type GetMessagesBySenderStatsResponseSchema = z.infer<
 >
 
 export const messagesByAdminStatsSchema = z.object({
-  adminId: z.string(),
-  chatbotId: z.string(),
+  adminId: zodBigintAsString(),
+  workspaceId: zodBigintAsString(),
   count: z.number(),
   userEmail: z.string().optional(),
   userName: z.string().optional(),
@@ -60,8 +58,8 @@ export type GetMessagesByAdminStatsResponseSchema = z.infer<
 >
 
 export const uniqueContactsByAdminStatsSchema = z.object({
-  chatbotId: z.string(),
-  toAssignee: z.string(),
+  workspaceId: zodBigintAsString(),
+  toAssignee: zodBigintAsString(),
   count: z.number(),
   userName: z.string().optional(),
   userEmail: z.string().optional(),
@@ -71,8 +69,8 @@ export type UniqueContactsByAdminStats = z.infer<
 >
 
 export const humanAgentStatsSchema = z.object({
-  adminId: z.string(),
-  chatbotId: z.string(),
+  adminId: zodBigintAsString(),
+  workspaceId: zodBigintAsString(),
   assignedConversations: z.number(),
   messagesSent: z.number(),
   uniqueContacts: z.number(),

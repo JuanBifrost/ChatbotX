@@ -1,14 +1,17 @@
 "use client"
 
-import { AssignerFilterType, ConversationType } from "@aha.chat/database/enums"
-import { channelType } from "@aha.chat/database/types"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form } from "@aha.chat/ui/components/ui/form"
-import { Skeleton } from "@aha.chat/ui/components/ui/skeleton"
+import {
+  assignerFilterTypes,
+  channelTypes,
+  conversationTypes,
+} from "@chatbotx.io/database/partials"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
+import { Skeleton } from "@chatbotx.io/ui/components/ui/skeleton"
 import { SearchIcon, UserPlusIcon } from "lucide-react"
-import { useParams, useRouter, useSearchParams } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { useForm } from "react-hook-form"
@@ -20,9 +23,12 @@ import { CreateContactDialog } from "../contacts/create-contact-dialog"
 import { ConversationFilter } from "./conversation-filter"
 import ConversationItem from "./conversation-item"
 
-export default function ConversationList() {
+export default function ConversationList({
+  workspaceId,
+}: {
+  workspaceId: string
+}) {
   const t = useTranslations()
-  const { chatbotId } = useParams<{ chatbotId: string }>()
   const router = useRouter()
   const searchParams = useSearchParams()
   const {
@@ -45,7 +51,7 @@ export default function ConversationList() {
   const [page, setPage] = useState(1)
   // biome-ignore lint/correctness/useExhaustiveDependencies: wip
   useEffect(() => {
-    loadMoreConversations(chatbotId)
+    loadMoreConversations(workspaceId)
   }, [page])
 
   // Load more items when reaching the end of the list
@@ -57,15 +63,15 @@ export default function ConversationList() {
 
   const handleChange = useDebouncedCallback(() => {
     resetState()
-    loadMoreConversations(chatbotId)
+    loadMoreConversations(workspaceId)
   }, 300)
 
   const form = useForm<ConversationFilters>({
     defaultValues: {
       keyword: "",
-      liveChatEnabled: undefined,
-      channel: channelType.omnichannel,
-      assignedUserId: AssignerFilterType.all,
+      botEnabled: undefined,
+      channel: channelTypes.enum.omnichannel,
+      assignedId: assignerFilterTypes.enum.all,
       status: [],
       contactFilter: {
         operator: "and",
@@ -89,9 +95,9 @@ export default function ConversationList() {
           <SelectField
             name="conversationType"
             options={[
-              { label: "Human", value: ConversationType.human },
-              { label: "Bot", value: ConversationType.bot },
-              { label: "All", value: ConversationType.all },
+              { label: "Human", value: conversationTypes.enum.human },
+              { label: "Bot", value: conversationTypes.enum.bot },
+              { label: "All", value: conversationTypes.enum.all },
             ]}
           />
 
@@ -108,12 +114,12 @@ export default function ConversationList() {
           </Button>
 
           <CreateContactDialog
-            chatbotId={chatbotId}
             trigger={
               <Button className="px-2" size="sm" variant="outline">
                 <UserPlusIcon />
               </Button>
             }
+            workspaceId={workspaceId}
           />
 
           <ConversationFilter />
@@ -145,7 +151,7 @@ export default function ConversationList() {
                 conversation={item}
                 onSelect={() => {
                   const params = new URLSearchParams(searchParams.toString())
-                  params.set("conversationId", item.id)
+                  params.set("conversationId", item.id.toString())
                   router.replace(`?${params.toString()}`)
                   setActiveConversationId(item.id)
                 }}

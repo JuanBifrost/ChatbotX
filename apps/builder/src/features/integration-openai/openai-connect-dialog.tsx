@@ -1,13 +1,13 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { InputNumberField } from "@aha.chat/ui/components/form/input-number-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { InputNumberField } from "@chatbotx.io/ui/components/form/input-number-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@aha.chat/ui/components/ui/collapsible"
+} from "@chatbotx.io/ui/components/ui/collapsible"
 import {
   Dialog,
   DialogClose,
@@ -17,8 +17,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { ChevronsUpDown } from "lucide-react"
@@ -29,7 +29,11 @@ import { toast } from "sonner"
 import { connectOpenAIAction } from "./actions/connect.action"
 import { connectOpenAISchema } from "./schemas/request"
 
-export const OpenAIConnectDialog = ({ chatbotId }: { chatbotId: string }) => {
+export const OpenAIConnectDialog = ({
+  workspaceId,
+}: {
+  workspaceId: string
+}) => {
   const [open, setOpen] = useState(false)
   const [isOpenOptions, setIsOpenOptions] = useState<boolean>(false)
 
@@ -37,7 +41,7 @@ export const OpenAIConnectDialog = ({ chatbotId }: { chatbotId: string }) => {
   const router = useRouter()
 
   const { form, handleSubmitWithAction } = useHookFormAction(
-    connectOpenAIAction.bind(null, chatbotId),
+    connectOpenAIAction.bind(null, workspaceId),
     zodResolver(connectOpenAISchema),
     {
       actionProps: {

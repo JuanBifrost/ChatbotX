@@ -1,4 +1,4 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type { ListContactNotesRequest } from "../schemas/query"
@@ -7,7 +7,7 @@ import type { ContactNoteResource } from "../schemas/resource"
 export async function listContactNotes(
   input: ListContactNotesRequest,
 ): Promise<PaginatedResponse<ContactNoteResource>> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const data = await db.query.contactNoteModel.findMany({
     where: {

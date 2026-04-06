@@ -1,19 +1,22 @@
-import { BroadcastSubaction } from "@aha.chat/database/enums"
-import { broadcastSchedulesType } from "@aha.chat/database/schema"
-import { channelType } from "@aha.chat/database/types"
-import { waTemplateParamsSchema } from "@aha.chat/flow-config"
+import {
+  broadcastScheduleTypes,
+  broadcastSubactions,
+  channelTypes,
+} from "@chatbotx.io/database/partials"
+import { waTemplateParamsSchema } from "@chatbotx.io/flow-config"
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 import { contactFilterRequest } from "@/features/contacts/schemas/query"
 
 export const createBroadcastRequest = z
   .object({
-    channel: z.enum(channelType),
-    flowId: z.cuid2().optional(),
-    templateId: z.cuid2().optional(),
-    integrationWhatsappId: z.cuid2().optional(),
+    channel: channelTypes,
+    flowId: zodBigintAsString().optional(),
+    templateId: zodBigintAsString().optional(),
+    integrationWhatsappId: zodBigintAsString().optional(),
     templateData: waTemplateParamsSchema.optional(),
-    subaction: z.enum(BroadcastSubaction),
-    schedulesType: z.enum(broadcastSchedulesType.enumValues),
+    subaction: broadcastSubactions,
+    schedulesType: broadcastScheduleTypes,
     schedulesAt: z
       .string()
       .refine(

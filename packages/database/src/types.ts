@@ -1,34 +1,4 @@
-import type * as schema from "./drizzle/schema"
-
-export * from "./drizzle/schema/organization-settings"
-
-export const integrationType = {
-  webchat: "webchat",
-  googleSheets: "googleSheets",
-  messenger: "messenger",
-  openai: "openai",
-  gemini: "gemini",
-  whatsapp: "whatsapp",
-  zalo: "zalo",
-  chatbotX: "chatbotX",
-} as const
-
-export const channelType = {
-  omnichannel: "omnichannel",
-  webchat: "webchat",
-  messenger: "messenger",
-  whatsapp: "whatsapp",
-  zalo: "zalo",
-} as const
-export type ChannelType = (typeof channelType)[keyof typeof channelType]
-
-export type CancelDispatchReason = "enrollment_removed"
-export const sequenceEventType = {
-  dispatch_canceled: "dispatch_canceled",
-  dispatch_rescheduled: "dispatch_rescheduled",
-  dispatch_paused: "dispatch_paused",
-  dispatch_resumed: "dispatch_resumed",
-} as const
+import type * as schema from "./schema"
 
 export type IntegrationWebchatModel =
   typeof schema.integrationWebchatModel.$inferSelect
@@ -46,8 +16,9 @@ export type TagModel = typeof schema.tagModel.$inferSelect
 export type FlowVersionModel = typeof schema.flowVersionModel.$inferSelect
 export type InvitationModel = typeof schema.invitationModel.$inferSelect
 export type BroadcastModel = typeof schema.broadcastModel.$inferSelect
-export type ChatbotMemberModel = typeof schema.chatbotMemberModel.$inferSelect
-export type ChatbotUsageModel = typeof schema.chatbotUsageModel.$inferSelect
+export type WorkspaceMemberModel =
+  typeof schema.workspaceMemberModel.$inferSelect
+export type ChatbotUsageModel = typeof schema.workspaceUsageModel.$inferSelect
 export type ContactModel = typeof schema.contactModel.$inferSelect
 export type ConversationModel = typeof schema.conversationModel.$inferSelect
 export type InboxModel = typeof schema.inboxModel.$inferSelect
@@ -59,7 +30,7 @@ export type IntegrationGoogleSheetsModel =
 export type IntegrationMessengerModel =
   typeof schema.integrationMessengerModel.$inferSelect
 export type IntegrationOpenAIModel =
-  typeof schema.integrationOpenAIModel.$inferSelect
+  typeof schema.integrationOpenaiModel.$inferSelect
 export type IntegrationWhatsappModel =
   typeof schema.integrationWhatsappModel.$inferSelect
 export type IntegrationZaloModel =
@@ -71,7 +42,7 @@ export type AIEmbeddingModel = typeof schema.aiEmbeddingModel.$inferSelect
 export type AIFileModel = typeof schema.aiFileModel.$inferSelect
 export type ContactCustomFieldModel =
   typeof schema.contactCustomFieldModel.$inferSelect
-export type ChatbotModel = typeof schema.chatbotModel.$inferSelect
+export type WorkspaceModel = typeof schema.workspaceModel.$inferSelect
 export type OrganizationModel = typeof schema.organizationModel.$inferSelect
 export type ContactNoteModel = typeof schema.contactNoteModel.$inferSelect
 export type InboxTeamModel = typeof schema.inboxTeamModel.$inferSelect
@@ -94,137 +65,9 @@ export type TriggerContactHistoryModel =
   typeof schema.triggerContactHistoryModel.$inferSelect
 export type TriggerExecutionModel =
   typeof schema.triggerExecutionModel.$inferSelect
-
-export type PlanModel = typeof schema.planModel.$inferSelect
-export type FolderType = (typeof schema.folderType.enumValues)[number]
-export type IntegrationType = keyof typeof integrationType
-export type BroadcastSchedulesType =
-  (typeof schema.broadcastSchedulesType.enumValues)[number]
-export type FileType = (typeof schema.fileType.enumValues)[number]
-export type CustomFieldType = (typeof schema.customFieldType.enumValues)[number]
-export type Gender = (typeof schema.gender.enumValues)[number]
-export type ChatbotMemberRole =
-  (typeof schema.chatbotMemberRole.enumValues)[number]
-export type SenderType = (typeof schema.senderType.enumValues)[number]
-export type MessageType = (typeof schema.messageType.enumValues)[number]
-export type ContentType = (typeof schema.contentType.enumValues)[number]
-export type BroadcastStatus = (typeof schema.broadcastStatus.enumValues)[number]
-export type AIEmbeddingStatus =
-  (typeof schema.aiEmbeddingStatus.enumValues)[number]
+export type ContactInboxModel = typeof schema.contactInboxModel.$inferSelect
 export type CustomFieldModel = typeof schema.customFieldModel.$inferSelect
 export type BotFieldModel = typeof schema.botFieldModel.$inferSelect
 export type ReflinkModel = typeof schema.reflinkModel.$inferSelect
 export type OrganizationMember =
   typeof schema.organizationMemberModel.$inferSelect
-
-// export * from "./drizzle/schema/integrations"
-
-export const Omnichannel = "omnichannel"
-
-export const WEBCHAT_SOURCE_PREFIX = "cw:"
-
-export const ReplyType = {
-  Message: "R01",
-  Flow: "R02",
-} as const
-
-export type ReplyMessage = {
-  message: string
-  type: typeof ReplyType.Message
-  buttons: {
-    url: string
-    label: string
-  }[]
-}
-
-export type ReplyFlow = {
-  type: typeof ReplyType.Flow
-  flowId: string
-}
-
-export const UploadMode = {
-  link: "link",
-  file: "file",
-} as const
-export type UploadMode = (typeof UploadMode)[keyof typeof UploadMode]
-
-export const CardLayout = {
-  vertical: "ver",
-  horizontal: "hor",
-} as const
-export type CardLayout = (typeof CardLayout)[keyof typeof CardLayout]
-
-export type AutomatedResponseReply = ReplyMessage | ReplyFlow
-
-export const AIMcpServerAuthType = {
-  none: "none",
-  token: "token",
-  header: "header",
-} as const
-export type AIMcpServerAuthType =
-  (typeof AIMcpServerAuthType)[keyof typeof AIMcpServerAuthType]
-
-export const AIMessageRole = {
-  user: "user",
-  assistant: "assistant",
-  system: "system",
-  developer: "developer",
-} as const
-export type AIMessageRole = (typeof AIMessageRole)[keyof typeof AIMessageRole]
-
-export type AIAgentProvider = {
-  provider: "openai" | "gemini"
-  model: string
-}
-
-export const WhatsappTemplateCategory = {
-  marketing: "MARKETING",
-  utility: "UTILITY",
-} as const
-export type WhatsappTemplateCategory =
-  (typeof WhatsappTemplateCategory)[keyof typeof WhatsappTemplateCategory]
-
-export const reservedCustomFieldNames = {
-  first_name: "first_name",
-  last_name: "last_name",
-  full_name: "full_name",
-  email: "email",
-  phone_number: "phone_number",
-  avatar: "avatar",
-  locale: "locale",
-  gender: "gender",
-  timezone: "timezone",
-  user_id: "user_id",
-  user_tags: "user_tags",
-  account_name: "account_name",
-  account_id: "account_id",
-  page_user_name: "page_user_name",
-  last_input: "last_input",
-  current_time: "current_time",
-} as const
-export type ReservedCustomFieldNames =
-  (typeof reservedCustomFieldNames)[keyof typeof reservedCustomFieldNames]
-
-export const fillableContactKeys = [
-  "phoneNumber",
-  "email",
-  "firstName",
-  "lastName",
-  "gender",
-] as const
-export type FillableContactKeys = (typeof fillableContactKeys)[number]
-
-export type ConversationAttributes = {
-  phoneNumber?: string
-  challenge?: {
-    type: "step"
-    data: {
-      flowId: string
-      flowVersionId?: string
-      nodeId: string
-      stepId: string
-      attempts: number
-      lastAttemptAt: Date
-    }
-  }
-}

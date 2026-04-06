@@ -1,8 +1,8 @@
 import {
-  type FillableContactKeys,
+  type FillableContactKey,
   fillableContactKeys,
-} from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/database/partials"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -26,7 +26,7 @@ import { updateContactFieldRequest } from "./schemas/action"
 import type { ContactEditableField } from "./schemas/resource"
 
 type EditContactField = {
-  chatbotId: string
+  workspaceId: string
   contactId: string
   open: boolean
   onOpenChange: (open: boolean) => void
@@ -37,7 +37,7 @@ type EditContactField = {
 
 export function EditContactField(props: EditContactField) {
   const {
-    chatbotId,
+    workspaceId,
     contactId,
     open,
     onOpenChange,
@@ -50,7 +50,7 @@ export function EditContactField(props: EditContactField) {
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      updateContactFieldAction.bind(null, chatbotId, contactId),
+      updateContactFieldAction.bind(null, workspaceId, contactId),
       zodResolver(updateContactFieldRequest),
       {
         actionProps: {
@@ -88,7 +88,7 @@ export function EditContactField(props: EditContactField) {
   }, [targetField, form])
 
   const { execute: executeDelete, isPending: isDeleting } = useAction(
-    deleteContactCustomFieldAction.bind(null, chatbotId),
+    deleteContactCustomFieldAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(
@@ -127,7 +127,7 @@ export function EditContactField(props: EditContactField) {
             <DialogFooter className="mt-4 justify-start">
               <div className="flex-1">
                 {!fillableContactKeys.includes(
-                  targetField?.key as FillableContactKeys,
+                  targetField?.key as FillableContactKey,
                 ) && (
                   <Button
                     disabled={isDeleting}

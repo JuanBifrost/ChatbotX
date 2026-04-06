@@ -1,46 +1,50 @@
 "use client"
 
-import { BroadcastFlowType, BroadcastSubaction } from "@aha.chat/database/enums"
 import {
-  type BroadcastSchedulesType,
+  type BroadcastFlowType,
+  type BroadcastScheduleType,
+  type BroadcastSubaction,
+  broadcastFlowTypes,
+  broadcastSubactions,
   type ChannelType,
-  channelType,
-} from "@aha.chat/database/types"
+  channelTypes,
+} from "@chatbotx.io/database/partials"
 import {
   extractTemplateParams,
-  StepType,
+  stepTypes,
   type TemplateComponent,
   type WaTemplateParams,
-} from "@aha.chat/flow-config"
-import { ComboboxField } from "@aha.chat/ui/components/form/combobox-field"
-import { DateTimePickerField } from "@aha.chat/ui/components/form/date-picker-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/flow-config"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
+import { DateTimePickerField } from "@chatbotx.io/ui/components/form/date-picker-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/card"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { add } from "date-fns"
 import { Loader2Icon, XIcon } from "lucide-react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createBroadcastAction } from "@/features/broadcasts/actions/create-broadcast.action"
 import { createBroadcastRequest } from "@/features/broadcasts/schemas/action"
+import { useWorkspaceId } from "@/hooks/routing"
 import { ContactFilter } from "../contacts/components/contact-filter"
 import { useFlowStore } from "../flows/provider/flow-store-context"
 import { InboxIcon } from "../inboxes/components/inbox-icon"
 import { TemplateParamsForm } from "../integration-whatsapp/message-templates/components/template-params-form"
 import { TemplatePreview } from "../integration-whatsapp/message-templates/components/template-preview"
 import { useTemplateStore } from "../integration-whatsapp/message-templates/provider/template-store-context"
-import type { MessageTemplateWithComponents } from "../integration-whatsapp/message-templates/type"
+import type { MessageTemplateWithComponents } from "../integration-whatsapp/message-templates/schema/resource"
 import { useIntegrationStore } from "../integration-whatsapp/provider/integration-store-context"
 
 type BroadcastConfig = {
@@ -56,12 +60,12 @@ type BroadcastConfig = {
 const getConfigs = (t: ReturnType<typeof useTranslations>) =>
   [
     {
-      value: channelType.omnichannel,
+      value: channelTypes.enum.omnichannel,
       description:
         "Send a flow to all contacts. You can send messages or executes actions.",
       subactions: [
         {
-          value: BroadcastSubaction.allContacts,
+          value: broadcastSubactions.enum.allContacts,
           name: t("broadcasts.allContacts.title"),
           description: t("broadcasts.allContacts.description"),
         },
@@ -72,29 +76,29 @@ const getConfigs = (t: ReturnType<typeof useTranslations>) =>
       description: "",
       subactions: [
         {
-          value: BroadcastSubaction.messengerList,
+          value: broadcastSubactions.enum.messengerList,
           name: t("broadcasts.messengerList.title"),
           description: t("broadcasts.messengerList.description"),
         },
         {
-          value: BroadcastSubaction.messengerActiveContacts,
+          value: broadcastSubactions.enum.messengerActiveContacts,
           name: t("broadcasts.messengerActiveContacts.title"),
           description: t("broadcasts.messengerActiveContacts.description"),
         },
         {
-          value: BroadcastSubaction.messengerAccountUpdate,
+          value: broadcastSubactions.enum.messengerAccountUpdate,
           name: t("broadcasts.messengerAccountUpdate.title"),
           description: t("broadcasts.messengerAccountUpdate.description"),
         },
         {
-          value: BroadcastSubaction.messengerConfirmedEventUpdate,
+          value: broadcastSubactions.enum.messengerConfirmedEventUpdate,
           name: t("broadcasts.messengerConfirmedEventUpdate.title"),
           description: t(
             "broadcasts.messengerConfirmedEventUpdate.description",
           ),
         },
         {
-          value: BroadcastSubaction.messengerPostPurchaseUpdate,
+          value: broadcastSubactions.enum.messengerPostPurchaseUpdate,
           name: t("broadcasts.messengerPostPurchaseUpdate.title"),
           description: t("broadcasts.messengerPostPurchaseUpdate.description"),
         },
@@ -105,12 +109,12 @@ const getConfigs = (t: ReturnType<typeof useTranslations>) =>
       description: "",
       subactions: [
         {
-          value: BroadcastSubaction.whatsappTemplateMessage,
+          value: broadcastSubactions.enum.whatsappTemplateMessage,
           name: t("broadcasts.whatsappTemplateMessage.title"),
           description: t("broadcasts.whatsappTemplateMessage.description"),
         },
         {
-          value: BroadcastSubaction.whatsappWithin24Hours,
+          value: broadcastSubactions.enum.whatsappWithin24Hours,
           name: t("broadcasts.whatsappWithin24Hours.title"),
           description: t("broadcasts.whatsappWithin24Hours.description"),
         },
@@ -121,7 +125,7 @@ const getConfigs = (t: ReturnType<typeof useTranslations>) =>
       description: "",
       subactions: [
         {
-          value: BroadcastSubaction.allContacts,
+          value: broadcastSubactions.enum.allContacts,
           name: t("broadcasts.allContacts.title"),
           description: t("broadcasts.allContacts.description"),
         },
@@ -130,10 +134,10 @@ const getConfigs = (t: ReturnType<typeof useTranslations>) =>
   ] as BroadcastConfig[]
 
 type CreateBroadcastFormProps = {
-  chatbotId: string
+  workspaceId: string
 }
 
-export function CreateBroadcastForm({ chatbotId }: CreateBroadcastFormProps) {
+export function CreateBroadcastForm({ workspaceId }: CreateBroadcastFormProps) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -142,7 +146,7 @@ export function CreateBroadcastForm({ chatbotId }: CreateBroadcastFormProps) {
   )
 
   const { form, handleSubmitWithAction } = useHookFormAction(
-    createBroadcastAction.bind(null, chatbotId),
+    createBroadcastAction.bind(null, workspaceId),
     zodResolver(createBroadcastRequest),
     {
       actionProps: {
@@ -152,7 +156,7 @@ export function CreateBroadcastForm({ chatbotId }: CreateBroadcastFormProps) {
               feature: t("fields.broadcast.label"),
             }),
           )
-          router.push(`/chatbots/${chatbotId}/broadcasts`)
+          router.push(`/space/${workspaceId}/broadcasts`)
         },
         onError: ({ error }) => {
           if (error.serverError) {
@@ -165,7 +169,7 @@ export function CreateBroadcastForm({ chatbotId }: CreateBroadcastFormProps) {
         defaultValues: {
           channel: undefined,
           flowId: undefined,
-          subaction: BroadcastSubaction.allContacts,
+          subaction: broadcastSubactions.enum.allContacts,
           schedulesType: "now",
           schedulesAt: null,
           contactFilter: {
@@ -192,9 +196,9 @@ export function CreateBroadcastForm({ chatbotId }: CreateBroadcastFormProps) {
   })
 
   useEffect(() => {
-    if (watchedSubAction === BroadcastSubaction.whatsappTemplateMessage) {
+    if (watchedSubAction === broadcastSubactions.enum.whatsappTemplateMessage) {
       appendFilter({
-        startType: StepType.sendWaTemplateMessage,
+        startType: stepTypes.enum.sendWaTemplateMessage,
         integrationWhatsappId: watchedIntegrationWhatsappId,
       })
       getAllActiveFlows()
@@ -237,7 +241,8 @@ function CreateBroadcastChooseChannel() {
   const t = useTranslations()
   const router = useRouter()
 
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
+
   const { setValue } = useFormContext()
 
   const configs = useMemo(() => getConfigs(t), [t])
@@ -248,15 +253,15 @@ function CreateBroadcastChooseChannel() {
       if (channel === "messenger" || channel === "whatsapp") {
         setValue("subaction", null)
       } else {
-        setValue("subaction", BroadcastSubaction.allContacts)
+        setValue("subaction", broadcastSubactions.enum.allContacts)
       }
     },
     [setValue],
   )
 
   const handleBack = useCallback(() => {
-    router.push(`/chatbots/${chatbotId}/broadcasts`)
-  }, [router, chatbotId])
+    router.push(`/space/${workspaceId}/broadcasts`)
+  }, [router, workspaceId])
 
   return (
     <Card className="mt-10 w-lg">
@@ -367,19 +372,19 @@ function BroadcastFlowTypeSelector({
     description: string
   }> = [
     {
-      value: BroadcastFlowType.flow,
+      value: broadcastFlowTypes.enum.flow,
       label: t("broadcasts.flowType.flow.title"),
       description: t("broadcasts.flowType.flow.description"),
     },
     {
-      value: BroadcastFlowType.template,
+      value: broadcastFlowTypes.enum.template,
       label: t("broadcasts.flowType.template.title"),
       description: t("broadcasts.flowType.template.description"),
     },
   ]
 
   const [selectedType, setSelectedType] = useState<BroadcastFlowType>(
-    BroadcastFlowType.flow,
+    broadcastFlowTypes.enum.flow,
   )
 
   const handleTypeChange = useCallback(
@@ -387,7 +392,7 @@ function BroadcastFlowTypeSelector({
       setSelectedType(type)
       setValue("templateType", type)
 
-      if (type === BroadcastFlowType.flow) {
+      if (type === broadcastFlowTypes.enum.flow) {
         setValue("templateId", undefined)
       } else {
         setValue("flowId", undefined)
@@ -396,7 +401,7 @@ function BroadcastFlowTypeSelector({
     [setValue],
   )
 
-  if (subaction !== BroadcastSubaction.whatsappTemplateMessage) {
+  if (subaction !== broadcastSubactions.enum.whatsappTemplateMessage) {
     return null
   }
 
@@ -450,7 +455,8 @@ type CreateBroadcastChooseFlowProps = {
 function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   const t = useTranslations()
   const router = useRouter()
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+
+  const workspaceId = useWorkspaceId()
 
   const schedulesOptions = useMemo(
     () => [
@@ -472,7 +478,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
     name: string
     description: string
   }>({
-    value: BroadcastSubaction.allContacts,
+    value: broadcastSubactions.enum.allContacts,
     name: "Omnichannel",
     description:
       "Send a flow to all contacts. You can send messages or executes actions.",
@@ -499,11 +505,11 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   )
 
   const handleCancel = useCallback(() => {
-    router.push(`/chatbots/${chatbotId}/broadcasts`)
-  }, [router, chatbotId])
+    router.push(`/space/${workspaceId}/broadcasts`)
+  }, [router, workspaceId])
 
   const handleScheduleTypeChange = useCallback(
-    (value: BroadcastSchedulesType) => {
+    (value: BroadcastScheduleType) => {
       if (value === "now") {
         setValue("schedulesAt", null)
       }
@@ -592,7 +598,8 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
 
         <BroadcastFlowTypeSelector subaction={props.subaction} />
 
-        {props.subaction === BroadcastSubaction.whatsappTemplateMessage && (
+        {props.subaction ===
+          broadcastSubactions.enum.whatsappTemplateMessage && (
           <>
             <ComboboxField
               key="integrationWhatsappId"
@@ -605,7 +612,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
               required={true}
             />
 
-            {watchedTemplateType === BroadcastFlowType.template && (
+            {watchedTemplateType === broadcastFlowTypes.enum.template && (
               <>
                 <ComboboxField
                   key="templateId"
@@ -647,7 +654,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
         )}
 
         {(!watchedTemplateType ||
-          watchedTemplateType !== BroadcastFlowType.template) && (
+          watchedTemplateType !== broadcastFlowTypes.enum.template) && (
           <ComboboxField
             key="flowId"
             label={t("fields.flowId.label")}
@@ -667,7 +674,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
           options={schedulesOptions}
           required
           triggerValueChange={(value) =>
-            handleScheduleTypeChange(value as BroadcastSchedulesType)
+            handleScheduleTypeChange(value as BroadcastScheduleType)
           }
         />
 

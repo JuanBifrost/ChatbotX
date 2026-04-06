@@ -1,11 +1,14 @@
-import type { ChatbotModel, OrganizationModel } from "@aha.chat/database/types"
+import type {
+  OrganizationModel,
+  WorkspaceModel,
+} from "@chatbotx.io/database/types"
 import { getDomainFromHeader } from "@/lib/domain"
-import { findChatbotOrFail } from "../chatbot/queries"
 import { findOrganization } from "../organization/queries"
+import { findChatbotOrFail } from "../workspaces/queries"
 
 export async function identifyChatbotAndOrganizationFromRequest(
-  chatbotId?: string | null,
-): Promise<{ chatbot?: ChatbotModel; organization: OrganizationModel }> {
+  workspaceId?: string | null,
+): Promise<{ workspace?: WorkspaceModel; organization: OrganizationModel }> {
   const domain = await getDomainFromHeader()
   const organization = await findOrganization({
     domain,
@@ -14,14 +17,14 @@ export async function identifyChatbotAndOrganizationFromRequest(
     throw new Error("Organization not found")
   }
 
-  if (!chatbotId) {
+  if (!workspaceId) {
     return { organization }
   }
 
-  const chatbot = await findChatbotOrFail({
-    id: chatbotId,
+  const workspace = await findChatbotOrFail({
+    id: workspaceId,
     organizationId: organization.id,
   })
 
-  return { chatbot, organization }
+  return { workspace, organization }
 }

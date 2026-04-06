@@ -1,43 +1,41 @@
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 import { triggerContextSchema } from "./trigger-context"
 
-export const botMessageResponseTypeSchema = z.enum([
-  "AUTOMATED_RESPONSE",
-  "AI_AGENT",
-  "FLOW",
-  "NONE",
+export const botMessageResponseTypes = z.enum([
+  "automated_response",
+  "ai_agent",
+  "flow",
+  "none",
 ])
-export type BotMessageResponseType = z.infer<
-  typeof botMessageResponseTypeSchema
->
+export type BotMessageResponseType = z.infer<typeof botMessageResponseTypes>
 
-export const botMessageRouteTypeSchema = z.enum(["FLOW", "AGENT", "FALLBACK"])
-export type BotMessageRouteType = z.infer<typeof botMessageRouteTypeSchema>
+export const botMessageRouteTypes = z.enum(["flow", "agent", "fallback"])
+export type BotMessageRouteType = z.infer<typeof botMessageRouteTypes>
 
-export const botMessageResultSchema = z.enum(["SUCCESS", "FALLBACK"])
-export type BotMessageResult = z.infer<typeof botMessageResultSchema>
+export const botMessageResults = z.enum(["success", "fallback"])
+export type BotMessageResult = z.infer<typeof botMessageResults>
 
-export const botMessageFallbackReasonSchema = z.enum([
-  "NO_INTENT_MATCH",
-  "LOW_CONFIDENCE",
-  "ROUTE_GUARD_BLOCKED",
-  "NO_CONTENT",
-  "NOT_FROM_CONTACT",
-  "NO_AI_AGENT",
-  "BUTTON_NOT_FOUND",
-  "HANDLER_ERROR_TO_FALLBACK",
-  "UNSUPPORTED_MESSAGE_TYPE",
+export const botMessageFallbackReasons = z.enum([
+  "no_content",
+  "no_intent_match",
+  "low_confidence",
+  "route_guard_blocked",
+  "no_content",
+  "not_from_contact",
+  "no_ai_agent",
+  "button_not_found",
+  "handler_error_to_fallback",
+  "unsupported_message_type",
 ])
-export type BotMessageFallbackReason = z.infer<
-  typeof botMessageFallbackReasonSchema
->
+export type BotMessageFallbackReason = z.infer<typeof botMessageFallbackReasons>
 
 export const botMessageMetadataSchema = z.object({
-  flowId: z.string().optional(),
-  automatedResponseId: z.string().optional(),
+  flowId: zodBigintAsString().optional(),
+  automatedResponseId: zodBigintAsString().optional(),
   intentId: z.string().optional(),
   intentConfidence: z.number().optional(),
-  fallbackReason: botMessageFallbackReasonSchema.optional(),
+  fallbackReason: botMessageFallbackReasons.optional(),
   latency: z.number().optional(),
   triggerContext: triggerContextSchema.optional(),
 })
@@ -47,16 +45,16 @@ export type BotMessageMetadata = z.infer<typeof botMessageMetadataSchema>
 export const botMessageEventSchema = z.object({
   aiProvider: z.string(),
   channel: z.string().optional(),
-  chatbotId: z.string(),
-  conversationId: z.string(),
-  eventId: z.string(),
+  workspaceId: zodBigintAsString(),
+  conversationId: zodBigintAsString(),
+  eventId: zodBigintAsString(),
   hasResponse: z.boolean(),
-  messageId: z.string(),
+  messageId: zodBigintAsString(),
   metadata: botMessageMetadataSchema.optional(),
   occurredAt: z.coerce.date(),
-  responseType: botMessageResponseTypeSchema,
-  result: botMessageResultSchema.optional(),
-  routeType: botMessageRouteTypeSchema.optional(),
+  responseType: botMessageResponseTypes,
+  result: botMessageResults.optional(),
+  routeType: botMessageRouteTypes.optional(),
   source: z.string().optional(),
 })
 export type BotMessageEvent = z.infer<typeof botMessageEventSchema>
@@ -68,12 +66,12 @@ export type CreateBotMessageEvent = z.infer<typeof createBotMessageEventSchema>
 
 export const botMessageStatsSchema = z.object({
   aiProvider: z.string(),
-  chatbotId: z.string(),
+  workspaceId: z.string(),
   count: z.number(),
   hasResponse: z.boolean(),
-  responseType: botMessageResponseTypeSchema,
-  result: botMessageResultSchema.optional(),
-  routeType: botMessageRouteTypeSchema.optional(),
+  responseType: botMessageResponseTypes,
+  result: botMessageResults.optional(),
+  routeType: botMessageRouteTypes.optional(),
   timestamp: z.coerce.date(),
 })
 export type BotMessageStats = z.infer<typeof botMessageStatsSchema>

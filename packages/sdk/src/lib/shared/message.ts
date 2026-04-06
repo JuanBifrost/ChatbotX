@@ -23,46 +23,43 @@ export type OutgoingContact = {
 
 export type IncomingConversation = {
   sourceId: string
-  conversationAttributes: { [x: string]: unknown }
+  additionalAttributes: { [x: string]: unknown }
   contact: IncomingContact
 }
 
 export type OutgoingConversation = {
   id: string
-  chatbotId: string
-  conversationAttributes: { [x: string]: unknown } | null
-  sourceId: string | null
-  inboxId: string
+  workspaceId: string
+  additionalAttributes: { [x: string]: unknown } | null
   contactId: string
   contact?: OutgoingContact
 }
 
-export const conversationEntitySchema = z.custom<IncomingConversation>(
-  (data) => typeof data === "object",
-)
-
-export type OutgoingMessage = {
-  chatbotId: string
-  conversationId: string
-  contentType: ContentType
-  content: string | null
-  attachments?: OutgoingAttachment[]
-  inboxId: string
-  clientId?: string | null
-  messageType: "outgoing" | "incoming" | "activity"
+export type OutgoingContactInbox = {
+  id: string
+  channel: string
+  sourceId: string
 }
 
-export const MessageType = {
-  incoming: "incoming",
-  outgoing: "outgoing",
-} as const
-export type MessageType = (typeof MessageType)[keyof typeof MessageType]
+export type OutgoingMessage = {
+  id: string
+  workspaceId: string
+  conversationId: string
+  contentType: ContentType
+  text: string | null
+  attachments?: OutgoingAttachment[]
+  clientId?: string | null
+  messageType: MessageType
+}
+
+export const messageTypes = z.enum(["outgoing", "incoming", "activity"])
+export type MessageType = z.infer<typeof messageTypes>
 
 export type IncomingMessage = {
   sourceId: string
   messageType: MessageType
   contentType: ContentType
-  content?: string
+  text?: string
   contentAttributes?:
     | MessageLocationEntity
     | MessageTemplateEntity
@@ -146,18 +143,8 @@ export type MessageTemplateEntity = {
       }
 }
 
-export const ContentType = {
-  text: "text",
-  location: "location",
-} as const
+export const contentTypes = z.enum(["text", "location"])
+export type ContentType = z.infer<typeof contentTypes>
 
-export type ContentType = (typeof ContentType)[keyof typeof ContentType]
-
-export const FileType = {
-  image: "image",
-  audio: "audio",
-  video: "video",
-  file: "file",
-} as const
-
-export type FileType = (typeof FileType)[keyof typeof FileType]
+export const fileTypes = z.enum(["image", "audio", "video", "file"])
+export type FileType = z.infer<typeof fileTypes>

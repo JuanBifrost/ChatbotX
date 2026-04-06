@@ -1,14 +1,14 @@
 "use server"
 
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { contactsOnSequenceModel } from "@aha.chat/database/schema"
-import { cancelPendingDispatches } from "@aha.chat/sequence-scheduler"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { contactsOnSequenceModel } from "@chatbotx.io/database/schema"
+import { cancelPendingDispatches } from "@chatbotx.io/sequence-scheduler"
 import {
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type RemoveContactSequenceRequest,
   removeContactSequenceRequest,
@@ -16,12 +16,12 @@ import {
 
 const CHUNK_SIZE = 1000
 
-export const removeContactSequenceAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const removeContactSequenceAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(removeContactSequenceRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
@@ -34,7 +34,7 @@ export const removeContactSequenceAction = chatbotActionClient
           where: {
             contactId: { in: contactIdChunk },
             sequenceId: { in: parsedInput.sequences },
-            chatbotId,
+            workspaceId,
           },
           columns: {
             id: true,
@@ -42,31 +42,31 @@ export const removeContactSequenceAction = chatbotActionClient
         })
 
         await Promise.all(
-          enrollments.map((enrollment: { id: string }) =>
+          enrollments.map((enrollment) =>
             cancelPendingDispatches({
               enrollmentId: enrollment.id,
-              chatbotId,
+              workspaceId,
               reason: "enrollment_removed",
             }),
           ),
         )
 
-        const enrollmentIds = enrollments.map((e: { id: string }) => e.id)
+        const enrollmentIds = enrollments.map((e) => e.id)
         if (enrollmentIds.length > 0) {
           await db
             .delete(contactsOnSequenceModel)
             .where(
               and(
                 inArray(contactsOnSequenceModel.id, enrollmentIds),
-                eq(contactsOnSequenceModel.chatbotId, chatbotId),
+                eq(contactsOnSequenceModel.workspaceId, workspaceId),
               ),
             )
         }
       }
 
       revalidateCacheTags([
-        `chatbots:${chatbotId}#contacts`,
-        `chatbots:${chatbotId}#sequences`,
+        `workspaces:${workspaceId}#contacts`,
+        `workspaces:${workspaceId}#sequences`,
       ])
     },
   )

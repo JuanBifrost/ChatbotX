@@ -108,7 +108,7 @@ export class SchedulerClient {
     const result = await this.redis.zrangebyscore(
       key,
       "-inf",
-      nowMs.toString(),
+      nowMs,
       "LIMIT",
       0,
       limit,

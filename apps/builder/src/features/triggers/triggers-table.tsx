@@ -1,11 +1,10 @@
 "use client"
 
-import { FolderType } from "@aha.chat/database/enums"
-import type { TriggerModel } from "@aha.chat/database/types"
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+import { folderTypes } from "@chatbotx.io/database/partials"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { use, useMemo, useState } from "react"
@@ -13,18 +12,19 @@ import { ChangeFolderDialog } from "../folders/change-folder"
 import { RenameTriggerDialog } from "./components/rename-trigger-dialog"
 import { DeleteTriggersDialog } from "./delete-triggers-dialog"
 import type { getTriggers } from "./queries"
+import type { TriggerResource } from "./schema/resource"
 import { getColumns } from "./triggers-table-columns"
 import { TriggersTableToolbarActions } from "./triggers-table-toolbar-actions"
 
 type TriggersTableProps = {
   promises: Promise<[Awaited<ReturnType<typeof getTriggers>>]>
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
 }
 
 export function TriggersTable({
   promises,
-  chatbotId,
+  workspaceId,
   folderId,
 }: TriggersTableProps) {
   const t = useTranslations()
@@ -32,11 +32,11 @@ export function TriggersTable({
 
   const [{ data, pageCount }] = use(promises)
   const [rowAction, setRowAction] =
-    useState<DataTableRowAction<TriggerModel> | null>(null)
+    useState<DataTableRowAction<TriggerResource> | null>(null)
 
   const columns = useMemo(
-    () => getColumns({ chatbotId, setRowAction, t }),
-    [chatbotId, t],
+    () => getColumns({ workspaceId, setRowAction, t }),
+    [workspaceId, t],
   )
 
   const { table } = useDataTable({
@@ -57,10 +57,10 @@ export function TriggersTable({
       <DataTable table={table}>
         <DataTableToolbar table={table}>
           <TriggersTableToolbarActions
-            chatbotId={chatbotId}
             folderId={folderId}
             setRowAction={setRowAction}
             table={table}
+            workspaceId={workspaceId}
           />
         </DataTableToolbar>
       </DataTable>
@@ -72,21 +72,21 @@ export function TriggersTable({
       />
 
       <DeleteTriggersDialog
-        chatbotId={chatbotId}
         onOpenChange={() => setRowAction(null)}
         onSuccess={() => router.refresh()}
         open={rowAction?.variant === "delete"}
         showTrigger={false}
         triggers={rowAction?.row.original ? [rowAction?.row.original] : []}
+        workspaceId={workspaceId}
       />
 
       <ChangeFolderDialog
-        chatbotId={chatbotId}
         currentFolderId={rowAction?.row.original?.folderId || null}
-        folderType={FolderType.trigger}
+        folderType={folderTypes.enum.trigger}
         modelIds={rowAction?.row.original ? [rowAction?.row.original.id] : []}
         onOpenChange={() => setRowAction(null)}
         open={rowAction?.variant === "move"}
+        workspaceId={workspaceId}
       />
     </>
   )

@@ -1,7 +1,7 @@
 "use client"
 
-import type { AIAgentModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { AIAgentModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import type { Row } from "@tanstack/react-table"
 import { Loader, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -21,7 +21,7 @@ import { toast } from "sonner"
 import { deleteAIAgentAction } from "@/features/ai-agents/actions/delete.action"
 
 type DeleteAIAgentsDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
-  chatbotId: string
+  workspaceId: string
   agents: Row<AIAgentModel>["original"][]
   showTrigger?: boolean
   onSuccess?: () => void
@@ -29,7 +29,7 @@ type DeleteAIAgentsDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
 }
 
 export function DeleteAIAgentsDialog({
-  chatbotId,
+  workspaceId,
   agents,
   showTrigger = true,
   onSuccess,
@@ -39,7 +39,7 @@ export function DeleteAIAgentsDialog({
   const t = useTranslations()
 
   const { execute, isExecuting } = useAction(
-    deleteAIAgentAction.bind(null, chatbotId),
+    deleteAIAgentAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

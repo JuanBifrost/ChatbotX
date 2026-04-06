@@ -1,5 +1,5 @@
-import type { SendTextStepSchema } from "@aha.chat/flow-config"
-import type { SendFlowStepProps } from "@aha.chat/sdk"
+import type { SendTextStepSchema } from "@chatbotx.io/flow-config"
+import type { SendFlowStepProps } from "@chatbotx.io/sdk"
 import type { ZaloAuthValue } from "../schemas/definition"
 import type { ButtonPayload, MessageTemplate } from "../schemas/webhook"
 import { convertZaloButtons } from "./send-button"
@@ -12,7 +12,7 @@ export function* convertFlowStepText(
   } = props
   if (step.buttons.length === 0) {
     yield {
-      text: step.message,
+      text: step.text,
     }
   } else {
     const buttons: ButtonPayload[] | undefined = convertZaloButtons({
@@ -22,7 +22,7 @@ export function* convertFlowStepText(
     })
 
     yield {
-      text: step.message,
+      text: step.text,
       attachment: buttons
         ? {
             type: "template",

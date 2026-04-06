@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -9,7 +9,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import { Loader } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
@@ -18,15 +18,15 @@ import { toast } from "sonner"
 import { deleteContactNoteAction } from "./actions/delete-contact-note.action"
 
 type DeleteDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
-  chatbotId: string
-  contactId: string
-  contactNoteId: string
+  workspaceId: string
+  contactId: string | undefined
+  contactNoteId: string | undefined
   onCancel?: () => void
   onSuccess: () => void
 }
 
 export function DeleteContactNoteDialog({
-  chatbotId,
+  workspaceId,
   contactId,
   contactNoteId,
   onSuccess,
@@ -36,7 +36,7 @@ export function DeleteContactNoteDialog({
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteContactNoteAction.bind(null, chatbotId, contactId),
+    deleteContactNoteAction.bind(null, workspaceId, contactNoteId ?? ""),
     {
       onSuccess: () => {
         toast.success(
@@ -79,7 +79,7 @@ export function DeleteContactNoteDialog({
           <Button
             aria-label="Delete selected rows"
             disabled={isPending}
-            onClick={() => execute({ id: contactNoteId })}
+            onClick={() => execute({ contactNoteId: contactNoteId ?? "" })}
             size="sm"
             variant="destructive"
           >

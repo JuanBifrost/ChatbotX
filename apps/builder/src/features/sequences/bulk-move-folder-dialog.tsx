@@ -1,8 +1,8 @@
 "use client"
 
-import { FolderType } from "@aha.chat/database/enums"
-import { ComboboxField } from "@aha.chat/ui/components/form/combobox-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { folderTypes } from "@chatbotx.io/database/partials"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -10,8 +10,9 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { FolderInput, Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -22,10 +23,10 @@ import { toast } from "sonner"
 import { z } from "zod"
 import { changeFolderAction } from "../folders/actions/change-folder.action"
 import { useFolderSelectOptions } from "../folders/provider/folder-hook"
-import type { SequenceResource } from "./schema"
+import type { SequenceResource } from "./schema/resource"
 
 type BulkMoveFolderDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
-  chatbotId: string
+  workspaceId: string
   sequences: SequenceResource[]
   showTrigger?: boolean
   onSuccess?: () => void
@@ -33,11 +34,11 @@ type BulkMoveFolderDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
 }
 
 const bulkMoveFolderSchema = z.object({
-  newFolderId: z.string(),
+  newFolderId: zodBigintAsString(),
 })
 
 export function BulkMoveFolderDialog({
-  chatbotId,
+  workspaceId,
   sequences,
   showTrigger = true,
   onSuccess,
@@ -61,10 +62,10 @@ export function BulkMoveFolderDialog({
     try {
       await Promise.all(
         sequences.map((sequence) =>
-          changeFolderAction(chatbotId, {
+          changeFolderAction(workspaceId, {
             modelIds: [sequence.id],
             newFolderId: values.newFolderId,
-            folderType: FolderType.sequence,
+            folderType: folderTypes.enum.sequence,
           }),
         ),
       )

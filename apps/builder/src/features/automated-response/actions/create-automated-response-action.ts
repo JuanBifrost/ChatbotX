@@ -1,57 +1,63 @@
 "use server"
 
-import { db } from "@aha.chat/database/client"
-import { automatedResponseModel } from "@aha.chat/database/schema"
-import { createId } from "@paralleldrive/cuid2"
-import {
-  type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
-} from "@/features/common/schemas"
-import { ensureAllFlowIdsExists } from "@/features/flows/queries"
+import { db } from "@chatbotx.io/database/client"
+import { automatedResponseModel } from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
+import { returnValidationErrors } from "next-safe-action"
+import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { ensureFolderIsExists } from "@/features/folders/actions/utils"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
-import {
-  type CreateAutomatedResponseRequest,
-  createAutomatedResponseRequest,
-} from "../schemas/action"
+import { workspaceActionClient } from "@/lib/safe-action"
+import { createAutomatedResponseRequest } from "../schema/action"
 
-export const createAutomatedResponseAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const createAutomatedResponseAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(createAutomatedResponseRequest)
-  .action(
-    async ({
-      bindArgsParsedInputs: [chatbotId],
+  .action(async (props) => {
+    const {
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
-    }: {
-      bindArgsParsedInputs: ChatbotIdRequestParams
-      parsedInput: CreateAutomatedResponseRequest
-    }) => {
-      if (parsedInput.folderId) {
-        await ensureFolderIsExists(
-          parsedInput.folderId,
-          chatbotId,
-          "automatedResponse",
-        )
-      }
+    } = props
 
-      // validate all flow ids
-      const flowIds: string[] = []
-      for (const reply of parsedInput.replies) {
-        if ("flowId" in reply) {
-          flowIds.push(reply.flowId)
-        }
-      }
-      await ensureAllFlowIdsExists(chatbotId, [...new Set(flowIds)])
+    if (parsedInput.folderId) {
+      await ensureFolderIsExists(
+        parsedInput.folderId,
+        workspaceId,
+        "automatedResponse",
+      )
+    }
 
-      await db.insert(automatedResponseModel).values({
-        ...parsedInput,
-        chatbotId,
-        status: true,
-        userMessages: parsedInput.userMessages.map((m) => m.value),
-        id: createId(),
+    // validate flow id if text is not provided
+    if (parsedInput.text) {
+      parsedInput.flowId = null
+    } else if (parsedInput.flowId) {
+      const exists = await db.query.flowModel.findFirst({
+        columns: {
+          id: true,
+        },
+        where: {
+          id: parsedInput.flowId,
+          workspaceId,
+        },
       })
+      if (!exists) {
+        return returnValidationErrors(createAutomatedResponseRequest, {
+          _errors: ["Validation Exception"],
+          flowId: {
+            _errors: ["Flow not found"],
+          },
+        })
+      }
+      parsedInput.text = null
+    }
 
-      revalidateCacheTags(`chatbots:${chatbotId}#automatedResponses`)
-    },
-  )
+    await db.insert(automatedResponseModel).values({
+      ...parsedInput,
+      workspaceId,
+      status: true,
+      userMessages: parsedInput.userMessages.map((m) => m.value),
+      id: createId(),
+    })
+
+    revalidateCacheTags(`workspaces:${workspaceId}#automatedResponses`)
+  })

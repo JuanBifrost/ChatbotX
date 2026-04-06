@@ -1,9 +1,10 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
+import { channelTypes } from "@chatbotx.io/database/partials"
 import { type NextRequest, NextResponse } from "next/server"
 import { handleCreateWebchatMessage } from "@/features/messages/actions/create-webchat-message.action"
-import { listMessages } from "@/features/messages/queries/list-messages.query"
-import { createWebchatMessageRequest } from "@/features/messages/schemas/create-message.schema"
-import { listGuestMessagesRequest } from "@/features/messages/schemas/list-messages.schema"
+import { listMessages } from "@/features/messages/queries"
+import { createWebchatMessageRequest } from "@/features/messages/schema/mutation"
+import { listGuestMessagesRequest } from "@/features/messages/schema/query"
 import { serverErrorHandler } from "@/lib/errors/server-handler"
 
 export async function GET(req: NextRequest) {
@@ -11,14 +12,17 @@ export async function GET(req: NextRequest) {
     const searchParams = Object.fromEntries(req.nextUrl.searchParams)
     const data = listGuestMessagesRequest.parse(searchParams)
 
-    const conversation = await db.query.conversationModel.findFirst({
+    const contactInbox = await db.query.contactInboxModel.findFirst({
       where: {
-        channel: "webchat",
+        channel: channelTypes.enum.webchat,
         sourceId: data.guestConversationId,
+      },
+      with: {
+        conversation: true,
       },
     })
 
-    if (!conversation) {
+    if (!contactInbox) {
       return NextResponse.json({
         data: [],
         nextCursor: null,
@@ -26,8 +30,11 @@ export async function GET(req: NextRequest) {
       })
     }
 
-    const result = await listMessages(conversation.chatbotId, {
+    const conversation = contactInbox.conversation
+
+    const result = await listMessages({
       ...data,
+      workspaceId: conversation.workspaceId,
       conversationId: conversation.id,
     })
 

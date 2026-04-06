@@ -1,11 +1,9 @@
-import { db } from "@aha.chat/database/client"
-import {
-  type AIAgentProvider,
-  AIMessageRole,
-  type AutomatedResponseReply,
-  ReplyType,
-} from "@aha.chat/database/types"
-import { aiProviders } from "@aha.chat/flow-config"
+import { createGoogleGenerativeAI } from "@ai-sdk/google"
+import { createOpenAI } from "@ai-sdk/openai"
+import { db } from "@chatbotx.io/database/client"
+import { aiMessageRoles } from "@chatbotx.io/database/partials"
+import { type AIProvider, aiProviders } from "@chatbotx.io/flow-config"
+import type { SecretTextAuthValue } from "@chatbotx.io/sdk"
 import {
   type BotResponseTrackingContext,
   ChatJobAction,
@@ -13,13 +11,11 @@ import {
   IntegrationJobAction,
   type IntegrationJobTriggerAutomatedResponse,
   integrationQueue,
-} from "@aha.chat/worker-config"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
-import { createOpenAI } from "@ai-sdk/openai"
+} from "@chatbotx.io/worker-config"
 import { type LanguageModel, type ModelMessage, streamText } from "ai"
 import { TEXT } from "./constants"
 import { processStreamingText, sendMessageWithRender } from "./text"
-import type { ReplyByAIProps, SecretTextAuthValue } from "./types"
+import type { ReplyByAIProps } from "./types"
 
 export async function replaceCustomFieldAttributes(
   message: string,
@@ -70,12 +66,12 @@ export async function replaceCustomFieldAttributes(
 }
 
 async function listAllEnabledAutomatedResponses({
-  chatbotId,
+  workspaceId,
 }: {
-  chatbotId: string
+  workspaceId: string
 }) {
   return await db.query.automatedResponseModel.findMany({
-    where: { chatbotId, status: true },
+    where: { workspaceId, status: true },
     orderBy: { createdAt: "desc" },
   })
 }
@@ -87,71 +83,54 @@ export async function replyByAutomatedResponse(
   const { message, conversation } = props
 
   let replied = false
-  let isFlow = false
-  let flowId: string | undefined
-  let automatedResponseId: string | undefined
 
   const allAutomatedResponses = await listAllEnabledAutomatedResponses({
-    chatbotId: message.chatbotId,
+    workspaceId: message.workspaceId,
   })
   if (allAutomatedResponses.length === 0) {
-    return { replied: false, isFlow: false }
+    return false
   }
 
   for (const automatedResponse of allAutomatedResponses) {
     const matched = automatedResponse.userMessages
       .map((v) => v.toLowerCase())
-      .some((v) => (message.content ?? "").toLowerCase().includes(v))
+      .some((v) => (message.text ?? "").toLowerCase().includes(v))
 
     if (matched) {
-      automatedResponseId = automatedResponse.id
-      for (const reply of automatedResponse.replies as AutomatedResponseReply[]) {
-        switch (reply.type) {
-          case ReplyType.Message: {
-            if (reply.message) {
-              const stepMessage = await replaceCustomFieldAttributes(
-                reply.message,
-                message.conversationId,
-              )
+      if (automatedResponse.text) {
+        const stepMessage = await replaceCustomFieldAttributes(
+          automatedResponse.text,
+          message.conversationId,
+        )
 
-              await chatQueue.add(ChatJobAction.sendChatMessage, {
-                type: ChatJobAction.sendChatMessage,
-                data: {
-                  conversation,
-                  text: stepMessage,
-                  trackingContext,
-                },
-              })
-            }
-            replied = true
-            break
-          }
-          case ReplyType.Flow: {
-            const flow = await db.query.flowModel.findFirst({
-              where: { id: reply.flowId },
-            })
-            if (flow?.currentVersionId) {
-              await integrationQueue.add(IntegrationJobAction.sendFlow, {
-                type: IntegrationJobAction.sendFlow,
-                data: {
-                  conversationId: message.conversationId,
-                  flowId: flow.id,
-                  trackingContext,
-                },
-              })
-              replied = true
-              isFlow = true
-              flowId = flow.id
-            }
-            break
-          }
-          default:
-            break
+        await chatQueue.add(ChatJobAction.sendChatMessage, {
+          type: ChatJobAction.sendChatMessage,
+          data: {
+            conversation,
+            text: stepMessage,
+            trackingContext,
+          },
+        })
+        replied = true
+      } else if (automatedResponse.flowId) {
+        const flow = await db.query.flowModel.findFirst({
+          where: { id: automatedResponse.flowId },
+        })
+        if (flow) {
+          await integrationQueue.add(IntegrationJobAction.sendFlow, {
+            type: IntegrationJobAction.sendFlow,
+            data: {
+              conversationId: message.conversationId,
+              flowId: flow.id,
+              trackingContext,
+            },
+          })
+          replied = true
         }
       }
     }
   }
-  return { replied, isFlow, flowId, automatedResponseId }
+  return replied
 }
 
 export function replyByGemini(
@@ -161,10 +140,10 @@ export function replyByGemini(
   return runAIReply(
     props,
     {
-      provider: aiProviders.gemini,
-      fetchIntegration: async (chatbotId: string) => {
+      provider: aiProviders.enum.gemini,
+      fetchIntegration: async (workspaceId: string) => {
         const integration = await db.query.integrationGeminiModel.findFirst({
-          where: { chatbotId, autoReply: true },
+          where: { workspaceId, autoReply: true },
         })
         return integration?.auth
       },
@@ -182,10 +161,10 @@ export function replyByOpenAI(
   return runAIReply(
     props,
     {
-      provider: aiProviders.openai,
-      fetchIntegration: async (chatbotId: string) => {
-        const integration = await db.query.integrationOpenAIModel.findFirst({
-          where: { chatbotId, autoReply: true },
+      provider: aiProviders.enum.openai,
+      fetchIntegration: async (workspaceId: string) => {
+        const integration = await db.query.integrationOpenaiModel.findFirst({
+          where: { workspaceId, autoReply: true },
         })
         return integration?.auth
       },
@@ -206,7 +185,7 @@ export function replyByOpenAI(
 
 type ProviderRunnerConfig = {
   provider: (typeof aiProviders)[keyof typeof aiProviders]
-  fetchIntegration: (chatbotId: string) => Promise<unknown>
+  fetchIntegration: (workspaceId: string) => Promise<unknown>
   createClient: (apiKey: string) => (modelName: string) => LanguageModel
   onFollowUpError: (ctx: {
     conversationId: string
@@ -221,7 +200,7 @@ async function runAIReply(
 ): Promise<boolean> {
   const { message, lastAIMessages, aiAgent, tools } = props
   try {
-    const auth = await cfg.fetchIntegration(message.chatbotId)
+    const auth = await cfg.fetchIntegration(message.workspaceId)
     if (!auth) {
       return false
     }
@@ -234,9 +213,9 @@ async function runAIReply(
 
     const clientFactory = cfg.createClient(apiKey)
 
-    const selectedModel = (aiAgent.models as AIAgentProvider[]).find(
-      (v) => v.provider === cfg.provider,
-    )
+    const selectedModel = (
+      aiAgent.models as { provider: AIProvider; model: string }[]
+    ).find((v) => v.provider === cfg.provider)
     if (!selectedModel) {
       return false
     }
@@ -279,11 +258,11 @@ async function runAIReply(
       const followUpMessages: ModelMessage[] = [
         ...lastAIMessages,
         {
-          role: AIMessageRole.assistant,
+          role: aiMessageRoles.enum.assistant,
           content: fullText || TEXT.assistantFoundPrefix,
         },
         {
-          role: AIMessageRole.user,
+          role: aiMessageRoles.enum.user,
           content: `${TEXT.followUpInstruction}\n\n${toolResultsText}`,
         },
       ]

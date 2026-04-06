@@ -1,13 +1,13 @@
-import { type AIProvider, aiProviders } from "@aha.chat/flow-config"
-import { cn } from "@aha.chat/ui/lib/utils"
+import { type AIProvider, aiProviders } from "@chatbotx.io/flow-config"
+import { cn } from "@chatbotx.io/ui/lib/utils"
 import {
   SiClaude,
   SiClaudeHex,
   SiGooglegemini,
   SiGooglegeminiHex,
 } from "@icons-pack/react-simple-icons"
-import { OpenAI } from "@lobehub/icons"
 import { BotIcon } from "lucide-react"
+import { OpenAIIcon, OpenAIIconHex } from "@/icons/openai"
 
 type AIIconProps = {
   provider: AIProvider
@@ -21,11 +21,11 @@ const AIIconInner = (props: AIIconProps) => {
   const fullClassName = cn("size-4", className)
 
   switch (provider) {
-    case aiProviders.claude:
+    case aiProviders.enum.claude:
       return <SiClaude className={fullClassName} fill={SiClaudeHex} />
-    case aiProviders.openai:
-      return <OpenAI className={fullClassName} />
-    case aiProviders.gemini:
+    case aiProviders.enum.openai:
+      return <OpenAIIcon className={fullClassName} fill={OpenAIIconHex} />
+    case aiProviders.enum.gemini:
       return (
         <SiGooglegemini className={fullClassName} fill={SiGooglegeminiHex} />
       )

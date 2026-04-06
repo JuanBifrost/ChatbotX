@@ -1,26 +1,26 @@
-import type { FlowNode, NodeType } from "@aha.chat/flow-config"
+import type { FlowNode, NodeType, StepType } from "@chatbotx.io/flow-config"
 import {
   buttonStepDefaultFn,
   disabledCopyActionTypes,
-  StepType,
-} from "@aha.chat/flow-config"
-import { TriggerFormInitially } from "@aha.chat/ui/components/form/form-trigger-initially"
-import { Button } from "@aha.chat/ui/components/ui/button"
+  stepTypes,
+} from "@chatbotx.io/flow-config"
+import { TriggerFormInitially } from "@chatbotx.io/ui/components/form/form-trigger-initially"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import {
   Sortable,
   SortableContent,
   SortableItem,
   SortableItemHandle,
-} from "@aha.chat/ui/components/ui/sortable"
-import { cn } from "@aha.chat/ui/lib/utils"
+} from "@chatbotx.io/ui/components/ui/sortable"
+import { cn } from "@chatbotx.io/ui/lib/utils"
+import { createId } from "@chatbotx.io/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
-import { createId } from "@paralleldrive/cuid2"
 import { useReactFlow } from "@xyflow/react"
 import { CopyIcon, MoveVerticalIcon, PlusIcon, XIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -310,7 +310,7 @@ export const NodeEditor = memo((props: NodeEditorProps) => {
                     className={cn(
                       "flex items-center gap-2",
                       // biome-ignore lint/suspicious/noExplicitAny: wip
-                      (field as any).stepType === StepType.sendCarousel
+                      (field as any).stepType === stepTypes.enum.sendCarousel
                         ? "relative"
                         : "",
                     )}
@@ -337,7 +337,7 @@ export const NodeEditor = memo((props: NodeEditorProps) => {
                       className={cn(
                         "break-word flex-1",
                         // biome-ignore lint/suspicious/noExplicitAny: wip
-                        (field as any).stepType === StepType.sendCarousel
+                        (field as any).stepType === stepTypes.enum.sendCarousel
                           ? "overflow-hidden"
                           : "",
                       )}

@@ -1,17 +1,16 @@
-import type { ContactNoteModel, TagModel } from "@aha.chat/database/types"
+import type { ContactNoteModel, TagModel } from "@chatbotx.io/database/types"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@aha.chat/ui/components/ui/accordion"
-import { useParams } from "next/navigation"
+} from "@chatbotx.io/ui/components/ui/accordion"
 import { useTranslations } from "next-intl"
 import { type ReactNode, useEffect, useMemo, useState } from "react"
 import { useChatStore } from "../chat/store/chat-store-provider"
 import { ContactNotesManage } from "../contact-notes/contact-notes-manage"
 import { ContactSequencesManage } from "../contact-sequences/contact-sequences-manage"
-import type { ListConversationItemResource } from "../conversations/schemas/resource"
+import type { ListConversationItemResource } from "../conversations/schema/resource"
 import { TagStoreProvider } from "../tags/provider/tag-store-context"
 import UpdateContactTagField from "./components/update-contact-tag-field"
 import { ContactDetail } from "./contact-detail"
@@ -21,9 +20,8 @@ type InboxModule = {
   readonly content: ReactNode
 }
 
-export const ContactInboxPanel = () => {
+export const ContactInboxPanel = ({ workspaceId }: { workspaceId: string }) => {
   const t = useTranslations()
-  const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const { activeConversationId, conversations } = useChatStore((state) => state)
   const [contact, setContact] =
@@ -54,18 +52,19 @@ export const ContactInboxPanel = () => {
             {
               keyName: t("fields.tags.label"),
               content: (
-                <TagStoreProvider chatbotId={chatbotId}>
+                <TagStoreProvider workspaceId={workspaceId}>
                   <UpdateContactTagField
                     contact={contact}
                     onSuccess={setTags}
                     tags={tags}
+                    workspaceId={workspaceId}
                   />
                 </TagStoreProvider>
               ),
             },
           ]
         : [],
-    [chatbotId, t, contact, tags],
+    [workspaceId, t, contact, tags],
   )
 
   return (

@@ -1,6 +1,6 @@
 "use client"
 
-import { cn } from "@aha.chat/ui/lib/utils"
+import { cn } from "@chatbotx.io/ui/lib/utils"
 import Image from "next/image"
 import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
@@ -38,7 +38,7 @@ export const BrandIcon = ({
         alt={alt}
         className={cn(
           className,
-          "h-8 w-full group-data-[collapsible=icon]:hidden",
+          "h-8 w-auto group-data-[collapsible=icon]:hidden",
         )}
         height={5}
         src={logoSrc}
@@ -52,6 +52,7 @@ export const BrandIcon = ({
           "hidden h-8 w-(--sidebar-width-icon) group-data-[collapsible=icon]:block",
         )}
         height={5}
+        loading="eager"
         src={iconSrc}
         width={10}
       />

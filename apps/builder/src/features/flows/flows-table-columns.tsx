@@ -1,22 +1,22 @@
 "use client"
 
-import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Checkbox } from "@aha.chat/ui/components/ui/checkbox"
+import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Checkbox } from "@chatbotx.io/ui/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
-import { Switch } from "@aha.chat/ui/components/ui/switch"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
+import { Switch } from "@chatbotx.io/ui/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@aha.chat/ui/components/ui/tooltip"
-import { formatDate } from "@aha.chat/ui/lib/format"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/tooltip"
+import { formatDate } from "@chatbotx.io/ui/lib/format"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   EllipsisVerticalIcon,
@@ -82,7 +82,7 @@ export function getFlowColumns({
             <TooltipTrigger asChild>
               <Link
                 className="max-w-[300px] truncate"
-                href={`/chatbots/${row.original.chatbotId}/flows/${row.original.id}`}
+                href={`/space/${row.original.workspaceId}/flows/${row.original.id}`}
               >
                 {row.original.name}
               </Link>
@@ -113,7 +113,11 @@ export function getFlowColumns({
       ),
       cell: ({ row }) => {
         const { execute, isPending } = useAction(
-          updateFlowAction.bind(null, row.original.chatbotId, row.original.id),
+          updateFlowAction.bind(
+            null,
+            row.original.workspaceId,
+            row.original.id,
+          ),
           {
             onSuccess: () => {
               row.original.active = !row.original.active
@@ -147,7 +151,11 @@ export function getFlowColumns({
       ),
       cell: ({ row }) => {
         const { execute, isPending } = useAction(
-          updateFlowAction.bind(null, row.original.chatbotId, row.original.id),
+          updateFlowAction.bind(
+            null,
+            row.original.workspaceId,
+            row.original.id,
+          ),
           {
             onSuccess: () => {
               row.original.enableInInbox = !row.original.enableInInbox

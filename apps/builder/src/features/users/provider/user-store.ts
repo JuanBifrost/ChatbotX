@@ -1,27 +1,23 @@
 import ky, { HTTPError } from "ky"
 import { createStore } from "zustand/vanilla"
-import type { InboxTeamResource } from "@/enterprise/features/inbox-teams/schema"
-import type {
-  ChatbotMemberCollection,
-  ChatbotMemberResource,
-} from "@/features/chatbot-members/schemas/resource"
-import type { PaginatedResponse } from "@/features/common/schemas/pagination"
+import type { ListInboxTeamsResponse } from "@/enterprise/features/inbox-teams/schema/action"
+import type { ListWorkspaceMembersResponse } from "@/features/workspace-members/schema/query"
 import { maxPerPageString } from "@/lib/shared-request"
 
 export type UserState = {
-  loadingChatbotMembers: boolean
+  loadingWorkspaceMembers: boolean
   loadingInboxTeams: boolean
   error: string | null
   initialized: boolean
 
-  chatbotId: string
-  chatbotMembers: ChatbotMemberResource[]
-  inboxTeams: InboxTeamResource[]
+  workspaceId: string
+  workspaceMembers: ListWorkspaceMembersResponse["data"]
+  inboxTeams: ListInboxTeamsResponse["data"]
 }
 
 export type UserActions = {
   initializeAgentsAndInboxTeams: () => Promise<void>
-  getAllChatbotMembers: () => Promise<void>
+  getAllWorkspaceMembers: () => Promise<void>
   getAllInboxTeams: () => Promise<void>
 }
 
@@ -29,13 +25,13 @@ export type UserStore = UserState & UserActions
 
 export const createUserStore = (props: Partial<UserState>) =>
   createStore<UserStore>((set, get) => ({
-    loadingChatbotMembers: false,
+    loadingWorkspaceMembers: false,
     loadingInboxTeams: false,
     error: null,
     initialized: false,
 
-    chatbotId: "",
-    chatbotMembers: [],
+    workspaceId: "",
+    workspaceMembers: [],
     inboxTeams: [],
     ...props,
 
@@ -48,7 +44,7 @@ export const createUserStore = (props: Partial<UserState>) =>
 
       try {
         await Promise.all([
-          get().getAllChatbotMembers(),
+          get().getAllWorkspaceMembers(),
           get().getAllInboxTeams(),
         ])
       } catch (error: unknown) {
@@ -63,43 +59,43 @@ export const createUserStore = (props: Partial<UserState>) =>
       }
     },
 
-    getAllChatbotMembers: async () => {
-      const { chatbotId, loadingChatbotMembers } = get()
+    getAllWorkspaceMembers: async () => {
+      const { workspaceId, loadingWorkspaceMembers } = get()
 
-      if (loadingChatbotMembers || !chatbotId) {
+      if (loadingWorkspaceMembers || !workspaceId) {
         return
       }
 
-      set({ loadingChatbotMembers: true, error: null })
+      set({ loadingWorkspaceMembers: true, error: null })
 
       try {
         const searchParams = new URLSearchParams({
           perPage: maxPerPageString,
         })
         const { data } = await ky
-          .get<ChatbotMemberCollection>(
-            `/api/chatbots/${chatbotId}/agents?${searchParams.toString()}`,
+          .get<ListWorkspaceMembersResponse>(
+            `/api/workspaces/${workspaceId}/members?${searchParams.toString()}`,
           )
           .json()
 
-        set({ chatbotMembers: data })
+        set({ workspaceMembers: data })
       } catch (error: unknown) {
         set({
           error:
             error instanceof HTTPError
               ? error.message
-              : "Failed to fetch chatbot members",
+              : "Failed to fetch workspace members",
         })
       } finally {
-        set({ loadingChatbotMembers: false })
+        set({ loadingWorkspaceMembers: false })
       }
     },
 
     getAllInboxTeams: async () => {
-      const { chatbotId, loadingInboxTeams } = get()
+      const { workspaceId, loadingInboxTeams } = get()
 
-      // Skip if already initialized for the same chatbotId or currently loading
-      if (loadingInboxTeams || !chatbotId) {
+      // Skip if already initialized for the same workspaceId or currently loading
+      if (loadingInboxTeams || !workspaceId) {
         return
       }
 
@@ -111,8 +107,8 @@ export const createUserStore = (props: Partial<UserState>) =>
         })
 
         const { data } = await ky
-          .get<PaginatedResponse<InboxTeamResource>>(
-            `/api/chatbots/${chatbotId}/inbox-teams?${searchParams.toString()}`,
+          .get<ListInboxTeamsResponse>(
+            `/api/workspaces/${workspaceId}/inbox-teams?${searchParams.toString()}`,
           )
           .json()
 

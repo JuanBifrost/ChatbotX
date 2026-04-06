@@ -1,12 +1,12 @@
-import { db, eq, relationsFilterToSQL } from "@aha.chat/database/client"
+import { db, eq, relationsFilterToSQL } from "@chatbotx.io/database/client"
 import {
   broadcastModel,
   contactsOnBroadcastsModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
-} from "@aha.chat/database/utils"
+} from "@chatbotx.io/database/utils"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type { GetBroadcastsSchema } from "../schemas/query"
@@ -15,10 +15,10 @@ import type { BroadcastResourceWithRelations } from "../schemas/resource"
 export async function listBroadcasts(
   input: GetBroadcastsSchema,
 ): Promise<PaginatedResponse<BroadcastResourceWithRelations>> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     name: input.name ? { ilike: `%${input.name.toLowerCase()}%` } : undefined,
   }
 

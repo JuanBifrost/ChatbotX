@@ -1,7 +1,10 @@
-import { db, relationsFilterToSQL } from "@aha.chat/database/client"
-import { rootFolderId } from "@aha.chat/database/enums"
-import { flowModel } from "@aha.chat/database/schema"
-import { parseOrderByAsObject, parsePagination } from "@aha.chat/database/utils"
+import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
+import { flowModel } from "@chatbotx.io/database/schema"
+import {
+  parseOrderByAsObject,
+  parsePagination,
+} from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import { notFoundException } from "@/lib/errors/exception"
 import { filterFlowsByTemplateIds } from "../actions/filter-flow-action"
@@ -13,20 +16,18 @@ import type {
 import type { FlowResource } from "../schemas/resource"
 
 export const listFlowsRSC = async (
-  input: ListFlowsRequest & { chatbotId: string },
+  input: ListFlowsRequest & { workspaceId: string },
 ) => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   return listFlows(input)
 }
 
 export async function listFlows(
-  input: ListFlowsRequest & { chatbotId: string },
+  input: ListFlowsRequest & { workspaceId: string },
 ): Promise<ListFlowsResponse> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
-
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     folderId: input.folderId
       ? // biome-ignore lint/style/noNestedTernary: allow nested ternary
         input.folderId === rootFolderId
@@ -88,11 +89,11 @@ export async function listFlows(
 export const findFlow = async (
   input: FindFlowParams,
 ): Promise<{ data: FlowResource | null }> => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const targetFlow = await db.query.flowModel.findFirst({
     where: {
-      chatbotId: input.chatbotId,
+      workspaceId: input.workspaceId,
       id: input.id,
     },
     with: {
@@ -107,12 +108,12 @@ export const findFlow = async (
 }
 
 export const ensureAllFlowIdsExists = async (
-  chatbotId: string,
+  workspaceId: string,
   flowIds: string[],
 ): Promise<void> => {
   const rows = await db.query.flowModel.findMany({
     where: {
-      chatbotId,
+      workspaceId,
       id: {
         in: flowIds,
       },

@@ -1,32 +1,34 @@
-import { Condition } from "@aha.chat/database/enums"
-import { triggerQueue } from "@aha.chat/worker-config"
+import {
+  type TriggerEventType,
+  triggerEventTypes,
+} from "@chatbotx.io/database/partials"
+import { triggerQueue } from "@chatbotx.io/worker-config"
 import { BaseEventEmitter } from "../base-emitter"
 import { hasActiveTriggers } from "./cache"
 import { isWorkerContext } from "./context"
-import type { TriggerEventType } from "./types"
 
 const SUPPORTED_EVENT_TYPES: Set<TriggerEventType> = new Set([
-  Condition.tagApplied,
-  Condition.tagRemoved,
-  Condition.customFieldValueChanged,
-  Condition.conversationTransferredToHuman,
-  Condition.conversationTransferredToBot,
-  Condition.newContact,
-  Condition.contactUnsubscribedFormBroadcast,
-  Condition.archived,
-  Condition.followUp,
-  Condition.conversationAssigned,
-  Condition.conversationUnassigned,
-  Condition.subscribedToSequence,
-  Condition.unsubscribedFromSequence,
+  triggerEventTypes.enum.tagApplied,
+  triggerEventTypes.enum.tagRemoved,
+  triggerEventTypes.enum.customFieldValueChanged,
+  triggerEventTypes.enum.conversationTransferredToHuman,
+  triggerEventTypes.enum.conversationTransferredToBot,
+  triggerEventTypes.enum.newContact,
+  triggerEventTypes.enum.contactUnsubscribedFormBroadcast,
+  triggerEventTypes.enum.archived,
+  triggerEventTypes.enum.followUp,
+  triggerEventTypes.enum.conversationAssigned,
+  triggerEventTypes.enum.conversationUnassigned,
+  triggerEventTypes.enum.subscribedToSequence,
+  triggerEventTypes.enum.unsubscribedFromSequence,
 ])
 
 class TriggerEventEmitterImpl extends BaseEventEmitter {
   protected supportedEventTypes = SUPPORTED_EVENT_TYPES
 
   protected async shouldEmitEvent(
-    eventType: Condition,
-    chatbotId: string,
+    eventType: TriggerEventType,
+    workspaceId: string,
     sourceId?: string,
   ): Promise<boolean> {
     if (isWorkerContext()) {
@@ -34,13 +36,13 @@ class TriggerEventEmitterImpl extends BaseEventEmitter {
       return false
     }
 
-    return await hasActiveTriggers(chatbotId, [eventType], sourceId)
+    return await hasActiveTriggers(workspaceId, [eventType], sourceId)
   }
 
   protected async emitToQueue(
-    eventType: Condition,
+    eventType: TriggerEventType,
     data: {
-      chatbotId: string
+      workspaceId: string
       contactId: string
       metadata?: Record<string, unknown>
     },
@@ -50,7 +52,7 @@ class TriggerEventEmitterImpl extends BaseEventEmitter {
       {
         type: "evaluateTriggers" as const,
         data: {
-          chatbotId: data.chatbotId,
+          workspaceId: data.workspaceId,
           contactId: data.contactId,
           eventType,
           eventData: data.metadata || {},

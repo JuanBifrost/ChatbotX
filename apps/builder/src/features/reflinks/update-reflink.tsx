@@ -1,16 +1,16 @@
 "use client"
 
-import { ComboboxField } from "@aha.chat/ui/components/form/combobox-field"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -25,14 +25,14 @@ import { updateReflinkRequest } from "./schemas/action"
 import type { ReflinkResource } from "./schemas/resource"
 
 type UpdateReflinkFormProps = {
-  chatbotId: string
+  workspaceId: string
   reflink: ReflinkResource | null
   open: boolean
   onOpenChange: (open: boolean) => void
 }
 
 export function UpdateReflinkDialog({
-  chatbotId,
+  workspaceId,
   reflink,
   open,
   onOpenChange,
@@ -57,9 +57,9 @@ export function UpdateReflinkDialog({
 
         {reflink ? (
           <UpdateReflinkForm
-            chatbotId={chatbotId}
             onCompletedForm={onCompletedForm}
             reflink={reflink}
+            workspaceId={workspaceId}
           />
         ) : null}
       </DialogContent>
@@ -69,16 +69,16 @@ export function UpdateReflinkDialog({
 
 export function UpdateReflinkForm(props: {
   reflink: ReflinkResource
-  chatbotId: string
+  workspaceId: string
   onCompletedForm: () => void
 }) {
-  const { chatbotId, reflink, onCompletedForm } = props
+  const { workspaceId, reflink, onCompletedForm } = props
   const t = useTranslations()
 
   const flowOptions = useFlowSelectOptions()
 
   const { form, handleSubmitWithAction } = useHookFormAction(
-    updateReflinkAction.bind(null, chatbotId, reflink.id),
+    updateReflinkAction.bind(null, workspaceId, reflink.id),
     zodResolver(updateReflinkRequest),
     {
       actionProps: {

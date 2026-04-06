@@ -5,11 +5,11 @@ import { DeleteBotFieldsDialog } from "./delete-bot-fields-dialog"
 import type { BotFieldResource } from "./schemas/resource"
 
 export function BotFieldToolbarActions({
-  chatbotId,
+  workspaceId,
   folderId,
   table,
 }: {
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
   table: Table<BotFieldResource>
 }) {
@@ -19,22 +19,22 @@ export function BotFieldToolbarActions({
     <>
       {table.getFilteredSelectedRowModel().rows.length > 0 ? (
         <DeleteBotFieldsDialog
-          chatbotId={chatbotId}
           onSuccess={() => {
             router.refresh()
           }}
           records={table
             .getFilteredSelectedRowModel()
             .rows.map((row) => row.original)}
+          workspaceId={workspaceId}
         />
       ) : null}
 
       <CreateBotFieldDialog
-        chatbotId={chatbotId}
         folderId={folderId}
         onSuccess={() => {
           router.refresh()
         }}
+        workspaceId={workspaceId}
       />
     </>
   )

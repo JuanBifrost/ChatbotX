@@ -1,27 +1,30 @@
-import { db, eq, relationsFilterToSQL } from "@aha.chat/database/client"
-import { rootFolderId } from "@aha.chat/database/enums"
-import { contactsToTagsModel, tagModel } from "@aha.chat/database/schema"
-import { parseOrderByAsObject, parsePagination } from "@aha.chat/database/utils"
+import { db, eq, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
+import { contactsToTagsModel, tagModel } from "@chatbotx.io/database/schema"
+import {
+  parseOrderByAsObject,
+  parsePagination,
+} from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
   FindTagRequest,
   ListTagsRequest,
   ListTagsResponse,
-} from "../schemas/query"
+} from "../schema/query"
 
 export const listTagsRSC = async (
-  input: ListTagsRequest & { chatbotId: string },
+  input: ListTagsRequest & { workspaceId: string },
 ) => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   return await listTags(input)
 }
 
 export async function listTags(
-  input: ListTagsRequest & { chatbotId: string },
+  input: ListTagsRequest & { workspaceId: string },
 ): Promise<ListTagsResponse> {
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     name: input.name ? { ilike: `%${input.name.toLowerCase()}%` } : undefined,
     folderId: input.folderId
       ? // biome-ignore lint/style/noNestedTernary: allow nested ternary

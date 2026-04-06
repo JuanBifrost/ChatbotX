@@ -1,22 +1,22 @@
 "use server"
 
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { spreadsheetModel } from "@aha.chat/database/schema"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { spreadsheetModel } from "@chatbotx.io/database/schema"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const deleteSpreadsheetAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const deleteSpreadsheetAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(bulkUpdateIdsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
@@ -26,11 +26,11 @@ export const deleteSpreadsheetAction = chatbotActionClient
         .delete(spreadsheetModel)
         .where(
           and(
-            eq(spreadsheetModel.chatbotId, chatbotId),
+            eq(spreadsheetModel.workspaceId, workspaceId),
             inArray(spreadsheetModel.id, parsedInput.ids),
           ),
         )
 
-      revalidateCacheTags(`chatbots:${chatbotId}#spreadsheets`)
+      revalidateCacheTags(`workspaces:${workspaceId}#spreadsheets`)
     },
   )

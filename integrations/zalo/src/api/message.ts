@@ -2,8 +2,8 @@ import {
   type Context,
   guessFileTypeFromMimeType,
   type IncomingAttachment,
-} from "@aha.chat/sdk"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
 import { fetch } from "cross-fetch"
 import imageSize from "image-size"
 import { ZALO_API_ENDPOINTS } from "../constants"
@@ -61,7 +61,7 @@ export const getMessageAttachmentEntity = ({
       throw new ZaloException("No response body received")
     }
 
-    const originPath = `public/chatbots/${ctx.chatbot?.id ?? ""}/${createId()}`
+    const originPath = `public/workspaces${ctx.workspace?.id ?? ""}/${createId()}`
     const bytes = await response.arrayBuffer()
     const mimeType = response.headers.get("content-type") ?? "image/png"
     const fileType = guessFileTypeFromMimeType(mimeType)

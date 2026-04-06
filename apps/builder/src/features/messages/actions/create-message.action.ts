@@ -1,78 +1,91 @@
 "use server"
 
-import { db, eq, findOrFail } from "@aha.chat/database/client"
+import { contactTrackingService } from "@chatbotx.io/analytics"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import { channelTypes } from "@chatbotx.io/database/partials"
 import {
   attachmentModel,
-  contactModel,
   conversationModel,
   messageModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
+import type {
+  ContactInboxModel,
+  ConversationModel,
+  UserModel,
+} from "@chatbotx.io/database/types"
+import { getPublicUrl } from "@chatbotx.io/database/utils"
+import { type UploadedFile, uploadMultipleFiles } from "@chatbotx.io/filesystem"
 import {
-  type ConversationModel,
-  type UserModel,
-  WEBCHAT_SOURCE_PREFIX,
-} from "@aha.chat/database/types"
-import { getPublicUrl } from "@aha.chat/database/utils"
-import { type UploadedFile, uploadMultipleFiles } from "@aha.chat/filesystem"
-import {
-  broadcastToChatbotParty,
   broadcastToGuestParty,
+  broadcastToWorkspaceParty,
   RealtimeEventType,
-} from "@aha.chat/partysocket-config"
-import type { OutgoingConversation, OutgoingMessage } from "@aha.chat/sdk"
+} from "@chatbotx.io/partysocket-config"
+import type { OutgoingConversation, OutgoingMessage } from "@chatbotx.io/sdk"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import {
   ChatJobAction,
   chatQueue,
   IntegrationJobAction,
   integrationQueue,
-} from "@aha.chat/worker-config"
-import { contactTrackingService } from "@chatbotx.io/analytics"
-import { createId } from "@paralleldrive/cuid2"
-import type { AttachmentResource } from "@/features/attachments/schemas"
-import {
-  type ChatbotIdAndIdRequestParams,
-  chatbotIdAndIdRequestParams,
-} from "@/features/common/schemas"
+} from "@chatbotx.io/worker-config"
+import type { AttachmentResource } from "@/features/attachments/schema/resource"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
-import type { MessageResource } from "../schemas"
+import { ChatbotXException } from "@/lib/errors/exception"
+import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type CreateMessageRequest,
   createMessageRequest,
-} from "../schemas/create-message.schema"
+} from "../schema/mutation"
+import type { MessageResource } from "../schema/resource"
 
-export const createMessageAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdAndIdRequestParams)
+export const createMessageAction = workspaceActionClient
+  .bindArgsSchemas([zodBigintAsString(), zodBigintAsString()])
   .inputSchema(createMessageRequest)
-  .action(
-    async ({
-      ctx,
-      bindArgsParsedInputs: [chatbotId, conversationId],
+  .action(async (props) => {
+    const {
+      bindArgsParsedInputs: [workspaceId, conversationId],
       parsedInput,
-    }: {
-      ctx: { user: UserModel }
-      bindArgsParsedInputs: ChatbotIdAndIdRequestParams
-      parsedInput: CreateMessageRequest
-    }) => {
-      const conversation = await findOrFail(conversationModel, {
-        id: conversationId,
-        chatbotId,
-      })
+      ctx,
+    } = props
 
-      return createMessage({
-        conversation,
-        parsedInput,
-        user: ctx.user,
-      })
-    },
-  )
+    const conversation = await findOrFail({
+      table: conversationModel,
+      where: {
+        id: conversationId,
+        workspaceId,
+      },
+      message: "Conversation not found",
+    })
+
+    // Find target contact inbox, or fallback to latest interactive contactInbox
+    const contactInbox = await db.query.contactInboxModel.findFirst({
+      where: {
+        contactId: conversation.contactId,
+        inboxId: parsedInput.inboxId ? parsedInput.inboxId : undefined,
+      },
+      orderBy: {
+        lastMessageAt: "desc",
+      },
+    })
+    if (!contactInbox) {
+      throw new ChatbotXException("Inbox not found")
+    }
+
+    return createMessage({
+      conversation,
+      contactInbox,
+      parsedInput,
+      user: ctx.user,
+    })
+  })
 
 export const createMessage = async (props: {
   conversation: ConversationModel
+  contactInbox: ContactInboxModel
   parsedInput: CreateMessageRequest
   user?: UserModel
 }) => {
-  const { conversation, parsedInput, user } = props
+  const { conversation, parsedInput, user, contactInbox } = props
 
   // Handle send flow
   if ("flowId" in parsedInput) {
@@ -92,33 +105,33 @@ export const createMessage = async (props: {
   if ("files" in parsedInput && parsedInput.files.length > 0) {
     uploadedFiles = await uploadMultipleFiles(
       parsedInput.files,
-      `public/chatbots/${conversation.chatbotId}/conversations/${conversation.id}`,
+      `public/space/${conversation.workspaceId}/conversations/${conversation.id}`,
     )
   }
   // else if ("fileUrl" in parsedInput) {
   //   const uploadedFile = await uploadFileFromUrl(
   //     parsedInput.fileUrl,
-  //     `public/chatbots/${conversation.chatbotId}/conversations/${conversation.id}`,
+  //     `public/space/${conversation.workspaceId}/conversations/${conversation.id}`,
   //   )
   //   uploadedFiles = [uploadedFile]
   // }
 
   const message = await db.transaction(async (tx) => {
-    const newMessage: MessageResource = await tx
-      .insert(messageModel)
-      .values({
-        id: createId(),
-        content: "content" in parsedInput ? parsedInput.content : null,
-        messageType: "outgoing",
-        chatbotId: conversation.chatbotId,
-        conversationId: conversation.id,
-        senderType: user ? "user" : "api",
-        senderId: user?.id,
-        inboxId: conversation.inboxId,
-        contentType: "text",
-      })
-      .returning()
-      .then((result) => result[0])
+    const newMessage: MessageResource & { attachments?: AttachmentResource[] } =
+      await tx
+        .insert(messageModel)
+        .values({
+          text: "text" in parsedInput ? parsedInput.text : null,
+          messageType: "outgoing",
+          workspaceId: conversation.workspaceId,
+          conversationId: conversation.id,
+          senderType: user ? "user" : "api",
+          senderId: user?.id,
+          contactInboxId: contactInbox.id,
+          contentType: "text",
+        })
+        .returning()
+        .then((result) => result[0])
 
     // create attachment if path exists
     if (uploadedFiles.length > 0) {
@@ -128,7 +141,7 @@ export const createMessage = async (props: {
           uploadedFiles.map((file) => ({
             id: createId(),
             messageId: newMessage.id,
-            chatbotId: newMessage.chatbotId,
+            workspaceId: newMessage.workspaceId,
             conversationId: newMessage.conversationId,
             ...file,
           })),
@@ -157,7 +170,7 @@ export const createMessage = async (props: {
   })
 
   const promises: Promise<unknown>[] = [
-    broadcastToChatbotParty(message.chatbotId, {
+    broadcastToWorkspaceParty(message.workspaceId, {
       eventType: RealtimeEventType.messageCreated,
       data: {
         ...message,
@@ -166,17 +179,9 @@ export const createMessage = async (props: {
     }),
   ]
 
-  const contact = await findOrFail(
-    contactModel,
-    {
-      id: conversation.contactId,
-    },
-    "Contact not found",
-  )
-
-  if (conversation.sourceId?.startsWith(WEBCHAT_SOURCE_PREFIX)) {
+  if (contactInbox.channel === channelTypes.enum.webchat) {
     promises.push(
-      broadcastToGuestParty(conversation.sourceId, {
+      broadcastToGuestParty(contactInbox.sourceId, {
         eventType: RealtimeEventType.messageCreated,
         data: {
           ...message,
@@ -199,31 +204,29 @@ export const createMessage = async (props: {
     )
   }
 
-  if (contact.sourceId) {
-    promises.push(
-      contactTrackingService.trackEvent({
-        chatbotId: message.chatbotId,
-        contactId: contact.sourceId,
-        eventType: "contact_message_out",
-        senderType: "human",
-        adminId: user?.id ?? "",
-        occurredAt: new Date(),
-        source: contact.source,
-        sourceId: contact.sourceId,
-        channel: conversation.channel,
-        country: undefined,
-        metadata: {
-          messageId: message.id,
-          conversationId: message.conversationId,
-        },
-      }),
-    )
-  }
+  promises.push(
+    contactTrackingService.trackEvent({
+      workspaceId: message.workspaceId,
+      contactId: contactInbox.contactId,
+      eventType: "contact_message_out",
+      senderType: "human",
+      adminId: user?.id,
+      occurredAt: new Date(),
+      source: contactInbox.source,
+      sourceId: contactInbox.sourceId,
+      channel: contactInbox.channel,
+      country: undefined,
+      metadata: {
+        messageId: message.id,
+        conversationId: message.conversationId,
+      },
+    }),
+  )
 
   // Broadcast and send
   await Promise.all(promises)
 
-  revalidateCacheTags(`chatbots:${conversation.chatbotId}:conversations`)
+  revalidateCacheTags(`workspaces:${conversation.workspaceId}:conversations`)
 
   return message
 }

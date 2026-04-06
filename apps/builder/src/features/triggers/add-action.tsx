@@ -1,13 +1,16 @@
 "use client"
 
-import { TriggerAction } from "@aha.chat/database/enums"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import {
+  type TriggerAction,
+  triggerActions,
+} from "@chatbotx.io/database/partials"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
 import { PlusIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useMemo } from "react"
@@ -42,37 +45,37 @@ export function AddAction({
     () => [
       {
         label: t("trigger.actions.addTag"),
-        value: TriggerAction.addTag,
+        value: triggerActions.enum.addTag,
         defaultFn: addTagsAction,
       },
       {
         label: t("trigger.actions.removeTag"),
-        value: TriggerAction.removeTag,
+        value: triggerActions.enum.removeTag,
         defaultFn: removeTagsAction,
       },
       {
         label: t("trigger.actions.setCustomField"),
-        value: TriggerAction.setCustomField,
+        value: triggerActions.enum.setCustomField,
         defaultFn: setCustomFieldAction,
       },
       {
         label: t("trigger.actions.clearCustomField"),
-        value: TriggerAction.clearCustomField,
+        value: triggerActions.enum.clearCustomField,
         defaultFn: clearCustomFieldAction,
       },
       {
         label: t("trigger.actions.startAnotherFlow"),
-        value: TriggerAction.startAnotherFlow,
+        value: triggerActions.enum.startAnotherFlow,
         defaultFn: startFlowAction,
       },
       {
         label: t("trigger.actions.transferConversationToHuman"),
-        value: TriggerAction.transferConversationToHuman,
+        value: triggerActions.enum.transferConversationToHuman,
         defaultFn: transferConversationToHumanAction,
       },
       {
         label: "Google Sheets",
-        value: TriggerAction.runGoogleSheet,
+        value: triggerActions.enum.runGoogleSheet,
         defaultFn: runGoogleSheetAction,
       },
     ],

@@ -1,14 +1,14 @@
-import { findOrFail } from "@aha.chat/database/client"
-import { contactModel } from "@aha.chat/database/schema"
+import { findOrFail } from "@chatbotx.io/database/client"
+import { contactModel } from "@chatbotx.io/database/schema"
 import type {
   ConversationModel,
   IntegrationType,
-} from "@aha.chat/database/types"
-import type { SendFlowStepData } from "@aha.chat/sdk"
+} from "@chatbotx.io/database/types"
+import type { SendFlowStepData } from "@chatbotx.io/sdk"
 import type {
   ChatJobSendExternalMessage,
   ChatJobSendTyping,
-} from "@aha.chat/worker-config"
+} from "@chatbotx.io/worker-config"
 import { getInboxWithAuthFromInboxId } from "../../lib/inbox"
 import { allIntegrations } from "../../lib/integrations"
 import { logger } from "../../lib/logger"
@@ -32,15 +32,15 @@ export async function sendMessageToExternal(
     return
   }
 
-  const contact = await findOrFail(
-    contactModel,
-    { id: conversation.contactId },
-    "Contact not found",
-  )
+  const contact = await findOrFail({
+    table: contactModel,
+    where: { id: conversation.contactId },
+    message: "Contact not found",
+  })
 
   await integrationDetail.channels?.channel?.message?.sendMessage?.({
     ctx: {
-      chatbot: inbox.chatbot,
+      workspace: inbox.workspace,
       auth,
     },
     data: {
@@ -70,7 +70,7 @@ export async function sendTypingToExternal(data: ChatJobSendTyping["data"]) {
 
   await integrationDetail.channels?.channel?.conversation?.sendTyping?.({
     ctx: {
-      chatbot: inbox.chatbot,
+      workspace: inbox.workspace,
       auth,
     },
     data: { conversation, typing },
@@ -104,7 +104,7 @@ export async function sendFlowStepToExternal({
 
   const result = await intergationDetail.runAction("sendFlowStep", {
     ctx: {
-      chatbot: inbox.chatbot,
+      workspace: inbox.workspace,
       auth,
     },
     data: {

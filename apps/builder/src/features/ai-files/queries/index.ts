@@ -1,19 +1,19 @@
 "use server"
 
-import { db } from "@aha.chat/database/client"
-import type { AIEmbeddingStatus } from "@aha.chat/database/types"
+import { db } from "@chatbotx.io/database/client"
+import type { AIEmbeddingStatus } from "@chatbotx.io/database/partials"
 import { env } from "@/env"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
-import type { AIFileCollection, ListAIFilesRequest } from "../schemas"
+import type { ListAIFilesRequest, ListAIFilesResponse } from "../schemas"
 
 export async function listAIFiles(
   input: ListAIFilesRequest,
-): Promise<AIFileCollection> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+): Promise<ListAIFilesResponse> {
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const data = await db.query.aiFileModel.findMany({
     where: {
-      chatbotId: input.chatbotId,
+      workspaceId: input.workspaceId,
     },
     with: {
       aiEmbeddings: {
@@ -43,7 +43,7 @@ export async function listAIFiles(
       id: file.id,
       createdAt: file.createdAt,
       updatedAt: file.updatedAt,
-      chatbotId: file.chatbotId,
+      workspaceId: file.workspaceId,
       mimeType: file.mimeType,
       size: file.size,
       name: file.name,

@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Loader2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
@@ -8,16 +8,16 @@ import { toast } from "sonner"
 import { syncMessageTemplateAction } from "./actions/sync-message-templates"
 
 export function WhatsappMessageTemplatesTableToolbarActions({
-  chatbotId,
+  workspaceId,
   integrationWhatsappId,
 }: {
-  chatbotId: string
+  workspaceId: string
   integrationWhatsappId: string
 }) {
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    syncMessageTemplateAction.bind(null, chatbotId, integrationWhatsappId),
+    syncMessageTemplateAction.bind(null, workspaceId, integrationWhatsappId),
     {
       onSuccess() {
         toast.success(t("messages.syncedSuccessfully"))

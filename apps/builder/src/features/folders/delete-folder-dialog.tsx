@@ -1,7 +1,6 @@
 "use client"
 
-import type { FolderModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -9,28 +8,29 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import { Loader2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
 import { deleteFolderAction } from "@/features/folders/actions/delete-folder.action"
+import type { FolderResource } from "./schema/resource"
 
 export function DeleteFolderDialog({
   open,
   onOpenChange,
-  chatbotId,
+  workspaceId,
   folder,
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
-  chatbotId: string
-  folder: FolderModel | null
+  workspaceId: string
+  folder: FolderResource | null
 }) {
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteFolderAction.bind(null, chatbotId),
+    deleteFolderAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

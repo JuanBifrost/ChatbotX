@@ -1,4 +1,4 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
   ListContactTagsRequest,
@@ -8,11 +8,11 @@ import type {
 export async function listContactTags(
   input: ListContactTagsRequest,
 ): Promise<ListContactTagsResponse> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const data = await db.query.tagModel.findMany({
     where: {
-      chatbotId: input.chatbotId,
+      workspaceId: input.workspaceId,
       contactsToTags: {
         contactId: input.contactId,
       },

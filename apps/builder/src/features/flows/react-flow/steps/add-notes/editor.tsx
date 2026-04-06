@@ -1,6 +1,6 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { TextIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { BaseStepEditor } from "../base/editor"
@@ -15,10 +15,7 @@ const AddNotesStepEditor = (props: AddNotesStepEditorProps) => {
 
   return (
     <BaseStepEditor icon={TextIcon} title={t("flows.actions.addContactNotes")}>
-      <InputField
-        label={t("fields.notes.label")}
-        name={`${parentName}.content`}
-      />
+      <InputField label={t("fields.notes.label")} name={`${parentName}.text`} />
     </BaseStepEditor>
   )
 }

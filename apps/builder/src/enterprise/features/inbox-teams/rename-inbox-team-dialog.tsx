@@ -1,7 +1,7 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -10,8 +10,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -21,17 +21,18 @@ import "react-day-picker/style.css"
 import { useRouter } from "next/navigation"
 import { toast } from "sonner"
 import { updateInboxTeamAction } from "./actions/update-inbox-team.action"
-import { type InboxTeamResource, updateInboxTeamRequest } from "./schema"
+import { updateInboxTeamRequest } from "./schema/action"
+import type { InboxTeamResource } from "./schema/resource"
 
 export function RenameInboxTeamDialog({
   open,
   onOpenChange,
-  chatbotId,
+  workspaceId,
   inboxTeam,
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
-  chatbotId: string
+  workspaceId: string
   inboxTeam: InboxTeamResource | null
 }) {
   const t = useTranslations()
@@ -41,7 +42,7 @@ export function RenameInboxTeamDialog({
     handleSubmitWithAction,
     form: { reset },
   } = useHookFormAction(
-    updateInboxTeamAction.bind(null, chatbotId, inboxTeam?.id ?? ""),
+    updateInboxTeamAction.bind(null, workspaceId, inboxTeam?.id ?? ""),
     zodResolver(updateInboxTeamRequest),
     {
       actionProps: {

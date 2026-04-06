@@ -1,9 +1,9 @@
 "use client"
 
-import { rootFolderId } from "@aha.chat/database/enums"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SwitchField } from "@aha.chat/ui/components/form/switch-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { rootFolderId } from "@chatbotx.io/database/partials"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -13,8 +13,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon, PlusIcon } from "lucide-react"
@@ -23,15 +23,15 @@ import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useState } from "react"
 import { toast } from "sonner"
 import { createTagAction } from "./actions/create-tag-action"
-import { createTagRequest } from "./schemas/action"
+import { createTagRequest } from "./schema/action"
 
 type CreateTagDialogProps = {
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
 }
 
 export const CreateTagDialog = ({
-  chatbotId,
+  workspaceId,
   folderId,
 }: CreateTagDialogProps) => {
   const t = useTranslations()
@@ -40,7 +40,7 @@ export const CreateTagDialog = ({
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createTagAction.bind(null, chatbotId),
+      createTagAction.bind(null, workspaceId),
       zodResolver(createTagRequest),
       {
         actionProps: {

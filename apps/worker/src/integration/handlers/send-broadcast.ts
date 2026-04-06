@@ -1,12 +1,12 @@
-import { and, db, eq, findOrFail, inArray } from "@aha.chat/database/client"
-import { broadcastModel, conversationModel } from "@aha.chat/database/schema"
-import type { WaTemplateParams } from "@aha.chat/flow-config"
+import { and, db, eq, findOrFail, inArray } from "@chatbotx.io/database/client"
+import { broadcastModel, conversationModel } from "@chatbotx.io/database/schema"
+import type { WaTemplateParams } from "@chatbotx.io/flow-config"
 import {
   ChatJobAction,
   chatQueue,
   IntegrationJobAction,
   integrationQueue,
-} from "@aha.chat/worker-config"
+} from "@chatbotx.io/worker-config"
 
 export const sendBroadcast = async (broadcastId: string) => {
   async function updateBroadcastStatus(
@@ -21,14 +21,14 @@ export const sendBroadcast = async (broadcastId: string) => {
       .where(eq(broadcastModel.id, broadcastId))
   }
 
-  const broadcast = await findOrFail(
-    broadcastModel,
-    {
+  const broadcast = await findOrFail({
+    table: broadcastModel,
+    where: {
       id: broadcastId,
       status: "scheduled",
     },
-    "Broadcast not found",
-  )
+    message: "Broadcast not found",
+  })
 
   const contactsOnBroadcasts =
     await db.query.contactsOnBroadcastsModel.findMany({

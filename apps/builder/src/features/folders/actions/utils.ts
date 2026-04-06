@@ -1,19 +1,19 @@
-import { findOrFail } from "@aha.chat/database/client"
-import { folderModel } from "@aha.chat/database/schema"
-import type { FolderType } from "@aha.chat/database/types"
+import { findOrFail } from "@chatbotx.io/database/client"
+import type { FolderType } from "@chatbotx.io/database/partials"
+import { folderModel } from "@chatbotx.io/database/schema"
 
 export const ensureFolderIsExists = async (
   id: string,
-  chatbotId: string,
+  workspaceId: string,
   folderType: FolderType,
 ) => {
-  await findOrFail(
-    folderModel,
-    {
-      chatbotId,
+  await findOrFail({
+    table: folderModel,
+    where: {
+      workspaceId,
       id,
       folderType,
     },
-    "Folder does not exists.",
-  )
+    message: "Folder does not exists.",
+  })
 }

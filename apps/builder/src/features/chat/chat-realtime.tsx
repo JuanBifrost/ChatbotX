@@ -3,24 +3,25 @@
 import {
   type RealtimeEventData,
   RealtimeEventType,
-} from "@aha.chat/partysocket-config"
-import { useParams } from "next/navigation"
+} from "@chatbotx.io/partysocket-config"
 import usePartySocket from "partysocket/react"
 import { env } from "@/env"
+import { useWorkspaceId } from "@/hooks/routing"
 import { authClient } from "@/lib/auth/auth-client"
-import type { MessageResource } from "../messages/schemas"
+import type { MessageResourceWithRelations } from "../messages/schema/resource"
 import { useChatStore } from "./store/chat-store-provider"
 
 export function ChatRealtime() {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
+
   const { handleNewMessage, updateContact, updateConversations } = useChatStore(
     (state) => state,
   )
 
   usePartySocket({
     host: env.NEXT_PUBLIC_PARTYSOCKET_URL,
-    room: chatbotId,
-    party: "chatbots",
+    room: workspaceId,
+    party: "workspaces",
     // protocol: "ws",
 
     query: async () => {
@@ -37,7 +38,7 @@ export function ChatRealtime() {
         const { eventType, data } = JSON.parse(e.data) as RealtimeEventData
         switch (eventType) {
           case RealtimeEventType.messageCreated:
-            handleNewMessage(data as MessageResource)
+            handleNewMessage(data as MessageResourceWithRelations)
             break
           case RealtimeEventType.contactBlocked:
             updateContact(data.contactId, {

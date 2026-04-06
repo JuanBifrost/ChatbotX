@@ -1,15 +1,15 @@
 "use client"
 
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/card"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { use, useMemo, useState } from "react"
@@ -24,11 +24,15 @@ import type { FlowResource } from "./schemas/resource"
 
 type FlowsTableProps = {
   promises: Promise<[Awaited<ReturnType<typeof listFlowsRSC>>]>
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
 }
 
-export function FlowsTable({ promises, chatbotId, folderId }: FlowsTableProps) {
+export function FlowsTable({
+  promises,
+  workspaceId,
+  folderId,
+}: FlowsTableProps) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -60,16 +64,15 @@ export function FlowsTable({ promises, chatbotId, folderId }: FlowsTableProps) {
         <DataTable table={table}>
           <DataTableToolbar table={table}>
             <FlowsTableToolbarActions
-              chatbotId={chatbotId}
               setRowAction={setRowAction}
               table={table}
+              workspaceId={workspaceId}
             />
-            <CreateFlowDialog chatbotId={chatbotId} folderId={folderId} />
+            <CreateFlowDialog folderId={folderId} workspaceId={workspaceId} />
           </DataTableToolbar>
         </DataTable>
 
         <DeleteFlowsDialog
-          chatbotId={chatbotId}
           flows={rowAction?.row.original ? [rowAction?.row.original] : []}
           onOpenChange={() => setRowAction(null)}
           onSuccess={() => {
@@ -78,6 +81,7 @@ export function FlowsTable({ promises, chatbotId, folderId }: FlowsTableProps) {
           }}
           open={rowAction?.variant === "delete"}
           showTrigger={false}
+          workspaceId={workspaceId}
         />
 
         <RenameFlowDialog
@@ -87,7 +91,6 @@ export function FlowsTable({ promises, chatbotId, folderId }: FlowsTableProps) {
         />
 
         <ChangeFolderDialog
-          chatbotId={chatbotId}
           currentFolderId={rowAction?.row.original?.folderId || null}
           folderType="flow"
           modelIds={
@@ -95,6 +98,7 @@ export function FlowsTable({ promises, chatbotId, folderId }: FlowsTableProps) {
           }
           onOpenChange={() => setRowAction(null)}
           open={rowAction?.variant === "move"}
+          workspaceId={workspaceId}
         />
       </CardContent>
     </Card>

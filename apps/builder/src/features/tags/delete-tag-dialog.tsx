@@ -1,7 +1,7 @@
 "use client"
 
-import type { TagModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { TagModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import type { Row } from "@tanstack/react-table"
 import { Loader, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -21,7 +21,7 @@ import { toast } from "sonner"
 import { deleteTagAction } from "./actions/delete-tag-action"
 
 type DeleteTagsDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
-  chatbotId: string
+  workspaceId: string
   tags: Row<TagModel>["original"][]
   showTrigger?: boolean
   onSuccess?: () => void
@@ -29,7 +29,7 @@ type DeleteTagsDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
 }
 
 export function DeleteTagsDialog({
-  chatbotId,
+  workspaceId,
   tags,
   showTrigger = true,
   onSuccess,
@@ -39,7 +39,7 @@ export function DeleteTagsDialog({
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteTagAction.bind(null, chatbotId),
+    deleteTagAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

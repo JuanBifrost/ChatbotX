@@ -1,29 +1,26 @@
 "use client"
 
-import { channelType } from "@aha.chat/database/types"
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@aha.chat/ui/components/ui/avatar"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/ui/components/ui/avatar"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@aha.chat/ui/components/ui/tooltip"
-import { cn } from "@aha.chat/ui/lib/utils"
+} from "@chatbotx.io/ui/components/ui/tooltip"
+import { cn } from "@chatbotx.io/ui/lib/utils"
 import { formatDistanceToNowStrict, isAfter } from "date-fns"
 import { StarIcon, UsersRoundIcon } from "lucide-react"
-import { useParams } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { useEffect, useMemo } from "react"
 import { toast } from "sonner"
 import { useChatStore } from "../chat/store/chat-store-provider"
 import { getAvatarUrl, getFullName } from "../contacts/utils"
-import { InboxIcon } from "../inboxes/components/inbox-icon"
 import { readConversationAction } from "./actions/read-conversation.action"
-import type { ListConversationItemResource } from "./schemas/resource"
+import type { ListConversationItemResource } from "./schema/resource"
 
 type ConversationItemProps = {
   conversation: ListConversationItemResource
@@ -65,7 +62,6 @@ export default function ConversationItem({
   conversation,
   onSelect,
 }: ConversationItemProps) {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
   const lastMessage = conversation.messages?.[0]
   const { activeConversationId, readConversation } = useChatStore(
     (state) => state,
@@ -94,7 +90,11 @@ export default function ConversationItem({
   )
 
   const { execute } = useAction(
-    readConversationAction.bind(null, chatbotId, conversation.id),
+    readConversationAction.bind(
+      null,
+      conversation.workspaceId,
+      conversation.id,
+    ),
     {
       onSuccess: () => {
         readConversation(conversation.id)
@@ -131,11 +131,13 @@ export default function ConversationItem({
             {assignedIcon(conversation)}
           </div>
           <div className="absolute right-0 bottom-0 transform">
-            <InboxIcon
-              channel={conversation.inbox?.channel ?? channelType.omnichannel}
+            {/* <InboxIcon
+              channel={
+                conversation.inbox?.channel ?? channelTypes.enum.omnichannel
+              }
               showLabel={false}
               size="small"
-            />
+            /> */}
           </div>
           {conversation.followed && (
             <div className="absolute top-0 right-0 transform">
@@ -164,7 +166,7 @@ export default function ConversationItem({
                 : "font-semibold",
             )}
           >
-            {conversation.messages?.[0]?.content ?? " "}
+            {conversation.messages?.[0]?.text ?? " "}
           </div>
           <p className="text-right text-neutral-400 text-xs">
             <span>

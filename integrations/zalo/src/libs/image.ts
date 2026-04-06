@@ -1,5 +1,5 @@
-import type { Context } from "@aha.chat/sdk"
-import { createId } from "@paralleldrive/cuid2"
+import type { Context } from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
 import type { ZaloAuthValue } from "../schemas/definition"
 
 export const fetchAndReuploadImage = async ({
@@ -16,7 +16,7 @@ export const fetchAndReuploadImage = async ({
     },
   })
   if (response.ok && response.body) {
-    const originPath = `public/chatbots/${ctx.chatbot?.id}/zalo/${ctx.auth.oaId}/${createId()}`
+    const originPath = `public/space/${ctx.workspace?.id}/zalo/${ctx.auth.oaId}/${createId()}`
     const bytes = await response.arrayBuffer()
     const mimeType = response.headers.get("content-type") ?? "image/png"
 

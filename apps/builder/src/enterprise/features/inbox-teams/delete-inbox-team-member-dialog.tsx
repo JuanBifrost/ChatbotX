@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -9,25 +9,25 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import { Loader } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import type { ComponentPropsWithoutRef } from "react"
 import { toast } from "sonner"
+import type { InboxTeamMemberResource } from "../inbox-team-members/schema/resource"
 import { deleteTeamMembersAction } from "./actions/delete-inbox-team-member.action"
-import type { InboxTeamMemberResource } from "./schema"
 
 type DeleteMembersDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
   onSuccess?: () => void
   onOpenChange: (val: boolean) => void
-  chatbotId: string
+  workspaceId: string
   teamMember: InboxTeamMemberResource | null
 }
 
 export function DeleteInboxTeamMembersDialog({
-  chatbotId,
+  workspaceId,
   onSuccess,
   onOpenChange,
   teamMember,
@@ -39,7 +39,7 @@ export function DeleteInboxTeamMembersDialog({
   const { execute, isPending } = useAction(
     deleteTeamMembersAction.bind(
       null,
-      chatbotId,
+      workspaceId,
       teamMember?.inboxTeamId ?? "",
     ),
     {

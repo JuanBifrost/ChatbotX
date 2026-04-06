@@ -1,16 +1,16 @@
 "use client"
 
-import type { TagModel } from "@aha.chat/database/types"
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
+import type { TagModel } from "@chatbotx.io/database/types"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/card"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import { useTranslations } from "next-intl"
 import React, { useMemo } from "react"
 import { toast } from "sonner"
@@ -25,11 +25,11 @@ import { UpdateTagDialog } from "./update-tag-dialog"
 
 type TagsTableProps = {
   promises: Promise<[Awaited<ReturnType<typeof listTags>>]>
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
 }
 
-export function TagsTable({ promises, chatbotId, folderId }: TagsTableProps) {
+export function TagsTable({ promises, workspaceId, folderId }: TagsTableProps) {
   const [{ data, pageCount }] = React.use(promises)
   const [rowAction, setRowAction] =
     React.useState<DataTableRowAction<TagModel> | null>(null)
@@ -73,29 +73,28 @@ export function TagsTable({ promises, chatbotId, folderId }: TagsTableProps) {
       <CardContent>
         <DataTable table={table}>
           <DataTableToolbar table={table}>
-            <CreateTagDialog chatbotId={chatbotId} folderId={folderId} />
-            <TagsTableToolbarActions chatbotId={chatbotId} table={table} />
+            <CreateTagDialog folderId={folderId} workspaceId={workspaceId} />
+            <TagsTableToolbarActions table={table} workspaceId={workspaceId} />
           </DataTableToolbar>
         </DataTable>
 
         <DeleteTagsDialog
-          chatbotId={chatbotId}
           onOpenChange={() => setRowAction(null)}
           onSuccess={() => rowAction?.row.toggleSelected(false)}
           open={rowAction?.variant === "delete"}
           showTrigger={false}
           tags={rowAction?.row.original ? [rowAction?.row.original] : []}
+          workspaceId={workspaceId}
         />
 
         <UpdateTagDialog
-          chatbotId={chatbotId}
           onOpenChange={() => setRowAction(null)}
           open={rowAction?.variant === "update"}
           tag={rowAction?.row.original || null}
+          workspaceId={workspaceId}
         />
 
         <ChangeFolderDialog
-          chatbotId={chatbotId}
           currentFolderId={rowAction?.row.original?.folderId || null}
           folderType="tag"
           modelIds={
@@ -103,6 +102,7 @@ export function TagsTable({ promises, chatbotId, folderId }: TagsTableProps) {
           }
           onOpenChange={() => setRowAction(null)}
           open={rowAction?.variant === "move"}
+          workspaceId={workspaceId}
         />
       </CardContent>
     </Card>

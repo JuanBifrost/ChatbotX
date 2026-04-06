@@ -1,9 +1,9 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form } from "@aha.chat/ui/components/ui/form"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -11,7 +11,8 @@ import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { toast } from "sonner"
 import { editSavedReplyAction } from "./actions/edit-saved-reply.action"
-import { editSavedReplyRequest, type SavedReplyResource } from "./schema"
+import { editSavedReplyRequest } from "./schema/mutation"
+import type { SavedReplyResource } from "./schema/resource"
 
 type SavedReplyEditFormProps = {
   editingSavedReply: SavedReplyResource

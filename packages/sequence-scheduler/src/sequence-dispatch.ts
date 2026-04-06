@@ -3,29 +3,29 @@ import {
   type DatabaseClient,
   eq,
   inArray,
-} from "@aha.chat/database/client"
+} from "@chatbotx.io/database/client"
+import { sequenceEventTypes } from "@chatbotx.io/database/partials"
 import {
   sequenceDispatchModel,
   sequenceEventModel,
-} from "@aha.chat/database/schema"
-import { sequenceEventType } from "@aha.chat/database/types"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
 
 export const sequenceDispatchUtils = {
   bulkCancelPendingDispatches: async (props: {
     dbClient: DatabaseClient
-    chatbotId: string
+    workspaceId: string
     enrollmentId: string
     reason?: "canceled"
   }) => {
-    const { dbClient, chatbotId, enrollmentId, reason } = props
+    const { dbClient, workspaceId, enrollmentId, reason } = props
 
     // Find all pending dispatches for the enrollment
     const pendingDispatches =
       await dbClient.query.sequenceDispatchModel.findMany({
         where: {
           enrollmentId,
-          chatbotId,
+          workspaceId,
           status: "pending",
         },
         columns: {
@@ -63,12 +63,12 @@ export const sequenceDispatchUtils = {
     await dbClient.insert(sequenceEventModel).values(
       pendingDispatches.map((d) => ({
         id: createId(),
-        chatbotId,
+        workspaceId,
         sequenceId: d.sequenceId,
         contactId: d.contactId,
         stepId: d.stepId,
         dispatchId: d.id,
-        eventType: sequenceEventType.dispatch_canceled,
+        eventType: sequenceEventTypes.enum.dispatch_canceled,
         payload: { reason },
         occurredAt: new Date(),
       })),

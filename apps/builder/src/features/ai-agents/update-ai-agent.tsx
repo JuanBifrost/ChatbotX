@@ -1,31 +1,31 @@
 "use client"
 
-import {
-  type AIAgentModel,
-  type AIFileModel,
-  type AIFunctionModel,
-  type AIMCPServerModel,
-  AIMessageRole,
-} from "@aha.chat/database/types"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { MultiSelectField } from "@aha.chat/ui/components/form/multi-select-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
-import { SliderField } from "@aha.chat/ui/components/form/slider-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Card } from "@aha.chat/ui/components/ui/card"
+import { aiMessageRoles } from "@chatbotx.io/database/partials"
+import type {
+  AIAgentModel,
+  AIFileModel,
+  AIFunctionModel,
+  AIMCPServerModel,
+} from "@chatbotx.io/database/types"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { MultiSelectField } from "@chatbotx.io/ui/components/form/multi-select-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { SliderField } from "@chatbotx.io/ui/components/form/slider-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Card } from "@chatbotx.io/ui/components/ui/card"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@aha.chat/ui/components/ui/popover"
+} from "@chatbotx.io/ui/components/ui/popover"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import {
@@ -48,7 +48,7 @@ import { openaiChatModelOptions } from "../openai/models"
 import type { CreateAIAgentRequest } from "./schemas/action"
 
 export function UpdateAIAgentDialog({
-  chatbotId,
+  workspaceId,
   agent,
   open,
   files,
@@ -59,7 +59,7 @@ export function UpdateAIAgentDialog({
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
-  chatbotId: string
+  workspaceId: string
   agent: AIAgentModel | null
   onSuccess?: () => void
   files: AIFileModel[]
@@ -73,7 +73,7 @@ export function UpdateAIAgentDialog({
     handleSubmitWithAction,
     form: { setValue, control },
   } = useHookFormAction(
-    updateAIAgentAction.bind(null, chatbotId, agent?.id ?? ""),
+    updateAIAgentAction.bind(null, workspaceId, agent?.id ?? ""),
     zodResolver(updateAIAgentRequest),
     {
       actionProps: {
@@ -107,8 +107,8 @@ export function UpdateAIAgentDialog({
 
   const messageRoleOptions = useMemo(
     () => [
-      { label: "User", value: AIMessageRole.user },
-      { label: "Assistant", value: AIMessageRole.assistant },
+      { label: "User", value: aiMessageRoles.enum.user },
+      { label: "Assistant", value: aiMessageRoles.enum.assistant },
     ],
     [],
   )
@@ -144,12 +144,13 @@ export function UpdateAIAgentDialog({
   )
 
   const addOptions = () => {
-    const lastRole: string = fields.at(-1)?.role || AIMessageRole.assistant
+    const lastRole: string =
+      fields.at(-1)?.role || aiMessageRoles.enum.assistant
     append({
       role:
-        lastRole === AIMessageRole.user
-          ? AIMessageRole.assistant
-          : AIMessageRole.user,
+        lastRole === aiMessageRoles.enum.user
+          ? aiMessageRoles.enum.assistant
+          : aiMessageRoles.enum.user,
       content: "",
     })
   }
@@ -255,7 +256,7 @@ export function UpdateAIAgentDialog({
                         />
                       </div>
                       <div className="pt-14 pr-3 pb-3 pl-3">
-                        <TiptapEditorField name={`messages.${index}.content`} />
+                        <TiptapEditorField name={`messages.${index}.text`} />
                       </div>
                       <Button
                         className="absolute top-0 right-0"

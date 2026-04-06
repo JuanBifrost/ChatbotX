@@ -1,13 +1,13 @@
 "use client"
 
-import type { OrganizationSettings } from "@aha.chat/database/types"
-import type { FacebookPage } from "@aha.chat/integration-messenger/schemas"
+import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import type { FacebookPage } from "@chatbotx.io/integration-messenger/schemas"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
+} from "@chatbotx.io/ui/components/ui/card"
 import FacebookLogin, {
   type InitParams,
 } from "@greatsumini/react-facebook-login"
@@ -33,12 +33,12 @@ const MESSENGER_SCOPE = [
 ]
 
 export type MessengerConnectProps = {
-  chatbotId?: string | null
+  workspaceId?: string | null
   settings: NonNullable<OrganizationSettings["messenger"]>
 }
 
 export function MessengerConnect({
-  chatbotId,
+  workspaceId,
   settings,
 }: MessengerConnectProps) {
   const t = useTranslations()
@@ -65,7 +65,7 @@ export function MessengerConnect({
           />
         )}
         {pages.length > 0 && (
-          <FacebookPages chatbotId={chatbotId} pages={pages} />
+          <FacebookPages pages={pages} workspaceId={workspaceId} />
         )}
       </CardContent>
     </Card>

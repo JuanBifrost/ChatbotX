@@ -1,10 +1,11 @@
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 
 const buttonPayloadSchema = z
   .object({
-    f: z.string(),
-    fv: z.string().optional(),
-    b: z.string().optional(),
+    f: zodBigintAsString(),
+    fv: zodBigintAsString().optional(),
+    b: zodBigintAsString().optional(),
   })
   .transform((data) => {
     return {

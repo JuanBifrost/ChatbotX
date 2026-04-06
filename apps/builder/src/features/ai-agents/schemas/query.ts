@@ -11,7 +11,7 @@ export const listAIAgentsRequest = z.object({
 })
 
 export type ListAIAgentsRequest = z.infer<typeof listAIAgentsRequest> & {
-  chatbotId: string
+  workspaceId: string
 }
 
 export const listAIAgentsResponse = z.object({

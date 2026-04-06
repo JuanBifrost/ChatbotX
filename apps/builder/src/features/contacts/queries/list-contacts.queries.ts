@@ -1,9 +1,9 @@
-import { db, relationsFilterToSQL } from "@aha.chat/database/client"
-import { contactModel } from "@aha.chat/database/schema"
+import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { contactModel } from "@chatbotx.io/database/schema"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
-} from "@aha.chat/database/utils"
+} from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
   ListContactsRequest,
@@ -11,9 +11,9 @@ import type {
 } from "../schemas/query"
 
 export async function listContacts(
-  input: ListContactsRequest & { chatbotId: string },
+  input: ListContactsRequest & { workspaceId: string },
 ): Promise<ListContactsResponse> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const where = generateWhere(input)
 
@@ -30,7 +30,7 @@ export async function listContacts(
           with: {
             assignedUser: true,
             assignedInboxTeam: true,
-            inbox: true,
+            // inbox: true,
           },
         },
       },
@@ -44,12 +44,12 @@ export async function listContacts(
 }
 
 export async function countContacts(
-  input: ListContactsRequest & { chatbotId: string },
+  input: ListContactsRequest,
 ): Promise<{ total: number }> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   if (!input.keyword) {
-    return getTotalContactsFromStats(input.chatbotId)
+    return getTotalContactsFromStats(input.workspaceId)
   }
 
   const where = generateWhere(input)
@@ -62,11 +62,11 @@ export async function countContacts(
 }
 
 async function getTotalContactsFromStats(
-  chatbotId: string,
+  workspaceId: string,
 ): Promise<{ total: number }> {
   try {
     const inboxes = await db.query.inboxModel.findMany({
-      where: { chatbotId },
+      where: { workspaceId },
       with: {
         contactStats: true,
       },
@@ -84,9 +84,9 @@ async function getTotalContactsFromStats(
   }
 }
 
-const generateWhere = (input: ListContactsRequest & { chatbotId: string }) => {
+const generateWhere = (input: ListContactsRequest) => {
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     ...(input.keyword
       ? {
           OR: [

@@ -1,20 +1,22 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { PlusIcon } from "lucide-react"
 import Link from "next/link"
-import { useParams, useSearchParams } from "next/navigation"
+import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
+import { useWorkspaceId } from "@/hooks/routing"
 
 export function AddAutomatedResponseButton() {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
+
   const searchParams = useSearchParams()
   const t = useTranslations()
 
   return (
     <Button asChild size={"sm"}>
       <Link
-        href={`/chatbots/${chatbotId}/automated-responses/create?${searchParams.toString()}`}
+        href={`/space/${workspaceId}/automated-responses/create?${searchParams.toString()}`}
       >
         <PlusIcon />
         {t("actions.createFeature", {

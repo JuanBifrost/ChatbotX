@@ -1,25 +1,25 @@
 "use client"
 
-import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@aha.chat/ui/components/ui/tooltip"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/tooltip"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import { EllipsisVerticalIcon, PencilIcon, Trash2Icon } from "lucide-react"
 import Link from "next/link"
 import type { useTranslations } from "next-intl"
 import type { Dispatch, SetStateAction } from "react"
-import type { SpreadsheetResource } from "./schemas/resource"
+import type { SpreadsheetResource } from "./schema/resource"
 
 type GetColumnsProps = {
   t: ReturnType<typeof useTranslations>

@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -9,13 +9,13 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import { Loader2Icon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
 import { deleteSequenceAction } from "./actions/delete-sequence.action"
-import type { SequenceResource } from "./schema"
+import type { SequenceResource } from "./schema/resource"
 
 export function DeleteSequenceDialog({
   sequence,
@@ -33,7 +33,7 @@ export function DeleteSequenceDialog({
   const { execute, isPending } = useAction(
     deleteSequenceAction.bind(
       null,
-      sequence?.chatbotId ?? "",
+      sequence?.workspaceId ?? "",
       sequence?.id ?? "",
     ),
     {

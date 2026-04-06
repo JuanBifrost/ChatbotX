@@ -1,5 +1,5 @@
-import { and, db, eq } from "@aha.chat/database/client"
-import { sequenceDispatchModel } from "@aha.chat/database/schema"
+import { and, db, eq } from "@chatbotx.io/database/client"
+import { sequenceDispatchModel } from "@chatbotx.io/database/schema"
 import type { DispatchWithRelations } from "./types"
 
 export class DispatchProcessorService {
@@ -51,7 +51,7 @@ export class DispatchProcessorService {
       .where(
         and(
           eq(sequenceDispatchModel.id, dispatch.id),
-          eq(sequenceDispatchModel.chatbotId, dispatch.chatbotId),
+          eq(sequenceDispatchModel.workspaceId, dispatch.workspaceId),
           eq(sequenceDispatchModel.status, "pending"),
         ),
       )

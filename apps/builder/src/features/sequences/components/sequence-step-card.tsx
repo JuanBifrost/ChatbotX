@@ -1,8 +1,8 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Card, CardContent } from "@aha.chat/ui/components/ui/card"
-import { Switch } from "@aha.chat/ui/components/ui/switch"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
+import { Switch } from "@chatbotx.io/ui/components/ui/switch"
 import { ChevronDownIcon, XIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
@@ -34,7 +34,7 @@ type SequenceStepCardProps = {
   }
   stepNumber: number
   sequenceId: string
-  chatbotId: string
+  workspaceId: string
   isFirst?: boolean
   isNew?: boolean
   onSaved?: () => void
@@ -45,14 +45,14 @@ export function SequenceStepCard({
   step,
   stepNumber,
   sequenceId,
-  chatbotId,
+  workspaceId,
   isFirst = false,
   isNew = false,
   onSaved,
   previousStepTime,
 }: SequenceStepCardProps) {
   const t = useTranslations()
-  const [selectedFlowId, setSelectedFlowId] = useState(step?.flowId || "")
+  const [selectedFlowId, setSelectedFlowId] = useState(step?.flowId ?? "")
   const [isActive, setIsActive] = useState(step?.isActive ?? false)
   const [isTimeOptionsExpanded, setIsTimeOptionsExpanded] = useState(false)
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
@@ -68,7 +68,7 @@ export function SequenceStepCard({
     step,
     stepNumber,
     sequenceId,
-    chatbotId,
+    workspaceId,
     isFirst,
     previousStepTime,
     onSaved,

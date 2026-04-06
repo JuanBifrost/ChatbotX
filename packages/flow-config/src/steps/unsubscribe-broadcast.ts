@@ -1,10 +1,10 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { StepType } from "./step-action"
+import { stepTypes } from "./step-action"
 
 export const unsubscribeBroadcastStepSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.unsubscribeBroadcast),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.unsubscribeBroadcast),
 })
 
 export type UnsubscribeBroadcastStepSchema = z.infer<
@@ -14,5 +14,5 @@ export type UnsubscribeBroadcastStepSchema = z.infer<
 export const unsubscribeBroadcastStepDefaultFn =
   (): UnsubscribeBroadcastStepSchema => ({
     id: createId(),
-    stepType: StepType.unsubscribeBroadcast,
+    stepType: stepTypes.enum.unsubscribeBroadcast,
   })

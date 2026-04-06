@@ -1,16 +1,15 @@
 "use client"
 
-import type { FolderModel } from "@aha.chat/database/types"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -18,24 +17,25 @@ import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { toast } from "sonner"
 import { editFolderAction } from "@/features/folders/actions/edit-folder-action"
-import { editFolderSchema } from "@/features/folders/schemas/action"
+import { editFolderSchema } from "@/features/folders/schema/action"
+import type { FolderResource } from "./schema/resource"
 
 export function EditFolderDialog({
   open,
   onOpenChange,
-  chatbotId,
+  workspaceId,
   folder,
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
-  chatbotId: string
-  folder: FolderModel | null
+  workspaceId: string
+  folder: FolderResource | null
 }) {
   const t = useTranslations()
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      editFolderAction.bind(null, chatbotId, folder?.id ?? ""),
+      editFolderAction.bind(null, workspaceId, folder?.id ?? ""),
       zodResolver(editFolderSchema),
       {
         actionProps: {

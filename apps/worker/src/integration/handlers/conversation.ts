@@ -1,14 +1,14 @@
-import { db, eq } from "@aha.chat/database/client"
-import { conversationModel } from "@aha.chat/database/schema"
+import { db, eq } from "@chatbotx.io/database/client"
+import { conversationModel } from "@chatbotx.io/database/schema"
 import {
-  broadcastToChatbotParty,
+  broadcastToWorkspaceParty,
   RealtimeEventType,
-} from "@aha.chat/partysocket-config"
+} from "@chatbotx.io/partysocket-config"
 import type {
   IntegrationJobAgentMarkAsRead,
   IntegrationJobAssignConversation,
   IntegrationJobContactMarkAsRead,
-} from "@aha.chat/worker-config"
+} from "@chatbotx.io/worker-config"
 import { getInboxWithAuthFromInboxId } from "../../lib/inbox"
 
 export const broadcastAssignConversation = async (
@@ -17,7 +17,7 @@ export const broadcastAssignConversation = async (
   const { conversations } = props
   const { inbox } = await getInboxWithAuthFromInboxId(conversations[0].inboxId)
 
-  await broadcastToChatbotParty(inbox.chatbotId, {
+  await broadcastToWorkspaceParty(inbox.workspaceId, {
     eventType: RealtimeEventType.conversationAssigned,
     data: {
       conversationIds: conversations.map((c) => c.id),

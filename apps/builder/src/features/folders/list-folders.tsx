@@ -1,50 +1,46 @@
 "use client"
 
-import type { FolderModel, FolderType } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { ScrollArea } from "@aha.chat/ui/components/ui/scroll-area"
-import { parseAsString, useQueryState } from "@aha.chat/ui/lib/nuqs"
+import type { FolderType } from "@chatbotx.io/database/partials"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { ScrollArea } from "@chatbotx.io/ui/components/ui/scroll-area"
+import { useQueryState } from "@chatbotx.io/ui/lib/nuqs"
 import { FolderIcon, PencilIcon, TrashIcon } from "lucide-react"
 import { use, useState } from "react"
 import { AppBreadcrumb } from "@/components/app-breadcrumb"
+import { parseAsBigInt } from "@/lib/nuqs"
 import { CreateFolderDialog } from "./create-folder-dialog"
 import { DeleteFolderDialog } from "./delete-folder-dialog"
 import { EditFolderDialog } from "./edit-folder-dialog"
-import type { getCurrentFolder, getFolders } from "./queries"
+import type { getCurrentFolder, listFolders } from "./queries"
+import type { FolderResource } from "./schema/resource"
 
 type ListFoldersProps = {
-  chatbotId: string
+  workspaceId: string
   folderType: FolderType
   promises: Promise<
     [
       Awaited<ReturnType<typeof getCurrentFolder>>,
-      Awaited<ReturnType<typeof getFolders>>,
+      Awaited<ReturnType<typeof listFolders>>,
     ]
   >
 }
 
 const ListFolders = (props: ListFoldersProps) => {
-  const { chatbotId, folderType, promises } = props
+  const { workspaceId, folderType, promises } = props
 
   const [{ folder, parents }, { data: folders }] = use(promises)
-  const [_, setFolderId] = useQueryState(
-    "folderId",
-    parseAsString.withOptions({
-      history: "push",
-      shallow: false,
-    }),
-  )
+  const [_, setFolderId] = useQueryState("folderId", parseAsBigInt)
 
-  const [targetFolder, setTargetFolder] = useState<FolderModel | null>(null)
+  const [targetFolder, setTargetFolder] = useState<FolderResource | null>(null)
 
   const [openEditDialog, setOpenEditDialog] = useState<boolean>(false)
-  const onEdit = (selectedFolder: FolderModel) => {
+  const onEdit = (selectedFolder: FolderResource) => {
     setTargetFolder(selectedFolder)
     setOpenEditDialog(true)
   }
 
   const [openDeleteDialog, setOpenDeleteDialog] = useState<boolean>(false)
-  const onDelete = (selectedFolder: FolderModel) => {
+  const onDelete = (selectedFolder: FolderResource) => {
     setTargetFolder(selectedFolder)
     setOpenDeleteDialog(true)
   }
@@ -68,7 +64,7 @@ const ListFolders = (props: ListFoldersProps) => {
                   </Button>
                 ),
               },
-              ...parents.map((parentFolder: FolderModel) => ({
+              ...parents.map((parentFolder: FolderResource) => ({
                 label: parentFolder.name,
                 element: (
                   <Button
@@ -101,13 +97,13 @@ const ListFolders = (props: ListFoldersProps) => {
           />
         </div>
 
-        <CreateFolderDialog chatbotId={chatbotId} folderType={folderType} />
+        <CreateFolderDialog folderType={folderType} workspaceId={workspaceId} />
       </div>
 
       {/* Folders list */}
       <ScrollArea className="max-h-44" type="auto">
         <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-          {folders.map((folderItem: FolderModel) => (
+          {folders.map((folderItem: FolderResource) => (
             <div className="overflow-hidden" key={folderItem.id}>
               <div className="group flex items-center gap-2 rounded-lg border pr-3 hover:border-primary">
                 <Button
@@ -148,17 +144,17 @@ const ListFolders = (props: ListFoldersProps) => {
       </ScrollArea>
 
       <EditFolderDialog
-        chatbotId={chatbotId}
         folder={targetFolder}
         onOpenChange={setOpenEditDialog}
         open={openEditDialog}
+        workspaceId={workspaceId}
       />
 
       <DeleteFolderDialog
-        chatbotId={chatbotId}
         folder={targetFolder}
         onOpenChange={setOpenDeleteDialog}
         open={openDeleteDialog}
+        workspaceId={workspaceId}
       />
     </>
   )

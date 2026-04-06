@@ -5,7 +5,7 @@ import {
   type IntegrationJobData,
   integrationQueue,
   queueName,
-} from "@aha.chat/worker-config"
+} from "@chatbotx.io/worker-config"
 import { type Job, Worker } from "bullmq"
 import { ensureBootstrapped } from "../lib/bootstrap"
 import { logger } from "../lib/logger"
@@ -51,7 +51,7 @@ async function startIntegrationWorker() {
           // Trigger automated response if the message is from a user
           if (
             !(postbackAction || quickReplyAction) &&
-            message.content &&
+            message.text &&
             message.senderType === "contact"
           ) {
             await integrationQueue.add(
@@ -68,18 +68,18 @@ async function startIntegrationWorker() {
             // Track no response for messages without content or not from contact
             // (postback/quickReply are tracked in their own handlers)
             await trackBotResponse({
-              chatbotId: message.chatbotId,
+              workspaceId: message.workspaceId,
               conversationId: message.conversationId,
               messageId: message.id,
               hasResponse: false,
-              responseType: "NONE",
-              routeType: "FALLBACK",
-              result: "FALLBACK",
+              responseType: "none",
+              routeType: "fallback",
+              result: "fallback",
               aiProvider: "none",
               metadata: {
-                fallbackReason: message.content
-                  ? "NOT_FROM_CONTACT"
-                  : "NO_CONTENT",
+                fallbackReason: message.text
+                  ? "not_from_contact"
+                  : "no_content",
               },
               startTime: Date.now(),
             })

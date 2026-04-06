@@ -1,12 +1,12 @@
-import { db, findOrFail } from "@aha.chat/database/client"
-import { aiEmbeddingModel, aiFileModel } from "@aha.chat/database/schema"
-import type { AIEmbeddingStatus } from "@aha.chat/database/types"
+import { db, findOrFail } from "@chatbotx.io/database/client"
+import { aiEmbeddingModel, aiFileModel } from "@chatbotx.io/database/schema"
+import type { AIEmbeddingStatus } from "@chatbotx.io/database/types"
+import { createId } from "@chatbotx.io/utils"
 import {
   AIJobAction,
   type AIJobProcessFile,
   aiAgentQueue,
-} from "@aha.chat/worker-config"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/worker-config"
 import { extractTextFromFile } from "../lib/text-extractor"
 
 type TextChunk = { content: string }
@@ -46,13 +46,13 @@ export async function processAIFile(
 ) {
   const { aiFileId } = data
 
-  const aiFile = await findOrFail(
-    aiFileModel,
-    {
+  const aiFile = await findOrFail({
+    table: aiFileModel,
+    where: {
       id: aiFileId,
     },
-    "AI file not found",
-  )
+    message: "AI file not found",
+  })
 
   const text = await extractTextFromFile(aiFile.path, aiFile.mimeType)
 
@@ -66,7 +66,7 @@ export async function processAIFile(
     chunks.map((c) => ({
       id: createId(),
       content: c.content,
-      chatbotId: aiFile.chatbotId,
+      workspaceId: aiFile.workspaceId,
       aiFileId: aiFile.id,
       status: "pending" as AIEmbeddingStatus,
     })),

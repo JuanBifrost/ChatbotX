@@ -1,11 +1,12 @@
 "use client"
-
-import { useParams, usePathname } from "next/navigation"
+import { usePathname } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { AppTab } from "@/components/app-tab"
+import { useWorkspaceId } from "@/hooks/routing"
 
 export function AITab() {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
+
   const t = useTranslations()
 
   const pathname = usePathname()
@@ -16,22 +17,22 @@ export function AITab() {
       tabs={[
         {
           label: t("aiAgent.name"),
-          href: `/chatbots/${chatbotId}/ai-agents`,
+          href: `/space/${workspaceId}/ai-agents`,
           isActive: activeTab === "ai-agents",
         },
         {
           label: t("aiFiles.title"),
-          href: `/chatbots/${chatbotId}/ai-files`,
+          href: `/space/${workspaceId}/ai-files`,
           isActive: activeTab === "ai-files",
         },
         {
           label: t("aiFunctions.title"),
-          href: `/chatbots/${chatbotId}/ai-functions`,
+          href: `/space/${workspaceId}/ai-functions`,
           isActive: activeTab === "ai-functions",
         },
         {
           label: t("aiMcpServers.title"),
-          href: `/chatbots/${chatbotId}/ai-mcp-servers`,
+          href: `/space/${workspaceId}/ai-mcp-servers`,
           isActive: activeTab === "ai-mcp-servers",
         },
       ]}

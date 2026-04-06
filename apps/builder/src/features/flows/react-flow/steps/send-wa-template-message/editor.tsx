@@ -5,14 +5,14 @@ import {
   extractTemplateParams,
   type ParameterInfo,
   type TemplateComponent,
-} from "@aha.chat/flow-config"
+} from "@chatbotx.io/flow-config"
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@aha.chat/ui/components/ui/select"
+} from "@chatbotx.io/ui/components/ui/select"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { useFormContext } from "react-hook-form"
@@ -39,7 +39,7 @@ function SendWaTemplateMessageStepEditor(
   const { parentName } = props
   const t = useTranslations()
   const { setValue, watch } = useFormContext()
-  const chatbotId = useFlowAction((s) => s.chatbotId)
+  const workspaceId = useFlowAction((s) => s.workspaceId)
 
   const [templates, setTemplates] = useState<Template[]>([])
   const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
@@ -52,18 +52,18 @@ function SendWaTemplateMessageStepEditor(
 
   useEffect(() => {
     const fetchTemplates = async () => {
-      if (!chatbotId) {
+      if (!workspaceId) {
         return
       }
       try {
-        const data = await getTemplatesForFlow(chatbotId)
+        const data = await getTemplatesForFlow(workspaceId)
         setTemplates(data as Template[])
       } catch (error) {
         console.error("Failed to fetch templates:", error)
       }
     }
     fetchTemplates()
-  }, [chatbotId])
+  }, [workspaceId])
 
   useEffect(() => {
     if (templateId && templates.length > 0) {

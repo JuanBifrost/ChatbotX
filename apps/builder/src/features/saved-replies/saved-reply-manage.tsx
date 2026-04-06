@@ -1,20 +1,20 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "@aha.chat/ui/components/ui/popover"
+} from "@chatbotx.io/ui/components/ui/popover"
 import { Loader2Icon, MessageSquareMoreIcon, PlusIcon } from "lucide-react"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect, useMemo, useState } from "react"
+import { useWorkspaceId } from "@/hooks/routing"
 import { useSavedReplyStore } from "./provider/saved-reply-store-context"
 import { SavedReplyCreateForm } from "./saved-reply-create-form"
 import { SavedReplyEditForm } from "./saved-reply-edit-form"
 import { SavedReplyItem } from "./saved-reply-item"
-import type { SavedReplyResource } from "./schema"
+import type { SavedReplyResource } from "./schema/resource"
 
 type ViewState =
   | { type: "list" }
@@ -23,7 +23,7 @@ type ViewState =
 
 const SavedReplyManage = (props: { onSelect: (text: string) => void }) => {
   const t = useTranslations()
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
 
   const [open, setOpen] = useState(false)
   const [view, setView] = useState<ViewState>({ type: "list" })
@@ -116,7 +116,6 @@ const SavedReplyManage = (props: { onSelect: (text: string) => void }) => {
                 ? null
                 : savedReplies.map((item, index) => (
                     <SavedReplyItem
-                      chatbotId={chatbotId}
                       isLast={index === savedReplies.length - 1}
                       item={item}
                       key={item.id}
@@ -125,6 +124,7 @@ const SavedReplyManage = (props: { onSelect: (text: string) => void }) => {
                         setView({ type: "edit", item: savedReply })
                       }
                       onSelect={onSelectSavedReply}
+                      workspaceId={workspaceId}
                     />
                   ))}
             </div>

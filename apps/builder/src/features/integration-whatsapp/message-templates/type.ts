@@ -1,31 +1,19 @@
-export interface MessageTemplate {
-  category: string
-  id: string
-  language: string
-  name: string
-  status: string
-}
+import { z } from "zod"
 
-export interface MessageTemplateWithComponents extends MessageTemplate {
-  components: unknown
-  sourceId: string
-}
+export const templateTypes = z.enum([
+  "Text",
+  "Image",
+  "Video",
+  "Document",
+  "CarouselImage",
+  "CarouselVideo",
+  "Location",
+  "ViewCatalog",
+  "ViewProduct",
+])
+export type TemplateType = z.infer<typeof templateTypes>
 
-export const TemplateType = {
-  Text: "Text",
-  Image: "Image",
-  Video: "Video",
-  Document: "Document",
-  CarouselImage: "CarouselImage",
-  CarouselVideo: "CarouselVideo",
-  Location: "Location",
-  ViewCatalog: "ViewCatalog",
-  ViewProduct: "ViewProduct",
-} as const
-
-export type TemplateType = (typeof TemplateType)[keyof typeof TemplateType]
-
-export const LanguageOptions = [
+export const languageOptions = [
   { label: "Afrikaans", value: "af" },
   { label: "Albanian", value: "sq" },
   { label: "Arabic", value: "ar" },

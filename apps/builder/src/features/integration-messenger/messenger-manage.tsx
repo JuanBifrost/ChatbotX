@@ -1,7 +1,7 @@
 "use client"
 
-import { organizationSettingsSchema } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { organizationSettingsSchema } from "@chatbotx.io/database/partials"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Table,
   TableBody,
@@ -9,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@aha.chat/ui/components/ui/table"
+} from "@chatbotx.io/ui/components/ui/table"
 import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -19,7 +19,7 @@ import { MessengerDisconnect } from "./components/messenger-disconnect"
 import type { listIntegrationMessengers } from "./queries"
 
 type WhatsappManageProps = {
-  chatbotId: string
+  workspaceId: string
   promises: Promise<
     [
       Awaited<ReturnType<typeof listIntegrationMessengers>>,
@@ -28,7 +28,10 @@ type WhatsappManageProps = {
   >
 }
 
-export function MessengerManage({ chatbotId, promises }: WhatsappManageProps) {
+export function MessengerManage({
+  workspaceId,
+  promises,
+}: WhatsappManageProps) {
   const [{ data: integrationMessengers }, organization] = use(promises)
   const t = useTranslations()
 
@@ -51,7 +54,7 @@ export function MessengerManage({ chatbotId, promises }: WhatsappManageProps) {
         <Button size="sm" variant="secondary">
           <Link
             className="flex items-center gap-2"
-            href={`/channels/create?channel=messenger&chatbotId=${chatbotId}`}
+            href={`/channels/create?channel=messenger&workspaceId=${workspaceId}`}
           >
             <PlusCircleIcon className="h-4 w-4" />
             {t("actions.addFeature", { feature: t("fields.messenger.label") })}
@@ -77,7 +80,7 @@ export function MessengerManage({ chatbotId, promises }: WhatsappManageProps) {
                   </Button>
                   <Button size="sm" variant="secondary">
                     <Link
-                      href={`/chatbots/${chatbotId}/messengers/${integrationMessenger.id}/edit`}
+                      href={`/space/${workspaceId}/messengers/${integrationMessenger.id}/edit`}
                     >
                       {t("actions.manage")}
                     </Link>

@@ -1,5 +1,5 @@
-import type { ReflinkModel } from "@aha.chat/database/types"
-import { getSortingStateParser } from "@aha.chat/ui/lib/parsers"
+import type { ReflinkModel } from "@chatbotx.io/database/types"
+import { getSortingStateParser } from "@chatbotx.io/ui/lib/parsers"
 import {
   createSearchParamsCache,
   parseAsInteger,
@@ -24,7 +24,7 @@ export const listReflinksSearchParamsCache = createSearchParamsCache(
 
 export type ListReflinksRequest = Awaited<
   ReturnType<typeof listReflinksSearchParamsCache.parse>
-> & { chatbotId: string }
+> & { workspaceId: string }
 
 export const listReflinkItem = reflinkResource.and(
   z.object({

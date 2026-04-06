@@ -1,10 +1,11 @@
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { TriggerAction } from "@aha.chat/database/enums"
+import { conversationTrackingService } from "@chatbotx.io/analytics"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { triggerActions } from "@chatbotx.io/database/partials"
 import {
   contactCustomFieldModel,
   contactsToTagsModel,
   conversationModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import {
   FieldOperationType,
   type SpreadsheetClearRowSchema,
@@ -14,13 +15,15 @@ import {
   type SpreadsheetMappingSchema,
   type SpreadsheetSendDataSchema,
   type SpreadsheetUpdateRowSchema,
-  StepType,
-} from "@aha.chat/flow-config"
-
-import baseLogger from "@aha.chat/logger"
-import { IntegrationJobAction, integrationQueue } from "@aha.chat/worker-config"
-import { conversationTrackingService } from "@chatbotx.io/analytics"
-import { createId } from "@paralleldrive/cuid2"
+  type StepType,
+  stepTypes,
+} from "@chatbotx.io/flow-config"
+import baseLogger from "@chatbotx.io/logger"
+import { createId } from "@chatbotx.io/utils"
+import {
+  IntegrationJobAction,
+  integrationQueue,
+} from "@chatbotx.io/worker-config"
 import {
   clearSpreadsheetRow,
   getSpreadsheetRandomRow,
@@ -32,13 +35,13 @@ import type { ActionExecutionContext } from "../types"
 
 export class ActionExecutor {
   async execute(context: ActionExecutionContext): Promise<void> {
-    const { action, contactId, chatbotId } = context
+    const { action, contactId, workspaceId } = context
     const actionType = action.type
 
     const conversation = await db.query.conversationModel.findFirst({
       where: {
         contactId,
-        chatbotId,
+        workspaceId,
       },
       orderBy: {
         createdAt: "desc",
@@ -51,12 +54,12 @@ export class ActionExecutor {
     }
 
     switch (actionType) {
-      case TriggerAction.addTag: {
+      case triggerActions.enum.addTag: {
         const tagIds = action.tagIds as string[]
         const existingTags = await db.query.tagModel.findMany({
           where: {
             id: { in: tagIds },
-            chatbotId,
+            workspaceId,
           },
         })
 
@@ -74,7 +77,7 @@ export class ActionExecutor {
         break
       }
 
-      case TriggerAction.removeTag: {
+      case triggerActions.enum.removeTag: {
         const tagIds = action.tagIds as string[]
         if (tagIds.length > 0) {
           await db
@@ -89,7 +92,7 @@ export class ActionExecutor {
         break
       }
 
-      case TriggerAction.setCustomField: {
+      case triggerActions.enum.setCustomField: {
         const customFieldId = action.customFieldId as string
         const value = action.value as string
         const operation =
@@ -116,7 +119,7 @@ export class ActionExecutor {
         break
       }
 
-      case TriggerAction.clearCustomField: {
+      case triggerActions.enum.clearCustomField: {
         const customFieldId = action.customFieldId as string
         await db
           .delete(contactCustomFieldModel)
@@ -129,12 +132,12 @@ export class ActionExecutor {
         break
       }
 
-      case TriggerAction.startAnotherFlow: {
+      case triggerActions.enum.startAnotherFlow: {
         const flowId = action.flowId as string
         const flow = await db.query.flowModel.findFirst({
           where: {
             id: flowId,
-            chatbotId,
+            workspaceId,
             active: true,
           },
         })
@@ -156,31 +159,33 @@ export class ActionExecutor {
         break
       }
 
-      case TriggerAction.archiveConversation:
+      case triggerActions.enum.archiveConversation:
         await db
           .update(conversationModel)
           .set({ archivedAt: new Date() })
           .where(eq(conversationModel.id, conversation.id))
         break
 
-      case TriggerAction.unarchiveConversation:
+      case triggerActions.enum.unarchiveConversation:
         await db
           .update(conversationModel)
           .set({ archivedAt: null })
           .where(eq(conversationModel.id, conversation.id))
         break
 
-      case TriggerAction.assignConversation: {
+      case triggerActions.enum.assignConversation: {
         const assignedId = action.assignedId as string
         if (assignedId.startsWith("u_")) {
           const userId = assignedId.slice(2)
-          const chatbotMember = await db.query.chatbotMemberModel.findFirst({
-            where: {
-              userId,
-              chatbotId: conversation.chatbotId,
+          const workspaceMember = await db.query.workspaceMemberModel.findFirst(
+            {
+              where: {
+                userId,
+                workspaceId: conversation.workspaceId,
+              },
             },
-          })
-          if (chatbotMember) {
+          )
+          if (workspaceMember) {
             await db
               .update(conversationModel)
               .set({ assignedUserId: userId })
@@ -191,7 +196,7 @@ export class ActionExecutor {
           const inboxTeam = await db.query.inboxTeamModel.findFirst({
             where: {
               id: inboxTeamId,
-              chatbotId: conversation.chatbotId,
+              workspaceId: conversation.workspaceId,
             },
           })
           if (inboxTeam) {
@@ -204,25 +209,25 @@ export class ActionExecutor {
         break
       }
 
-      case TriggerAction.unassignConversation:
+      case triggerActions.enum.unassignConversation:
         await db
           .update(conversationModel)
           .set({ assignedUserId: null, assignedInboxTeamId: null })
           .where(eq(conversationModel.id, conversation.id))
         break
 
-      case TriggerAction.disableBot:
+      case triggerActions.enum.disableBot:
         await db
           .update(conversationModel)
-          .set({ liveChatEnabled: true })
+          .set({ botEnabled: false })
           .where(eq(conversationModel.id, conversation.id))
         conversationTrackingService
           .trackEvent({
             eventId: createId(),
-            chatbotId,
+            workspaceId,
             conversationId: conversation.id,
             eventType: "conversation_transferred_to_human",
-            channel: conversation.channel,
+            channel: "webchat", // TODO: temporary comment, use from contactInbox later
             occurredAt: new Date(),
             metadata: {
               triggerContext: {
@@ -240,18 +245,18 @@ export class ActionExecutor {
           })
         break
 
-      case TriggerAction.enableBot:
+      case triggerActions.enum.enableBot:
         await db
           .update(conversationModel)
-          .set({ liveChatEnabled: false })
+          .set({ botEnabled: true })
           .where(eq(conversationModel.id, conversation.id))
         conversationTrackingService
           .trackEvent({
             eventId: createId(),
-            chatbotId,
+            workspaceId,
             conversationId: conversation.id,
             eventType: "conversation_transferred_to_bot",
-            channel: conversation.channel,
+            channel: "webchat", // TODO: temporary comment, use from contactInbox later
             occurredAt: new Date(),
             metadata: {
               triggerContext: {
@@ -269,10 +274,10 @@ export class ActionExecutor {
           })
         break
 
-      case TriggerAction.transferConversationToHuman:
+      case triggerActions.enum.transferConversationToHuman:
         await db
           .update(conversationModel)
-          .set({ liveChatEnabled: true })
+          .set({ botEnabled: false })
           .where(eq(conversationModel.id, conversation.id))
         if (action.notifyAdmins) {
           baseLogger.info(
@@ -282,10 +287,10 @@ export class ActionExecutor {
         conversationTrackingService
           .trackEvent({
             eventId: createId(),
-            chatbotId,
+            workspaceId,
             conversationId: conversation.id,
             eventType: "conversation_transferred_to_human",
-            channel: conversation.channel,
+            channel: "webchat", // TODO: temporary comment, use from contactInbox later
             occurredAt: new Date(),
             metadata: {
               triggerContext: {
@@ -303,19 +308,18 @@ export class ActionExecutor {
           })
         break
 
-      case TriggerAction.runGoogleSheet: {
-        const spreadsheetAction =
-          action.action as (typeof StepType)[keyof typeof StepType]
+      case triggerActions.enum.runGoogleSheet: {
+        const spreadsheetAction = action.action as StepType
         const spreadsheetId = action.spreadsheetId as string
         const sheetName = action.sheetName as string
         const lookup = action.lookup as SpreadsheetColumnFilterSchema
         const map = action.map as SpreadsheetMappingSchema[]
 
         switch (spreadsheetAction) {
-          case StepType.spreadsheetGetRow: {
+          case stepTypes.enum.spreadsheetGetRow: {
             const step: SpreadsheetGetRowSchema = {
               id: "",
-              stepType: StepType.spreadsheetGetRow,
+              stepType: stepTypes.enum.spreadsheetGetRow,
               spreadsheetId,
               sheetName,
               lookup,
@@ -330,10 +334,10 @@ export class ActionExecutor {
             break
           }
 
-          case StepType.spreadsheetClearRow: {
+          case stepTypes.enum.spreadsheetClearRow: {
             const step: SpreadsheetClearRowSchema = {
               id: "",
-              stepType: StepType.spreadsheetClearRow,
+              stepType: stepTypes.enum.spreadsheetClearRow,
               spreadsheetId,
               sheetName,
               lookup,
@@ -347,10 +351,10 @@ export class ActionExecutor {
             break
           }
 
-          case StepType.spreadsheetGetRandomRow: {
+          case stepTypes.enum.spreadsheetGetRandomRow: {
             const step: SpreadsheetGetRandomRowSchema = {
               id: "",
-              stepType: StepType.spreadsheetGetRandomRow,
+              stepType: stepTypes.enum.spreadsheetGetRandomRow,
               spreadsheetId,
               sheetName,
               lookup,
@@ -365,10 +369,10 @@ export class ActionExecutor {
             break
           }
 
-          case StepType.spreadsheetSendData: {
+          case stepTypes.enum.spreadsheetSendData: {
             const step: SpreadsheetSendDataSchema = {
               id: "",
-              stepType: StepType.spreadsheetSendData,
+              stepType: stepTypes.enum.spreadsheetSendData,
               spreadsheetId,
               sheetName,
               map,
@@ -382,10 +386,10 @@ export class ActionExecutor {
             break
           }
 
-          case StepType.spreadsheetUpdateRow: {
+          case stepTypes.enum.spreadsheetUpdateRow: {
             const step: SpreadsheetUpdateRowSchema = {
               id: "",
-              stepType: StepType.spreadsheetUpdateRow,
+              stepType: stepTypes.enum.spreadsheetUpdateRow,
               spreadsheetId,
               sheetName,
               lookup,

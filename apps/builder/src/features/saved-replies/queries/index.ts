@@ -1,5 +1,5 @@
-import { db } from "@aha.chat/database/client"
-import type { ListSavedReplyResponse } from "../schema"
+import { db } from "@chatbotx.io/database/client"
+import type { ListSavedReplyResponse } from "../schema/mutation"
 
 export async function listSavedReplies(input: {
   userId: string

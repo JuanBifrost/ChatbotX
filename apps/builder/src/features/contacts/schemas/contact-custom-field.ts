@@ -1,8 +1,9 @@
 import {
   contactCustomFieldModel,
   createSelectSchema,
-} from "@aha.chat/database/schema"
-import { FieldOperationType } from "@aha.chat/flow-config"
+} from "@chatbotx.io/database/schema"
+import { FieldOperationType } from "@chatbotx.io/flow-config"
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 import { publicCustomFieldResource } from "@/features/custom-fields/schemas/resource"
 
@@ -11,8 +12,8 @@ export const contactCustomFieldResource = createSelectSchema(
 )
 
 export const addContactCustomFieldRequest = z.object({
-  ids: z.array(z.cuid2()),
-  customFieldId: z.cuid2(),
+  ids: z.array(zodBigintAsString()),
+  customFieldId: zodBigintAsString(),
   operation: z.enum(FieldOperationType),
   value: z.string().trim(),
 })
@@ -21,16 +22,16 @@ export type AddContactCustomFieldRequest = z.infer<
 >
 
 export const deleteContactCustomFieldsRequest = z.object({
-  ids: z.array(z.cuid2()),
-  customFieldId: z.cuid2(),
+  ids: z.array(zodBigintAsString()),
+  customFieldId: zodBigintAsString(),
 })
 export type DeleteContactCustomFieldsRequest = z.infer<
   typeof deleteContactCustomFieldsRequest
 >
 
 export const listContactCustomFieldsRequest = z.object({
-  chatbotId: z.cuid2(),
-  contactId: z.cuid2(),
+  workspaceId: zodBigintAsString(),
+  contactId: zodBigintAsString(),
 })
 export type ListContactCustomFieldsRequest = z.infer<
   typeof listContactCustomFieldsRequest
@@ -44,8 +45,8 @@ export type ListContactCustomFieldsResponse = z.infer<
 >
 
 export const setContactCustomFieldValueRequest = z.object({
-  contactId: z.cuid2(),
-  customFieldId: z.cuid2(),
+  contactId: zodBigintAsString(),
+  customFieldId: zodBigintAsString(),
   value: z.string().trim(),
 })
 export type SetContactCustomFieldValueRequest = z.infer<
@@ -53,8 +54,8 @@ export type SetContactCustomFieldValueRequest = z.infer<
 >
 
 export const deleteContactCustomFieldRequest = z.object({
-  contactId: z.cuid2(),
-  customFieldId: z.cuid2(),
+  contactId: zodBigintAsString(),
+  customFieldId: zodBigintAsString(),
 })
 export type DeleteContactCustomFieldRequest = z.infer<
   typeof deleteContactCustomFieldRequest

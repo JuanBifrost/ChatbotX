@@ -1,26 +1,26 @@
 "use server"
 
-import { db, isUniqueViolationError } from "@aha.chat/database/client"
-import { reflinkModel } from "@aha.chat/database/schema"
-import { createId } from "@paralleldrive/cuid2"
+import { db, isUniqueViolationError } from "@chatbotx.io/database/client"
+import { reflinkModel } from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
 import { returnValidationErrors } from "next-safe-action"
 import {
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type CreateReflinkRequest,
   createReflinkRequest,
 } from "../schemas/action"
 
-export const createReflinkAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const createReflinkAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(createReflinkRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
@@ -29,11 +29,11 @@ export const createReflinkAction = chatbotActionClient
       try {
         await db.insert(reflinkModel).values({
           id: createId(),
-          chatbotId,
+          workspaceId,
           ...parsedInput,
         })
 
-        revalidateCacheTags(`chatbots:${chatbotId}#reflinks`)
+        revalidateCacheTags(`workspaces:${workspaceId}#reflinks`)
       } catch (error) {
         if (isUniqueViolationError(error)) {
           return returnValidationErrors(createReflinkRequest, {

@@ -1,14 +1,14 @@
 "use server"
 
-import { db } from "@aha.chat/database/client"
-import { savedReplyModel } from "@aha.chat/database/schema"
-import { createId } from "@paralleldrive/cuid2"
+import { db } from "@chatbotx.io/database/client"
+import { savedReplyModel } from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
 import { revalidateCacheTags } from "@/lib/cache-helper"
 import { authActionClient } from "@/lib/safe-action"
 import {
   type CreateSavedReplyRequest,
   createSavedReplyRequest,
-} from "../schema"
+} from "../schema/mutation"
 
 export const createSavedReplyAction = authActionClient
   .inputSchema(createSavedReplyRequest)

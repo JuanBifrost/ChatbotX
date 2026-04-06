@@ -1,18 +1,18 @@
-import { and, db, inArray } from "@aha.chat/database/client"
+import { emitCustomFieldChanged } from "@chatbotx/events"
+import { and, db, inArray } from "@chatbotx.io/database/client"
 import {
   contactCustomFieldModel,
   customFieldModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import {
   type CountCharactersStepSchema,
   type FormatDateStepSchema,
   type GenerateCodeStepSchema,
   GenerateCodeType,
   type GetDataFromJsonStepSchema,
-} from "@aha.chat/flow-config"
-import { emitCustomFieldChanged } from "@chatbotx/events"
+} from "@chatbotx.io/flow-config"
+import { createId } from "@chatbotx.io/utils"
 import { faker } from "@faker-js/faker"
-import { createId } from "@paralleldrive/cuid2"
 import { format } from "date-fns"
 import { getProperty } from "dot-prop"
 import type { ExecuteStepProps } from "./flow"
@@ -78,7 +78,7 @@ export async function countCharacters({
   // Emit custom field changed event
   try {
     await emitCustomFieldChanged(
-      conversation.chatbotId,
+      conversation.workspaceId,
       conversation.contactId,
       step.outputCfId,
       customField?.name || step.outputCfId,
@@ -142,7 +142,7 @@ export async function formatDate({
   // Emit custom field changed event
   try {
     await emitCustomFieldChanged(
-      conversation.chatbotId,
+      conversation.workspaceId,
       conversation.contactId,
       step.outputCfId,
       customField?.name || step.outputCfId,
@@ -214,7 +214,7 @@ export async function generateCode({
     // Emit custom field changed event
     try {
       await emitCustomFieldChanged(
-        conversation.chatbotId,
+        conversation.workspaceId,
         conversation.contactId,
         step.outputCfId,
         customField?.name || step.outputCfId,
@@ -250,7 +250,7 @@ export async function getDataFromJSON({
   // Find valid custom fields
   const validCustomFields = await db.query.customFieldModel.findMany({
     where: {
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
       id: {
         in: mapping.map((m) => m.outputCfId),
       },
@@ -323,7 +323,7 @@ export async function getDataFromJSON({
   for (const field of updatedFields) {
     try {
       await emitCustomFieldChanged(
-        conversation.chatbotId,
+        conversation.workspaceId,
         conversation.contactId,
         field.customFieldId,
         field.customFieldName,

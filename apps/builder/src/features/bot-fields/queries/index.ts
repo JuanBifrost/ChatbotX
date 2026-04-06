@@ -1,7 +1,10 @@
-import { db, relationsFilterToSQL } from "@aha.chat/database/client"
-import { rootFolderId } from "@aha.chat/database/enums"
-import { customFieldModel } from "@aha.chat/database/schema"
-import { parseOrderByAsObject, parsePagination } from "@aha.chat/database/utils"
+import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
+import { customFieldModel } from "@chatbotx.io/database/schema"
+import {
+  parseOrderByAsObject,
+  parsePagination,
+} from "@chatbotx.io/database/utils"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
@@ -13,10 +16,10 @@ import type { BotFieldResource } from "../schemas/resource"
 export async function listBotFields(
   input: ListBotFieldsSearchParams,
 ): Promise<PaginatedResponse<BotFieldResource>> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     folderId: input.folderId
       ? // biome-ignore lint/style/noNestedTernary: allow nested ternary
         input.folderId === rootFolderId

@@ -1,17 +1,16 @@
 "use client"
 
-import type { CustomFieldModel } from "@aha.chat/database/types"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -21,17 +20,18 @@ import { useEffect } from "react"
 import { toast } from "sonner"
 import { updateCustomFieldAction } from "./actions/update-custom-field.action"
 import { updateCustomFieldRequest } from "./schemas/action"
+import type { CustomFieldResource } from "./schemas/resource"
 
 export function UpdateCustomFieldDialog({
-  chatbotId,
+  workspaceId,
   customField,
   open,
   onOpenChange,
 }: {
   open: boolean
   onOpenChange: (val: boolean) => void
-  chatbotId: string
-  customField: CustomFieldModel | null
+  workspaceId: string
+  customField: CustomFieldResource | null
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -42,7 +42,7 @@ export function UpdateCustomFieldDialog({
     resetFormAndAction,
     form: { setValue },
   } = useHookFormAction(
-    updateCustomFieldAction.bind(null, chatbotId, customField?.id ?? ""),
+    updateCustomFieldAction.bind(null, workspaceId, customField?.id ?? ""),
     zodResolver(updateCustomFieldRequest),
     {
       actionProps: {

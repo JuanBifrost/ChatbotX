@@ -1,10 +1,10 @@
 "use client"
 
-import type { AITriggerModel } from "@aha.chat/database/types"
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+import type { AITriggerModel } from "@chatbotx.io/database/types"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import { useRouter } from "next/navigation"
 import { useAction } from "next-safe-action/hooks"
 import { use, useEffect, useMemo, useState } from "react"
@@ -17,10 +17,13 @@ import { getAITriggersColumns } from "./table-columns"
 
 type AITriggersTableProps = {
   promises: Promise<[Awaited<ReturnType<typeof listAITriggers>>]>
-  chatbotId: string
+  workspaceId: string
 }
 
-export function AITriggersTable({ promises, chatbotId }: AITriggersTableProps) {
+export function AITriggersTable({
+  promises,
+  workspaceId,
+}: AITriggersTableProps) {
   const [{ data, pageCount }] = use(promises)
   const router = useRouter()
   const [rowAction, setRowAction] =
@@ -31,7 +34,7 @@ export function AITriggersTable({ promises, chatbotId }: AITriggersTableProps) {
   const { execute } = useAction(
     duplicateAITriggerAction.bind(
       null,
-      chatbotId,
+      workspaceId,
       rowAction?.row.original ? rowAction.row.original.id : "",
     ),
   )
@@ -63,20 +66,20 @@ export function AITriggersTable({ promises, chatbotId }: AITriggersTableProps) {
       <DataTable table={table}>
         <DataTableToolbar table={table}>
           <AITriggersTableToolbarActions
-            chatbotId={chatbotId}
             onOpenChange={() => setRowAction(null)}
             table={table}
+            workspaceId={workspaceId}
           />
         </DataTableToolbar>
       </DataTable>
 
       <DeleteAITriggerDialog
-        chatbotId={chatbotId}
         onOpenChange={() => setRowAction(null)}
         onSuccess={() => rowAction?.row.toggleSelected(false)}
         open={rowAction?.variant === "delete"}
         showTrigger={false}
         trigger={rowAction?.row.original ? [rowAction?.row.original] : []}
+        workspaceId={workspaceId}
       />
     </>
   )

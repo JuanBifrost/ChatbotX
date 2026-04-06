@@ -1,28 +1,39 @@
-import { db, eq, findOrFail } from "@aha.chat/database/client"
+import {
+  botMessageFallbackReasons,
+  botMessageResponseTypes,
+  botMessageResults,
+  botMessageRouteTypes,
+  contactEventTypes,
+  contactTrackingService,
+} from "@chatbotx.io/analytics"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import {
+  channelTypes,
+  contentTypes,
+  messageTypes,
+  senderTypes,
+} from "@chatbotx.io/database/partials"
 import {
   attachmentModel,
   contactModel,
   inboxModel,
   messageModel,
-} from "@aha.chat/database/schema"
-import {
-  type AttachmentModel,
-  WEBCHAT_SOURCE_PREFIX,
-} from "@aha.chat/database/types"
-import { getPublicUrl } from "@aha.chat/database/utils"
-import { uploadFileFromUrl } from "@aha.chat/filesystem/node-upload"
+} from "@chatbotx.io/database/schema"
+import type { AttachmentModel } from "@chatbotx.io/database/types"
+import { getPublicUrl } from "@chatbotx.io/database/utils"
+import { uploadFileFromUrl } from "@chatbotx.io/filesystem/node-upload"
 import {
   type ButtonStepProps,
   ButtonType,
   encodeButtonPayload,
   type SendCardStepSchema,
-  StepType,
-} from "@aha.chat/flow-config"
+  stepTypes,
+} from "@chatbotx.io/flow-config"
 import {
-  broadcastToChatbotParty,
   broadcastToGuestParty,
+  broadcastToWorkspaceParty,
   RealtimeEventType,
-} from "@aha.chat/partysocket-config"
+} from "@chatbotx.io/partysocket-config"
 import type {
   AuthValue,
   MessageButtonTemplate,
@@ -31,13 +42,12 @@ import type {
   OutgoingMessage,
   SendFlowStepData,
   SendTypingProps,
-} from "@aha.chat/sdk"
+} from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
 import type {
   ChatJobSendChatMessage,
   ChatJobSendFlowStep,
-} from "@aha.chat/worker-config"
-import { contactTrackingService } from "@chatbotx.io/analytics"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/worker-config"
 import { trackBotResponse } from "../../integration/handlers/automated-response/track-bot-response"
 import { getInboxWithAuthFromInboxId } from "../../lib/inbox"
 import { allIntegrations } from "../../lib/integrations"
@@ -106,14 +116,27 @@ export async function sendFlowStep({
 }: ChatJobSendFlowStep["data"]) {
   const conversation = await db.query.conversationModel.findFirst({
     where: { id: conversationId },
-    with: { contact: true, inbox: { columns: { channel: true } } },
+    with: { contact: true },
   })
   if (!conversation) {
     return
   }
 
-  if (step.stepType === StepType.sendWaTemplateMessage) {
-    if (conversation.channel !== "whatsapp") {
+  // Temporary use the last contact inbox for the conversation
+  const targetContactInbox = await db.query.contactInboxModel.findFirst({
+    where: {
+      contactId: conversation.contactId,
+    },
+    orderBy: {
+      lastMessageAt: "desc",
+    },
+  })
+  if (!targetContactInbox) {
+    return
+  }
+
+  if (step.stepType === stepTypes.enum.sendWaTemplateMessage) {
+    if (targetContactInbox.channel !== channelTypes.enum.whatsapp) {
       return
     }
 
@@ -142,14 +165,14 @@ export async function sendFlowStep({
     const message = await db.transaction(async (tx) => {
       const messageData: typeof messageModel.$inferInsert = {
         id: createId(),
-        inboxId: conversation.inboxId,
-        chatbotId: conversation.chatbotId,
+        workspaceId: conversation.workspaceId,
         conversationId: conversation.id,
-        messageType: "outgoing",
-        contentType: "text",
-        senderType: "bot",
+        contactInboxId: targetContactInbox.id,
+        messageType: messageTypes.enum.outgoing,
+        contentType: contentTypes.enum.text,
+        senderType: senderTypes.enum.bot,
         sourceId: null,
-        content: step.stepType === StepType.sendText ? step.message : null,
+        text: step.stepType === stepTypes.enum.sendText ? step.text : null,
       }
 
       if ("buttons" in step && step.buttons.length > 0) {
@@ -189,14 +212,14 @@ export async function sendFlowStep({
       if ("url" in step) {
         const uploadedFile = await uploadFileFromUrl(
           step.url,
-          `public/chatbots/${newMessage.chatbotId}/conversations/${conversation.id}/${createId()}`,
+          `public/space/${newMessage.workspaceId}/conversations/${conversation.id}/${createId()}`,
         )
 
         attachment = await tx
           .insert(attachmentModel)
           .values({
             id: createId(),
-            chatbotId: conversation.chatbotId,
+            workspaceId: conversation.workspaceId,
             conversationId: conversation.id,
             messageId: newMessage.id,
             ...uploadedFile,
@@ -215,14 +238,14 @@ export async function sendFlowStep({
     })
 
     const promises: Promise<unknown>[] = [
-      broadcastToChatbotParty(conversation.chatbotId, {
+      broadcastToWorkspaceParty(conversation.workspaceId, {
         eventType: RealtimeEventType.messageCreated,
         data: message,
       }),
     ]
-    if (conversation.sourceId?.startsWith(WEBCHAT_SOURCE_PREFIX)) {
+    if (targetContactInbox.channel === channelTypes.enum.webchat) {
       promises.push(
-        broadcastToGuestParty(conversation.sourceId, {
+        broadcastToGuestParty(targetContactInbox.sourceId, {
           eventType: RealtimeEventType.messageCreated,
           data: message,
         }),
@@ -251,43 +274,38 @@ export async function sendFlowStep({
 
     await Promise.all(promises)
 
-    if (conversation.contact?.sourceId) {
-      const _inbox = await db.query.inboxModel.findFirst({
-        where: { id: conversation.inboxId },
-        columns: { channel: true },
-      })
-      contactTrackingService
-        .trackEvent({
-          chatbotId: conversation.chatbotId,
-          contactId: conversation.contact.sourceId,
-          eventType: "contact_message_out",
-          senderType: "bot",
-          occurredAt: new Date(),
-          source: conversation.contact.source,
-          sourceId: conversation.contact.sourceId,
-          channel: conversation.channel,
-          metadata: {
-            triggerContext: {
-              triggerSource: "worker",
-              triggerHandler: "sendFlowStep",
-              triggerType: "bot_message_out_flow",
-            },
+    // Send contact tracking event
+    contactTrackingService
+      .trackEvent({
+        workspaceId: conversation.workspaceId,
+        contactId: targetContactInbox.contactId,
+        eventType: contactEventTypes.enum.contact_message_out, // "contact_message_out",
+        senderType: "bot",
+        occurredAt: new Date(),
+        source: targetContactInbox.source,
+        sourceId: targetContactInbox.sourceId,
+        channel: targetContactInbox.channel,
+        metadata: {
+          triggerContext: {
+            triggerSource: "worker",
+            triggerHandler: "sendFlowStep",
+            triggerType: "bot_message_out_flow",
           },
-        })
-        .catch((error) => {
-          logger.error(
-            error,
-            "[sendFlowStep] Failed to track contact_message_out",
-          )
-        })
-    }
+        },
+      })
+      .catch((error) => {
+        logger.error(
+          error,
+          "[sendFlowStep] Failed to track contact_message_out",
+        )
+      })
 
     if (trackingContext) {
       await trackBotResponse({
         ...trackingContext,
         hasResponse: true,
-        routeType: "FLOW",
-        result: "SUCCESS",
+        routeType: "flow",
+        result: "success",
         metadata: {
           flowId,
         },
@@ -308,11 +326,12 @@ export async function sendFlowStep({
       await trackBotResponse({
         ...trackingContext,
         hasResponse: false,
-        routeType: "FLOW",
-        result: "FALLBACK",
+        routeType: botMessageRouteTypes.enum.flow,
+        result: botMessageResults.enum.fallback,
         metadata: {
           flowId,
-          fallbackReason: "HANDLER_ERROR_TO_FALLBACK",
+          fallbackReason:
+            botMessageFallbackReasons.enum.handler_error_to_fallback,
         },
         triggerContext: {
           triggerSource: "worker",
@@ -343,20 +362,35 @@ export const sendChatMessage = async (
     return
   }
 
+  const targetContactInbox = await db.query.contactInboxModel.findFirst({
+    where: {
+      contactId: conversation.contactId,
+    },
+    orderBy: {
+      lastMessageAt: "desc",
+    },
+  })
+  if (!targetContactInbox) {
+    logger.error(
+      `Contact inbox not found for conversationId: ${conversationId}`,
+    )
+    return
+  }
+
   try {
     const message = await db.transaction(async (tx) => {
-      const newMessage = await db
+      const newMessage = await tx
         .insert(messageModel)
         .values({
           id: createId(),
-          inboxId: conversation.inboxId,
-          chatbotId: conversation.chatbotId,
+          contactInboxId: targetContactInbox.id,
+          workspaceId: conversation.workspaceId,
           conversationId: conversation.id,
           messageType: "outgoing",
           contentType: "text",
           senderType: "bot",
           sourceId: null,
-          content: text,
+          text,
         })
         .returning()
         .then((result) => result[0])
@@ -364,14 +398,14 @@ export const sendChatMessage = async (
       if (url) {
         const uploadedFile = await uploadFileFromUrl(
           url,
-          `public/chatbots/${newMessage.chatbotId}/conversations/${conversation.id}/${createId()}`,
+          `public/space/${newMessage.workspaceId}/conversations/${conversation.id}/${createId()}`,
         )
 
         const attachment = await tx
           .insert(attachmentModel)
           .values({
             id: createId(),
-            chatbotId: conversation.chatbotId,
+            workspaceId: conversation.workspaceId,
             conversationId: conversation.id,
             messageId: newMessage.id,
             ...uploadedFile,
@@ -391,20 +425,20 @@ export const sendChatMessage = async (
     })
 
     const { inbox, auth } = await getInboxWithAuthFromInboxId(
-      conversation.inboxId,
+      targetContactInbox.inboxId,
     )
 
-    const contact = await findOrFail(
-      contactModel,
-      { id: conversation.contactId },
-      `Contact not found for conversationId: ${conversation.id}`,
-    )
+    const contact = await findOrFail({
+      table: contactModel,
+      where: { id: targetContactInbox.contactId },
+      message: `Contact not found for conversationId: ${conversation.id}`,
+    })
 
     await allIntegrations[
       inbox.channel
     ]?.channels?.channel?.message?.sendMessage?.({
       ctx: {
-        chatbot: inbox.chatbot,
+        workspace: inbox.workspace,
         auth,
       },
       data: {
@@ -416,7 +450,7 @@ export const sendChatMessage = async (
 
     await allIntegrations.chatbotx?.channels?.channel?.message?.sendMessage?.({
       ctx: {
-        chatbot: inbox.chatbot,
+        workspace: inbox.workspace,
         auth,
       },
       data: {
@@ -427,12 +461,12 @@ export const sendChatMessage = async (
     })
 
     const promises: Promise<unknown>[] = [
-      broadcastToChatbotParty(conversation.chatbotId, {
+      broadcastToWorkspaceParty(conversation.workspaceId, {
         eventType: RealtimeEventType.messageCreated,
         data: message,
       }),
     ]
-    if (conversation.sourceId?.startsWith(WEBCHAT_SOURCE_PREFIX)) {
+    if (conversation.sourceId) {
       promises.push(
         broadcastToGuestParty(conversation.sourceId, {
           eventType: RealtimeEventType.messageCreated,
@@ -453,7 +487,7 @@ export const sendChatMessage = async (
     if (contact.sourceId) {
       contactTrackingService
         .trackEvent({
-          chatbotId: conversation.chatbotId,
+          workspaceId: conversation.workspaceId,
           contactId: contact.sourceId,
           eventType: "contact_message_out",
           senderType: "bot",
@@ -482,10 +516,11 @@ export const sendChatMessage = async (
         ...trackingContext,
         hasResponse: true,
         routeType:
-          trackingContext.responseType === "AUTOMATED_RESPONSE"
-            ? "FLOW"
-            : "AGENT",
-        result: "SUCCESS",
+          trackingContext.responseType ===
+          botMessageResponseTypes.enum.automated_response
+            ? botMessageRouteTypes.enum.flow
+            : botMessageRouteTypes.enum.agent,
+        result: botMessageResults.enum.success,
         triggerContext: {
           triggerSource: "worker",
           triggerHandler: "sendChatMessage",
@@ -504,12 +539,14 @@ export const sendChatMessage = async (
         ...trackingContext,
         hasResponse: false,
         routeType:
-          trackingContext.responseType === "AUTOMATED_RESPONSE"
-            ? "FLOW"
-            : "AGENT",
-        result: "FALLBACK",
+          trackingContext.responseType ===
+          botMessageResponseTypes.enum.automated_response
+            ? botMessageRouteTypes.enum.flow
+            : botMessageRouteTypes.enum.agent,
+        result: botMessageResults.enum.fallback,
         metadata: {
-          fallbackReason: "HANDLER_ERROR_TO_FALLBACK",
+          fallbackReason:
+            botMessageFallbackReasons.enum.handler_error_to_fallback,
         },
         triggerContext: {
           triggerSource: "worker",
@@ -529,13 +566,13 @@ export const sendTyping = async (
     data: { conversation, typing },
   } = props
 
-  const inbox = await findOrFail(
-    inboxModel,
-    {
+  const inbox = await findOrFail({
+    table: inboxModel,
+    where: {
       id: conversation.inboxId,
     },
-    `Inbox ${conversation.inboxId} not found for conversationId: ${conversation.id}`,
-  )
+    message: `Inbox ${conversation.inboxId} not found for conversationId: ${conversation.id}`,
+  })
 
   await allIntegrations[
     inbox.channel

@@ -1,11 +1,11 @@
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import { useTranslations } from "next-intl"
 import { toast } from "sonner"
 import { useCopyToClipboard } from "usehooks-ts"
@@ -43,7 +43,7 @@ export default function GetFlowLinkDialog({
         url = `https://m.me/${inbox.sourceId}?ref=${ref}`
         break
       default:
-        url = `${env.NEXT_PUBLIC_BUILDER_URL}/webchat?chatbotId=${inbox.chatbotId}&webchatId=${inbox.sourceId}&ref=${ref}`
+        url = `${env.NEXT_PUBLIC_BUILDER_URL}/webchat?workspaceId=${inbox.workspaceId}&webchatId=${inbox.sourceId}&ref=${ref}`
         break
     }
 

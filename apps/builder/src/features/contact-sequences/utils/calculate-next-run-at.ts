@@ -6,11 +6,11 @@ import {
   isNull,
   lte,
   sql,
-} from "@aha.chat/database/client"
-import { contactsOnSequenceModel } from "@aha.chat/database/schema"
-import { SchedulerClient } from "@aha.chat/scheduler"
-import { createDispatch } from "@aha.chat/sequence-scheduler"
+} from "@chatbotx.io/database/client"
+import { contactsOnSequenceModel } from "@chatbotx.io/database/schema"
 import { sequenceConnections } from "@chatbotx.io/redis"
+import { SchedulerClient } from "@chatbotx.io/scheduler"
+import { createDispatch } from "@chatbotx.io/sequence-scheduler"
 
 type SequenceStepForDelay = {
   id: string
@@ -37,7 +37,7 @@ const RECALCULATION_CHUNK_SIZE = 500
  */
 async function createAndScheduleDispatch(
   params: {
-    chatbotId: string
+    workspaceId: string
     sequenceId: string
     contactId: string
     stepId: string
@@ -196,7 +196,7 @@ async function getNextActiveStep(
 
 type UpdateContactsNextRunAtParams = {
   sequenceId: string
-  chatbotId: string
+  workspaceId: string
   currentStepOrder: number
   delayMsOrDate: number | Date
   nextStepId: string | null
@@ -206,7 +206,7 @@ type UpdateContactsNextRunAtParams = {
 async function updateContactsNextRunAt(params: UpdateContactsNextRunAtParams) {
   const {
     sequenceId,
-    chatbotId,
+    workspaceId,
     currentStepOrder,
     delayMsOrDate,
     nextStepId,
@@ -215,7 +215,7 @@ async function updateContactsNextRunAt(params: UpdateContactsNextRunAtParams) {
 
   const whereCondition = and(
     eq(contactsOnSequenceModel.sequenceId, sequenceId),
-    eq(contactsOnSequenceModel.chatbotId, chatbotId),
+    eq(contactsOnSequenceModel.workspaceId, workspaceId),
     eq(contactsOnSequenceModel.currentStep, currentStepOrder),
     eq(contactsOnSequenceModel.status, "active"),
     isNull(contactsOnSequenceModel.completedAt),
@@ -253,7 +253,7 @@ async function updateContactsNextRunAt(params: UpdateContactsNextRunAtParams) {
 
 async function recalculateNextRunAtForStep(
   sequenceId: string,
-  chatbotId: string,
+  workspaceId: string,
   stepOrder: number,
   client: DatabaseClient,
 ) {
@@ -281,7 +281,7 @@ async function recalculateNextRunAtForStep(
       .where(
         and(
           eq(contactsOnSequenceModel.sequenceId, sequenceId),
-          eq(contactsOnSequenceModel.chatbotId, chatbotId),
+          eq(contactsOnSequenceModel.workspaceId, workspaceId),
           eq(contactsOnSequenceModel.currentStep, stepOrder),
           eq(contactsOnSequenceModel.status, "active"),
           isNull(contactsOnSequenceModel.completedAt),
@@ -300,7 +300,7 @@ async function recalculateNextRunAtForStep(
   // Update contacts at this currentStep position
   await updateContactsNextRunAt({
     sequenceId,
-    chatbotId,
+    workspaceId,
     currentStepOrder: stepOrder,
     delayMsOrDate: cumulativeDelay,
     nextStepId: nextActiveStep.id,
@@ -319,7 +319,7 @@ async function recalculateNextRunAtForStep(
  */
 export async function recalculateAllContactsInSequence(
   sequenceId: string,
-  chatbotId: string,
+  workspaceId: string,
   tx?: DatabaseClient,
 ) {
   const client = tx ?? db
@@ -332,7 +332,7 @@ export async function recalculateAllContactsInSequence(
     .where(
       and(
         eq(contactsOnSequenceModel.sequenceId, sequenceId),
-        eq(contactsOnSequenceModel.chatbotId, chatbotId),
+        eq(contactsOnSequenceModel.workspaceId, workspaceId),
         eq(contactsOnSequenceModel.status, "active"),
         isNull(contactsOnSequenceModel.completedAt),
       ),
@@ -343,7 +343,7 @@ export async function recalculateAllContactsInSequence(
   for (const { currentStep } of uniqueSteps) {
     await recalculateNextRunAtForStep(
       sequenceId,
-      chatbotId,
+      workspaceId,
       currentStep,
       client,
     )
@@ -373,7 +373,7 @@ export async function recalculateAllContactsInSequence(
  */
 async function reactivateCompletedContactsForNewStep(
   sequenceId: string,
-  chatbotId: string,
+  workspaceId: string,
   newStepOrder: number,
   client: DatabaseClient,
 ) {
@@ -385,7 +385,7 @@ async function reactivateCompletedContactsForNewStep(
     {
       where: {
         sequenceId,
-        chatbotId,
+        workspaceId,
         status: "completed",
         currentStep: { lte: newStepOrder },
       },
@@ -472,7 +472,7 @@ async function reactivateCompletedContactsForNewStep(
           .where(
             and(
               eq(contactsOnSequenceModel.id, contact.id),
-              eq(contactsOnSequenceModel.chatbotId, chatbotId),
+              eq(contactsOnSequenceModel.workspaceId, workspaceId),
             ),
           )
 
@@ -480,7 +480,7 @@ async function reactivateCompletedContactsForNewStep(
         if (nextRunAt) {
           await createAndScheduleDispatch(
             {
-              chatbotId,
+              workspaceId,
               sequenceId,
               contactId: contact.contactId,
               stepId: nextActiveStep.id,
@@ -525,7 +525,7 @@ async function reactivateCompletedContactsForNewStep(
  */
 export async function handleStepCreationImpact(
   sequenceId: string,
-  chatbotId: string,
+  workspaceId: string,
   newStepOrder: number,
   tx?: DatabaseClient,
 ) {
@@ -543,7 +543,7 @@ export async function handleStepCreationImpact(
     .where(
       and(
         eq(contactsOnSequenceModel.sequenceId, sequenceId),
-        eq(contactsOnSequenceModel.chatbotId, chatbotId),
+        eq(contactsOnSequenceModel.workspaceId, workspaceId),
         eq(contactsOnSequenceModel.status, "active"),
         isNull(contactsOnSequenceModel.completedAt),
         lte(contactsOnSequenceModel.currentStep, newStepOrder),
@@ -554,7 +554,7 @@ export async function handleStepCreationImpact(
   // Use Promise.all for parallel processing to improve performance
   await Promise.all(
     affectedSteps.map(({ currentStep }) =>
-      recalculateNextRunAtForStep(sequenceId, chatbotId, currentStep, client),
+      recalculateNextRunAtForStep(sequenceId, workspaceId, currentStep, client),
     ),
   )
 
@@ -564,7 +564,7 @@ export async function handleStepCreationImpact(
   // Example: Contact completed at step 4, admin adds step 5 → reactivate
   await reactivateCompletedContactsForNewStep(
     sequenceId,
-    chatbotId,
+    workspaceId,
     newStepOrder,
     client,
   )
@@ -613,7 +613,7 @@ export async function handleStepCreationImpact(
  */
 export async function handleStepUpdateImpact(
   sequenceId: string,
-  chatbotId: string,
+  workspaceId: string,
   updatedStepId: string,
   updatedStepOrder: number,
   tx?: DatabaseClient,
@@ -630,7 +630,7 @@ export async function handleStepUpdateImpact(
     .where(
       and(
         eq(contactsOnSequenceModel.sequenceId, sequenceId),
-        eq(contactsOnSequenceModel.chatbotId, chatbotId),
+        eq(contactsOnSequenceModel.workspaceId, workspaceId),
         eq(contactsOnSequenceModel.status, "active"),
         isNull(contactsOnSequenceModel.completedAt),
         eq(contactsOnSequenceModel.nextStepId, updatedStepId),
@@ -647,7 +647,7 @@ export async function handleStepUpdateImpact(
     .where(
       and(
         eq(contactsOnSequenceModel.sequenceId, sequenceId),
-        eq(contactsOnSequenceModel.chatbotId, chatbotId),
+        eq(contactsOnSequenceModel.workspaceId, workspaceId),
         eq(contactsOnSequenceModel.status, "active"),
         isNull(contactsOnSequenceModel.completedAt),
         sql`${contactsOnSequenceModel.currentStep} < ${updatedStepOrder}`,
@@ -675,7 +675,7 @@ export async function handleStepUpdateImpact(
   // Use Promise.all for parallel processing to improve performance
   await Promise.all(
     allAffectedSteps.map(({ currentStep }) =>
-      recalculateNextRunAtForStep(sequenceId, chatbotId, currentStep, client),
+      recalculateNextRunAtForStep(sequenceId, workspaceId, currentStep, client),
     ),
   )
 
@@ -685,7 +685,7 @@ export async function handleStepUpdateImpact(
   // Example: Contact completed at step 4, admin enables step 5 → reactivate
   await reactivateCompletedContactsForNewStep(
     sequenceId,
-    chatbotId,
+    workspaceId,
     updatedStepOrder,
     client,
   )

@@ -1,6 +1,6 @@
 "use client"
 
-import { CardTitle } from "@aha.chat/ui/components/ui/card"
+import { CardTitle } from "@chatbotx.io/ui/components/ui/card"
 import Image from "next/image"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -27,7 +27,7 @@ export const AuthHeader = ({ brandName, title }: AuthHeaderProps) => {
           height={80}
           priority={true}
           src={logoSrc}
-          width={64}
+          width={140}
         />
       </div>
 

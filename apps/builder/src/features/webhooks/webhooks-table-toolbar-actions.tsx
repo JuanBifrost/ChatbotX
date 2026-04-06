@@ -1,7 +1,7 @@
 "use client"
 
-import type { WebhookModel } from "@aha.chat/database/types"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+import type { WebhookModel } from "@chatbotx.io/database/types"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { Table } from "@tanstack/react-table"
 import { useRouter } from "next/navigation"
 import type { Dispatch, SetStateAction } from "react"
@@ -10,7 +10,7 @@ import { DeleteWebhooksDialog } from "./delete-webhooks-dialog"
 
 type WebhooksTableToolbarActionsProps = {
   table: Table<WebhookModel>
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
   setRowAction: Dispatch<
     SetStateAction<DataTableRowAction<WebhookModel> | null>
@@ -19,7 +19,7 @@ type WebhooksTableToolbarActionsProps = {
 
 export function WebhooksTableToolbarActions({
   table,
-  chatbotId,
+  workspaceId,
   folderId,
   setRowAction,
 }: WebhooksTableToolbarActionsProps) {
@@ -29,7 +29,6 @@ export function WebhooksTableToolbarActions({
     <div className="flex items-center gap-2">
       {table.getFilteredSelectedRowModel().rows.length > 0 ? (
         <DeleteWebhooksDialog
-          chatbotId={chatbotId}
           onOpenChange={() => setRowAction(null)}
           onSuccess={() => {
             table.toggleAllRowsSelected(false)
@@ -38,10 +37,11 @@ export function WebhooksTableToolbarActions({
           webhooks={table
             .getFilteredSelectedRowModel()
             .rows.map((row) => row.original)}
+          workspaceId={workspaceId}
         />
       ) : null}
 
-      <CreateWebhookDialog chatbotId={chatbotId} folderId={folderId} />
+      <CreateWebhookDialog folderId={folderId} workspaceId={workspaceId} />
     </div>
   )
 }

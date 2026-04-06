@@ -1,47 +1,44 @@
 "use server"
 
-import { db } from "@aha.chat/database/client"
-import { inboxTeamMemberModel, inboxTeamModel } from "@aha.chat/database/schema"
-import { createId } from "@paralleldrive/cuid2"
+import { db } from "@chatbotx.io/database/client"
 import {
-  type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
-} from "@/features/common/schemas"
+  inboxTeamMemberModel,
+  inboxTeamModel,
+} from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
+import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
-import { type CreateInboxTeamRequest, createInboxTeamRequest } from "../schema"
+import { workspaceActionClient } from "@/lib/safe-action"
+import { createInboxTeamRequest } from "../schema/action"
 
-export const createInboxTeamAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const createInboxTeamAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(createInboxTeamRequest)
-  .action(
-    async ({
+  .action(async (props) => {
+    const {
       parsedInput,
-      bindArgsParsedInputs: [chatbotId],
-    }: {
-      parsedInput: CreateInboxTeamRequest
-      bindArgsParsedInputs: ChatbotIdRequestParams
-    }) => {
-      await db.transaction(async (tx) => {
-        const inboxTeamId = createId()
-        await tx.insert(inboxTeamModel).values({
-          id: inboxTeamId,
-          name: parsedInput.name,
-          chatbotId,
-        })
+      bindArgsParsedInputs: [workspaceId],
+    } = props
 
-        if (parsedInput.userIds.length > 0) {
-          await tx.insert(inboxTeamMemberModel).values(
-            parsedInput.userIds.map((userId) => ({
-              id: createId(),
-              userId,
-              chatbotId,
-              inboxTeamId,
-            })),
-          )
-        }
+    await db.transaction(async (tx) => {
+      const inboxTeamId = createId()
+      await tx.insert(inboxTeamModel).values({
+        id: inboxTeamId,
+        name: parsedInput.name,
+        workspaceId,
       })
 
-      revalidateCacheTags(`chatbots:${chatbotId}#inboxTeams`)
-    },
-  )
+      if (parsedInput.userIds.length > 0) {
+        await tx.insert(inboxTeamMemberModel).values(
+          parsedInput.userIds.map((userId) => ({
+            id: createId(),
+            userId,
+            workspaceId,
+            inboxTeamId,
+          })),
+        )
+      }
+    })
+
+    revalidateCacheTags(`workspaces:${workspaceId}#inboxTeams`)
+  })

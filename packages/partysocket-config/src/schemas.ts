@@ -17,6 +17,7 @@ export type RealtimeEventTyping = {
   data: {
     conversationId: string
     typing: boolean
+    seconds: number
   }
 }
 

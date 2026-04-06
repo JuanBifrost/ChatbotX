@@ -1,10 +1,10 @@
 "use client"
 
-import type { WebhookModel } from "@aha.chat/database/types"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form, FormMessage } from "@aha.chat/ui/components/ui/form"
-import { Label } from "@aha.chat/ui/components/ui/label"
+import type { WebhookModel } from "@chatbotx.io/database/types"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form, FormMessage } from "@chatbotx.io/ui/components/ui/form"
+import { Label } from "@chatbotx.io/ui/components/ui/label"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -18,13 +18,13 @@ import { AddCondition } from "./add-condition"
 import { BaseEditor } from "./base-editor"
 import {
   type UpdateWebhookSchema,
-  updateWebhookSchema,
+  updateWebhookRequest,
 } from "./schemas/update-webhook-schema"
 
 type WebhookWithConditions = WebhookModel & {
   conditions?: Array<{
     id: string
-    type: number
+    type: string
     sourceId: string | null
     operator: string | null
     value: unknown
@@ -32,12 +32,12 @@ type WebhookWithConditions = WebhookModel & {
 }
 
 type UpdateWebhookFormProps = {
-  chatbotId: string
+  workspaceId: string
   webhook: WebhookWithConditions
 }
 
 export default function UpdateWebhookForm(props: UpdateWebhookFormProps) {
-  const { chatbotId, webhook } = props
+  const { workspaceId, webhook } = props
   const t = useTranslations()
   const router = useRouter()
 
@@ -46,8 +46,8 @@ export default function UpdateWebhookForm(props: UpdateWebhookFormProps) {
     handleSubmitWithAction,
     form: { control },
   } = useHookFormAction(
-    updateWebhookAction.bind(null, chatbotId, webhook.id),
-    zodResolver(updateWebhookSchema),
+    updateWebhookAction.bind(null, workspaceId, webhook.id),
+    zodResolver(updateWebhookRequest),
     {
       actionProps: {
         onSuccess: () => {

@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,7 +10,7 @@ import {
   DropdownMenuSubContent,
   DropdownMenuSubTrigger,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
 import type { Table } from "@tanstack/react-table"
 import {
   ArchiveIcon,
@@ -45,12 +45,12 @@ import { ExportContactDialog } from "./export-contact-dialog"
 import type { ListContactsItem } from "./schemas/query"
 
 type ContactListActionProps = {
-  chatbotId: string
+  workspaceId: string
   table: Table<ListContactsItem>
 }
 
 export function ContactListAction({
-  chatbotId,
+  workspaceId,
   table,
 }: ContactListActionProps) {
   const t = useTranslations()
@@ -96,7 +96,7 @@ export function ContactListAction({
           }
         />
 
-        <SequenceStoreProvider autoInitialize={true} chatbotId={chatbotId}>
+        <SequenceStoreProvider autoInitialize={true} workspaceId={workspaceId}>
           <AddContactSequenceDialog
             ids={rows.map((r) => r.id)}
             trigger={
@@ -138,8 +138,7 @@ export function ContactListAction({
         />
 
         <ExportContactDialog
-          chatbotId={chatbotId}
-          contactIds={rows.map((r) => r.id)}
+          contactIds={rows.map((r) => r.original.id)}
           trigger={
             <DropdownMenuItem
               disabled={rows.length === 0}
@@ -149,11 +148,12 @@ export function ContactListAction({
               {t("actions.export")}
             </DropdownMenuItem>
           }
+          workspaceId={workspaceId}
         />
 
         <DropdownMenuItem
           onSelect={() => {
-            router.push(`/chatbots/${chatbotId}/contacts/import`)
+            router.push(`/space/${workspaceId}/contacts/import`)
           }}
         >
           <CloudUploadIcon />
@@ -183,7 +183,7 @@ export function ContactListAction({
 
               <SequenceStoreProvider
                 autoInitialize={true}
-                chatbotId={chatbotId}
+                workspaceId={workspaceId}
               >
                 <RemoveContactSequenceDialog
                   ids={rows.map((r) => r.id)}
@@ -233,7 +233,7 @@ export function ContactListAction({
                 ids={
                   rows
                     .map((r) => r.original.conversation?.id || null)
-                    .filter((v) => v) as string[]
+                    .filter(Boolean) as string[]
                 }
                 trigger={
                   <DropdownMenuItem
@@ -250,7 +250,7 @@ export function ContactListAction({
                 ids={
                   rows
                     .map((r) => r.original.conversation?.id || null)
-                    .filter((v) => v) as string[]
+                    .filter(Boolean) as string[]
                 }
                 trigger={
                   <DropdownMenuItem

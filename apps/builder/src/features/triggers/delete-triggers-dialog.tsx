@@ -1,7 +1,6 @@
 "use client"
 
-import type { TriggerModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import type { Row } from "@tanstack/react-table"
 import { Loader, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -19,17 +18,18 @@ import { useAction } from "next-safe-action/hooks"
 import type { ComponentPropsWithoutRef } from "react"
 import { toast } from "sonner"
 import { deleteTriggersAction } from "./actions/delete-triggers-action"
+import type { TriggerResource } from "./schema/resource"
 
 type DeleteTriggersDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
-  chatbotId: string
-  triggers: Row<TriggerModel>["original"][]
+  workspaceId: string
+  triggers: Row<TriggerResource>["original"][]
   showTrigger?: boolean
   onSuccess?: () => void
   onOpenChange: (val: boolean) => void
 }
 
 export function DeleteTriggersDialog({
-  chatbotId,
+  workspaceId,
   triggers,
   showTrigger = true,
   onSuccess,
@@ -39,7 +39,7 @@ export function DeleteTriggersDialog({
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteTriggersAction.bind(null, chatbotId),
+    deleteTriggersAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

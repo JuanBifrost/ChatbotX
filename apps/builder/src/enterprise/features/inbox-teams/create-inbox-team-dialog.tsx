@@ -1,8 +1,8 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { MultiSelectField } from "@aha.chat/ui/components/form/multi-select-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { MultiSelectField } from "@chatbotx.io/ui/components/form/multi-select-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2, PlusIcon } from "lucide-react"
@@ -20,16 +20,16 @@ import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
-import type { UserResource } from "../../../features/users/schemas/resource"
+import type { ListWorkspaceMembersResponse } from "@/features/workspace-members/schema/query"
 import { createInboxTeamAction } from "./actions/create-inbox-team.action"
-import { createInboxTeamRequest } from "./schema"
+import { createInboxTeamRequest } from "./schema/action"
 
 export function CreateInboxTeamDialog({
-  chatbotId,
-  users,
+  workspaceId,
+  workspaceMembers,
 }: {
-  chatbotId: string
-  users: UserResource[]
+  workspaceId: string
+  workspaceMembers: ListWorkspaceMembersResponse["data"]
 }) {
   const t = useTranslations()
   const router = useRouter()
@@ -38,7 +38,7 @@ export function CreateInboxTeamDialog({
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createInboxTeamAction.bind(null, chatbotId),
+      createInboxTeamAction.bind(null, workspaceId),
       zodResolver(createInboxTeamRequest),
       {
         actionProps: {
@@ -70,9 +70,9 @@ export function CreateInboxTeamDialog({
       },
     )
 
-  const userOptions = users.map((user) => ({
-    value: user.id,
-    label: user.name ?? "",
+  const userOptions = workspaceMembers.map((cm) => ({
+    value: cm.user.id,
+    label: cm.user.name ?? "",
   }))
 
   return (

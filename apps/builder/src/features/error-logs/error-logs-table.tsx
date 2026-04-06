@@ -1,10 +1,10 @@
 "use client"
 
-import type { ErrorLogModel } from "@aha.chat/database/types"
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+import type { ErrorLogModel } from "@chatbotx.io/database/types"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { use, useMemo, useState } from "react"
@@ -15,10 +15,10 @@ import type { listErrorLogs } from "./queries"
 
 type ErrorLogsTableProps = {
   promises: Promise<[Awaited<ReturnType<typeof listErrorLogs>>]>
-  chatbotId: string
+  workspaceId: string
 }
 
-export function ErrorLogsTable({ promises, chatbotId }: ErrorLogsTableProps) {
+export function ErrorLogsTable({ promises, workspaceId }: ErrorLogsTableProps) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -45,12 +45,14 @@ export function ErrorLogsTable({ promises, chatbotId }: ErrorLogsTableProps) {
     <>
       <DataTable table={table}>
         <DataTableToolbar table={table}>
-          <ErrorLogsTableToolbarActions chatbotId={chatbotId} table={table} />
+          <ErrorLogsTableToolbarActions
+            table={table}
+            workspaceId={workspaceId}
+          />
         </DataTableToolbar>
       </DataTable>
 
       <DeleteErrorLogsDialog
-        chatbotId={chatbotId}
         errorLogs={rowAction?.row.original ? [rowAction?.row.original] : []}
         onOpenChange={() => setRowAction(null)}
         onSuccess={() => {
@@ -59,6 +61,7 @@ export function ErrorLogsTable({ promises, chatbotId }: ErrorLogsTableProps) {
         }}
         open={rowAction?.variant === "delete"}
         showTrigger={false}
+        workspaceId={workspaceId}
       />
     </>
   )

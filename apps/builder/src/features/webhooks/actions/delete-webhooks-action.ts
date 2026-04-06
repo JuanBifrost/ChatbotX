@@ -1,22 +1,22 @@
 "use server"
 
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { webhookModel } from "@aha.chat/database/schema"
 import { removeWebhookCache } from "@chatbotx/events"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { webhookModel } from "@chatbotx.io/database/schema"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const deleteWebhooksAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const deleteWebhooksAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(bulkUpdateIdsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
@@ -26,11 +26,11 @@ export const deleteWebhooksAction = chatbotActionClient
         .delete(webhookModel)
         .where(
           and(
-            eq(webhookModel.chatbotId, chatbotId),
+            eq(webhookModel.workspaceId, workspaceId),
             inArray(webhookModel.id, parsedInput.ids),
           ),
         )
 
-      await removeWebhookCache(chatbotId)
+      await removeWebhookCache(workspaceId)
     },
   )

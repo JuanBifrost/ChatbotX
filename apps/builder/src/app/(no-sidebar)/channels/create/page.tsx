@@ -1,11 +1,12 @@
-import type { OrganizationSettings } from "@aha.chat/database/types"
+import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import { getIdFromParams } from "@chatbotx.io/utils"
 import { Suspense } from "react"
 import InboxSelectCard from "@/features/inboxes/components/inbox-select-card"
 import { MessengerConnect } from "@/features/integration-messenger/components/messenger-connect"
+import { SimpleCreateWebchat } from "@/features/integration-webchat/simple-create-webchat"
 import WhatsappCreate from "@/features/integration-whatsapp/components/whatsapp-create"
 import { ZaloConnect } from "@/features/integration-zalo/components/zalo-connect"
 import { findOrganizationSettings } from "@/features/organization/queries"
-import { SimpleCreateWebchat } from "@/features/webchat/simple-create-webchat"
 import { getDomainFromHeader } from "@/lib/domain"
 
 export const dynamic = "force-dynamic"
@@ -13,14 +14,14 @@ export const dynamic = "force-dynamic"
 type CreateChannelPageProps = {
   searchParams: Promise<{
     channel?: string | null
-    chatbotId?: string | null
+    workspaceId?: string | null
   }>
 }
 
-export default async function CreateChannelPage({
-  searchParams,
-}: CreateChannelPageProps) {
-  const { channel: selectedChannel, chatbotId } = await searchParams
+export default async function CreateChannelPage(props: CreateChannelPageProps) {
+  const searchParams = await props.searchParams
+  const workspaceId = getIdFromParams(searchParams, "workspaceId")
+  const selectedChannel = searchParams.channel
 
   const domain = await getDomainFromHeader()
   const settings: OrganizationSettings = await findOrganizationSettings({
@@ -30,16 +31,22 @@ export default async function CreateChannelPage({
   return (
     <Suspense>
       {selectedChannel === "whatsapp" && settings.whatsapp && (
-        <WhatsappCreate chatbotId={chatbotId} settings={settings.whatsapp} />
+        <WhatsappCreate
+          settings={settings.whatsapp}
+          workspaceId={workspaceId}
+        />
       )}
       {selectedChannel === "messenger" && settings.messenger && (
-        <MessengerConnect chatbotId={chatbotId} settings={settings.messenger} />
+        <MessengerConnect
+          settings={settings.messenger}
+          workspaceId={workspaceId}
+        />
       )}
       {selectedChannel === "zalo" && settings.zalo && (
-        <ZaloConnect chatbotId={chatbotId} settings={settings.zalo} />
+        <ZaloConnect settings={settings.zalo} workspaceId={workspaceId} />
       )}
       {selectedChannel === "webchat" && (
-        <SimpleCreateWebchat chatbotId={chatbotId} />
+        <SimpleCreateWebchat workspaceId={workspaceId} />
       )}
       {!selectedChannel && <InboxSelectCard settings={settings} />}
     </Suspense>

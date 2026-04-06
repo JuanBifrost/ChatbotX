@@ -1,6 +1,6 @@
 "use client"
 
-import type { IntegrationMessengerModel } from "@aha.chat/database/types"
+import type { IntegrationMessengerModel } from "@chatbotx.io/database/types"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -11,14 +11,15 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@aha.chat/ui/components/ui/alert-dialog"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/ui/components/ui/alert-dialog"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Loader2Icon } from "lucide-react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { useState } from "react"
 import { toast } from "sonner"
+import { useWorkspaceId } from "@/hooks/routing"
 import { disconnectMessengerAction } from "../actions/disconnect-messenger.action"
 
 export function MessengerDisconnect({
@@ -29,11 +30,15 @@ export function MessengerDisconnect({
   const t = useTranslations()
   const router = useRouter()
   const [open, setOpen] = useState<boolean>(false)
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
 
   const { executeAsync: onDisconnect, isPending: isPendingDisconnect } =
     useAction(
-      disconnectMessengerAction.bind(null, chatbotId, integrationMessenger.id),
+      disconnectMessengerAction.bind(
+        null,
+        workspaceId,
+        integrationMessenger.id,
+      ),
       {
         onSuccess: () => {
           router.refresh()

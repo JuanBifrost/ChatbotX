@@ -1,17 +1,18 @@
-import { and, db, eq, gte, lt } from "@aha.chat/database/client"
-import { contactModel } from "@aha.chat/database/schema"
-import { contactTrackingService, query } from "@chatbotx.io/analytics"
+import { contactTrackingService } from "@chatbotx.io/analytics"
+import { query } from "@chatbotx.io/clickhouse/client"
+import { and, db, eq, gte, lt } from "@chatbotx.io/database/client"
+import { contactModel } from "@chatbotx.io/database/schema"
 import { logger } from "../../lib/logger"
 
 const BATCH_SIZE = 1000
 
 export const reconcileContactEvents = async (job: {
-  data: { chatbotId: string; fromDate: string; toDate: string }
+  data: { workspaceId: string; fromDate: string; toDate: string }
 }) => {
-  const { chatbotId, fromDate, toDate } = job.data
+  const { workspaceId, fromDate, toDate } = job.data
 
   // logger.info(
-  //   `Starting reconciliation for chatbot ${chatbotId} from ${fromDate} to ${toDate}`,
+  //   `Starting reconciliation for workspace ${workspaceId} from ${fromDate} to ${toDate}`,
   // )
 
   const from = new Date(fromDate)
@@ -24,13 +25,13 @@ export const reconcileContactEvents = async (job: {
     `
     SELECT DISTINCT contact_id
     FROM contact_events
-    WHERE chatbot_id = {chatbotId:String}
+    WHERE chatbot_id = {workspaceId:String}
       AND event_type = 'contact_created'
       AND occurred_at >= {from:UInt32}
       AND occurred_at < {to:UInt32}
   `,
     {
-      chatbotId,
+      workspaceId,
       from: fromTimestamp,
       to: toTimestamp,
     },
@@ -48,7 +49,7 @@ export const reconcileContactEvents = async (job: {
     const contacts = await db
       .select({
         id: contactModel.id,
-        chatbotId: contactModel.chatbotId,
+        workspaceId: contactModel.workspaceId,
         createdAt: contactModel.createdAt,
         source: contactModel.source,
         sourceId: contactModel.sourceId,
@@ -56,7 +57,7 @@ export const reconcileContactEvents = async (job: {
       .from(contactModel)
       .where(
         and(
-          eq(contactModel.chatbotId, chatbotId),
+          eq(contactModel.workspaceId, workspaceId),
           gte(contactModel.createdAt, from),
           lt(contactModel.createdAt, to),
         ),
@@ -70,13 +71,13 @@ export const reconcileContactEvents = async (job: {
     }
 
     const missingContacts = contacts.filter(
-      (c) => Boolean(c.sourceId) && !existingIds.has(c.sourceId as string),
+      (c) => Boolean(c.sourceId) && !existingIds.has(c.sourceId ?? ""),
     )
 
     if (missingContacts.length > 0) {
       const events = missingContacts.map((contact) => ({
-        chatbotId: contact.chatbotId,
-        contactId: contact.sourceId as string,
+        workspaceId: contact.workspaceId,
+        contactId: contact.id,
         eventType: "contact_created" as const,
         occurredAt: contact.createdAt,
         source: contact.source,
@@ -86,12 +87,12 @@ export const reconcileContactEvents = async (job: {
       try {
         await contactTrackingService.trackEvents(events)
         // logger.info(
-        //   `Reconciled ${missingContacts.length} missing contacts for chatbot ${chatbotId}`,
+        //   `Reconciled ${missingContacts.length} missing contacts for workspace ${workspaceId}`,
         // )
       } catch (error) {
         logger.error(
           error,
-          `Failed to reconcile contacts for chatbot ${chatbotId}`,
+          `Failed to reconcile contacts for workspace ${workspaceId}`,
         )
       }
     }
@@ -102,6 +103,6 @@ export const reconcileContactEvents = async (job: {
   }
 
   // logger.info(
-  //   `Reconciliation completed for chatbot ${chatbotId}`,
+  //   `Reconciliation completed for workspace ${workspaceId}`,
   // )
 }

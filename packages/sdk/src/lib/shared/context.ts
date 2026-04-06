@@ -21,7 +21,7 @@ export type ChatbotEntity = {
 }
 
 export type Context<AO extends AuthValue> = {
-  chatbot?: ChatbotEntity
+  workspace?: ChatbotEntity
   uploader?: ContextUploader
   auth: AO
   queue?: ContextQueue

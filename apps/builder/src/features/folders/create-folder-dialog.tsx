@@ -1,8 +1,8 @@
 "use client"
 
-import type { FolderType } from "@aha.chat/database/types"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { FolderType } from "@chatbotx.io/database/partials"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -10,25 +10,26 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon, PlusIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { parseAsString, useQueryState } from "nuqs"
+import { useQueryState } from "nuqs"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { createFolderAction } from "@/features/folders/actions/create-folder.action"
-import { createFolderSchema } from "@/features/folders/schemas/action"
+import { createFolderSchema } from "@/features/folders/schema/action"
+import { parseAsBigInt } from "@/lib/nuqs"
 import { useFolderStore } from "./provider/folder-store-context"
 
 export function CreateFolderDialog({
-  chatbotId,
+  workspaceId,
   folderType,
 }: {
-  chatbotId: string
+  workspaceId: string
   folderType: FolderType
 }) {
   const t = useTranslations()
@@ -36,12 +37,12 @@ export function CreateFolderDialog({
 
   const [open, setOpen] = useState(false)
 
-  const [folderId] = useQueryState("folderId", parseAsString)
+  const [folderId] = useQueryState("folderId", parseAsBigInt)
   const { getAllFolders } = useFolderStore((state) => state)
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createFolderAction.bind(null, chatbotId),
+      createFolderAction.bind(null, workspaceId),
       zodResolver(createFolderSchema),
       {
         actionProps: {

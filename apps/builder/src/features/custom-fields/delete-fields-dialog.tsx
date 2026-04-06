@@ -1,6 +1,6 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -10,7 +10,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import type { Row } from "@tanstack/react-table"
 import { Loader, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -21,7 +21,7 @@ import { deleteFieldsAction } from "./actions/delete-custom-field.action"
 import type { CustomFieldResource } from "./schemas/resource"
 
 type DeleteFieldsDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
-  chatbotId: string
+  workspaceId: string
   records: Row<CustomFieldResource>["original"][]
   showTrigger?: boolean
   onSuccess?: () => void
@@ -29,7 +29,7 @@ type DeleteFieldsDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
 }
 
 export function DeleteFieldsDialog({
-  chatbotId,
+  workspaceId,
   records,
   showTrigger = true,
   onSuccess,
@@ -39,7 +39,7 @@ export function DeleteFieldsDialog({
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteFieldsAction.bind(null, chatbotId),
+    deleteFieldsAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

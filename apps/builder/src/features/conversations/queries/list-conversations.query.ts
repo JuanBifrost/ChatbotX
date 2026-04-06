@@ -11,58 +11,57 @@ import {
   isNull,
   type SQL,
   sql,
-} from "@aha.chat/database/client"
+} from "@chatbotx.io/database/client"
 import {
   contactModel,
   conversationModel,
-  inboxModel,
   inboxTeamModel,
   messageModel,
   userModel,
-} from "@aha.chat/database/schema"
-import type { ChannelType } from "@aha.chat/database/types"
-import { getPaginationWithDefaults } from "@aha.chat/database/utils"
-import type {
-  FindConversationSchema,
-  ListConversationsRequest,
-} from "@/features/conversations/schemas/query"
+} from "@chatbotx.io/database/schema"
+import { getPaginationWithDefaults } from "@chatbotx.io/database/utils"
+import { parseBigIntId } from "@chatbotx.io/utils"
+import type { ListConversationsRequest } from "@/features/conversations/schema/query"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import { notFoundException } from "@/lib/errors/exception"
 import type {
+  FindConversationRequest,
   FindConversationResponse,
   ListConversationsResponse,
-} from "../schemas/resource"
+} from "../schema/resource"
 
 export const listConversations = async (
-  chatbotId: string,
-  input: ListConversationsRequest = {},
+  data: ListConversationsRequest,
 ): Promise<ListConversationsResponse> => {
-  await assertCurrentUserCanAccessChatbot(chatbotId)
+  const { workspaceId, ...input } = data
+  await assertCurrentUserCanAccessChatbot(workspaceId)
 
   const pagination = getPaginationWithDefaults(input)
 
-  const where: SQL[] = [eq(conversationModel.chatbotId, chatbotId)]
+  const where: SQL[] = [eq(conversationModel.workspaceId, workspaceId)]
 
-  if (input.liveChatEnabled !== null && input.liveChatEnabled !== undefined) {
-    where.push(eq(conversationModel.liveChatEnabled, input.liveChatEnabled))
+  if (input.botEnabled !== null && input.botEnabled !== undefined) {
+    where.push(eq(conversationModel.botEnabled, input.botEnabled))
   }
 
-  if (input.channel !== null && input.channel !== undefined) {
-    where.push(eq(conversationModel.channel, input.channel))
-  }
+  // if (input.channel !== null && input.channel !== undefined) {
+  //   where.push(eq(conversationModel.channel, input.channel))
+  // }
 
   if (input.assignedId !== null && input.assignedId !== undefined) {
     if (input.assignedId === "unassigned") {
       where.push(isNull(conversationModel.assignedUserId))
       where.push(isNull(conversationModel.assignedInboxTeamId))
     } else if (input.assignedId.startsWith("u_")) {
-      where.push(
-        eq(conversationModel.assignedUserId, input.assignedId.slice(2)),
-      )
+      const userId = parseBigIntId(input.assignedId.slice(2))
+      if (userId) {
+        where.push(eq(conversationModel.assignedUserId, userId))
+      }
     } else if (input.assignedId.startsWith("t_")) {
-      where.push(
-        eq(conversationModel.assignedInboxTeamId, input.assignedId.slice(2)),
-      )
+      const inboxTeamId = parseBigIntId(input.assignedId.slice(2))
+      if (inboxTeamId) {
+        where.push(eq(conversationModel.assignedInboxTeamId, inboxTeamId))
+      }
     }
   }
 
@@ -105,7 +104,7 @@ export const listConversations = async (
     .from(conversationModel)
     .leftJoinLateral(lastMessageQuery.as("lastMessage"), sql`true`)
     .leftJoin(contactModel, eq(conversationModel.contactId, contactModel.id))
-    .leftJoin(inboxModel, eq(conversationModel.inboxId, inboxModel.id))
+    // .leftJoin(inboxModel, eq(conversationModel.inboxId, inboxModel.id))
     .leftJoin(userModel, eq(conversationModel.assignedUserId, userModel.id))
     .leftJoin(
       inboxTeamModel,
@@ -115,9 +114,7 @@ export const listConversations = async (
     .orderBy(desc(conversationModel.lastActivityAt))
     .limit(pagination.limit)
 
-  const contactIds = conversations
-    .map((c) => c.Contact?.id)
-    .filter((id): id is string => id !== null && id !== undefined)
+  const contactIds = conversations.map((c) => c.Conversation.contactId)
 
   const contactsOnSequences =
     contactIds.length > 0
@@ -148,7 +145,7 @@ export const listConversations = async (
             contactsOnSequences: contactsOnSequencesMap.get(c.Contact.id) || [],
           }
         : null,
-      inbox: c.Inbox,
+      contactInboxes: [],
       assignedUser: c.User,
       assignedInboxTeam: c.InboxTeam,
       messages: c.lastMessage ? [c.lastMessage] : [],
@@ -159,9 +156,9 @@ export const listConversations = async (
 }
 
 export const findConversation = async (
-  input: FindConversationSchema,
+  input: FindConversationRequest,
 ): Promise<FindConversationResponse> => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const conversation = await db.query.conversationModel.findFirst({
     with: {
@@ -174,7 +171,7 @@ export const findConversation = async (
           },
         },
       },
-      inbox: true,
+      contactInboxes: true,
       messages: true,
       assignedUser: true,
       assignedInboxTeam: true,
@@ -201,24 +198,4 @@ export const findConversation = async (
       messages: lastMessage ? [lastMessage] : [],
     },
   }
-}
-
-export const findConversationByContact = async ({
-  chatbotId,
-  contactId,
-  channel,
-}: {
-  chatbotId: string
-  contactId: string
-  channel: ChannelType
-}) => {
-  return await db.query.conversationModel.findFirst({
-    where: {
-      chatbotId,
-      contactId,
-      inbox: {
-        channel,
-      },
-    },
-  })
 }

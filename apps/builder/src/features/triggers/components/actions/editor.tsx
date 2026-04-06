@@ -1,7 +1,10 @@
-import { TriggerAction } from "@aha.chat/database/enums"
-import { ComboboxField } from "@aha.chat/ui/components/form/combobox-field"
-import { MultiSelectField } from "@aha.chat/ui/components/form/multi-select-field"
-import { SwitchField } from "@aha.chat/ui/components/form/switch-field"
+import {
+  type TriggerAction,
+  triggerActions,
+} from "@chatbotx.io/database/partials"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
+import { MultiSelectField } from "@chatbotx.io/ui/components/form/multi-select-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { useTranslations } from "next-intl"
 import { SetCustomField } from "@/features/contacts/components/add-custom-field-dialog"
 import { CustomFieldSelect } from "@/features/custom-fields/custom-field-select"
@@ -21,8 +24,8 @@ export const ActionEditor = ({
   const flowOptions = useFlowSelectOptions()
 
   switch (type) {
-    case TriggerAction.addTag:
-    case TriggerAction.removeTag: {
+    case triggerActions.enum.addTag:
+    case triggerActions.enum.removeTag: {
       return (
         <MultiSelectField
           label=""
@@ -31,15 +34,15 @@ export const ActionEditor = ({
         />
       )
     }
-    case TriggerAction.setCustomField:
+    case triggerActions.enum.setCustomField:
       return (
         <div className="flex flex-col gap-4">
           <SetCustomField parentName={parentName} />
         </div>
       )
-    case TriggerAction.clearCustomField:
+    case triggerActions.enum.clearCustomField:
       return <CustomFieldSelect label="" name={`${parentName}.customFieldId`} />
-    case TriggerAction.startAnotherFlow:
+    case triggerActions.enum.startAnotherFlow:
       return (
         <ComboboxField
           name={`${parentName}.flowId`}
@@ -47,7 +50,7 @@ export const ActionEditor = ({
           required={true}
         />
       )
-    case TriggerAction.transferConversationToHuman:
+    case triggerActions.enum.transferConversationToHuman:
       return (
         <SwitchField
           label={t("trigger.actions.notifyAdmins")}
@@ -55,7 +58,7 @@ export const ActionEditor = ({
           required
         />
       )
-    case TriggerAction.runGoogleSheet:
+    case triggerActions.enum.runGoogleSheet:
       return <GoogleSheetAction parentName={parentName} />
     default:
       return null

@@ -53,7 +53,7 @@ type UseSequenceStepProps = {
   step?: Step
   stepNumber: number
   sequenceId: string
-  chatbotId: string
+  workspaceId: string
   isFirst?: boolean
   previousStepTime?: Date
   onSaved?: () => void
@@ -65,7 +65,7 @@ export function useSequenceStep({
   step,
   stepNumber,
   sequenceId,
-  chatbotId,
+  workspaceId,
   isFirst = false,
   previousStepTime,
   onSaved,
@@ -181,7 +181,7 @@ export function useSequenceStep({
           payload.sendDays = changedFields.sendDays
         }
 
-        const result = await upsertSequenceStepAction(chatbotId, payload)
+        const result = await upsertSequenceStepAction(workspaceId, payload)
 
         if (result?.data) {
           onSaved?.()
@@ -202,7 +202,7 @@ export function useSequenceStep({
       t,
       isFirst,
       previousStepTime,
-      chatbotId,
+      workspaceId,
       sequenceId,
       stepNumber,
       onSaved,
@@ -218,7 +218,7 @@ export function useSequenceStep({
     }
 
     try {
-      const result = await deleteSequenceStepAction(chatbotId, {
+      const result = await deleteSequenceStepAction(workspaceId, {
         stepId: step.id,
         sequenceId,
       })
@@ -235,7 +235,7 @@ export function useSequenceStep({
       console.error("Error deleting step:", error)
       toast.error(t("messages.deleteFailed"))
     }
-  }, [step?.id, chatbotId, sequenceId, t, router])
+  }, [step?.id, workspaceId, sequenceId, t, router])
 
   const handleSelectFlow = useCallback(
     async (flowId: string) => {

@@ -1,6 +1,6 @@
 "use client"
 
-import type { SequenceModel } from "@aha.chat/database/types"
+import type { SequenceModel } from "@chatbotx.io/database/types"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -8,10 +8,14 @@ import {
   BreadcrumbList,
   BreadcrumbPage,
   BreadcrumbSeparator,
-} from "@aha.chat/ui/components/ui/breadcrumb"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Card, CardContent, CardHeader } from "@aha.chat/ui/components/ui/card"
-import { Label } from "@aha.chat/ui/components/ui/label"
+} from "@chatbotx.io/ui/components/ui/breadcrumb"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import {
+  Card,
+  CardContent,
+  CardHeader,
+} from "@chatbotx.io/ui/components/ui/card"
+import { Label } from "@chatbotx.io/ui/components/ui/label"
 import { PlusIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
@@ -32,17 +36,17 @@ type SequenceEditorProps = {
       flow: { id: string; name: string } | null
     }>
   }
-  chatbotId: string
+  workspaceId: string
 }
 
-export function SequenceEditor({ sequence, chatbotId }: SequenceEditorProps) {
+export function SequenceEditor({ sequence, workspaceId }: SequenceEditorProps) {
   const t = useTranslations()
   const router = useRouter()
   const [isAddingStep, setIsAddingStep] = useState(false)
 
   const handleAddStep = async () => {
     try {
-      const result = await upsertSequenceStepAction(chatbotId, {
+      const result = await upsertSequenceStepAction(workspaceId, {
         sequenceId: sequence.id,
         order: sequence.steps.length,
         delayDays: 1,
@@ -74,12 +78,12 @@ export function SequenceEditor({ sequence, chatbotId }: SequenceEditorProps) {
   }
 
   return (
-    <FlowStoreProvider autoInitialize={true} chatbotId={chatbotId}>
+    <FlowStoreProvider autoInitialize={true} workspaceId={workspaceId}>
       <div className="mx- container py-1">
         <Breadcrumb className="mb-4">
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/chatbots/${chatbotId}/sequences`}>
+              <BreadcrumbLink href={`/space/${workspaceId}/sequences`}>
                 {t("fields.sequences.label")}
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -112,12 +116,12 @@ export function SequenceEditor({ sequence, chatbotId }: SequenceEditorProps) {
               .sort((a, b) => a.order - b.order)
               .map((step, index) => (
                 <SequenceStepCard
-                  chatbotId={chatbotId}
                   isFirst={index === 0}
                   key={step.id}
                   sequenceId={sequence.id}
                   step={step}
                   stepNumber={index + 1}
+                  workspaceId={workspaceId}
                 />
               ))}
 
@@ -137,11 +141,11 @@ export function SequenceEditor({ sequence, chatbotId }: SequenceEditorProps) {
 
             {isAddingStep && (
               <SequenceStepCard
-                chatbotId={chatbotId}
                 isNew
                 onSaved={() => setIsAddingStep(false)}
                 sequenceId={sequence.id}
                 stepNumber={sequence.steps.length + 1}
+                workspaceId={workspaceId}
               />
             )}
           </CardContent>

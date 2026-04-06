@@ -1,6 +1,6 @@
-import { SchedulerClient } from "@aha.chat/scheduler"
 import { type Consumer, createConsumer } from "@chatbotx.io/kafka"
 import { sequenceConnections } from "@chatbotx.io/redis"
+import { SchedulerClient } from "@chatbotx.io/scheduler"
 import pLimit, { type LimitFunction } from "p-limit"
 import { logger } from "../lib/logger"
 import {
@@ -138,7 +138,7 @@ class DispatchConsumer {
       if (!validation.valid) {
         await this.retryScheduler.markDispatchCanceled(
           dispatch.id,
-          dispatch.chatbotId,
+          dispatch.workspaceId,
           validation.reason,
         )
         return
@@ -151,7 +151,7 @@ class DispatchConsumer {
 
       await this.stepExecutor.markDispatchCompleted(
         dispatch.id,
-        dispatch.chatbotId,
+        dispatch.workspaceId,
         sentAt,
       )
 
@@ -181,7 +181,7 @@ class DispatchConsumer {
         } else {
           await this.retryScheduler.markDispatchFailed(
             dispatch.id,
-            dispatch.chatbotId,
+            dispatch.workspaceId,
             error instanceof Error ? error.message : "Unknown error",
           )
 
@@ -210,7 +210,7 @@ class DispatchConsumer {
   ) {
     const enrollment = await this.enrollmentAdvancer.fetchEnrollment(
       dispatch.enrollmentId,
-      dispatch.chatbotId,
+      dispatch.workspaceId,
     )
 
     if (!enrollment) {
@@ -233,7 +233,7 @@ class DispatchConsumer {
     if (!nextStep) {
       await this.enrollmentAdvancer.completeEnrollment(
         dispatch.enrollmentId,
-        dispatch.chatbotId,
+        dispatch.workspaceId,
         step,
         sentAt,
       )

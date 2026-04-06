@@ -1,16 +1,17 @@
 "use client"
 
-import { Skeleton } from "@aha.chat/ui/components/ui/skeleton"
-import { useParams } from "next/navigation"
+import { Skeleton } from "@chatbotx.io/ui/components/ui/skeleton"
 import { useEffect, useState } from "react"
 import { type GridComponents, Virtuoso } from "react-virtuoso"
+import { useWorkspaceId } from "@/hooks/routing"
 import { useChatStore } from "../chat/store/chat-store-provider"
 import { MessageItem } from "./components/message-item"
 
 const MESSAGE_LIST_PER_PAGE = 50
 
 export function MessageList() {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
+
   const {
     messages,
     loadMoreMessages,
@@ -27,7 +28,7 @@ export function MessageList() {
   useEffect(() => {
     setPage(1)
     if (activeConversationId) {
-      loadMoreMessages(chatbotId, MESSAGE_LIST_PER_PAGE)
+      loadMoreMessages(workspaceId, MESSAGE_LIST_PER_PAGE)
     }
   }, [activeConversationId])
 

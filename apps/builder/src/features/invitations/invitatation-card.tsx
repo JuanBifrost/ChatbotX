@@ -1,34 +1,34 @@
 "use client"
 
 import type {
-  ChatbotModel,
   InvitationModel,
   OrganizationModel,
   UserModel,
-} from "@aha.chat/database/types"
+  WorkspaceModel,
+} from "@chatbotx.io/database/types"
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@aha.chat/ui/components/ui/avatar"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Card, CardContent } from "@aha.chat/ui/components/ui/card"
+} from "@chatbotx.io/ui/components/ui/avatar"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
-import { getChatbotLogoUrl } from "../chatbots/helpers"
 import { getOrganizationLogoUrl } from "../organization/utils"
+import { getChatbotLogoUrl } from "../workspaces/helpers"
 import { acceptInvitationAction } from "./actions/accept-invitation"
 
 export function InvitationCard({
   invitation,
-  chatbot,
+  workspace,
   organization,
   user,
 }: {
   invitation: InvitationModel
-  chatbot: ChatbotModel | null
+  workspace: WorkspaceModel | null
   organization: OrganizationModel
   user: UserModel
 }) {
@@ -49,11 +49,11 @@ export function InvitationCard({
   return (
     <Card className="max-w-lg">
       <CardContent className="flex flex-col gap-4">
-        {chatbot ? (
+        {workspace ? (
           <ChatbotInvitationCard
-            chatbot={chatbot}
             organization={organization}
             user={user}
+            workspace={workspace}
           />
         ) : (
           <OrganizationInvitationCard organization={organization} user={user} />
@@ -82,11 +82,11 @@ export function InvitationCard({
 }
 
 export function ChatbotInvitationCard({
-  chatbot,
+  workspace,
   organization,
   user,
 }: {
-  chatbot: ChatbotModel
+  workspace: WorkspaceModel
   organization: OrganizationModel
   user: UserModel
 }) {
@@ -96,17 +96,17 @@ export function ChatbotInvitationCard({
     <>
       <div className="flex flex-col items-center justify-center gap-2">
         <Avatar className="size-16">
-          <AvatarImage src={getChatbotLogoUrl(chatbot)} />
+          <AvatarImage src={getChatbotLogoUrl(workspace)} />
           <AvatarFallback className="rounded font-bold text-2xl">
-            {chatbot.name.charAt(0)}
+            {workspace.name.charAt(0)}
           </AvatarFallback>
         </Avatar>
-        <h3 className="font-medium text-3xl">{chatbot.name}</h3>
+        <h3 className="font-medium text-3xl">{workspace.name}</h3>
       </div>
 
       <h3 className="font-bold text-lg">
         {t("invitation.chatbotInvitationDescription1", {
-          chatbotName: chatbot.name,
+          chatbotName: workspace.name,
           organizationName: organization.name,
         })}
       </h3>
@@ -116,7 +116,7 @@ export function ChatbotInvitationCard({
       <p>
         {t("invitation.chatbotInvitationDescription2", {
           userName: user.name ?? "",
-          chatbotName: chatbot.name,
+          chatbotName: workspace.name,
           organizationName: organization.name,
         })}
       </p>

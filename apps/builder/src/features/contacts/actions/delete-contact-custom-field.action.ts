@@ -1,40 +1,30 @@
 "use server"
 
-import { and, db, eq, findOrFail, inArray } from "@aha.chat/database/client"
-import {
-  contactCustomFieldModel,
-  contactModel,
-  customFieldModel,
-} from "@aha.chat/database/schema"
-import {
-  type FillableContactKeys,
-  fillableContactKeys,
-} from "@aha.chat/database/types"
-import { isCuid } from "@paralleldrive/cuid2"
+import { db } from "@chatbotx.io/database/client"
 import {
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type DeleteContactCustomFieldsRequest,
   deleteContactCustomFieldsRequest,
 } from "../schemas/contact-custom-field"
 
-export const deleteContactCustomFieldAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const deleteContactCustomFieldAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(deleteContactCustomFieldsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
       parsedInput: DeleteContactCustomFieldsRequest
     }) => {
       await deleteContactCustomFields({
-        chatbotId,
+        workspaceId,
         contactIds: parsedInput.ids,
         customFieldId: parsedInput.customFieldId,
       })
@@ -42,17 +32,16 @@ export const deleteContactCustomFieldAction = chatbotActionClient
   )
 
 export const deleteContactCustomFields = async ({
-  chatbotId,
+  workspaceId,
   contactIds,
-  customFieldId,
 }: {
-  chatbotId: string
+  workspaceId: string
   contactIds: string[]
   customFieldId: string
 }) => {
   const contacts = await db.query.contactModel.findMany({
     where: {
-      chatbotId,
+      workspaceId,
       id: {
         in: contactIds,
       },
@@ -65,49 +54,49 @@ export const deleteContactCustomFields = async ({
     return
   }
 
-  if (isCuid(customFieldId)) {
-    const customField = await findOrFail(
-      customFieldModel,
-      {
-        chatbotId,
-        id: customFieldId,
-      },
-      "Custom field not found",
-    )
+  // if (isCuid(customFieldId)) {
+  //   const customField = await findOrFail(
+  //     customFieldModel,
+  //     {
+  //       workspaceId,
+  //       id: customFieldId,
+  //     },
+  //     "Custom field not found",
+  //   )
 
-    await db.transaction(async (tx) => {
-      await tx.delete(contactCustomFieldModel).where(
-        and(
-          inArray(
-            contactCustomFieldModel.contactId,
-            contacts.map((c) => c.id),
-          ),
-          eq(contactCustomFieldModel.customFieldId, customField.id),
-        ),
-      )
-    })
-  } else if (
-    fillableContactKeys.includes(customFieldId as FillableContactKeys)
-  ) {
-    await db
-      .update(contactModel)
-      .set({
-        [customFieldId]: "",
-      })
-      .where(
-        and(
-          inArray(
-            contactModel.id,
-            contacts.map((c) => c.id),
-          ),
-          eq(contactModel.chatbotId, chatbotId),
-        ),
-      )
-  }
+  //   await db.transaction(async (tx) => {
+  //     await tx.delete(contactCustomFieldModel).where(
+  //       and(
+  //         inArray(
+  //           contactCustomFieldModel.contactId,
+  //           contacts.map((c) => c.id),
+  //         ),
+  //         eq(contactCustomFieldModel.customFieldId, customField.id),
+  //       ),
+  //     )
+  //   })
+  // } else if (
+  //   fillableContactKeys.includes(customFieldId as FillableContactKeys)
+  // ) {
+  //   await db
+  //     .update(contactModel)
+  //     .set({
+  //       [customFieldId]: "",
+  //     })
+  //     .where(
+  //       and(
+  //         inArray(
+  //           contactModel.id,
+  //           contacts.map((c) => c.id),
+  //         ),
+  //         eq(contactModel.workspaceId, workspaceId),
+  //       ),
+  //     )
+  // }
 
   revalidateCacheTags([
-    `chatbots:${chatbotId}#contacts`,
-    `chatbots:${chatbotId}#conversations`,
-    `chatbots:${chatbotId}#fields`,
+    `workspaces:${workspaceId}#contacts`,
+    `workspaces:${workspaceId}#conversations`,
+    `workspaces:${workspaceId}#fields`,
   ])
 }

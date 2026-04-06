@@ -1,6 +1,9 @@
-import { Condition } from "@aha.chat/database/enums"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
+import {
+  type TriggerEventType,
+  triggerEventTypes,
+} from "@chatbotx.io/database/partials"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import { useFormContext } from "react-hook-form"
 import { useTagSelectOptions } from "@/features/tags/provider/tag-hook"
 import { CustomFieldValueChanged } from "./custom-field-value-changed"
@@ -11,21 +14,21 @@ export const ConditionEditor = ({
   type,
 }: {
   parentName: string
-  type: Condition
+  type: TriggerEventType
 }) => {
   const tagOptions = useTagSelectOptions()
   const form = useFormContext()
 
   switch (type) {
-    case Condition.tagApplied:
-    case Condition.tagRemoved: {
+    case triggerEventTypes.enum.tagApplied:
+    case triggerEventTypes.enum.tagRemoved: {
       return (
         <SelectField name={`${parentName}.sourceId`} options={tagOptions} />
       )
     }
-    case Condition.dateTimeBasedTrigger:
+    case triggerEventTypes.enum.dateTimeBasedTrigger:
       return <DateTimeBasedTrigger parentName={parentName} />
-    case Condition.customFieldValueChanged:
+    case triggerEventTypes.enum.customFieldValueChanged:
       return <CustomFieldValueChanged parentName={parentName} />
     default:
       return (

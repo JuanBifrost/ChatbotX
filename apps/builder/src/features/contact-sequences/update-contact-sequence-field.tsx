@@ -3,16 +3,16 @@
 import type {
   ContactsOnSequenceModel,
   SequenceModel,
-} from "@aha.chat/database/types"
-import { SelectTagsInputField } from "@aha.chat/ui/components/form/select-tags-input-field"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/database/types"
+import { SelectTagsInputField } from "@chatbotx.io/ui/components/form/select-tags-input-field"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 import { toast } from "sonner"
 import { useSequenceOptions } from "@/features/sequences/provider/sequence-hook"
+import { useWorkspaceId } from "@/hooks/routing"
 import type { ContactResource } from "../contacts/schemas/resource"
 import { updateContactSequenceAction } from "./actions/update-contact-sequence.action"
 import {
@@ -29,7 +29,8 @@ export default function UpdateContactSequenceField({
   sequences: ContactOnSequenceWithRelations[]
   onSuccess?: (updatedSequences: ContactOnSequenceWithRelations[]) => void
 }) {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
+
   const t = useTranslations()
 
   const sequenceOptions = useSequenceOptions()
@@ -39,14 +40,11 @@ export default function UpdateContactSequenceField({
   }))
 
   const [currentSequencesIds, setCurrentSequencesIds] = useState<string[]>(
-    () =>
-      sequences
-        ?.map((cos) => cos.sequence.id)
-        .filter((id): id is string => !!id) ?? [],
+    () => sequences?.map((cos) => cos.sequence.id).filter(Boolean) ?? [],
   )
 
   const { form, handleSubmitWithAction } = useHookFormAction(
-    updateContactSequenceAction.bind(null, chatbotId),
+    updateContactSequenceAction.bind(null, workspaceId),
     zodResolver(updateContactSequenceRequest),
     {
       actionProps: {
@@ -76,9 +74,7 @@ export default function UpdateContactSequenceField({
 
   useEffect(() => {
     const newSequencesIds =
-      sequences
-        ?.map((cos) => cos.sequence.id)
-        .filter((id): id is string => !!id) ?? []
+      sequences?.map((cos) => cos.sequence.id).filter(Boolean) ?? []
     setCurrentSequencesIds(newSequencesIds)
     form.setValue("sequences", newSequencesIds)
   }, [sequences, form])

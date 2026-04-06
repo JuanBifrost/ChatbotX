@@ -1,9 +1,9 @@
 "use client"
 
-import type { ContactNoteModel } from "@aha.chat/database/types"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form } from "@aha.chat/ui/components/ui/form"
+import type { ContactNoteModel } from "@chatbotx.io/database/types"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { useTranslations } from "next-intl"
@@ -12,13 +12,13 @@ import { createContactNoteAction } from "./actions/create-contact-note.action"
 import { addContactNoteRequest } from "./schemas/action"
 
 export function AddContactForm({
-  chatbotId,
+  workspaceId,
   contactId,
   onCancel,
   onSuccess,
 }: {
-  chatbotId: string
-  contactId: string
+  workspaceId: string
+  contactId: string | undefined
   onCancel: () => void
   onSuccess: (data: ContactNoteModel) => void
 }) {
@@ -26,7 +26,7 @@ export function AddContactForm({
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createContactNoteAction.bind(null, chatbotId, contactId),
+      createContactNoteAction.bind(null, workspaceId, contactId ?? ""),
       zodResolver(addContactNoteRequest),
       {
         actionProps: {
@@ -48,7 +48,7 @@ export function AddContactForm({
         formProps: {
           mode: "onChange",
           defaultValues: {
-            content: "",
+            text: "",
           },
         },
         errorMapProps: {},

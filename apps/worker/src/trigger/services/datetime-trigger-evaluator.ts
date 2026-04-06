@@ -1,8 +1,8 @@
-import { db, sql } from "@aha.chat/database/client"
-import { Condition } from "@aha.chat/database/enums"
-import { triggerExecutionModel } from "@aha.chat/database/schema"
-import { getRedisConnection } from "@aha.chat/worker-config"
-import { createId } from "@paralleldrive/cuid2"
+import { db, sql } from "@chatbotx.io/database/client"
+import { triggerEventTypes } from "@chatbotx.io/database/partials"
+import { triggerExecutionModel } from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
+import { getRedisConnection } from "@chatbotx.io/worker-config"
 import { logger } from "../../lib/logger"
 import type {
   DateTimeCondition,
@@ -25,7 +25,7 @@ interface DateTimeTriggerResult {
 interface TriggerMap {
   [triggerId: string]: {
     triggerId: string
-    chatbotId: string
+    workspaceId: string
     actions: unknown
     conditions: DateTimeCondition[]
     timezone: string
@@ -42,7 +42,7 @@ async function fetchTriggerChunk(
     },
     with: {
       conditions: true,
-      chatbot: true,
+      workspace: true,
     },
     limit: chunkSize,
     orderBy: { id: "asc" },
@@ -51,7 +51,9 @@ async function fetchTriggerChunk(
   // Filter triggers that have datetime conditions and apply cursor
   const filteredTriggers = triggers
     .filter((t) =>
-      t.conditions.some((c) => c.type === Condition.dateTimeBasedTrigger),
+      t.conditions.some(
+        (c) => c.type === triggerEventTypes.enum.dateTimeBasedTrigger,
+      ),
     )
     .filter((t) => (cursor ? t.id > cursor : true))
     .slice(0, chunkSize)
@@ -60,7 +62,7 @@ async function fetchTriggerChunk(
   const triggersWithFilteredConditions = filteredTriggers.map((t) => ({
     ...t,
     conditions: t.conditions.filter(
-      (c) => c.type === Condition.dateTimeBasedTrigger,
+      (c) => c.type === triggerEventTypes.enum.dateTimeBasedTrigger,
     ),
   }))
 
@@ -89,12 +91,12 @@ async function fetchTriggerChunk(
     }
 
     if (conditions.length > 0) {
-      triggerMap[trigger.id] = {
+      triggerMap[trigger.id.toString()] = {
         triggerId: trigger.id,
-        chatbotId: trigger.chatbotId,
+        workspaceId: trigger.workspaceId,
         actions: trigger.actions,
         conditions,
-        timezone: trigger.chatbot?.accountTimezone || "UTC",
+        timezone: trigger.workspace?.timezone || "UTC",
       }
     }
   }
@@ -140,7 +142,7 @@ function buildContactCustomFieldMap(
 function filterContactsWithAllCustomFields(
   contactCustomFields: Array<{
     contactId: string
-    contact: { chatbotId: string }
+    contact: { workspaceId: string }
   }>,
   triggerInfo: TriggerMap[string],
   contactCustomFieldMap: Map<string, Map<string, unknown>>,
@@ -148,7 +150,7 @@ function filterContactsWithAllCustomFields(
   const contactsToCheck = new Set<string>()
 
   for (const cf of contactCustomFields) {
-    if (cf.contact.chatbotId !== triggerInfo.chatbotId) {
+    if (cf.contact.workspaceId !== triggerInfo.workspaceId) {
       return new Set()
     }
 
@@ -254,7 +256,7 @@ async function executeActions(
       await executor.execute({
         action,
         contactId,
-        chatbotId: triggerInfo.chatbotId,
+        workspaceId: triggerInfo.workspaceId,
       })
     } catch (error) {
       logger.error(
@@ -276,7 +278,7 @@ async function markTriggerExecuted(
       id: createId(),
       triggerId: triggerInfo.triggerId,
       contactId,
-      chatbotId: triggerInfo.chatbotId,
+      workspaceId: triggerInfo.workspaceId,
       createdAt: new Date(),
       executedAt: new Date(),
     })
@@ -353,7 +355,7 @@ async function processContactBatch(
       contact: {
         columns: {
           id: true,
-          chatbotId: true,
+          workspaceId: true,
         },
       },
     },

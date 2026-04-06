@@ -1,14 +1,14 @@
-import { db, type Transaction } from "@aha.chat/database/client"
-import { contactsOnSequenceModel } from "@aha.chat/database/schema"
-import { SchedulerClient } from "@aha.chat/scheduler"
+import { db, type Transaction } from "@chatbotx.io/database/client"
+import { contactsOnSequenceModel } from "@chatbotx.io/database/schema"
 import { sequenceConnections } from "@chatbotx.io/redis"
-import { createId } from "@paralleldrive/cuid2"
+import { SchedulerClient } from "@chatbotx.io/scheduler"
+import { createId } from "@chatbotx.io/utils"
 import { createDispatch } from "./dispatch-manager"
 
 type DrizzleClient = typeof db | Transaction
 
 export type EnrollContactParams = {
-  chatbotId: string
+  workspaceId: string
   client?: DrizzleClient
   contactId: string
   enrolledAt?: Date
@@ -19,7 +19,7 @@ export type EnrollContactParams = {
 
 export async function enrollContactInSequence(params: EnrollContactParams) {
   const {
-    chatbotId,
+    workspaceId,
     contactId,
     sequenceId,
     nextRunAt,
@@ -32,7 +32,7 @@ export async function enrollContactInSequence(params: EnrollContactParams) {
     where: {
       contactId,
       sequenceId,
-      chatbotId,
+      workspaceId,
     },
     columns: { id: true },
   })
@@ -46,7 +46,7 @@ export async function enrollContactInSequence(params: EnrollContactParams) {
     .insert(contactsOnSequenceModel)
     .values({
       id: enrollmentId,
-      chatbotId,
+      workspaceId,
       contactId,
       sequenceId,
       currentStep: 0,
@@ -61,7 +61,7 @@ export async function enrollContactInSequence(params: EnrollContactParams) {
     return
   }
   const dispatch = await createDispatch({
-    chatbotId,
+    workspaceId,
     sequenceId,
     contactId,
     stepId: nextStepId,
@@ -75,7 +75,6 @@ export async function enrollContactInSequence(params: EnrollContactParams) {
   await scheduler.addToSchedule(dispatch.bucket, dispatch.id, dispatch.runAtMs)
 }
 export interface EnrollContactsBulkParams {
-  chatbotId: string
   enrolledAt?: Date
   enrollments: Array<{
     contactId: string
@@ -83,18 +82,19 @@ export interface EnrollContactsBulkParams {
     nextRunAt: Date
     nextStepId: string | null
   }>
+  workspaceId: string
 }
 export async function enrollContactsInSequenceBulk(
   params: EnrollContactsBulkParams,
 ) {
-  const { chatbotId, enrollments, enrolledAt = new Date() } = params
+  const { workspaceId, enrollments, enrolledAt = new Date() } = params
   const createdEnrollments = await db.transaction(async (tx) => {
     await tx
       .insert(contactsOnSequenceModel)
       .values(
         enrollments.map((e) => ({
           id: createId(),
-          chatbotId,
+          workspaceId,
           contactId: e.contactId,
           sequenceId: e.sequenceId,
           currentStep: 0,
@@ -111,7 +111,7 @@ export async function enrollContactsInSequenceBulk(
 
     return await tx.query.contactsOnSequenceModel.findMany({
       where: {
-        chatbotId,
+        workspaceId,
         contactId: { in: contactIds },
         sequenceId: { in: sequenceIds },
       },
@@ -131,7 +131,7 @@ export async function enrollContactsInSequenceBulk(
       continue
     }
     const dispatch = await createDispatch({
-      chatbotId,
+      workspaceId,
       sequenceId: enrollment.sequenceId,
       contactId: enrollment.contactId,
       stepId: enrollment.nextStepId,

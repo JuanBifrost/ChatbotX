@@ -1,4 +1,4 @@
-import type { SendMessageProps, SendTypingProps } from "@aha.chat/sdk"
+import type { SendMessageProps, SendTypingProps } from "@chatbotx.io/sdk"
 import ky from "ky"
 import type { WebchatAuthValue } from "../schemas"
 
@@ -7,11 +7,11 @@ export const sendTyping = async (
 ): Promise<void> => {
   const {
     ctx,
-    data: { conversation, typing },
+    data: { contactInbox, typing },
   } = props
 
   await ky
-    .post(`${ctx.auth.websocketUrl}/parties/guests/${conversation.sourceId}`, {
+    .post(`${ctx.auth.websocketUrl}/parties/guests/${contactInbox.sourceId}`, {
       headers: {
         "X-API-Key": ctx.auth.apiKey,
       },
@@ -30,11 +30,11 @@ export const sendMessage = async (
 ): Promise<void> => {
   const {
     ctx,
-    data: { conversation, message },
+    data: { contactInbox, message },
   } = props
 
   await ky
-    .post(`${ctx.auth.websocketUrl}/parties/guests/${conversation.sourceId}`, {
+    .post(`${ctx.auth.websocketUrl}/parties/guests/${contactInbox.sourceId}`, {
       headers: {
         "X-API-Key": ctx.auth.apiKey,
       },

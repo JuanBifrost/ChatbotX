@@ -1,26 +1,26 @@
 "use server"
 
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { conversationModel } from "@aha.chat/database/schema"
-import type { UserModel } from "@aha.chat/database/types"
 import { emitConversationTransferredToBot } from "@chatbotx/events"
 import { conversationTrackingService } from "@chatbotx.io/analytics"
-import { createId } from "@paralleldrive/cuid2"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { conversationModel } from "@chatbotx.io/database/schema"
+import type { UserModel } from "@chatbotx.io/database/types"
+import { createId } from "@chatbotx.io/utils"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const enableBotAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const enableBotAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(bulkUpdateIdsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
       ctx,
     }: {
@@ -31,7 +31,7 @@ export const enableBotAction = chatbotActionClient
       // Get conversations before updating to emit events
       const conversations = await db.query.conversationModel.findMany({
         where: {
-          chatbotId,
+          workspaceId,
           id: {
             in: parsedInput.ids,
           },
@@ -46,11 +46,11 @@ export const enableBotAction = chatbotActionClient
       await db
         .update(conversationModel)
         .set({
-          liveChatEnabled: false,
+          botEnabled: true,
         })
         .where(
           and(
-            eq(conversationModel.chatbotId, chatbotId),
+            eq(conversationModel.workspaceId, workspaceId),
             inArray(conversationModel.id, parsedInput.ids),
           ),
         )
@@ -59,7 +59,7 @@ export const enableBotAction = chatbotActionClient
       for (const conv of conversations) {
         try {
           await emitConversationTransferredToBot(
-            chatbotId,
+            workspaceId,
             conv.contactId,
             conv.id,
             ctx.user.id,
@@ -75,11 +75,11 @@ export const enableBotAction = chatbotActionClient
       for (const conv of conversations) {
         await conversationTrackingService.trackEvent(
           {
-            chatbotId,
+            workspaceId,
             conversationId: conv.id,
             eventType: "conversation_transferred_to_bot",
             eventId: createId(),
-            channel: conv.channel,
+            channel: "webchat", // TODO: replace correct channel from contact inbox
             occurredAt: new Date(),
             metadata: {
               triggerContext: {
@@ -93,6 +93,6 @@ export const enableBotAction = chatbotActionClient
         )
       }
 
-      revalidateCacheTags(`chatbots:${chatbotId}#conversations`)
+      revalidateCacheTags(`workspaces:${workspaceId}#conversations`)
     },
   )

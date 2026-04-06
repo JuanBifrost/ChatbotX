@@ -1,16 +1,18 @@
-import { db } from "@aha.chat/database/client"
-import type { PaginatedResponse } from "@/features/common/schemas/pagination"
+import { db } from "@chatbotx.io/database/client"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
-import type { InboxTeamResource, ListInboxTeamsRequest } from "../schema"
+import type {
+  ListInboxTeamsRequest,
+  ListInboxTeamsResponse,
+} from "../schema/action"
 
-export async function getInboxTeams(
+export async function listInboxTeams(
   input: ListInboxTeamsRequest,
-): Promise<PaginatedResponse<InboxTeamResource>> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+): Promise<ListInboxTeamsResponse> {
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const data = await db.query.inboxTeamModel.findMany({
     where: {
-      chatbotId: input.chatbotId,
+      workspaceId: input.workspaceId,
     },
     with: {
       inboxTeamMembers: {
@@ -24,5 +26,5 @@ export async function getInboxTeams(
     },
   })
 
-  return { data, pageCount: 1 }
+  return { data }
 }

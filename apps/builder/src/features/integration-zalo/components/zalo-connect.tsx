@@ -1,18 +1,18 @@
 "use client"
 
-import type { OrganizationSettings } from "@aha.chat/database/types"
-import { generateAuthUrl } from "@aha.chat/integration-zalo"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import { generateAuthUrl } from "@chatbotx.io/integration-zalo"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { RedirectType, redirect } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
 
 export type ZaloConnectProps = {
-  chatbotId?: string | null
+  workspaceId?: string | null
   settings: NonNullable<OrganizationSettings["zalo"]>
 }
 
-export function ZaloConnect({ chatbotId, settings }: ZaloConnectProps) {
+export function ZaloConnect({ workspaceId, settings }: ZaloConnectProps) {
   const t = useTranslations()
 
   const [currentUrl, setCurrentUrl] = useState<string>("")
@@ -31,7 +31,7 @@ export function ZaloConnect({ chatbotId, settings }: ZaloConnectProps) {
       ...settings,
       redirectUrl,
       stateParams: {
-        chatbotId,
+        workspaceId,
         referer: currentUrl,
       },
     })

@@ -1,14 +1,14 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { StepType } from "./step-action"
+import { stepTypes } from "./step-action"
 
 export const AIGenerateTextAgentSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.aiGenerateTextAgent),
-  aiAgentId: z.cuid2(),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.aiGenerateTextAgent),
+  aiAgentId: zodBigintAsString(),
   message: z.string().trim().min(1),
-  outputCfId: z.cuid2(),
-  aiToolIds: z.array(z.cuid2()),
+  outputCfId: zodBigintAsString(),
+  aiToolIds: z.array(zodBigintAsString()),
   rememberConversation: z.boolean(),
   temperature: z.number().min(0).max(1).optional(),
   maxOutputTokens: z.number().optional(),
@@ -22,7 +22,7 @@ export const AIGenerateTextAgentDefaultFn = (
   props?: Partial<AIGenerateTextAgentSchema>,
 ): AIGenerateTextAgentSchema => ({
   id: createId(),
-  stepType: StepType.aiGenerateTextAgent,
+  stepType: stepTypes.enum.aiGenerateTextAgent,
   aiAgentId: "",
   message: "",
   outputCfId: "",

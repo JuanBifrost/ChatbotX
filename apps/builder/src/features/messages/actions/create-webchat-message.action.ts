@@ -1,38 +1,48 @@
 "use server"
 
-import { db, eq, findOrFail, type Transaction } from "@aha.chat/database/client"
+import { contactTrackingService } from "@chatbotx.io/analytics"
+import {
+  db,
+  eq,
+  findOrFail,
+  type Transaction,
+} from "@chatbotx.io/database/client"
+import type { ConversationAttributes } from "@chatbotx.io/database/partials"
 import {
   attachmentModel,
-  chatbotUsageModel,
+  contactInboxModel,
   contactModel,
   conversationModel,
   integrationWebchatModel,
   messageModel,
-} from "@aha.chat/database/schema"
+  workspaceUsageModel,
+} from "@chatbotx.io/database/schema"
 import type {
   ContactModel,
-  ConversationAttributes,
-} from "@aha.chat/database/types"
-import { getPublicUrl } from "@aha.chat/database/utils"
-import { type UploadedFile, uploadMultipleFiles } from "@aha.chat/filesystem"
+  ConversationModel,
+} from "@chatbotx.io/database/types"
+import { getPublicUrl } from "@chatbotx.io/database/utils"
+import { type UploadedFile, uploadMultipleFiles } from "@chatbotx.io/filesystem"
 import {
-  broadcastToChatbotParty,
   broadcastToGuestParty,
+  broadcastToWorkspaceParty,
   RealtimeEventType,
-} from "@aha.chat/partysocket-config"
-import type { OutgoingMessage } from "@aha.chat/sdk"
-import { IntegrationJobAction, integrationQueue } from "@aha.chat/worker-config"
-import { contactTrackingService } from "@chatbotx.io/analytics"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/partysocket-config"
+import type { OutgoingMessage } from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
+import {
+  IntegrationJobAction,
+  integrationQueue,
+} from "@chatbotx.io/worker-config"
 import { randomString } from "remeda"
-import type { AttachmentResource } from "@/features/attachments/schemas"
-import { ChatbotXException, notFoundException } from "@/lib/errors/exception"
+import type { AttachmentResource } from "@/features/attachments/schema/resource"
+import { ChatbotXException } from "@/lib/errors/exception"
 import { actionClient } from "@/lib/safe-action"
-import type { MessageResource } from "../schemas"
 import {
   type CreateWebchatMessageRequest,
   createWebchatMessageRequest,
-} from "../schemas/create-message.schema"
+} from "../schema/mutation"
+import type { MessageResource } from "../schema/resource"
 
 export const createWebchatMessageAction = actionClient
   .inputSchema(createWebchatMessageRequest)
@@ -43,11 +53,10 @@ export async function handleCreateWebchatMessage({
 }: {
   parsedInput: CreateWebchatMessageRequest
 }) {
-  const { conversation, isNewContact, contact } = await db.transaction(
-    async (tx) => {
+  const { conversation, isNewContact, contact, contactInbox } =
+    await db.transaction(async (tx) => {
       return await getConversationFromInput(tx, parsedInput)
-    },
-  )
+    })
 
   // Process flow if exists
   if ("flowId" in parsedInput) {
@@ -90,26 +99,27 @@ export async function handleCreateWebchatMessage({
     if ("files" in parsedInput && parsedInput.files.length > 0) {
       uploadedFiles = await uploadMultipleFiles(
         parsedInput.files,
-        `public/chatbots/${parsedInput.chatbotId}/conversations/${conversation.id}`,
+        `public/space/${parsedInput.workspaceId}/conversations/${conversation.id}`,
       )
     }
 
     if (
-      "content" in parsedInput &&
-      (parsedInput.content || uploadedFiles.length > 0)
+      "text" in parsedInput &&
+      (parsedInput.text || uploadedFiles.length > 0)
     ) {
-      const newMessage: MessageResource = await tx
+      const newMessage: MessageResource & {
+        attachments?: AttachmentResource[]
+      } = await tx
         .insert(messageModel)
         .values({
-          id: createId(),
-          content: "content" in parsedInput ? parsedInput.content : null,
+          text: parsedInput.text,
           messageType: "incoming",
-          chatbotId: conversation.chatbotId,
+          workspaceId: conversation.workspaceId,
           conversationId: conversation.id,
           senderType: "contact",
           senderId: conversation.contactId,
-          inboxId: conversation.inboxId,
           contentType: "text",
+          contactInboxId: contactInbox.id,
         })
         .returning()
         .then((result) => result[0])
@@ -119,9 +129,8 @@ export async function handleCreateWebchatMessage({
           .insert(attachmentModel)
           .values(
             uploadedFiles.map((file) => ({
-              id: createId(),
               messageId: newMessage.id,
-              chatbotId: newMessage.chatbotId,
+              workspaceId: newMessage.workspaceId,
               conversationId: newMessage.conversationId,
               ...file,
             })),
@@ -149,7 +158,7 @@ export async function handleCreateWebchatMessage({
       // Broadcast realtime message
       const promises: Promise<unknown>[] = []
       promises.push(
-        broadcastToChatbotParty(newMessage.chatbotId, {
+        broadcastToWorkspaceParty(newMessage.workspaceId, {
           eventType: RealtimeEventType.messageCreated,
           data: {
             ...newMessage,
@@ -158,9 +167,9 @@ export async function handleCreateWebchatMessage({
         }),
       )
 
-      if (uploadedFiles.length > 0 && conversation.sourceId) {
+      if (uploadedFiles.length > 0 && contactInbox.sourceId) {
         promises.push(
-          broadcastToGuestParty(conversation.sourceId, {
+          broadcastToGuestParty(contactInbox.sourceId, {
             eventType: RealtimeEventType.messageCreated,
             data: {
               ...newMessage,
@@ -170,10 +179,10 @@ export async function handleCreateWebchatMessage({
         )
       }
 
-      const conversationAttributes =
-        conversation.conversationAttributes as unknown as ConversationAttributes
+      const additionalAttributes =
+        conversation.additionalAttributes as unknown as ConversationAttributes
 
-      if (conversationAttributes?.challenge) {
+      if (additionalAttributes?.challenge) {
         promises.push(
           integrationQueue.add(
             IntegrationJobAction.runChallenge,
@@ -181,7 +190,7 @@ export async function handleCreateWebchatMessage({
               type: IntegrationJobAction.runChallenge,
               data: {
                 conversationId: conversation.id,
-                challenge: conversationAttributes?.challenge,
+                challenge: additionalAttributes?.challenge,
               },
             },
             {
@@ -192,8 +201,8 @@ export async function handleCreateWebchatMessage({
           ),
         )
       } else if (
-        !conversation.liveChatEnabled &&
-        newMessage.content &&
+        conversation.botEnabled &&
+        newMessage.text &&
         !("postback" in parsedInput && parsedInput.postback)
       ) {
         // trigger automated response if the message is not a postback
@@ -210,8 +219,8 @@ export async function handleCreateWebchatMessage({
 
       if (isNewContact && parsedInput.guestConversationId) {
         await contactTrackingService.trackEvent({
-          chatbotId: parsedInput.chatbotId,
-          contactId: parsedInput.guestConversationId,
+          workspaceId: parsedInput.workspaceId,
+          contactId: contact.id,
           eventType: "contact_created",
           occurredAt: contact.createdAt,
           source: "webchat",
@@ -236,83 +245,97 @@ async function getConversationFromInput(
   tx: Transaction,
   parsedInput: CreateWebchatMessageRequest,
 ) {
-  const integrationWebchat = await findOrFail(
-    integrationWebchatModel,
-    {
-      chatbotId: parsedInput.chatbotId,
+  const integrationWebchat = await findOrFail({
+    table: integrationWebchatModel,
+    where: {
+      workspaceId: parsedInput.workspaceId,
       id: parsedInput.webchatId,
     },
-    "Channel not found",
-  )
+    message: "Channel not found",
+  })
 
+  let isNewContact = false
   const sourceId = parsedInput.guestConversationId
-  let conversation = await tx.query.conversationModel.findFirst({
+
+  let conversation: ConversationModel | null | undefined = null
+  let contact: ContactModel | null | undefined = null
+
+  let contactInbox = await tx.query.contactInboxModel.findFirst({
     where: {
-      chatbotId: parsedInput.chatbotId,
-      sourceId,
       inboxId: integrationWebchat.inboxId,
+      sourceId,
+    },
+    orderBy: {
+      lastMessageAt: "desc",
     },
   })
-  let contact: ContactModel | null = null
-  let isNewContact = false
-
-  if (conversation) {
-    contact = await findOrFail(
-      contactModel,
-      {
-        id: conversation.contactId,
-      },
-      "Contact not found",
-    )
-  } else {
-    // find or create contact
-    let contact = await tx.query.contactModel.findFirst({
+  if (contactInbox) {
+    conversation = await tx.query.conversationModel.findFirst({
       where: {
-        chatbotId: parsedInput.chatbotId,
-        sourceId,
+        workspaceId: parsedInput.workspaceId,
+        contactId: contactInbox.contactId,
       },
     })
-
-    if (!contact) {
-      const chatbotUsage = await findOrFail(
-        chatbotUsageModel,
-        {
-          chatbotId: parsedInput.chatbotId,
-        },
-        "Chatbot usage not found",
-      )
-      if (chatbotUsage.contactsCount >= chatbotUsage.maxContacts) {
-        throw new ChatbotXException("Max contacts reached")
-      }
-
-      contact = await tx
-        .insert(contactModel)
-        .values({
-          id: createId(),
-          chatbotId: parsedInput.chatbotId,
-          sourceId,
-          email: parsedInput.guestConversationId,
-          channel: "webchat",
-          gender: "unknown",
-          firstName: "Guest",
-          lastName: randomString(10),
-        })
-        .returning()
-        .then((result) => result[0])
-      isNewContact = true
+    contact = await tx.query.contactModel.findFirst({
+      where: {
+        id: contactInbox.contactId,
+      },
+    })
+  } else {
+    const workspaceUsage = await findOrFail({
+      table: workspaceUsageModel,
+      where: {
+        workspaceId: parsedInput.workspaceId,
+      },
+      message: "Workspace usage not found",
+    })
+    if (workspaceUsage.contactsCount >= workspaceUsage.maxContacts) {
+      throw new ChatbotXException("Max contacts reached")
     }
 
+    // Create new contact
+    contact = await tx
+      .insert(contactModel)
+      .values({
+        id: createId(),
+        workspaceId: parsedInput.workspaceId,
+        email: parsedInput.guestConversationId,
+        gender: "unknown",
+        firstName: "Guest",
+        lastName: randomString(10),
+      })
+      .returning()
+      .then((result) => result[0])
     if (!contact) {
       throw new ChatbotXException("Contact not found")
     }
 
+    isNewContact = true
+
+    // Create contact inbox
+    contactInbox = await tx
+      .insert(contactInboxModel)
+      .values({
+        id: createId(),
+        inboxId: integrationWebchat.inboxId,
+        contactId: contact.id,
+        originalContactId: contact.id,
+        source: "webchat",
+        sourceId,
+        channel: "webchat",
+      })
+      .returning()
+      .then((result) => result[0])
+    if (!contactInbox) {
+      throw new ChatbotXException("Contact inbox not found")
+    }
+
+    // Create new conversation
     conversation = await tx
       .insert(conversationModel)
       .values({
         id: createId(),
-        chatbotId: parsedInput.chatbotId,
-        sourceId,
-        inboxId: integrationWebchat.inboxId,
+        workspaceId: parsedInput.workspaceId,
         contactId: contact.id,
       })
       .returning()
@@ -320,15 +343,19 @@ async function getConversationFromInput(
   }
 
   if (!conversation) {
-    throw notFoundException("Conversation not found")
+    throw new ChatbotXException("Conversation not found")
+  }
+  if (!contactInbox) {
+    throw new ChatbotXException("Contact inbox not found")
   }
   if (!contact) {
-    throw notFoundException("Contact not found")
+    throw new ChatbotXException("Contact not found")
   }
 
   return {
     conversation,
     contact,
+    contactInbox,
     isNewContact,
   }
 }

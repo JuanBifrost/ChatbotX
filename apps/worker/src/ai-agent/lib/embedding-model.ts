@@ -1,7 +1,7 @@
-import { db } from "@aha.chat/database/client"
-import type { SecretTextAuthValue } from "@aha.chat/sdk"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createOpenAI } from "@ai-sdk/openai"
+import { db } from "@chatbotx.io/database/client"
+import type { SecretTextAuthValue } from "@chatbotx.io/sdk"
 import {
   DEFAULT_GEMINI_EMBEDDING_MODEL,
   OPENAI_EMBEDDING_MODELS,
@@ -14,14 +14,14 @@ export type EmbeddingModel =
     >
 
 export async function resolveEmbeddingModel(
-  chatbotId: string,
+  workspaceId: string,
 ): Promise<EmbeddingModel> {
   const [integrationOpenAI, integrationGemini] = await Promise.all([
-    db.query.integrationOpenAIModel.findFirst({
-      where: { chatbotId },
+    db.query.integrationOpenaiModel.findFirst({
+      where: { workspaceId },
     }),
     db.query.integrationGeminiModel.findFirst({
-      where: { chatbotId },
+      where: { workspaceId },
     }),
   ])
 

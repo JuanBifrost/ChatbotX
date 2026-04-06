@@ -1,16 +1,16 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 import type { IntegrationOpenAIResource } from "../schemas/request"
 
 export const findIntegrationOpenAI = async ({
-  chatbotId,
+  workspaceId,
 }: {
-  chatbotId: string
+  workspaceId: string
 }): Promise<{
   data: IntegrationOpenAIResource | null
 }> => {
-  const data = await db.query.integrationOpenAIModel.findFirst({
+  const data = await db.query.integrationOpenaiModel.findFirst({
     where: {
-      chatbotId,
+      workspaceId,
     },
   })
 

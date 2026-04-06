@@ -1,19 +1,19 @@
-import { DirectUploadButton } from "@aha.chat/ui/components/uploader/direct-upload-button"
-import { getMimeTypeFromFile } from "@aha.chat/ui/lib/file-types"
-import { useParams } from "next/navigation"
+import { DirectUploadButton } from "@chatbotx.io/ui/components/uploader/direct-upload-button"
+import { getMimeTypeFromFile } from "@chatbotx.io/ui/lib/file-types"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
+import { useWorkspaceId } from "@/hooks/routing"
 import { createAIFileAction } from "./actions/create-ai-file.action"
 import { getAIFileExtensionsAccept } from "./constants"
 
 export function AIFilesCreate({ onSuccess }: { onSuccess?: () => void }) {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
 
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    createAIFileAction.bind(null, chatbotId),
+    createAIFileAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(
@@ -55,7 +55,7 @@ export function AIFilesCreate({ onSuccess }: { onSuccess?: () => void }) {
           size: file.size,
         })
       }}
-      uploadPath={`public/chatbots/${chatbotId}/ai-files`}
+      uploadPath={`public/space/${workspaceId}/ai-files`}
     />
   )
 }

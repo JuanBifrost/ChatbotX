@@ -1,9 +1,9 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form } from "@aha.chat/ui/components/ui/form"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -13,11 +13,11 @@ import { createContactAction } from "./actions/create-contact.action"
 import { createContactRequest } from "./schemas/action"
 
 export function CreateContactForm({
-  chatbotId,
+  workspaceId,
   onSubmmited,
   onCancelled,
 }: {
-  chatbotId: string
+  workspaceId: string
   onSubmmited?: () => void
   onCancelled?: () => void
 }) {
@@ -25,7 +25,7 @@ export function CreateContactForm({
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createContactAction.bind(null, chatbotId),
+      createContactAction.bind(null, workspaceId),
       zodResolver(createContactRequest),
       {
         actionProps: {
@@ -86,7 +86,7 @@ export function CreateContactForm({
         <InputField
           label={t("fields.email.label")}
           name="email"
-          placeholder="email@aha.chat"
+          placeholder="email@chatbotx.io"
         />
 
         <InputField

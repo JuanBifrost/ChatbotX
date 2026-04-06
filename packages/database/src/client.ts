@@ -6,18 +6,27 @@ import {
 import { drizzle } from "drizzle-orm/node-postgres"
 import type { PgTable } from "drizzle-orm/pg-core"
 import { Pool } from "pg"
-import { relations } from "./drizzle/relations"
-// biome-ignore lint/performance/noNamespaceImport: drizzle schema
-import * as schema from "./drizzle/schema"
 import { ModelNotfoundException } from "./errors"
 import { keys } from "./keys"
+import { relations } from "./relations"
+
+// biome-ignore lint/performance/noNamespaceImport: drizzle schema
+import * as schema from "./schema"
 
 const env = keys()
 
 const pool = new Pool({
   connectionString: env.DATABASE_URL,
+  max: 10, // tune based on your infra
+  idleTimeoutMillis: 30_000,
+  connectionTimeoutMillis: 5000,
 })
-export const db = drizzle({ client: pool, schema, relations, logger: true })
+export const db = drizzle({
+  client: pool,
+  schema,
+  relations,
+  logger: env.NODE_ENV !== "production",
+})
 
 export * from "drizzle-orm"
 
@@ -28,12 +37,14 @@ export type Transaction = Parameters<
 export type { PgTable } from "drizzle-orm/pg-core"
 export type DatabaseClient = typeof db | Transaction
 
-export const findOrFail = async <TTable extends PgTable>(
-  table: TTable,
-  where: Record<string, unknown> | undefined,
-  message = "Record not found",
-): Promise<InferSelectModel<TTable>> => {
-  const result = await db
+export const findOrFail = async <TTable extends PgTable>(props: {
+  client?: DatabaseClient
+  table: TTable
+  where: Record<string, unknown> | undefined
+  message?: string
+}): Promise<InferSelectModel<TTable>> => {
+  const { client = db, table, where, message = "Record not found" } = props
+  const result = await client
     .select()
     .from(table as PgTable)
     .where(relationsFilterToSQL(table, where as RelationsFilterArg))
@@ -47,15 +58,22 @@ export const findOrFail = async <TTable extends PgTable>(
   return result
 }
 
-export const throwIfExists = async (
-  // biome-ignore lint/suspicious/noExplicitAny: safe to use any
-  table: PgTable<any>,
-  where: Record<string, unknown> | undefined,
-  message = "Resource already exists",
-): Promise<void> => {
-  const result = await db
+export const throwIfExists = async <TTable extends PgTable>(props: {
+  client?: DatabaseClient
+  table: TTable
+  where: Record<string, unknown> | undefined
+  message?: string
+}): Promise<void> => {
+  const {
+    client = db,
+    table,
+    where,
+    message = "Resource already exists",
+  } = props
+
+  const result = await client
     .select()
-    .from(table)
+    .from(table as PgTable)
     .where(relationsFilterToSQL(table, where as RelationsFilterArg))
     .limit(1)
     .then((rows) => rows[0])

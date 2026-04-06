@@ -1,21 +1,24 @@
-import { db, eq, relationsFilterToSQL } from "@aha.chat/database/client"
-import { rootFolderId } from "@aha.chat/database/enums"
+import { db, eq, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
 import {
   contactsOnSequenceModel,
   sequenceModel,
   sequenceStepModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
-} from "@aha.chat/database/utils"
+} from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
-import type { ListSequencesRequest, ListSequencesResponse } from "../schema"
+import type {
+  ListSequencesRequest,
+  ListSequencesResponse,
+} from "../schema/action"
 
 export async function listSequences(
   input: ListSequencesRequest,
 ): Promise<ListSequencesResponse> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   let folderIdFilter: string | { isNull: true } | undefined
   if (input.folderId) {
@@ -26,7 +29,7 @@ export async function listSequences(
   }
 
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     folderId: folderIdFilter,
     name: input.name
       ? {
@@ -68,13 +71,13 @@ export async function listSequences(
   return { data, pageCount }
 }
 
-export async function getSequence(chatbotId: string, sequenceId: string) {
-  await assertCurrentUserCanAccessChatbot(chatbotId)
+export async function getSequence(workspaceId: string, sequenceId: string) {
+  await assertCurrentUserCanAccessChatbot(workspaceId)
 
   const sequence = await db.query.sequenceModel.findFirst({
     where: {
       id: sequenceId,
-      chatbotId,
+      workspaceId,
     },
     with: {
       sequenceSteps: {

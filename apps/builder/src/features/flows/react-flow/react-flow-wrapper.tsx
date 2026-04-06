@@ -4,8 +4,8 @@ import {
   NodeType,
   sendMessageNodeDefaultFn,
   startAnotherNodeStepDefaultFn,
-} from "@aha.chat/flow-config"
-import { useDebouncedCallback } from "@aha.chat/ui/hooks/use-debounced-callback"
+} from "@chatbotx.io/flow-config"
+import { useDebouncedCallback } from "@chatbotx.io/ui/hooks/use-debounced-callback"
 import {
   addEdge,
   Background,
@@ -34,7 +34,7 @@ import FocusButton from "./panel-buttons/focus-button"
 import ZoomInButton from "./panel-buttons/zoom-in-button"
 import ZoomOutButton from "./panel-buttons/zoom-out-button"
 import "./react-flow-wrapper.css"
-import { createId } from "@paralleldrive/cuid2"
+import { createId } from "@chatbotx.io/utils"
 import type { ButtonProps } from "react-day-picker"
 import type { FlowVersionResource } from "@/features/flow-versions/schema/resource"
 import ButtonEdge from "./edges/button-edge"
@@ -90,7 +90,7 @@ export function ReactFlowWrapper({
   const { execute: savingDraft } = useOptimisticAction(
     updateDraftFlowVersionAction.bind(
       null,
-      flowVersion.chatbotId,
+      flowVersion.workspaceId,
       flowVersion.id,
     ),
     {

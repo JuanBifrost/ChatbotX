@@ -1,7 +1,7 @@
 "use client"
 
-import { organizationSettingsSchema } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { organizationSettingsSchema } from "@chatbotx.io/database/partials"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Table,
   TableBody,
@@ -9,7 +9,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@aha.chat/ui/components/ui/table"
+} from "@chatbotx.io/ui/components/ui/table"
 import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
@@ -19,7 +19,7 @@ import type { listIntegrationWhatsapps } from "./queries"
 import { WhatsappDisconnectDialog } from "./whatsapp-disconnect-dialog"
 
 type WhatsappManageProps = {
-  chatbotId: string
+  workspaceId: string
   promises: Promise<
     [
       Awaited<ReturnType<typeof listIntegrationWhatsapps>>,
@@ -28,7 +28,7 @@ type WhatsappManageProps = {
   >
 }
 
-export function WhatsappManage({ chatbotId, promises }: WhatsappManageProps) {
+export function WhatsappManage({ workspaceId, promises }: WhatsappManageProps) {
   const [{ data: integrationWhatsapps }, organization] = use(promises)
   const t = useTranslations()
 
@@ -51,7 +51,7 @@ export function WhatsappManage({ chatbotId, promises }: WhatsappManageProps) {
         <Button size="sm" variant="secondary">
           <Link
             className="flex items-center gap-2"
-            href={`/channels/create?channel=whatsapp&chatbotId=${chatbotId}`}
+            href={`/channels/create?channel=whatsapp&workspaceId=${workspaceId}`}
           >
             <PlusCircleIcon className="h-4 w-4" />
             {t("actions.addFeature", { feature: t("fields.whatsapp.label") })}
@@ -74,14 +74,14 @@ export function WhatsappManage({ chatbotId, promises }: WhatsappManageProps) {
                 <TableCell className="flex w-[200px] justify-end gap-2">
                   <Button size="sm" variant="secondary">
                     <Link
-                      href={`/chatbots/${chatbotId}/whatsapps/${integrationWhatsapp.id}/useful-links`}
+                      href={`/space/${workspaceId}/whatsapps/${integrationWhatsapp.id}/useful-links`}
                     >
                       {t("actions.manage")}
                     </Link>
                   </Button>
                   <WhatsappDisconnectDialog
-                    chatbotId={chatbotId}
                     integrationWhatsappId={integrationWhatsapp.id}
+                    workspaceId={workspaceId}
                   />
                 </TableCell>
               </TableRow>

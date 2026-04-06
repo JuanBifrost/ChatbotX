@@ -1,5 +1,5 @@
-import type { AuditLogModel } from "@aha.chat/database/types"
-import { getSortingStateParser } from "@aha.chat/ui/lib/parsers"
+import type { AuditLogModel } from "@chatbotx.io/database/types"
+import { getSortingStateParser } from "@chatbotx.io/ui/lib/parsers"
 import {
   createSearchParamsCache,
   parseAsInteger,
@@ -19,5 +19,5 @@ export const listAuditLogsSearchParamsCache = createSearchParamsCache({
 export type ListAuditLogsRequest = Awaited<
   ReturnType<typeof listAuditLogsSearchParamsCache.parse>
 > & {
-  chatbotId: string
+  workspaceId: string
 }

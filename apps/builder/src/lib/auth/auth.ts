@@ -1,16 +1,16 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 import {
   accountModel,
   sessionModel,
   userModel,
   verificationModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import {
   sendMagicLink,
   sendResetPassword,
   sendSignUpVerification,
-} from "@aha.chat/mail"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/mail"
+import { createId } from "@chatbotx.io/utils"
 import { betterAuth } from "better-auth"
 import { drizzleAdapter } from "better-auth/adapters/drizzle"
 import { anonymous, magicLink, oneTimeToken } from "better-auth/plugins"
@@ -97,6 +97,11 @@ export const auth = betterAuth({
       enabled: true,
       maxAge: 5 * 60, // Cache duration in seconds (5 minutes)
       strategy: "compact", // or "jwt" or "jwe"
+    },
+  },
+  advanced: {
+    database: {
+      generateId: "serial",
     },
   },
 })

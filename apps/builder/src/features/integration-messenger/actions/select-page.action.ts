@@ -1,27 +1,27 @@
 "use server"
 
-import { db, isDatabaseError } from "@aha.chat/database/client"
-import { InboxStatus } from "@aha.chat/database/enums"
+import { db, isDatabaseError } from "@chatbotx.io/database/client"
+import { inboxStatuses } from "@chatbotx.io/database/partials"
 import {
   inboxModel,
   integrationMessengerModel,
-} from "@aha.chat/database/schema"
-import type { UserModel } from "@aha.chat/database/types"
-import type { MessengerAuthValue } from "@aha.chat/integration-messenger"
+} from "@chatbotx.io/database/schema"
+import type { UserModel } from "@chatbotx.io/database/types"
+import type { MessengerAuthValue } from "@chatbotx.io/integration-messenger"
 import {
   exchangeLongLivedToken,
   subscribePageToAppWebhook,
-} from "@aha.chat/integration-messenger/apis/page"
-import { AuthType } from "@aha.chat/sdk"
-import { createId } from "@paralleldrive/cuid2"
-import { createSimpleChatbot } from "@/features/chatbot/actions/create-chatbot-action"
+} from "@chatbotx.io/integration-messenger/apis/page"
+import { AuthType } from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
 import { identifyChatbotAndOrganizationFromRequest } from "@/features/integrations/uitls"
 import { verifyOrganizationSettings } from "@/features/organization/queries"
+import { createSimpleWorkspace } from "@/features/workspaces/actions/create-workspace-action"
 import { revalidateCacheTags } from "@/lib/cache-helper"
 import { ChatbotXException } from "@/lib/errors/exception"
 import { logger } from "@/lib/log"
 import { authActionClient } from "@/lib/safe-action"
-import { type SelectPageRequest, selectPageRequest } from "../schemas"
+import { type SelectPageRequest, selectPageRequest } from "../schema/action"
 
 export const selectPageAction = authActionClient
   .inputSchema(selectPageRequest)
@@ -34,9 +34,11 @@ export const selectPageAction = authActionClient
       ctx: { user: UserModel }
     }) => {
       try {
-        let chatbotId = parsedInput.chatbotId
+        let workspaceId = parsedInput.workspaceId
         const { organization } =
-          await identifyChatbotAndOrganizationFromRequest(parsedInput.chatbotId)
+          await identifyChatbotAndOrganizationFromRequest(
+            parsedInput.workspaceId,
+          )
         const settings = await verifyOrganizationSettings(organization)
         const messengerSettings = settings.messenger
         if (!messengerSettings) {
@@ -54,19 +56,19 @@ export const selectPageAction = authActionClient
         }
 
         await db.transaction(async (tx) => {
-          // create new chatbot if not exists
-          if (!chatbotId) {
-            const chatbot = await createSimpleChatbot(
+          // create new workspace if not exists
+          if (!workspaceId) {
+            const workspace = await createSimpleWorkspace(
               tx,
               ctx.user.id,
               organization,
               {
                 name: parsedInput.pageName,
-                accountTimezone: "UTC",
+                timezone: "UTC",
                 organizationId: organization.id,
               },
             )
-            chatbotId = chatbot.id
+            workspaceId = workspace.id
           }
 
           const longLivedToken = await exchangeLongLivedToken(
@@ -99,7 +101,7 @@ export const selectPageAction = authActionClient
             .insert(inboxModel)
             .values({
               id: createId(),
-              chatbotId,
+              workspaceId,
               name: parsedInput.pageName,
               channel: "messenger",
               sourceId: parsedInput.pageId,
@@ -107,7 +109,7 @@ export const selectPageAction = authActionClient
             .onConflictDoUpdate({
               target: [inboxModel.channel, inboxModel.sourceId],
               set: {
-                status: InboxStatus.connected,
+                status: inboxStatuses.enum.connected,
               },
             })
             .returning()
@@ -115,7 +117,7 @@ export const selectPageAction = authActionClient
 
           await tx.insert(integrationMessengerModel).values({
             id: createId(),
-            chatbotId,
+            workspaceId,
             inboxId: inbox.id,
             pageId: parsedInput.pageId,
             auth,
@@ -128,12 +130,12 @@ export const selectPageAction = authActionClient
         })
 
         revalidateCacheTags([
-          `chatbots:${chatbotId}#messenger`,
-          `chatbots:${chatbotId}#inboxes`,
+          `workspaces:${workspaceId}#messenger`,
+          `workspaces:${workspaceId}#inboxes`,
         ])
 
         return {
-          chatbotId,
+          workspaceId,
         }
       } catch (error) {
         if (isDatabaseError(error) && error.cause.code === "23505") {

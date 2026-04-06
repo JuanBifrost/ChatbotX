@@ -1,4 +1,4 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId } from "@chatbotx.io/utils"
 import type { CreateContactEvent } from "../schemas"
 
 type Redis = {

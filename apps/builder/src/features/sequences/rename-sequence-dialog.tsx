@@ -1,7 +1,7 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -10,8 +10,8 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -19,8 +19,8 @@ import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { toast } from "sonner"
 import { updateSequenceAction } from "./actions/update-sequence.action"
-import type { SequenceResource } from "./schema"
-import { updateSequenceSchema } from "./schema"
+import { updateSequenceSchema } from "./schema/action"
+import type { SequenceResource } from "./schema/resource"
 
 export function RenameSequenceDialog({
   sequence,
@@ -42,7 +42,7 @@ export function RenameSequenceDialog({
   } = useHookFormAction(
     updateSequenceAction.bind(
       null,
-      sequence?.chatbotId ?? "",
+      sequence?.workspaceId ?? "",
       sequence?.id ?? "",
     ),
     zodResolver(updateSequenceSchema),

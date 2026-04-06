@@ -1,7 +1,7 @@
 "use client"
 
-import { Card, CardContent } from "@aha.chat/ui/components/ui/card"
-import { cn } from "@aha.chat/ui/lib/utils"
+import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
+import { cn } from "@chatbotx.io/ui/lib/utils"
 import { SiFacebook } from "@icons-pack/react-simple-icons"
 import {
   BotIcon,
@@ -14,9 +14,10 @@ import {
   QrCodeIcon,
   UserCheck2Icon,
 } from "lucide-react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useCallback, useMemo } from "react"
+import { useWorkspaceId } from "@/hooks/routing"
 
 const TOOLS_CONFIG = [
   {
@@ -36,14 +37,14 @@ const TOOLS_CONFIG = [
     labelKey: "reflinks.title",
     descriptionKey: "reflinks.description",
     icon: LinkIcon,
-    getLink: (id: string) => `/chatbots/${id}/reflinks`,
+    getLink: (id: string) => `/space/${id}/reflinks`,
   },
   {
     id: "qr-code",
     labelKey: "qrCodeGenerator.title",
     descriptionKey: "qrCodeGenerator.description",
     icon: QrCodeIcon,
-    getLink: (id: string) => `/chatbots/${id}/qr-codes`,
+    getLink: (id: string) => `/space/${id}/qr-codes`,
   },
   {
     id: "templates",
@@ -92,12 +93,12 @@ const TOOLS_CONFIG = [
   //   labelKey: "webhooks.title",
   //   descriptionKey: "webhooks.description",
   //   icon: UsersIcon,
-  //   getLink: (id: string) => `/chatbots/${id}/webhooks`,
+  //   getLink: (id: string) => `/space/${id}/webhooks`,
   // },
 ] as const
 
 export const ToolsList = () => {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
   const t = useTranslations()
   const router = useRouter()
 
@@ -110,10 +111,10 @@ export const ToolsList = () => {
         icon: config.icon,
         link:
           "getLink" in config && config.getLink
-            ? config.getLink(chatbotId ?? "")
+            ? config.getLink(workspaceId.toString())
             : undefined,
       })),
-    [t, chatbotId],
+    [t, workspaceId],
   )
 
   const handleCardClick = useCallback(

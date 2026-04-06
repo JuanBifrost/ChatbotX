@@ -1,4 +1,4 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 import type {
   FindContactRequest,
   PublicFindContactResponse,
@@ -19,12 +19,12 @@ export const publicFindContact = async (
 }
 
 export const publicListContactsByCustomField = async (
-  input: PublicListContactsByCustomFieldRequest & { chatbotId: string },
+  input: PublicListContactsByCustomFieldRequest & { workspaceId: string },
 ): Promise<PublicListContactsResponse> => {
-  const { chatbotId, customFieldId, value } = input
+  const { workspaceId, customFieldId, value } = input
 
   const where: Record<string, unknown> = {
-    chatbotId,
+    workspaceId,
   }
   if (customFieldId === "email") {
     where.email = value

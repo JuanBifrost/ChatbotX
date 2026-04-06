@@ -1,5 +1,5 @@
-import type { SendTextStepSchema } from "@aha.chat/flow-config"
-import type { SendFlowStepProps } from "@aha.chat/sdk"
+import type { SendTextStepSchema } from "@chatbotx.io/flow-config"
+import type { SendFlowStepProps } from "@chatbotx.io/sdk"
 import type {
   FacebookMessage,
   FacebookMessageAttachment,
@@ -15,7 +15,7 @@ export function* convertFlowStepText(
   } = props
   if (step.buttons.length === 0) {
     yield {
-      text: step.message,
+      text: step.text,
     }
   } else {
     const buttons = convertFacebookButtons({
@@ -29,7 +29,7 @@ export function* convertFlowStepText(
         type: "template",
         payload: {
           template_type: "button",
-          text: step.message,
+          text: step.text,
           buttons,
         },
       },

@@ -1,24 +1,24 @@
 "use client"
 
-import {
-  type AIFileModel,
-  type AIFunctionModel,
-  type AIMCPServerModel,
-  AIMessageRole,
-} from "@aha.chat/database/types"
-import { aiProviders, defaultAIModelIds } from "@aha.chat/flow-config"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { MultiSelectField } from "@aha.chat/ui/components/form/multi-select-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
-import { SliderField } from "@aha.chat/ui/components/form/slider-field"
-import { SwitchField } from "@aha.chat/ui/components/form/switch-field"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { aiMessageRoles } from "@chatbotx.io/database/partials"
+import type {
+  AIFileModel,
+  AIFunctionModel,
+  AIMCPServerModel,
+} from "@chatbotx.io/database/types"
+import { aiProviders, defaultAIModelIds } from "@chatbotx.io/flow-config"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { MultiSelectField } from "@chatbotx.io/ui/components/form/multi-select-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { SliderField } from "@chatbotx.io/ui/components/form/slider-field"
+import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@aha.chat/ui/components/ui/collapsible"
+} from "@chatbotx.io/ui/components/ui/collapsible"
 import {
   Dialog,
   DialogClose,
@@ -28,8 +28,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import {
@@ -41,7 +41,6 @@ import {
   ServerIcon,
   TrashIcon,
 } from "lucide-react"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useMemo, useState } from "react"
 import { useFieldArray } from "react-hook-form"
@@ -52,6 +51,7 @@ import { geminiModelOptions } from "../integration-gemini/schemas/models"
 import { openaiChatModelOptions } from "../openai/models"
 
 type CreateAIAgentDialogProps = {
+  workspaceId: string
   files: AIFileModel[]
   functions: AIFunctionModel[]
   mcpServers: AIMCPServerModel[]
@@ -59,13 +59,13 @@ type CreateAIAgentDialogProps = {
 }
 
 export function CreateAIAgentDialog({
+  workspaceId,
   files,
   functions,
   mcpServers,
   onSuccess,
 }: CreateAIAgentDialogProps) {
   const [open, setOpen] = useState(false)
-  const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const t = useTranslations()
 
@@ -101,15 +101,15 @@ export function CreateAIAgentDialog({
 
   const messageRoleOptions = useMemo(
     () => [
-      { label: "User", value: AIMessageRole.user },
-      { label: "Assistant", value: AIMessageRole.assistant },
+      { label: "User", value: aiMessageRoles.enum.user },
+      { label: "Assistant", value: aiMessageRoles.enum.assistant },
     ],
     [],
   )
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createAIAgentAction.bind(null, chatbotId),
+      createAIAgentAction.bind(null, workspaceId),
       zodResolver(createAIAgentRequest),
       {
         actionProps: {
@@ -139,11 +139,11 @@ export function CreateAIAgentDialog({
             messages: [],
             models: [
               {
-                provider: aiProviders.gemini,
+                provider: aiProviders.enum.gemini,
                 model: defaultAIModelIds.gemini,
               },
               {
-                provider: aiProviders.openai,
+                provider: aiProviders.enum.openai,
                 model: defaultAIModelIds.openai,
               },
             ],
@@ -163,7 +163,7 @@ export function CreateAIAgentDialog({
 
   const addMessage = () => {
     append({
-      role: AIMessageRole.user,
+      role: aiMessageRoles.enum.user,
       content: "",
     })
   }
@@ -214,7 +214,7 @@ export function CreateAIAgentDialog({
                     </div>
                     <TextareaField
                       className="flex-1"
-                      name={`messages.${index}.content`}
+                      name={`messages.${index}.text`}
                     />
                     <Button
                       onClick={() => remove(index)}

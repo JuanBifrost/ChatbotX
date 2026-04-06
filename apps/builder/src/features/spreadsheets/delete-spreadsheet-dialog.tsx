@@ -1,7 +1,7 @@
 "use client"
 
-import type { SpreadsheetModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { SpreadsheetModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import type { Row } from "@tanstack/react-table"
 import { Loader, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -21,15 +21,15 @@ import { deleteSpreadsheetAction } from "./actions/delete-spreadsheet-action"
 
 interface DeleteSpreadsheetsDialogProps
   extends React.ComponentPropsWithoutRef<typeof Dialog> {
-  chatbotId: string
   onOpenChange: (val: boolean) => void
   onSuccess?: () => void
   showTrigger?: boolean
   spreadsheets: Row<SpreadsheetModel>["original"][]
+  workspaceId: string
 }
 
 export function DeleteSpreadsheetsDialog({
-  chatbotId,
+  workspaceId,
   spreadsheets,
   showTrigger = true,
   onSuccess,
@@ -39,7 +39,7 @@ export function DeleteSpreadsheetsDialog({
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteSpreadsheetAction.bind(null, chatbotId),
+    deleteSpreadsheetAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

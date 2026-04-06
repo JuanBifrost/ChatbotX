@@ -1,16 +1,17 @@
-import { db, eq } from "@aha.chat/database/client"
+import { db, eq } from "@chatbotx.io/database/client"
+import {
+  aiMessageRoles,
+  type GenderType,
+  type ReservedCustomFieldName,
+  reservedCustomFieldNames,
+} from "@chatbotx.io/database/partials"
 import {
   contactCustomFieldModel,
   contactModel,
-} from "@aha.chat/database/schema"
-import {
-  AIMessageRole,
-  type ConversationModel,
-  type Gender,
-  reservedCustomFieldNames,
-} from "@aha.chat/database/types"
-import type { AIGenerateTextSchema } from "@aha.chat/flow-config"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/database/schema"
+import type { ConversationModel } from "@chatbotx.io/database/types"
+import type { AIGenerateTextSchema } from "@chatbotx.io/flow-config"
+import { createId, parseBigIntId } from "@chatbotx.io/utils"
 import { type LanguageModel, type ModelMessage, streamText } from "ai"
 import { getAIIntegrationInDB, getAIModel } from "../../../lib/ai"
 import { logger } from "../../../lib/logger"
@@ -36,13 +37,16 @@ export async function handleAIGenerateText({
     const messages = await buildAIMessages(conversation, step)
 
     const aiConfig = await getAIIntegrationInDB({
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
       provider: step.provider,
     })
 
     const model = getAIModel(aiConfig, aiConfig.model)
 
-    const toolSet = await getAIToolset(conversation.chatbotId, step.tools || [])
+    const toolSet = await getAIToolset(
+      conversation.workspaceId,
+      step.tools || [],
+    )
 
     const result = streamText({
       model: "openai:gpt-4o-mini",
@@ -77,10 +81,10 @@ export async function handleAIGenerateText({
     } else {
       await saveResultToCustomField({
         contactId: conversation.contactId,
-        customFieldId: step.outputCfId,
+        customFieldName: step.outputCfId,
         fullText,
         messageCount,
-        chatbotId: conversation.chatbotId,
+        workspaceId: conversation.workspaceId,
       })
     }
   } catch (error) {
@@ -126,11 +130,11 @@ async function handleToolCallsFollowUp({
   const followUpMessages: ModelMessage[] = [
     ...messages,
     {
-      role: AIMessageRole.assistant,
+      role: aiMessageRoles.enum.assistant,
       content: fullText || TEXT.assistantFoundPrefix,
     },
     {
-      role: AIMessageRole.user,
+      role: aiMessageRoles.enum.user,
       content: `${TEXT.followUpInstruction}\n\n${toolResultsText}`,
     },
   ]
@@ -151,10 +155,10 @@ async function handleToolCallsFollowUp({
 
     await saveResultToCustomField({
       contactId: conversation.contactId,
-      customFieldId: stepConfig.outputCfId,
+      customFieldName: stepConfig.outputCfId,
       fullText: followUpFullText,
       messageCount: followUpMessageCount,
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
     })
   } catch (followUpError) {
     logger.error(
@@ -168,31 +172,31 @@ async function handleToolCallsFollowUp({
 
     await saveResultToCustomField({
       contactId: conversation.contactId,
-      customFieldId: stepConfig.outputCfId,
+      customFieldName: stepConfig.outputCfId,
       fullText,
       messageCount: MAGIC_NUMBERS.ZERO_MESSAGE_COUNT,
-      chatbotId: conversation.chatbotId,
+      workspaceId: conversation.workspaceId,
     })
   }
 }
 
 async function saveResultToCustomField({
   contactId,
-  customFieldId,
+  customFieldName,
   fullText,
   messageCount,
-  chatbotId,
+  workspaceId,
 }: {
   contactId: string | null
-  customFieldId: string
+  customFieldName: string
   fullText: string
   messageCount: number
-  chatbotId: string
+  workspaceId: string
 }): Promise<void> {
   if (!contactId) {
     return
   }
-  if (!customFieldId.trim()) {
+  if (!customFieldName) {
     return
   }
   if (messageCount === 0) {
@@ -203,7 +207,7 @@ async function saveResultToCustomField({
   }
 
   const isReservedField = Object.values(reservedCustomFieldNames).includes(
-    customFieldId as (typeof reservedCustomFieldNames)[keyof typeof reservedCustomFieldNames],
+    customFieldName as ReservedCustomFieldName,
   )
 
   if (isReservedField) {
@@ -213,17 +217,17 @@ async function saveResultToCustomField({
       email: string
       phoneNumber: string
       avatar: string
-      gender: Gender
+      gender: GenderType
     }> = {}
 
-    switch (customFieldId) {
-      case reservedCustomFieldNames.first_name:
+    switch (customFieldName) {
+      case reservedCustomFieldNames.enum.first_name:
         updateData.firstName = fullText
         break
-      case reservedCustomFieldNames.last_name:
+      case reservedCustomFieldNames.enum.last_name:
         updateData.lastName = fullText
         break
-      case reservedCustomFieldNames.full_name: {
+      case reservedCustomFieldNames.enum.full_name: {
         const trimmedName = fullText.trim()
         const spaceIndex = trimmedName.indexOf(" ")
         if (spaceIndex > 0) {
@@ -234,22 +238,22 @@ async function saveResultToCustomField({
         }
         break
       }
-      case reservedCustomFieldNames.email:
+      case reservedCustomFieldNames.enum.email:
         updateData.email = fullText
         break
-      case reservedCustomFieldNames.phone_number:
+      case reservedCustomFieldNames.enum.phone_number:
         updateData.phoneNumber = fullText
         break
-      case reservedCustomFieldNames.avatar:
+      case reservedCustomFieldNames.enum.avatar:
         updateData.avatar = fullText
         break
-      case reservedCustomFieldNames.gender:
+      case reservedCustomFieldNames.enum.gender:
         if (
           fullText === "male" ||
           fullText === "female" ||
           fullText === "unknown"
         ) {
-          updateData.gender = fullText as Gender
+          updateData.gender = fullText as GenderType
         }
         break
       default:
@@ -263,10 +267,14 @@ async function saveResultToCustomField({
     return
   }
 
+  const customFieldId = parseBigIntId(customFieldName)
+  if (!customFieldId) {
+    return
+  }
   const customField = await db.query.customFieldModel.findFirst({
     where: {
       id: customFieldId,
-      chatbotId,
+      workspaceId,
     },
   })
 

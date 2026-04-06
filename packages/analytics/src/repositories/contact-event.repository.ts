@@ -1,4 +1,4 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId } from "@chatbotx.io/utils"
 import { CONTACT_EVENTS_EVENT_TYPE } from "../lib/events-config"
 import type { ContactEvent, CreateContactEvent } from "../schemas"
 import { BaseRepository } from "./base.repository"
@@ -44,7 +44,7 @@ export class ContactEventRepository extends BaseRepository {
   private mapRow(event: ContactEvent): Record<string, unknown> {
     return {
       event_id: event.eventId,
-      chatbot_id: event.chatbotId,
+      chatbot_id: event.workspaceId,
       contact_id: event.contactId,
       event_type: event.eventType,
       occurred_at: Math.floor(event.occurredAt.getTime() / 1000),

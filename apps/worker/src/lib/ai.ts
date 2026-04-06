@@ -1,18 +1,18 @@
-import { db, findOrFail } from "@aha.chat/database/client"
-import {
-  integrationGeminiModel,
-  integrationOpenAIModel,
-} from "@aha.chat/database/schema"
-import type {
-  IntegrationGeminiModel,
-  IntegrationOpenAIModel,
-} from "@aha.chat/database/types"
-import { aiProviders } from "@aha.chat/flow-config"
-import type { SecretTextAuthValue } from "@aha.chat/sdk"
 import { createAnthropic } from "@ai-sdk/anthropic"
 import { createDeepSeek } from "@ai-sdk/deepseek"
 import { createGoogleGenerativeAI } from "@ai-sdk/google"
 import { createOpenAI } from "@ai-sdk/openai"
+import { db, findOrFail } from "@chatbotx.io/database/client"
+import {
+  integrationGeminiModel,
+  integrationOpenaiModel,
+} from "@chatbotx.io/database/schema"
+import type {
+  IntegrationGeminiModel,
+  IntegrationOpenAIModel,
+} from "@chatbotx.io/database/types"
+import { aiProviders } from "@chatbotx.io/flow-config"
+import type { SecretTextAuthValue } from "@chatbotx.io/sdk"
 import { jsonSchema, type ToolSet, tool } from "ai"
 import {
   JSON_TYPE,
@@ -35,28 +35,28 @@ type DataField = {
 const toolNamePattern = /^[a-zA-Z0-9_-]+$/
 
 export async function getAIIntegrationInDB(props: {
-  chatbotId: string
+  workspaceId: string
   provider: string
 }) {
-  const { chatbotId, provider } = props
+  const { workspaceId, provider } = props
 
   switch (provider) {
     case aiProviders.openai:
-      return await findOrFail(
-        integrationOpenAIModel,
-        {
-          chatbotId,
+      return await findOrFail({
+        table: integrationOpenaiModel,
+        where: {
+          workspaceId,
         },
-        `IntegrationOpenAI not found for chatbotId: ${chatbotId}`,
-      )
+        message: `IntegrationOpenAI not found for workspaceId: ${workspaceId}`,
+      })
     case aiProviders.gemini:
-      return await findOrFail(
-        integrationGeminiModel,
-        {
-          chatbotId,
+      return await findOrFail({
+        table: integrationGeminiModel,
+        where: {
+          workspaceId,
         },
-        `IntegrationGemini not found for chatbotId: ${chatbotId}`,
-      )
+        message: `IntegrationGemini not found for workspaceId: ${workspaceId}`,
+      })
     default:
       throw new Error(`Unsupported provider: ${provider}`)
   }
@@ -87,7 +87,7 @@ export function getAIModel(
 }
 
 export async function getAIFileTools(
-  chatbotId: string,
+  workspaceId: string,
   selectedFileIds: string[],
 ): Promise<ToolSet> {
   try {
@@ -98,7 +98,7 @@ export async function getAIFileTools(
     }
 
     const allFiles = await db.query.aiFileModel.findMany({
-      where: { chatbotId, id: { in: selectedFileIds } },
+      where: { workspaceId, id: { in: selectedFileIds } },
     })
 
     if (allFiles.length > 0) {
@@ -116,7 +116,7 @@ export async function getAIFileTools(
         } as Parameters<typeof jsonSchema>[0]),
         execute: async (args: { query: string }) => {
           const config = {
-            chatbotId,
+            workspaceId,
             selectedFileIds,
             similarityThreshold: 0.7,
             maxResults: 5,
@@ -130,14 +130,14 @@ export async function getAIFileTools(
   } catch (error) {
     logger.error(
       error,
-      `[automated-response] getAIFileTools failed for chatbotId: ${chatbotId}`,
+      `[automated-response] getAIFileTools failed for workspaceId: ${workspaceId}`,
     )
     return {}
   }
 }
 
 export async function getAIFunctionTools(
-  chatbotId: string,
+  workspaceId: string,
   selectedFunctionIds: string[],
 ): Promise<ToolSet> {
   try {
@@ -149,7 +149,7 @@ export async function getAIFunctionTools(
 
     const aiFunctions = await db.query.aiFunctionModel.findMany({
       where: {
-        chatbotId,
+        workspaceId,
         id: {
           in: selectedFunctionIds,
         },
@@ -198,14 +198,14 @@ export async function getAIFunctionTools(
   } catch (error) {
     logger.error(
       error,
-      `[automated-response] getAIFunctionTools failed for chatbotId: ${chatbotId}`,
+      `[automated-response] getAIFunctionTools failed for workspaceId: ${workspaceId}`,
     )
     return {}
   }
 }
 
 export async function getMCPServerTools(
-  chatbotId: string,
+  workspaceId: string,
   selectedMcpIds: string[],
 ): Promise<ToolSet> {
   try {
@@ -217,7 +217,7 @@ export async function getMCPServerTools(
 
     // Find MCP servers from DB
     const mcpServers = await db.query.aiMCPServerModel.findMany({
-      where: { chatbotId, id: { in: selectedMcpIds } },
+      where: { workspaceId, id: { in: selectedMcpIds } },
     })
     if (mcpServers.length === 0) {
       return tools
@@ -271,7 +271,7 @@ export async function getMCPServerTools(
   } catch (error) {
     logger.error(
       error,
-      `[automated-response] getMCPServerTools failed for chatbotId: ${chatbotId}`,
+      `[automated-response] getMCPServerTools failed for workspaceId: ${workspaceId}`,
     )
     return {}
   }

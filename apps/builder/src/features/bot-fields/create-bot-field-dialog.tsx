@@ -1,10 +1,13 @@
 "use client"
 
-import { rootFolderId } from "@aha.chat/database/enums"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import {
+  type CustomFieldType,
+  rootFolderId,
+} from "@chatbotx.io/database/partials"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -12,14 +15,14 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import {
   Form,
   FormField,
   FormItem,
   FormLabel,
   FormMessage,
-} from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon, PlusIcon } from "lucide-react"
@@ -33,13 +36,13 @@ import { createBotFieldAction } from "./actions/create-bot-field.action"
 import { createBotFieldRequest } from "./schemas/action"
 
 type CreateBotFieldDialogProps = {
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
   onSuccess?: () => void
 }
 
 export function CreateBotFieldDialog({
-  chatbotId,
+  workspaceId,
   folderId,
   onSuccess,
 }: CreateBotFieldDialogProps) {
@@ -50,7 +53,7 @@ export function CreateBotFieldDialog({
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createBotFieldAction.bind(null, chatbotId),
+      createBotFieldAction.bind(null, workspaceId),
       zodResolver(createBotFieldRequest),
       {
         actionProps: {
@@ -136,7 +139,9 @@ export function CreateBotFieldDialog({
               render={() => (
                 <FormItem>
                   <FormLabel>{t("fields.value.label")}</FormLabel>
-                  <BotFieldValueInput type={watchCustomFieldType} />
+                  <BotFieldValueInput
+                    type={watchCustomFieldType as CustomFieldType}
+                  />
                   <FormMessage />
                 </FormItem>
               )}

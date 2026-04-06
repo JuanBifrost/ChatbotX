@@ -1,14 +1,14 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId } from "@chatbotx.io/utils"
 import { db } from "../client"
 import {
   accountModel,
-  chatbotMemberModel,
-  chatbotModel,
-  chatbotUsageModel,
   organizationMemberModel,
   organizationModel,
   userModel,
-} from "../drizzle/schema"
+  workspaceMemberModel,
+  workspaceModel,
+  workspaceUsageModel,
+} from "../schema"
 
 async function main() {
   let organization = await db.query.organizationModel.findFirst()
@@ -35,7 +35,6 @@ async function main() {
   user = await db
     .insert(userModel)
     .values({
-      id: createId(),
       email: "demo@example.com",
       name: "Demo ChatbotX",
       emailVerified: true,
@@ -44,7 +43,6 @@ async function main() {
     .then((result) => result[0])
 
   await db.insert(accountModel).values({
-    id: createId(),
     accountId: user?.id ?? "",
     providerId: "credential",
     // NOTES: password is "Demo@1234" hashed with scrypt
@@ -55,35 +53,34 @@ async function main() {
 
   // add user to organization
   await db.insert(organizationMemberModel).values({
-    id: createId(),
     organizationId: organization?.id ?? "",
     userId: user?.id ?? "",
     role: "admin",
   })
 
-  // create chatbot
-  const chatbotsCount = await db.$count(chatbotModel)
-  if (chatbotsCount === 0) {
-    const chatbot = await db
-      .insert(chatbotModel)
+  // create workspace
+  const workspacesCount = await db.$count(workspaceModel)
+  if (workspacesCount === 0) {
+    const workspace = await db
+      .insert(workspaceModel)
       .values({
         id: createId(),
         organizationId: organization?.id ?? "",
         name: "DEMO",
-        accountTimezone: "Asia/Saigon",
+        timezone: "Asia/Saigon",
       })
       .returning()
       .then((result) => result[0])
 
-    await db.insert(chatbotUsageModel).values({
+    await db.insert(workspaceUsageModel).values({
       id: createId(),
-      chatbotId: chatbot?.id ?? "",
+      workspaceId: workspace?.id ?? "",
       maxContacts: 999_999,
     })
 
-    await db.insert(chatbotMemberModel).values({
+    await db.insert(workspaceMemberModel).values({
       id: createId(),
-      chatbotId: chatbot?.id ?? "",
+      workspaceId: workspace?.id ?? "",
       userId: user?.id ?? "",
       role: "owner",
       permissions: {

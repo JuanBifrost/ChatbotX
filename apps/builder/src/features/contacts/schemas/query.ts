@@ -1,24 +1,21 @@
-import { Operator } from "@aha.chat/database/enums"
+import { operatorTypes } from "@chatbotx.io/database/partials"
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import z from "zod"
-import { inboxTeamResource } from "@/enterprise/features/inbox-teams/schema"
-import { conversationResource } from "@/features/conversations/schemas/resource"
+import { inboxTeamResource } from "@/enterprise/features/inbox-teams/schema/resource"
+import { conversationResource } from "@/features/conversations/schema/resource"
 import { publicCustomFieldResource } from "@/features/custom-fields/schemas/resource"
-import { inboxResource } from "@/features/inboxes/schemas/resource"
-import {
-  publicTagResource,
-  tagResource,
-} from "@/features/tags/schemas/resource"
+import { inboxResource } from "@/features/inboxes/schema/resource"
+import { publicTagResource, tagResource } from "@/features/tags/schema/resource"
 import { userResource } from "@/features/users/schemas/resource"
 import { basePaginationRequest } from "@/lib/pagination"
 import { contactCustomFieldResource } from "./contact-custom-field"
 import { contactNoteResource } from "./contact-note"
 import { contactResource, publicContactResource } from "./resource"
 
-export const listContactsRequest = basePaginationRequest.and(
-  z.object({
-    keyword: z.string().optional(),
-  }),
-)
+export const listContactsRequest = basePaginationRequest.extend({
+  keyword: z.string().optional(),
+  workspaceId: zodBigintAsString(),
+})
 export type ListContactsRequest = z.infer<typeof listContactsRequest>
 
 export const listContactsItem = contactResource.and(
@@ -52,7 +49,7 @@ export const contactFilterRequest = z.object({
     conditions: z.array(
       z.object({
         field: z.string().trim(),
-        operator: z.enum(Operator),
+        operator: operatorTypes,
         value: z.union([z.string(), z.array(z.string())]),
       }),
     ),
@@ -61,7 +58,7 @@ export const contactFilterRequest = z.object({
 export type ContactFilterRequest = z.infer<typeof contactFilterRequest>
 
 export const findContactRequest = contactResource
-  .pick({ id: true, chatbotId: true })
+  .pick({ id: true, workspaceId: true })
   .partial()
 export type FindContactRequest = z.infer<typeof findContactRequest>
 

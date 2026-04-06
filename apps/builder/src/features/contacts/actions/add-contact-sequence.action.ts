@@ -1,14 +1,14 @@
 "use server"
 
-import { db } from "@aha.chat/database/client"
-import { enrollContactsInSequenceBulk } from "@aha.chat/sequence-scheduler"
+import { db } from "@chatbotx.io/database/client"
+import { enrollContactsInSequenceBulk } from "@chatbotx.io/sequence-scheduler"
 import {
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { calculateNextRunAtBulk } from "@/features/contact-sequences/utils/calculate-next-run-at"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type AddContactSequenceRequest,
   addContactSequenceRequest,
@@ -17,13 +17,13 @@ import {
 const CHUNK_SIZE = 1000
 
 async function getExistingEnrollments(
-  chatbotId: string,
+  workspaceId: string,
   contactIds: string[],
   sequenceIds: string[],
 ): Promise<Set<string>> {
   const enrollments = await db.query.contactsOnSequenceModel.findMany({
     where: {
-      chatbotId,
+      workspaceId,
       contactId: { in: contactIds },
       sequenceId: { in: sequenceIds },
     },
@@ -34,17 +34,14 @@ async function getExistingEnrollments(
   })
 
   return new Set<string>(
-    enrollments.map(
-      (e: { contactId: string; sequenceId: string }) =>
-        `${e.contactId}-${e.sequenceId}`,
-    ),
+    enrollments.map((e) => `${e.contactId}-${e.sequenceId}`),
   )
 }
 
-function getValidContacts(chatbotId: string, contactIds: string[]) {
+function getValidContacts(workspaceId: string, contactIds: string[]) {
   return db.query.contactModel.findMany({
     where: {
-      chatbotId,
+      workspaceId,
       id: { in: contactIds },
     },
     columns: {
@@ -58,7 +55,7 @@ function buildEnrollmentRecords(
   sequenceIds: string[],
   existingKeys: Set<string>,
   nextRunAtMap: Map<string, { nextRunAt: Date; nextStepId: string | null }>,
-  chatbotId: string,
+  workspaceId: string,
   now: Date,
 ) {
   return contacts.flatMap((contact) =>
@@ -72,7 +69,7 @@ function buildEnrollmentRecords(
         return {
           contactId: contact.id,
           sequenceId,
-          chatbotId,
+          workspaceId,
           currentStep: 0,
           status: "active" as const,
           nextRunAt: result.nextRunAt,
@@ -83,12 +80,12 @@ function buildEnrollmentRecords(
   )
 }
 
-export const addContactSequenceAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const addContactSequenceAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(addContactSequenceRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
@@ -101,7 +98,7 @@ export const addContactSequenceAction = chatbotActionClient
       )
 
       const existingKeys = await getExistingEnrollments(
-        chatbotId,
+        workspaceId,
         parsedInput.ids,
         parsedInput.sequences,
       )
@@ -109,7 +106,7 @@ export const addContactSequenceAction = chatbotActionClient
       for (let i = 0; i < parsedInput.ids.length; i += CHUNK_SIZE) {
         const contactIdChunk = parsedInput.ids.slice(i, i + CHUNK_SIZE)
 
-        const contacts = await getValidContacts(chatbotId, contactIdChunk)
+        const contacts = await getValidContacts(workspaceId, contactIdChunk)
 
         if (contacts.length === 0) {
           continue
@@ -120,7 +117,7 @@ export const addContactSequenceAction = chatbotActionClient
           parsedInput.sequences,
           existingKeys,
           nextRunAtMap,
-          chatbotId,
+          workspaceId,
           now,
         )
 
@@ -129,7 +126,7 @@ export const addContactSequenceAction = chatbotActionClient
         }
 
         await enrollContactsInSequenceBulk({
-          chatbotId,
+          workspaceId,
           enrollments: records.map((r) => ({
             contactId: r.contactId,
             sequenceId: r.sequenceId,
@@ -141,8 +138,8 @@ export const addContactSequenceAction = chatbotActionClient
       }
 
       revalidateCacheTags([
-        `chatbots:${chatbotId}#contacts`,
-        `chatbots:${chatbotId}#sequences`,
+        `workspaces:${workspaceId}#contacts`,
+        `workspaces:${workspaceId}#sequences`,
       ])
     },
   )

@@ -1,8 +1,8 @@
 "use client"
 
-import type { WhatsappAuthValue } from "@aha.chat/integration-whatsapp"
+import type { WhatsappAuthValue } from "@chatbotx.io/integration-whatsapp"
 import { env } from "@/env"
-import type { InboxResource } from "../inboxes/schemas/resource"
+import type { InboxResource } from "../inboxes/schema/resource"
 
 const buildUrlWithParam = (
   baseUrl: string,
@@ -21,7 +21,7 @@ const buildUrlWithParam = (
 // WhatsApp: https://wa.me/PHONE_NUMBER?text=/giveaway
 // Telegram: https://t.me/BOT_USERNAME?start=giveaway
 // Viber: viber://pa?chatURI=BOT_USERNAME&context=giveaway
-// WebChat: https://builder.example.com:3123/webchat?chatbotId=...&webchatId=...&ref=...
+// WebChat: https://builder.example.com:3123/webchat?workspaceId=...&webchatId=...&ref=...
 export const getInboxLink = (props: {
   inbox: InboxResource
   reflinkData?: string
@@ -47,13 +47,13 @@ export const getInboxLink = (props: {
     }
     case "webchat":
       return buildUrlWithParam(
-        `${env.NEXT_PUBLIC_BUILDER_URL}/webchat?chatbotId=${inbox.chatbotId}&webchatId=${inbox.sourceId}`,
+        `${env.NEXT_PUBLIC_BUILDER_URL}/webchat?workspaceId=${inbox.workspaceId}&webchatId=${inbox.sourceId}`,
         "ref",
         reflinkData,
       )
     default:
       return buildUrlWithParam(
-        `${env.NEXT_PUBLIC_BUILDER_URL}/link?chatbotId=${inbox.chatbotId}`,
+        `${env.NEXT_PUBLIC_BUILDER_URL}/link?workspaceId=${inbox.workspaceId}`,
         "ref",
         reflinkData,
       )

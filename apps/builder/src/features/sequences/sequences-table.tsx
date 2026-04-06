@@ -1,20 +1,20 @@
 "use client"
 
-import { FolderType } from "@aha.chat/database/enums"
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
-import { Badge } from "@aha.chat/ui/components/ui/badge"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Checkbox } from "@aha.chat/ui/components/ui/checkbox"
+import { folderTypes } from "@chatbotx.io/database/partials"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
+import { Badge } from "@chatbotx.io/ui/components/ui/badge"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Checkbox } from "@chatbotx.io/ui/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   CheckCircleIcon,
@@ -34,27 +34,28 @@ import { ChangeFolderDialog } from "../folders/change-folder"
 import { updateSequenceAction } from "./actions/update-sequence.action"
 import { DeleteSequenceDialog } from "./delete-sequence-dialog"
 import { RenameSequenceDialog } from "./rename-sequence-dialog"
-import type { ListSequencesItem } from "./schema"
+import type { ListSequencesResponse } from "./schema/action"
 import { SequencesTableToolbarActions } from "./sequences-table-toolbar-actions"
 
 type SequencesTableProps = {
-  chatbotId: string
+  workspaceId: string
   promises: Promise<[Awaited<ReturnType<typeof listSequences>>]>
 }
 
-export function SequencesTable({ chatbotId, promises }: SequencesTableProps) {
+export function SequencesTable({ workspaceId, promises }: SequencesTableProps) {
   const t = useTranslations()
   const router = useRouter()
 
   const [{ data, pageCount }] = use(promises)
 
-  const [rowAction, setRowAction] =
-    React.useState<DataTableRowAction<ListSequencesItem> | null>(null)
+  const [rowAction, setRowAction] = React.useState<DataTableRowAction<
+    ListSequencesResponse["data"][number]
+  > | null>(null)
 
   const handleToggleStatus = useCallback(
-    async (sequence: ListSequencesItem) => {
+    async (sequence: ListSequencesResponse["data"][number]) => {
       try {
-        await updateSequenceAction(chatbotId, sequence.id, {
+        await updateSequenceAction(workspaceId, sequence.id, {
           active: !sequence.active,
         })
         toast.success(
@@ -65,10 +66,10 @@ export function SequencesTable({ chatbotId, promises }: SequencesTableProps) {
         toast.error(t("messages.unknownError"))
       }
     },
-    [chatbotId, t, router],
+    [workspaceId, t, router],
   )
 
-  const columns = useMemo<ColumnDef<ListSequencesItem>[]>(
+  const columns = useMemo<ColumnDef<ListSequencesResponse["data"][number]>[]>(
     () => [
       {
         id: "select",
@@ -110,7 +111,7 @@ export function SequencesTable({ chatbotId, promises }: SequencesTableProps) {
           <div className="flex justify-start">
             <Link
               className="font-medium text-primary hover:underline"
-              href={`/chatbots/${chatbotId}/sequences/${row.original.id}`}
+              href={`/space/${workspaceId}/sequences/${row.original.id}`}
             >
               {row.original.name ?? ""}
             </Link>
@@ -230,7 +231,7 @@ export function SequencesTable({ chatbotId, promises }: SequencesTableProps) {
         enableHiding: false,
       },
     ],
-    [t, chatbotId, handleToggleStatus],
+    [t, workspaceId, handleToggleStatus],
   )
 
   const { table } = useDataTable({
@@ -251,9 +252,9 @@ export function SequencesTable({ chatbotId, promises }: SequencesTableProps) {
       <DataTable table={table}>
         <DataTableToolbar table={table}>
           <SequencesTableToolbarActions
-            chatbotId={chatbotId}
             setRowAction={setRowAction}
             table={table}
+            workspaceId={workspaceId}
           />
         </DataTableToolbar>
       </DataTable>
@@ -268,12 +269,12 @@ export function SequencesTable({ chatbotId, promises }: SequencesTableProps) {
       />
 
       <ChangeFolderDialog
-        chatbotId={chatbotId}
         currentFolderId={rowAction?.row.original?.folderId || null}
-        folderType={FolderType.sequence}
+        folderType={folderTypes.enum.sequence}
         modelIds={rowAction?.row.original ? [rowAction.row.original.id] : []}
         onOpenChange={() => setRowAction(null)}
         open={rowAction?.variant === "move"}
+        workspaceId={workspaceId}
       />
 
       <DeleteSequenceDialog

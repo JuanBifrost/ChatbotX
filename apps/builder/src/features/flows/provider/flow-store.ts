@@ -10,8 +10,8 @@ export type FlowState = {
   error: string | null
   initialized: boolean
 
-  chatbotId: string
-  filter?: FlowStateFilter
+  workspaceId: string
+  filter: FlowStateFilter
   flows: ListFlowsResponse["data"]
 }
 
@@ -30,7 +30,7 @@ export const createFlowStore = (props: Partial<FlowState>) =>
     error: null,
     initialized: false,
 
-    chatbotId: "",
+    workspaceId: "",
     filter: {},
     flows: [],
     ...props,
@@ -66,9 +66,9 @@ export const createFlowStore = (props: Partial<FlowState>) =>
     },
 
     getAllActiveFlows: async () => {
-      const { chatbotId, loading, filter } = get()
+      const { workspaceId, loading, filter } = get()
 
-      if (loading || !chatbotId) {
+      if (loading || !workspaceId) {
         return
       }
 
@@ -76,11 +76,12 @@ export const createFlowStore = (props: Partial<FlowState>) =>
         set({ loading: true, error: null })
 
         const { data } = await ky
-          .get<ListFlowsResponse>(`/api/chatbots/${chatbotId}/flows`, {
+          .get<ListFlowsResponse>(`/api/workspaces/${workspaceId}/flows`, {
             searchParams: {
               perPage: maxPerPageString,
               active: "true",
               ...filter,
+              integrationWhatsappId: filter.integrationWhatsappId?.toString(),
             },
           })
           .json()

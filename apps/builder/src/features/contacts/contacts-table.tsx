@@ -1,21 +1,15 @@
 "use client"
 
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { Checkbox } from "@aha.chat/ui/components/ui/checkbox"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
+import { Checkbox } from "@chatbotx.io/ui/components/ui/checkbox"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@aha.chat/ui/components/ui/tooltip"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
+} from "@chatbotx.io/ui/components/ui/tooltip"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
 import type { Column, ColumnDef } from "@tanstack/react-table"
 import { format, formatDistance } from "date-fns"
 import Link from "next/link"
@@ -31,11 +25,11 @@ import type { ContactResource } from "./schemas/resource"
 import { getFullName } from "./utils"
 
 type ContactsTableProps = {
-  chatbotId: string
+  workspaceId: string
   promises: Promise<[Awaited<ReturnType<typeof listContacts>>]>
 }
 
-export function ContactsTable({ chatbotId, promises }: ContactsTableProps) {
+export function ContactsTable({ workspaceId, promises }: ContactsTableProps) {
   const t = useTranslations()
   const [{ data, pageCount }] = use(promises)
 
@@ -83,7 +77,7 @@ export function ContactsTable({ chatbotId, promises }: ContactsTableProps) {
               <TooltipTrigger asChild>
                 <Link
                   className="max-w-[200px] truncate text-blue-500"
-                  href={`/chatbots/${chatbotId}/inbox?conversationId=${row.original.conversation?.id}`}
+                  href={`/space/${workspaceId}/inbox?conversationId=${row.original.conversation?.id}`}
                   target="_blank"
                 >
                   {getFullName(row.original)}
@@ -111,9 +105,9 @@ export function ContactsTable({ chatbotId, promises }: ContactsTableProps) {
             title={t("fields.source.label")}
           />
         ),
-        cell: ({ row }) => {
+        cell: () => {
           const channel = channelOptions.find(
-            (option) => option.value === row.original.source,
+            (option) => option.value === "messenger",
           )
           return <div>{channel ? channel.label : ""}</div>
         },
@@ -199,7 +193,7 @@ export function ContactsTable({ chatbotId, promises }: ContactsTableProps) {
         enableHiding: false,
       },
     ],
-    [chatbotId, t, channelOptions],
+    [workspaceId, t, channelOptions],
   )
 
   const { table } = useDataTable({
@@ -216,20 +210,11 @@ export function ContactsTable({ chatbotId, promises }: ContactsTableProps) {
   })
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="font-bold text-xl">
-          {t("contacts.title")}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <DataTable table={table}>
-          <DataTableToolbar table={table}>
-            <CreateContactDialog chatbotId={chatbotId} />
-            <ContactListAction chatbotId={chatbotId} table={table} />
-          </DataTableToolbar>
-        </DataTable>
-      </CardContent>
-    </Card>
+    <DataTable table={table}>
+      <DataTableToolbar table={table}>
+        <CreateContactDialog workspaceId={workspaceId} />
+        <ContactListAction table={table} workspaceId={workspaceId} />
+      </DataTableToolbar>
+    </DataTable>
   )
 }

@@ -1,12 +1,12 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { UploadMode } from "../types"
-import { StepType } from "./step-action"
+import { uploadModes } from "../types"
+import { stepTypes } from "./step-action"
 
 export const emailImageStepSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.emailImage),
-  mode: z.enum(UploadMode),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.emailImage),
+  mode: uploadModes,
   url: z.url(),
 })
 
@@ -18,6 +18,6 @@ export const emailImageStepDefaultFn = (
   url: "",
   ...props,
   id: createId(),
-  stepType: StepType.emailImage,
-  mode: UploadMode.file,
+  stepType: stepTypes.enum.emailImage,
+  mode: uploadModes.enum.file,
 })

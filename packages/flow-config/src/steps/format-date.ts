@@ -1,18 +1,18 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { StepType } from "./step-action"
+import { stepTypes } from "./step-action"
 
 export const FormatTimezone = {
   contact: "contact",
-  chatbot: "chatbot",
+  workspace: "workspace",
 } as const
 
 export const formatDateStepSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.formatDate),
-  inputCfId: z.cuid2(),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.formatDate),
+  inputCfId: zodBigintAsString(),
   format: z.string().trim().min(1),
-  outputCfId: z.cuid2(),
+  outputCfId: zodBigintAsString(),
   timezone: z.enum(FormatTimezone),
 })
 export type FormatDateStepSchema = z.infer<typeof formatDateStepSchema>
@@ -21,7 +21,7 @@ export const formatDateStepDefaultFn = (
   props?: Partial<FormatDateStepSchema>,
 ): FormatDateStepSchema => ({
   id: createId(),
-  stepType: StepType.formatDate,
+  stepType: stepTypes.enum.formatDate,
   inputCfId: "",
   format: "",
   outputCfId: "",

@@ -1,4 +1,5 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
+import type { CustomFieldType } from "@chatbotx.io/database/partials"
 import { notFoundException } from "@/lib/errors/exception"
 import type {
   ListContactCustomFieldsRequest,
@@ -21,6 +22,7 @@ export async function listContactCustomFields(
   return {
     data: data.map((d) => ({
       ...d.customField,
+      type: d.customField.type as CustomFieldType,
       value: d.value,
     })),
   }
@@ -29,14 +31,14 @@ export async function listContactCustomFields(
 export async function findContactCustomField(input: {
   contactId: string
   customFieldId: string
-  chatbotId: string
+  workspaceId: string
 }): Promise<PublicContactCustomFieldResource> {
   const contactCustomField = await db.query.contactCustomFieldModel.findFirst({
     where: {
       contactId: input.contactId,
       customFieldId: input.customFieldId,
       customField: {
-        chatbotId: input.chatbotId,
+        workspaceId: input.workspaceId,
       },
     },
     with: {
@@ -49,6 +51,7 @@ export async function findContactCustomField(input: {
   }
   return {
     ...contactCustomField.customField,
+    type: contactCustomField.customField.type as CustomFieldType,
     value: contactCustomField.value,
   }
 }

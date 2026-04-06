@@ -14,7 +14,7 @@ export function parseToolIds(allTools: string[], prefix: string): string[] {
 }
 
 export async function getAIToolset(
-  chatbotId: string,
+  workspaceId: string,
   tools: string[],
 ): Promise<ToolSet> {
   try {
@@ -23,9 +23,9 @@ export async function getAIToolset(
     const mcpIds = parseToolIds(tools, toolPrefix.mcp)
 
     const [fileTools, functionTools, mcpTools] = await Promise.all([
-      getAIFileTools(chatbotId, fileIds),
-      getAIFunctionTools(chatbotId, functionIds),
-      getMCPServerTools(chatbotId, mcpIds),
+      getAIFileTools(workspaceId, fileIds),
+      getAIFunctionTools(workspaceId, functionIds),
+      getMCPServerTools(workspaceId, mcpIds),
     ])
 
     return { ...fileTools, ...functionTools, ...mcpTools }

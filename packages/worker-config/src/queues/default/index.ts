@@ -24,7 +24,7 @@ export type JobExportContacts = {
   type: typeof DefaultJobAction.exportContacts
   data: {
     requestedUserId: string
-    chatbotId: string
+    workspaceId: string
     fields: string[]
     contactIds: string[]
     outputPath: string
@@ -39,7 +39,7 @@ export type JobExportContacts = {
 export type JobSendErrorLog = {
   type: typeof DefaultJobAction.sendErrorLog
   data: {
-    chatbotId: string
+    workspaceId: string
     error: {
       message: string
       stack?: string
@@ -52,7 +52,7 @@ export type JobSendAuditLog = {
   type: typeof DefaultJobAction.sendAuditLog
   data: {
     userId: string
-    chatbotId: string
+    workspaceId: string
     action: string
     detail: string
   }

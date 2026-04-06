@@ -1,9 +1,9 @@
 "use client"
 
-import type { TriggerModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form, FormMessage } from "@aha.chat/ui/components/ui/form"
-import { Label } from "@aha.chat/ui/components/ui/label"
+import type { TriggerModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form, FormMessage } from "@chatbotx.io/ui/components/ui/form"
+import { Label } from "@chatbotx.io/ui/components/ui/label"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -20,12 +20,12 @@ import { ActionEditor } from "./components/actions/editor"
 import {
   type UpdateTriggerSchema,
   updateTriggerSchema,
-} from "./schemas/update-trigger-schema"
+} from "./schema/mutation"
 
 type TriggerWithConditions = TriggerModel & {
   conditions?: Array<{
     id: string
-    type: number
+    type: string
     sourceId: string | null
     operator: string | null
     value: unknown
@@ -33,12 +33,12 @@ type TriggerWithConditions = TriggerModel & {
 }
 
 type UpdateTriggerFormProps = {
-  chatbotId: string
+  workspaceId: string
   trigger: TriggerWithConditions
 }
 
 export default function UpdateTriggerForm(props: UpdateTriggerFormProps) {
-  const { chatbotId, trigger } = props
+  const { workspaceId, trigger } = props
   const t = useTranslations()
   const router = useRouter()
 
@@ -47,7 +47,7 @@ export default function UpdateTriggerForm(props: UpdateTriggerFormProps) {
     handleSubmitWithAction,
     form: { control },
   } = useHookFormAction(
-    updateTriggerAction.bind(null, chatbotId, trigger.id),
+    updateTriggerAction.bind(null, workspaceId, trigger.id),
     zodResolver(updateTriggerSchema),
     {
       actionProps: {

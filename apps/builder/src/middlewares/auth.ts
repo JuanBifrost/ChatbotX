@@ -1,4 +1,4 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 import { ORPCError } from "@orpc/server"
 import { auth } from "@/lib/auth/auth"
 import { base } from "./context"
@@ -26,29 +26,29 @@ export const authMiddleware = base.middleware(async ({ context, next }) => {
   })
 })
 
-export const chatbotAuthMiddleware = base.middleware(
-  async ({ context, next }, chatbotId: string) => {
+export const workspaceAuthorizedMidddleware = base.middleware(
+  async ({ context, next }, workspaceId: string) => {
     if (!context.user) {
       throw new ORPCError("UNAUTHORIZED")
     }
 
-    const chatbotMember = await db.query.chatbotMemberModel.findFirst({
+    const workspaceMember = await db.query.workspaceMemberModel.findFirst({
       where: {
-        chatbotId,
+        workspaceId,
         userId: context.user.id,
       },
       with: {
-        chatbot: true,
+        workspace: true,
       },
     })
 
-    if (!chatbotMember) {
+    if (!workspaceMember) {
       throw new ORPCError("UNAUTHORIZED")
     }
 
     return next({
       context: {
-        chatbot: chatbotMember.chatbot,
+        workspace: workspaceMember.workspace,
       },
     })
   },

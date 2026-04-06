@@ -1,10 +1,10 @@
 "use client"
 
-import type { FacebookPage } from "@aha.chat/integration-messenger/schemas"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { RadioGroupField } from "@aha.chat/ui/components/form/radio-group-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form } from "@aha.chat/ui/components/ui/form"
+import type { FacebookPage } from "@chatbotx.io/integration-messenger/schemas"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { RadioGroupField } from "@chatbotx.io/ui/components/form/radio-group-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -14,13 +14,13 @@ import { useEffect } from "react"
 import { useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { selectPageAction } from "../actions/select-page.action"
-import { selectPageRequest } from "../schemas"
+import { selectPageRequest } from "../schema/action"
 
 export function FacebookPages({
-  chatbotId,
+  workspaceId,
   pages,
 }: {
-  chatbotId?: string | null
+  workspaceId?: string | null
   pages: FacebookPage[]
 }) {
   const t = useTranslations()
@@ -33,7 +33,7 @@ export function FacebookPages({
       formProps: {
         mode: "onChange",
         defaultValues: {
-          chatbotId,
+          workspaceId,
           pageId: "",
           pageName: "",
           accessToken: "",
@@ -41,9 +41,9 @@ export function FacebookPages({
       },
       actionProps: {
         onSuccess: ({ data }) => {
-          if (chatbotId) {
+          if (workspaceId) {
             router.push(
-              `/chatbots/${data.chatbotId}/settings/channels?channel=messenger`,
+              `/space/${data.workspaceId}/settings/channels?channel=messenger`,
             )
           } else {
             router.push("/")

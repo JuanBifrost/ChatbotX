@@ -1,21 +1,21 @@
 "use client"
 
-import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Checkbox } from "@aha.chat/ui/components/ui/checkbox"
+import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Checkbox } from "@chatbotx.io/ui/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
-import { Switch } from "@aha.chat/ui/components/ui/switch"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
+import { Switch } from "@chatbotx.io/ui/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@aha.chat/ui/components/ui/tooltip"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/tooltip"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   FolderUpIcon,
@@ -29,10 +29,10 @@ import type { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import type { Dispatch, SetStateAction } from "react"
 import { updateTriggerSettingsAction } from "./actions/update-trigger-settings-action"
-import type { TriggerResource } from "./schemas"
+import type { TriggerResource } from "./schema/resource"
 
 type GetColumnsProps = {
-  chatbotId: string
+  workspaceId: string
   t: ReturnType<typeof useTranslations>
   setRowAction: Dispatch<
     SetStateAction<DataTableRowAction<TriggerResource> | null>
@@ -40,7 +40,7 @@ type GetColumnsProps = {
 }
 
 export function getColumns({
-  chatbotId,
+  workspaceId,
   t,
   setRowAction,
 }: GetColumnsProps): ColumnDef<TriggerResource>[] {
@@ -84,7 +84,7 @@ export function getColumns({
             <div className="max-w-[300px] truncate">
               <Link
                 className="truncate"
-                href={`/chatbots/${chatbotId}/triggers/${row.original.id}/edit`}
+                href={`/space/${workspaceId}/triggers/${row.original.id}/edit`}
               >
                 {row.original.name}
               </Link>
@@ -117,7 +117,7 @@ export function getColumns({
         const { execute, isPending } = useAction(
           updateTriggerSettingsAction.bind(
             null,
-            row.original.chatbotId,
+            row.original.workspaceId,
             row.original.id,
           ),
           {
@@ -158,7 +158,7 @@ export function getColumns({
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link
-                href={`/chatbots/${chatbotId}/triggers/${row.original.id}/edit`}
+                href={`/space/${workspaceId}/triggers/${row.original.id}/edit`}
               >
                 <PencilIcon />
                 {t("actions.edit")}

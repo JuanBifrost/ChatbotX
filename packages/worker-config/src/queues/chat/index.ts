@@ -10,8 +10,8 @@ import type {
   SendVideoStepSchema,
   SendWaTemplateMessageStepSchema,
   WaTemplateParams,
-} from "@aha.chat/flow-config"
-import type { OutgoingConversation, OutgoingMessage } from "@aha.chat/sdk"
+} from "@chatbotx.io/flow-config"
+import type { OutgoingConversation, OutgoingMessage } from "@chatbotx.io/sdk"
 import { Queue } from "bullmq"
 import {
   defaultJobOptions,
@@ -97,7 +97,7 @@ export type ChatJobSendTyping = {
 export type ChatJobNotifyExportResult = {
   type: typeof ChatJobAction.notifyExportResult
   data: {
-    chatbotId: string
+    workspaceId: string
     userId: string
     status: "pending" | "completed" | "failed"
     outputPath: string

@@ -1,7 +1,7 @@
 "use client"
 
-import type { FlowModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { FlowModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -9,7 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
 import { useReactFlow } from "@xyflow/react"
 import {
   ChartNoAxesCombinedIcon,
@@ -37,10 +37,10 @@ import GetFlowLinkDialog from "./components/get-flow-link"
 import { RenameFlowDialog } from "./components/rename-flow"
 
 export function FlowEditToolbar({
-  chatbotId,
+  workspaceId,
   flow,
 }: {
-  chatbotId: string
+  workspaceId: string
   flow: FlowModel
 }) {
   const t = useTranslations()
@@ -64,7 +64,7 @@ export function FlowEditToolbar({
   const { getNodes, getEdges } = useReactFlow()
 
   const { execute: executePublish, isPending: isPendingPublish } = useAction(
-    publishFlowAction.bind(null, chatbotId, flow.id),
+    publishFlowAction.bind(null, workspaceId, flow.id),
     {
       onSuccess: () => {
         toast.success("A new version has been published")
@@ -175,7 +175,6 @@ export function FlowEditToolbar({
       />
 
       <DeleteFlowsDialog
-        chatbotId={chatbotId}
         flows={[flow]}
         onOpenChange={() => setAction(null)}
         onSuccess={() => {
@@ -183,6 +182,7 @@ export function FlowEditToolbar({
         }}
         open={action === "delete"}
         showTrigger={false}
+        workspaceId={workspaceId}
       />
 
       <GetFlowLinkDialog

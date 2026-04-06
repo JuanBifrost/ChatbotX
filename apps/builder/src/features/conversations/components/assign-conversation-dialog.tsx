@@ -1,7 +1,7 @@
 "use client"
 
-import { ComboboxField } from "@aha.chat/ui/components/form/combobox-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,22 +11,22 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { type ReactElement, useCallback, useMemo, useState } from "react"
 import { toast } from "sonner"
 import { useContactAssigneeOptions } from "@/features/users/provider/user-hook"
+import { useWorkspaceId } from "@/hooks/routing"
 import { assignConversationAction } from "../actions/assign-conversation.action"
-import { assignConversationSchema } from "../schemas/action"
+import { assignConversationSchema } from "../schema/action"
 
 type AssignConversationDialogProps = {
   trigger: ReactElement
-  assignedId?: string
+  assignedId?: string | null
   contactIds: string[]
   showRemove?: boolean
   onSuccess?: (value: string | null) => void
@@ -41,7 +41,7 @@ export default function AssignConversationDialog({
 }: AssignConversationDialogProps) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
 
   const contactAssigneeOptions = useContactAssigneeOptions()
 
@@ -55,7 +55,7 @@ export default function AssignConversationDialog({
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      assignConversationAction.bind(null, chatbotId),
+      assignConversationAction.bind(null, workspaceId),
       zodResolver(assignConversationSchema),
       {
         actionProps: {

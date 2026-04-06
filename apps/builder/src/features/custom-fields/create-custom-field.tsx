@@ -1,9 +1,9 @@
 "use client"
-import { rootFolderId } from "@aha.chat/database/enums"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { rootFolderId } from "@chatbotx.io/database/partials"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
@@ -11,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon, PlusIcon } from "lucide-react"
@@ -24,7 +24,7 @@ import { createCustomFieldAction } from "./actions/create-custom-field.action"
 import { createCustomFieldRequest } from "./schemas/action"
 
 type CreateCustomFieldDialogProps = {
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
   triggerButton?: ReactNode
   onSuccess?: () => void
@@ -35,7 +35,7 @@ export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
   const t = useTranslations()
 
   const {
-    chatbotId,
+    workspaceId,
     folderId,
     triggerButton,
     onSuccess = () => {
@@ -70,13 +70,13 @@ export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
         </DialogHeader>
 
         <CreateCustomFieldForm
-          chatbotId={chatbotId}
           folderId={folderId}
           onClose={() => setOpen(false)}
           onSuccess={() => {
             setOpen(false)
             onSuccess()
           }}
+          workspaceId={workspaceId}
         />
       </DialogContent>
     </Dialog>
@@ -84,12 +84,12 @@ export function CreateCustomFieldDialog(props: CreateCustomFieldDialogProps) {
 }
 
 function CreateCustomFieldForm({
-  chatbotId,
+  workspaceId,
   folderId,
   onSuccess,
   onClose,
 }: {
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
   onSuccess?: () => void
   onClose?: () => void
@@ -128,7 +128,7 @@ function CreateCustomFieldForm({
 
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
-      createCustomFieldAction.bind(null, chatbotId),
+      createCustomFieldAction.bind(null, workspaceId),
       zodResolver(createCustomFieldRequest),
       {
         actionProps: {

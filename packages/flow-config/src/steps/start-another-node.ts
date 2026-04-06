@@ -1,11 +1,11 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { StepType } from "./step-action"
+import { stepTypes } from "./step-action"
 
 export const startAnotherNodeStepSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.startAnotherNode),
-  nodeId: z.cuid2(),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.startAnotherNode),
+  nodeId: zodBigintAsString(),
   viewOnly: z.boolean().optional(),
 })
 
@@ -17,7 +17,7 @@ export const startAnotherNodeStepDefaultFn = (
   props?: Partial<StartAnotherNodeStepSchema>,
 ): StartAnotherNodeStepSchema => ({
   id: createId(),
-  stepType: StepType.startAnotherNode,
+  stepType: stepTypes.enum.startAnotherNode,
   nodeId: "",
   ...props,
 })

@@ -1,7 +1,7 @@
 "use client"
 
-import type { WebhookModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { WebhookModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import type { Row } from "@tanstack/react-table"
 import { Loader, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -21,7 +21,7 @@ import { toast } from "sonner"
 import { deleteWebhooksAction } from "./actions/delete-webhooks-action"
 
 type DeleteWebhooksDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
-  chatbotId: string
+  workspaceId: string
   webhooks: Row<WebhookModel>["original"][]
   showWebhook?: boolean
   onSuccess?: () => void
@@ -29,7 +29,7 @@ type DeleteWebhooksDialogProps = ComponentPropsWithoutRef<typeof Dialog> & {
 }
 
 export function DeleteWebhooksDialog({
-  chatbotId,
+  workspaceId,
   webhooks,
   showWebhook = true,
   onSuccess,
@@ -39,7 +39,7 @@ export function DeleteWebhooksDialog({
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteWebhooksAction.bind(null, chatbotId),
+    deleteWebhooksAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

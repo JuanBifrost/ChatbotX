@@ -1,18 +1,18 @@
 "use client"
 
-import { channelType } from "@aha.chat/database/types"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
+import { channelTypes } from "@chatbotx.io/database/partials"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@aha.chat/ui/components/ui/accordion"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Card, CardContent } from "@aha.chat/ui/components/ui/card"
-import { Form } from "@aha.chat/ui/components/ui/form"
-import { Input } from "@aha.chat/ui/components/ui/input"
+} from "@chatbotx.io/ui/components/ui/accordion"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
+import { Input } from "@chatbotx.io/ui/components/ui/input"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { ArrowRightIcon, Loader2Icon } from "lucide-react"
@@ -27,7 +27,7 @@ import { useTagSelectOptions } from "../tags/provider/tag-hook"
 import { importContactsAction } from "./actions/import-contacts.action"
 import { importContactsRequest } from "./schemas/action"
 
-export function ImportContactsForm({ chatbotId }: { chatbotId: string }) {
+export function ImportContactsForm({ workspaceId }: { workspaceId: string }) {
   const t = useTranslations()
   const router = useRouter()
 
@@ -38,13 +38,13 @@ export function ImportContactsForm({ chatbotId }: { chatbotId: string }) {
     form: { register, setValue, resetField, unregister, formState },
     handleSubmitWithAction,
   } = useHookFormAction(
-    importContactsAction.bind(null, chatbotId),
+    importContactsAction.bind(null, workspaceId),
     zodResolver(importContactsRequest),
     {
       actionProps: {
         onSuccess: () => {
           // TODO
-          router.push(`/chatbots/${chatbotId}/contacts`)
+          router.push(`/space/${workspaceId}/contacts`)
         },
         onError: ({ error }) => {
           if (error.serverError) {
@@ -69,7 +69,7 @@ export function ImportContactsForm({ chatbotId }: { chatbotId: string }) {
   )
 
   const handleCancel = () => {
-    router.push(`/chatbots/${chatbotId}/contacts`)
+    router.push(`/space/${workspaceId}/contacts`)
   }
 
   const handleSelectFile = (file: File) => {
@@ -161,14 +161,14 @@ export function ContactsSettings({ csvHeaders }: { csvHeaders: string[] }) {
         options={channelOptions}
         triggerValueChange={setChannel}
       />
-      {channel === channelType.whatsapp && (
+      {channel === channelTypes.enum.whatsapp && (
         <InputField
           label={t("fields.countryCode.label")}
           name="countryCode"
           placeholder="+1"
         />
       )}
-      {channel !== channelType.whatsapp && (
+      {channel !== channelTypes.enum.whatsapp && (
         <>
           <HeaderConnectContactField
             csvHeaders={csvHeaders}

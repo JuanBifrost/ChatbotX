@@ -1,43 +1,42 @@
 "use server"
 
-import { db, eq } from "@aha.chat/database/client"
-import { tagModel } from "@aha.chat/database/schema"
-import type { UserModel } from "@aha.chat/database/types"
+import { db, eq } from "@chatbotx.io/database/client"
+import { tagModel } from "@chatbotx.io/database/schema"
+import type { UserModel } from "@chatbotx.io/database/types"
+import {
+  type WorkspaceIdAndIdRequestParams,
+  workspaceIdAndIdRequestParams,
+} from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
 import { authActionClient } from "@/lib/safe-action"
 import { findChatbotOrFail } from "@/lib/user-permissions"
-import {
-  type UpdateTagBindSchema,
-  type UpdateTagSchema,
-  updateTagBindSchema,
-  updateTagSchema,
-} from "../schemas/update-tag-schema"
+import { type UpdateTagSchema, updateTagSchema } from "../schema/action"
 
 export const updateTagAction = authActionClient
   .inputSchema(updateTagSchema)
-  .bindArgsSchemas(updateTagBindSchema)
+  .bindArgsSchemas(workspaceIdAndIdRequestParams)
   .action(
     async ({
       ctx,
       parsedInput,
-      bindArgsParsedInputs: [chatbotId, tagId],
+      bindArgsParsedInputs: [workspaceId, id],
     }: {
       ctx: { user: UserModel }
       parsedInput: UpdateTagSchema
-      bindArgsParsedInputs: UpdateTagBindSchema
+      bindArgsParsedInputs: WorkspaceIdAndIdRequestParams
     }) => {
-      await findChatbotOrFail(ctx.user.id, chatbotId)
+      await findChatbotOrFail(ctx.user.id, workspaceId)
 
-      await updateTag({ chatbotId, id: tagId, parsedInput })
+      await updateTag({ workspaceId, id, parsedInput })
     },
   )
 
 export const updateTag = async ({
-  chatbotId,
+  workspaceId,
   id,
   parsedInput,
 }: {
-  chatbotId: string
+  workspaceId: string
   id: string
   parsedInput: UpdateTagSchema
 }) => {
@@ -47,7 +46,7 @@ export const updateTag = async ({
     },
     where: {
       name: parsedInput.name,
-      chatbotId,
+      workspaceId,
       id: {
         ne: id,
       },
@@ -66,7 +65,7 @@ export const updateTag = async ({
     .returning()
     .then((result) => result[0])
 
-  revalidateCacheTags(`chatbots:${chatbotId}#tags`)
+  revalidateCacheTags(`workspaces:${workspaceId}#tags`)
 
   return updatedTag
 }

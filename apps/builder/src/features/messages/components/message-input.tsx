@@ -1,11 +1,11 @@
 "use client"
 
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Form } from "@aha.chat/ui/components/ui/form"
-import { Textarea } from "@aha.chat/ui/components/ui/textarea"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
+import { Textarea } from "@chatbotx.io/ui/components/ui/textarea"
+import { createId } from "@chatbotx.io/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { createId } from "@paralleldrive/cuid2"
 import { PaperclipIcon, SendHorizonalIcon } from "lucide-react"
 import { type KeyboardEvent, useCallback, useMemo, useRef } from "react"
 import { Controller, useWatch } from "react-hook-form"
@@ -14,7 +14,7 @@ import { QuickRepliesPopover } from "@/features/saved-replies/quick-replies-popo
 import { authClient } from "@/lib/auth/auth-client"
 import { useChatStore } from "../../chat/store/chat-store-provider"
 import { createMessageAction } from "../actions/create-message.action"
-import { createMessageRequest } from "../schemas/create-message.schema"
+import { createMessageRequest } from "../schema/mutation"
 import { FileUploadPreview } from "./file-upload"
 import { InputMenu } from "./input-menu"
 
@@ -38,7 +38,7 @@ export const MessageInput = () => {
     useHookFormAction(
       createMessageAction.bind(
         null,
-        conversation?.chatbotId ?? "",
+        conversation?.workspaceId ?? "",
         conversation?.id ?? "",
       ),
       zodResolver(createMessageRequest),
@@ -49,18 +49,18 @@ export const MessageInput = () => {
             if (
               typeof input === "object" &&
               input !== null &&
-              "content" in input &&
-              input.content
+              "text" in input &&
+              input.text
             ) {
-              const typedInput = input as { content: string; clientId: string }
+              const typedInput = input as { text: string; clientId: string }
               appendMessage({
-                content: typedInput.content,
+                text: typedInput.text,
                 id: createId(),
                 createdAt: new Date(),
                 updatedAt: new Date(),
-                chatbotId: conversation?.chatbotId ?? "",
-                inboxId: conversation?.inboxId ?? "",
+                workspaceId: conversation?.workspaceId ?? "",
                 sourceId: null,
+                contactInboxId: "",
                 conversationId: conversation?.id ?? "",
                 contentAttributes: null,
                 messageType: "outgoing",
@@ -82,7 +82,7 @@ export const MessageInput = () => {
         },
         formProps: {
           defaultValues: {
-            content: "",
+            text: "",
             files: [],
             clientId: createId(),
           },
@@ -100,7 +100,7 @@ export const MessageInput = () => {
       }
 
       if (!insert) {
-        form.setValue("content", value, {
+        form.setValue("text", value, {
           shouldValidate: true,
         })
         return
@@ -110,7 +110,7 @@ export const MessageInput = () => {
       const before = text.slice(0, element.selectionStart)
       const after = text.slice(element.selectionStart)
 
-      form.setValue("content", `${before}${value}${after}`, {
+      form.setValue("text", `${before}${value}${after}`, {
         shouldValidate: true,
       })
     },
@@ -140,7 +140,7 @@ export const MessageInput = () => {
   )
 
   // Memoize inbox type and icon for current conversation
-  const currentInboxType = conversation?.channel ?? "webchat"
+  const currentInboxType = "webchat"
 
   // Check if files are attached
   const files = useWatch({
@@ -165,7 +165,7 @@ export const MessageInput = () => {
           <div className="mb-1 w-full px-2.5 py-1">
             <Controller
               control={form.control}
-              name="content"
+              name="text"
               render={({ field }) => (
                 <QuickRepliesPopover
                   inputValue={field.value ?? ""}

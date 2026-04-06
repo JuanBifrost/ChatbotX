@@ -1,7 +1,9 @@
-import { createSelectSchema, userModel } from "@aha.chat/database/schema"
-import type z from "zod"
+import { createSelectSchema, userModel } from "@chatbotx.io/database/schema"
+import { z } from "zod"
 
-export const userResource = createSelectSchema(userModel)
+export const userResource = createSelectSchema(userModel, {
+  id: z.string(),
+})
 export type UserResource = z.infer<typeof userResource>
 
 export type UserCollection = {

@@ -1,30 +1,33 @@
 "use server"
 
-import { db, inArray } from "@aha.chat/database/client"
-import { conversationModel } from "@aha.chat/database/schema"
-import type { UserModel } from "@aha.chat/database/types"
-import { IntegrationJobAction, integrationQueue } from "@aha.chat/worker-config"
 import { emitConversationAssigned } from "@chatbotx/events"
 import { conversationTrackingService } from "@chatbotx.io/analytics"
-import { createId } from "@paralleldrive/cuid2"
+import { db, inArray } from "@chatbotx.io/database/client"
+import { conversationModel } from "@chatbotx.io/database/schema"
+import type { UserModel } from "@chatbotx.io/database/types"
+import { createId } from "@chatbotx.io/utils"
+import {
+  IntegrationJobAction,
+  integrationQueue,
+} from "@chatbotx.io/worker-config"
 import { returnValidationErrors } from "next-safe-action"
 import {
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import {
   type AssignConversationSchema,
   assignConversationSchema,
-} from "@/features/conversations/schemas/action"
+} from "@/features/conversations/schema/action"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const assignConversationAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const assignConversationAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(assignConversationSchema)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
       ctx,
     }: {
@@ -42,25 +45,25 @@ export const assignConversationAction = chatbotActionClient
 
       if (parsedInput.assignedId?.startsWith("u_")) {
         const userId = parsedInput.assignedId.slice(2)
-        const chatbotMember = await db.query.chatbotMemberModel.findFirst({
+        const workspaceMember = await db.query.workspaceMemberModel.findFirst({
           where: {
-            chatbotId,
+            workspaceId,
             userId,
           },
         })
-        if (!chatbotMember) {
+        if (!workspaceMember) {
           returnValidationErrors(assignConversationSchema, {
             assignedId: {
               _errors: ["User is not valid"],
             },
           })
         }
-        updatedData.assignedUserId = chatbotMember.userId
+        updatedData.assignedUserId = workspaceMember.userId
       } else if (parsedInput.assignedId?.startsWith("t_")) {
         const inboxteamId = parsedInput.assignedId.slice(2)
         const inboxTeam = await db.query.inboxTeamModel.findFirst({
           where: {
-            chatbotId,
+            workspaceId,
             id: inboxteamId,
           },
         })
@@ -76,7 +79,7 @@ export const assignConversationAction = chatbotActionClient
 
       const conversations = await db.query.conversationModel.findMany({
         where: {
-          chatbotId,
+          workspaceId,
           contactId: {
             in: parsedInput.contactIds,
           },
@@ -105,7 +108,7 @@ export const assignConversationAction = chatbotActionClient
       for (const conversation of conversations) {
         try {
           await emitConversationAssigned(
-            chatbotId,
+            workspaceId,
             conversation.contactId,
             conversation.id,
             assignedTo,
@@ -122,13 +125,13 @@ export const assignConversationAction = chatbotActionClient
         for (const conv of conversations) {
           await conversationTrackingService.trackEvent(
             {
-              chatbotId,
+              workspaceId,
               conversationId: conv.id,
               eventType: "conversation_assigned",
               eventId: createId(),
               toAssignee,
               occurredAt: new Date(),
-              channel: conv.channel,
+              channel: "webchat", // TODO: replace correct channel from contact inbox
               metadata: {
                 triggerContext: {
                   triggerSource: "api",
@@ -144,12 +147,12 @@ export const assignConversationAction = chatbotActionClient
         for (const conv of conversations) {
           await conversationTrackingService.trackEvent(
             {
-              chatbotId,
+              workspaceId,
               conversationId: conv.id,
               eventType: "conversation_unassigned",
               eventId: createId(),
               occurredAt: new Date(),
-              channel: conv.channel,
+              channel: "webchat", // TODO: replace correct channel from contact inbox
               metadata: {
                 triggerContext: {
                   triggerSource: "api",
@@ -164,8 +167,8 @@ export const assignConversationAction = chatbotActionClient
       }
 
       revalidateCacheTags([
-        `chatbots:${chatbotId}#conversations`,
-        `chatbots:${chatbotId}#contacts`,
+        `workspaces:${workspaceId}#conversations`,
+        `workspaces:${workspaceId}#contacts`,
       ])
 
       await integrationQueue.add(IntegrationJobAction.assignConversation, {

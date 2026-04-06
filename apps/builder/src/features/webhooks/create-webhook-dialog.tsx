@@ -1,7 +1,7 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,8 +11,8 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon, PlusIcon } from "lucide-react"
@@ -25,10 +25,10 @@ import { createWebhookAction } from "./actions/create-webhook-action"
 import { createWebhookSchema } from "./schemas/create-webhook-schema"
 
 export function CreateWebhookDialog({
-  chatbotId,
+  workspaceId,
   folderId,
 }: {
-  chatbotId: string
+  workspaceId: string
   folderId: string | null
 }) {
   const t = useTranslations()
@@ -36,7 +36,7 @@ export function CreateWebhookDialog({
 
   const [open, onOpenChange] = useState(false)
   const { form, handleSubmitWithAction } = useHookFormAction(
-    createWebhookAction.bind(null, chatbotId),
+    createWebhookAction.bind(null, workspaceId),
     zodResolver(createWebhookSchema),
     {
       actionProps: {

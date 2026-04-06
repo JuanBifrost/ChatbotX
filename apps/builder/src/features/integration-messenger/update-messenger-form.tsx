@@ -1,38 +1,38 @@
 "use client"
 
-import type { IntegrationMessengerModel } from "@aha.chat/database/types"
-import { FileType } from "@aha.chat/sdk"
-import { ComboboxField } from "@aha.chat/ui/components/form/combobox-field"
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { SelectField } from "@aha.chat/ui/components/form/select-field"
+import type { IntegrationMessengerModel } from "@chatbotx.io/database/types"
+import { fileTypes } from "@chatbotx.io/sdk"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import {
   Accordion,
   AccordionContent,
   AccordionItem,
   AccordionTrigger,
-} from "@aha.chat/ui/components/ui/accordion"
-import { Badge } from "@aha.chat/ui/components/ui/badge"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/ui/components/ui/accordion"
+import { Badge } from "@chatbotx.io/ui/components/ui/badge"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { DialogFooter } from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/card"
+import { DialogFooter } from "@chatbotx.io/ui/components/ui/dialog"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
-import { Form } from "@aha.chat/ui/components/ui/form"
-import { Label } from "@aha.chat/ui/components/ui/label"
-import { Separator } from "@aha.chat/ui/components/ui/separator"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
+import { Label } from "@chatbotx.io/ui/components/ui/label"
+import { Separator } from "@chatbotx.io/ui/components/ui/separator"
+import { createId } from "@chatbotx.io/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { createId } from "@paralleldrive/cuid2"
 import {
   EllipsisVerticalIcon,
   Loader2Icon,
@@ -41,7 +41,7 @@ import {
   TrashIcon,
   UserIcon,
 } from "lucide-react"
-import { useParams, useRouter } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { useFieldArray } from "react-hook-form"
@@ -49,19 +49,20 @@ import { toast } from "sonner"
 import { DirectUploadOrInsertLink } from "@/components/direct-upload"
 import { TiptapEditorField } from "@/components/tiptap/tiptap-editor-field"
 import { useFlowSelectOptions } from "@/features/flows/provider/flow-hook"
-import { allSupportedLanguages } from "../chatbot/schemas/types"
-import PersistentMenuField from "../webchat/components/persistent-menu-field"
+import PersistentMenuField from "../integration-webchat/components/persistent-menu-field"
+import { allSupportedLanguages } from "../workspaces/schema/types"
 import { updateMessengerAction } from "./actions/update-messenger-action"
-import { updateMessengerRequest } from "./schemas"
+import { updateMessengerRequest } from "./schema/action"
 
 type UpdateMessengerFormProps = {
+  workspaceId: string
   integrationMessenger: IntegrationMessengerModel
 }
 
 export function UpdateMessengerForm({
+  workspaceId,
   integrationMessenger,
 }: UpdateMessengerFormProps) {
-  const { chatbotId } = useParams<{ chatbotId: string }>()
   const t = useTranslations()
   const router = useRouter()
 
@@ -72,7 +73,11 @@ export function UpdateMessengerForm({
     handleSubmitWithAction,
     form: { setValue },
   } = useHookFormAction(
-    updateMessengerAction.bind(null, chatbotId, integrationMessenger.id),
+    updateMessengerAction.bind(
+      null,
+      integrationMessenger.workspaceId,
+      integrationMessenger.id,
+    ),
     zodResolver(updateMessengerRequest),
     {
       actionProps: {
@@ -83,7 +88,7 @@ export function UpdateMessengerForm({
             }),
           )
           router.push(
-            `/chatbots/${chatbotId}/settings/channels?channel=messenger`,
+            `/space/${workspaceId}/settings/channels?channel=messenger`,
           )
         },
         onError: ({ error }) => {
@@ -156,7 +161,7 @@ export function UpdateMessengerForm({
       } = integrationMessenger
 
       form.reset({
-        welcomeFlowId,
+        welcomeFlowId: welcomeFlowId?.toString() ?? "",
         greetingMessages: greetingMessagesArray,
         persistentMenus: persistentMenusArray,
         conversationStarters: conversationStartersArray,
@@ -369,7 +374,7 @@ export function UpdateMessengerForm({
                       <Card>
                         <CardContent>
                           <DirectUploadOrInsertLink
-                            fileType={FileType.image}
+                            fileType={fileTypes.enum.image}
                             parentName={`personas.${index}.profilePicture`}
                           />
                         </CardContent>
@@ -385,7 +390,7 @@ export function UpdateMessengerForm({
                     name: "",
                     profilePicture: {
                       id: createId(),
-                      mode: FileType.file,
+                      mode: fileTypes.enum.file,
                       url: "",
                     },
                     isDefault: false,
@@ -410,7 +415,7 @@ export function UpdateMessengerForm({
           <Button
             onClick={() =>
               router.push(
-                `/chatbots/${chatbotId}/settings/channels?channel=messenger`,
+                `/space/${workspaceId}/settings/channels?channel=messenger`,
               )
             }
             type="button"

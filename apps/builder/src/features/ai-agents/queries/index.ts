@@ -1,12 +1,12 @@
 "use server"
 
-import { db, relationsFilterToSQL } from "@aha.chat/database/client"
-import { aiAgentModel } from "@aha.chat/database/schema"
-import type { AIAgentModel } from "@aha.chat/database/types"
+import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { aiAgentModel } from "@chatbotx.io/database/schema"
+import type { AIAgentModel } from "@chatbotx.io/database/types"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
-} from "@aha.chat/database/utils"
+} from "@chatbotx.io/database/utils"
 import type { ListAIAgentsRequest } from "@/features/ai-agents/schemas/query"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 
@@ -14,7 +14,7 @@ export async function listAIAgents(
   input: ListAIAgentsRequest,
 ): Promise<PaginatedResponse<AIAgentModel>> {
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     name: input.name
       ? {
           ilike: `%${input.name.toLowerCase()}%`,

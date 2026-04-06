@@ -1,17 +1,17 @@
-import { db } from "@aha.chat/database/client"
+import { db } from "@chatbotx.io/database/client"
 import type { IntegrationGoogleSheetsResource } from "../schemas"
 
 export const getGoogleSheetsIntegration = async ({
-  chatbotId,
+  workspaceId,
 }: {
-  chatbotId: string
+  workspaceId: string
 }): Promise<{
   data: IntegrationGoogleSheetsResource | null
 }> => {
   const data =
     (await db.query.integrationGoogleSheetsModel.findFirst({
       where: {
-        chatbotId,
+        workspaceId,
       },
     })) ?? null
 

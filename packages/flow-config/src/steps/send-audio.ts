@@ -1,13 +1,13 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { UploadMode } from "../types"
+import { uploadModes } from "../types"
 import { buttonStepSchema } from "./button"
-import { StepType } from "./step-action"
+import { stepTypes } from "./step-action"
 
 export const sendAudioStepSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.sendAudio),
-  mode: z.enum(UploadMode),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.sendAudio),
+  mode: uploadModes,
   url: z.url(),
   buttons: z.array(buttonStepSchema),
 })
@@ -18,9 +18,9 @@ export const sendAudioStepDefaultFn = (
   props?: Partial<SendAudioStepSchema>,
 ): SendAudioStepSchema => ({
   id: createId(),
-  mode: "file",
+  mode: uploadModes.enum.file,
   url: "",
   buttons: [],
   ...props,
-  stepType: StepType.sendAudio,
+  stepType: stepTypes.enum.sendAudio,
 })

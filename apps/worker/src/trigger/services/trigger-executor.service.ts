@@ -1,10 +1,10 @@
-import { db, sql } from "@aha.chat/database/client"
+import { setTriggerExecutionContext } from "@chatbotx/events"
+import { db, sql } from "@chatbotx.io/database/client"
 import {
   triggerContactHistoryModel,
   triggerStatsModel,
-} from "@aha.chat/database/schema"
-import { setTriggerExecutionContext } from "@chatbotx/events"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/database/schema"
+import { createId } from "@chatbotx.io/utils"
 import { logger } from "../../lib/logger"
 import type { TriggerWithConditions } from "../types"
 import { ActionExecutor } from "./action-executor"
@@ -20,7 +20,7 @@ export class TriggerExecutorService {
     trigger: TriggerWithConditions,
     contactId: string,
   ): Promise<void> {
-    const { id: triggerId, chatbotId, actions } = trigger
+    const { id: triggerId, workspaceId, actions } = trigger
 
     try {
       setTriggerExecutionContext({ source: "worker" })
@@ -32,7 +32,7 @@ export class TriggerExecutorService {
           await this.actionExecutor.execute({
             action: action as Record<string, unknown>,
             contactId,
-            chatbotId,
+            workspaceId,
           })
         } catch (err) {
           logger.error(
@@ -46,11 +46,11 @@ export class TriggerExecutorService {
         id: createId(),
         triggerId,
         contactId,
-        chatbotId,
+        workspaceId,
         firstEnteredAt: new Date(),
       })
 
-      await this.updateStats(triggerId, chatbotId, true)
+      await this.updateStats(triggerId, workspaceId, true)
 
       logger.info(
         `Successfully executed trigger ${triggerId} for contact ${contactId}`,
@@ -61,7 +61,7 @@ export class TriggerExecutorService {
         `Failed to execute trigger ${triggerId} for contact ${contactId}`,
       )
 
-      await this.updateStats(triggerId, chatbotId, false)
+      await this.updateStats(triggerId, workspaceId, false)
 
       throw error
     }
@@ -69,7 +69,7 @@ export class TriggerExecutorService {
 
   private async updateStats(
     triggerId: string,
-    chatbotId: string,
+    workspaceId: string,
     success: boolean,
   ): Promise<void> {
     const today = new Date()
@@ -80,7 +80,7 @@ export class TriggerExecutorService {
       .values({
         id: createId(),
         triggerId,
-        chatbotId,
+        workspaceId,
         date: today,
         totalContacts: 1,
         totalExecutions: 1,

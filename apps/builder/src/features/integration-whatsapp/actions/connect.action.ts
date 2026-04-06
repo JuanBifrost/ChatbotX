@@ -1,25 +1,28 @@
 "use server"
 
-import { db } from "@aha.chat/database/client"
-import { InboxStatus } from "@aha.chat/database/enums"
-import { inboxModel, integrationWhatsappModel } from "@aha.chat/database/schema"
-import type { UserModel } from "@aha.chat/database/types"
+import { db } from "@chatbotx.io/database/client"
+import { inboxStatuses } from "@chatbotx.io/database/partials"
+import {
+  inboxModel,
+  integrationWhatsappModel,
+} from "@chatbotx.io/database/schema"
+import type { UserModel } from "@chatbotx.io/database/types"
 import {
   addSystemUser,
   registerPhoneNumber,
   shareCreditLine,
   type WhatsappAuthValue,
-} from "@aha.chat/integration-whatsapp"
-import { exchangeAccessToken } from "@aha.chat/integration-whatsapp/api/auth"
-import { listPhoneNumbers as whatsappListPhoneNumbers } from "@aha.chat/integration-whatsapp/api/phone-number"
-import { subscribeWebhook } from "@aha.chat/integration-whatsapp/api/webhook"
-import { AuthType } from "@aha.chat/sdk"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/integration-whatsapp"
+import { exchangeAccessToken } from "@chatbotx.io/integration-whatsapp/api/auth"
+import { listPhoneNumbers as whatsappListPhoneNumbers } from "@chatbotx.io/integration-whatsapp/api/phone-number"
+import { subscribeWebhook } from "@chatbotx.io/integration-whatsapp/api/webhook"
+import { AuthType } from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
 import { headers } from "next/headers"
 import { env } from "@/env"
-import { createSimpleChatbot } from "@/features/chatbot/actions/create-chatbot-action"
 import { identifyChatbotAndOrganizationFromRequest } from "@/features/integrations/uitls"
 import { verifyOrganizationSettings } from "@/features/organization/queries"
+import { createSimpleWorkspace } from "@/features/workspaces/actions/create-workspace-action"
 import { revalidateCacheTags } from "@/lib/cache-helper"
 import { ChatbotXException } from "@/lib/errors/exception"
 import { authActionClient } from "@/lib/safe-action"
@@ -36,9 +39,11 @@ export const connectWhatsappAction = authActionClient
       parsedInput: ConnectWhatsappSchema
     }) => {
       try {
-        let chatbotId = parsedInput.chatbotId
+        let workspaceId = parsedInput.workspaceId
         const { organization } =
-          await identifyChatbotAndOrganizationFromRequest(parsedInput.chatbotId)
+          await identifyChatbotAndOrganizationFromRequest(
+            parsedInput.workspaceId,
+          )
         const settings = await verifyOrganizationSettings(organization)
         const whatsappSettings = settings.whatsapp
         if (!whatsappSettings) {
@@ -135,26 +140,26 @@ export const connectWhatsappAction = authActionClient
         console.info("subscribeWebhook")
 
         await db.transaction(async (tx) => {
-          // create new chatbot if not exists
-          if (!chatbotId) {
-            const chatbot = await createSimpleChatbot(
+          // create new workspace if not exists
+          if (!workspaceId) {
+            const workspace = await createSimpleWorkspace(
               tx,
               ctx.user.id,
               organization,
               {
                 name: foundPhoneNumber.verified_name,
-                accountTimezone: "UTC",
+                timezone: "UTC",
                 organizationId: organization.id,
               },
             )
-            chatbotId = chatbot.id
+            workspaceId = workspace.id
           }
 
           const inbox = await tx
             .insert(inboxModel)
             .values({
               id: createId(),
-              chatbotId: chatbotId as string,
+              workspaceId: workspaceId as string,
               channel: "whatsapp",
               sourceId: foundPhoneNumber.id,
               name: foundPhoneNumber.verified_name,
@@ -162,7 +167,7 @@ export const connectWhatsappAction = authActionClient
             .onConflictDoUpdate({
               target: [inboxModel.channel, inboxModel.sourceId],
               set: {
-                status: InboxStatus.connected,
+                status: inboxStatuses.enum.connected,
               },
             })
             .returning()
@@ -172,7 +177,7 @@ export const connectWhatsappAction = authActionClient
             .insert(integrationWhatsappModel)
             .values({
               id: createId(),
-              chatbotId,
+              workspaceId,
               inboxId: inbox.id,
               auth,
               phoneNumberId: foundPhoneNumber.id,
@@ -188,10 +193,10 @@ export const connectWhatsappAction = authActionClient
             })
         })
 
-        revalidateCacheTags(`users:${ctx.user.id}#chatbotMembers`)
+        revalidateCacheTags(`users:${ctx.user.id}#workspaceMembers`)
 
         return {
-          redirectUrl: `/chatbots/${chatbotId}/dashboard`,
+          redirectUrl: `/space/${workspaceId}/dashboard`,
         }
       } catch (err: unknown) {
         console.error(err, "Unable to verify whatsapp token")

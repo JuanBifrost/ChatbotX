@@ -1,14 +1,9 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { StepType } from "./step-action"
+import { stepTypes } from "./step-action"
 
-export const aiProviders = {
-  openai: "openai",
-  gemini: "gemini",
-  claude: "claude",
-  deepseek: "deepseek",
-} as const
-export type AIProvider = keyof typeof aiProviders
+export const aiProviders = z.enum(["openai", "gemini", "claude", "deepseek"])
+export type AIProvider = z.infer<typeof aiProviders>
 
 export const defaultAIModelIds = {
   openai: "openai/gpt-4o-mini",
@@ -18,9 +13,9 @@ export const defaultAIModelIds = {
 } as const
 
 export const aiGenerateTextSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.aiGenerateText),
-  provider: z.enum(aiProviders),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.aiGenerateText),
+  provider: aiProviders,
   model: z.string().trim().min(1),
   system: z.string().trim().optional(),
   text: z.string().trim().min(1),
@@ -43,7 +38,7 @@ export const aiGenerateTextDefaultFn = (
 
   return {
     id: createId(),
-    provider: aiProviders.openai,
+    provider: aiProviders.enum.openai,
     model,
     system: "",
     text: "",
@@ -53,6 +48,6 @@ export const aiGenerateTextDefaultFn = (
     temperature: 1.0,
     maxOutputTokens: 250,
     ...props,
-    stepType: StepType.aiGenerateText,
+    stepType: stepTypes.enum.aiGenerateText,
   }
 }

@@ -1,7 +1,7 @@
-import { db, eq, findOrFail } from "@aha.chat/database/client"
-import { aiEmbeddingModel } from "@aha.chat/database/schema"
-import type { AIEmbeddingStatus } from "@aha.chat/database/types"
-import type { AIJobProcessPendingEmbedding } from "@aha.chat/worker-config"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import { aiEmbeddingModel } from "@chatbotx.io/database/schema"
+import type { AIEmbeddingStatus } from "@chatbotx.io/database/types"
+import type { AIJobProcessPendingEmbedding } from "@chatbotx.io/worker-config"
 import { embed } from "ai"
 import { resolveEmbeddingModel } from "../../ai-agent/lib/embedding-model"
 import { logger } from "../../lib/logger"
@@ -9,19 +9,19 @@ import { logger } from "../../lib/logger"
 export async function processPendingEmbedding(
   data: AIJobProcessPendingEmbedding["data"],
 ) {
-  const aiEmbedding = await findOrFail(
-    aiEmbeddingModel,
-    {
+  const aiEmbedding = await findOrFail({
+    table: aiEmbeddingModel,
+    where: {
       id: data.aiEmbeddingId,
     },
-    "AI embedding not found",
-  )
+    message: "AI embedding not found",
+  })
   if (aiEmbedding.status !== "pending" && aiEmbedding.status !== "processing") {
     throw new Error("AI embedding is processing or already processed")
   }
 
   try {
-    const embeddingModel = await resolveEmbeddingModel(aiEmbedding.chatbotId)
+    const embeddingModel = await resolveEmbeddingModel(aiEmbedding.workspaceId)
 
     const { embedding } = await embed({
       model: embeddingModel,

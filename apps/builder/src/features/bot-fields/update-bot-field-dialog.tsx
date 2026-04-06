@@ -1,16 +1,16 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { TextareaField } from "@aha.chat/ui/components/form/textarea-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { TextareaField } from "@chatbotx.io/ui/components/form/textarea-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from "@aha.chat/ui/components/ui/dialog"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/dialog"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -22,7 +22,7 @@ import { updateBotFieldRequest } from "./schemas/action"
 import type { BotFieldResource } from "./schemas/resource"
 
 type UpdateBotFieldDialogProps = {
-  chatbotId: string
+  workspaceId: string
   botField: BotFieldResource | null
   open: boolean
   onOpenChange: (val: boolean) => void
@@ -30,7 +30,7 @@ type UpdateBotFieldDialogProps = {
 }
 
 export function UpdateBotFieldDialog({
-  chatbotId,
+  workspaceId,
   botField,
   open,
   onOpenChange,
@@ -44,7 +44,7 @@ export function UpdateBotFieldDialog({
     resetFormAndAction,
     form: { setValue },
   } = useHookFormAction(
-    updateBotFieldAction.bind(null, chatbotId, botField?.id ?? ""),
+    updateBotFieldAction.bind(null, workspaceId, botField?.id ?? ""),
     zodResolver(updateBotFieldRequest),
     {
       actionProps: {

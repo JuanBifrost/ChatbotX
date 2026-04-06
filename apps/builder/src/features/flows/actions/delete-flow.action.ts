@@ -1,22 +1,22 @@
 "use server"
 
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { flowModel } from "@aha.chat/database/schema"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { flowModel } from "@chatbotx.io/database/schema"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const deleteFlowAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const deleteFlowAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(bulkUpdateIdsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
@@ -26,11 +26,11 @@ export const deleteFlowAction = chatbotActionClient
         .delete(flowModel)
         .where(
           and(
-            eq(flowModel.chatbotId, chatbotId),
+            eq(flowModel.workspaceId, workspaceId),
             inArray(flowModel.id, parsedInput.ids),
           ),
         )
 
-      revalidateCacheTags(`chatbots:${chatbotId}#flows`)
+      revalidateCacheTags(`workspaces:${workspaceId}#flows`)
     },
   )

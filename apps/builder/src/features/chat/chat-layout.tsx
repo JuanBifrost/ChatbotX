@@ -1,14 +1,13 @@
 "use client"
 
-import type { ConversationAttributes } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { ConversationAttributes } from "@chatbotx.io/database/partials"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from "@aha.chat/ui/components/ui/resizable"
+} from "@chatbotx.io/ui/components/ui/resizable"
 import { BotIcon, Loader2Icon } from "lucide-react"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { useEffect, useState } from "react"
@@ -16,7 +15,7 @@ import { toast } from "sonner"
 import { ContactInboxPanel } from "../contacts/contact-inbox-panel"
 import { disableBotAction } from "../conversations/actions/disable-bot.action"
 import ConversationList from "../conversations/conversation-list"
-import type { ConversationResource } from "../conversations/schemas/resource"
+import type { ConversationResource } from "../conversations/schema/resource"
 import { MessageInput } from "../messages/components/message-input"
 import MessageHead from "../messages/message-head"
 import { MessageList } from "../messages/message-list"
@@ -24,13 +23,13 @@ import { ChatRealtime } from "./chat-realtime"
 import { useChatStore } from "./store/chat-store-provider"
 
 type ChatLayoutProps = {
+  workspaceId: string
   layout?: [number, number, number]
 }
 
 export const ChatLayout = (props: ChatLayoutProps) => {
   const t = useTranslations()
-  const { layout = [25, 50, 25] } = props
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const { workspaceId, layout = [25, 50, 25] } = props
 
   const {
     conversations,
@@ -44,12 +43,12 @@ export const ChatLayout = (props: ChatLayoutProps) => {
     useState<ConversationResource | null>(null)
 
   const { execute: disableBot, isExecuting: isDisablingBot } = useAction(
-    disableBotAction.bind(null, chatbotId),
+    disableBotAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         if (activeConversation) {
           updateConversation(activeConversation.id, {
-            liveChatEnabled: true,
+            botEnabled: false,
           })
         }
       },
@@ -68,8 +67,8 @@ export const ChatLayout = (props: ChatLayoutProps) => {
     if (selectedConversation) {
       setActiveConversation({
         ...selectedConversation,
-        conversationAttributes:
-          selectedConversation.conversationAttributes as ConversationAttributes,
+        additionalAttributes:
+          selectedConversation.additionalAttributes as ConversationAttributes,
       })
     } else {
       setActiveConversation(null)
@@ -85,7 +84,7 @@ export const ChatLayout = (props: ChatLayoutProps) => {
         maxSize={"30%"}
         minSize={"20%"}
       >
-        <ConversationList />
+        <ConversationList workspaceId={workspaceId} />
       </ResizablePanel>
 
       <ResizableHandle withHandle />
@@ -99,7 +98,7 @@ export const ChatLayout = (props: ChatLayoutProps) => {
           <>
             <div className="flex h-full w-full flex-col">
               <MessageHead />
-              {!activeConversation?.liveChatEnabled && (
+              {activeConversation?.botEnabled && (
                 <Button
                   className="rounded-none"
                   disabled={isDisablingBot}
@@ -133,7 +132,7 @@ export const ChatLayout = (props: ChatLayoutProps) => {
         {isFirstLoadConversation && isLoadingConversation && (
           <Loader2Icon className="mx-auto my-4 animate-spin" />
         )}
-        {activeConversation && <ContactInboxPanel />}
+        {activeConversation && <ContactInboxPanel workspaceId={workspaceId} />}
       </ResizablePanel>
     </ResizablePanelGroup>
   )

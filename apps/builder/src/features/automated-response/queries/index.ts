@@ -1,24 +1,27 @@
-import { db, relationsFilterToSQL } from "@aha.chat/database/client"
-import { rootFolderId } from "@aha.chat/database/enums"
-import { automatedResponseModel } from "@aha.chat/database/schema"
-import type { AutomatedResponseModel } from "@aha.chat/database/types"
+import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import { rootFolderId } from "@chatbotx.io/database/partials"
+import { automatedResponseModel } from "@chatbotx.io/database/schema"
+import type { AutomatedResponseModel } from "@chatbotx.io/database/types"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
-} from "@aha.chat/database/utils"
+} from "@chatbotx.io/database/utils"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import { notFoundException } from "@/lib/errors/exception"
-import type { ListAutomatedResponsesRequest } from "../schemas/query"
-import type { AutomatedResponseResource } from "../schemas/resource"
+import type {
+  FindAutomatedResponseRequest,
+  ListAutomatedResponsesRequest,
+} from "../schema/query"
+import type { AutomatedResponseResource } from "../schema/resource"
 
 export async function listAutomatedResponses(
   input: ListAutomatedResponsesRequest,
 ): Promise<PaginatedResponse<AutomatedResponseResource>> {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const where = {
-    chatbotId: input.chatbotId,
+    workspaceId: input.workspaceId,
     userMessages: input.keyword
       ? { ilike: `%${input.keyword.toLowerCase()}%` }
       : undefined,
@@ -50,24 +53,22 @@ export async function listAutomatedResponses(
   return { data, pageCount }
 }
 
-export const findAutomatedResponse = async (input: {
-  chatbotId: string
-  id: string
-}): Promise<AutomatedResponseModel | undefined> => {
-  await assertCurrentUserCanAccessChatbot(input.chatbotId)
+export const findAutomatedResponse = async (
+  input: FindAutomatedResponseRequest,
+): Promise<AutomatedResponseResource | undefined> => {
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   return await db.query.automatedResponseModel.findFirst({
     where: {
-      chatbotId: input.chatbotId,
+      workspaceId: input.workspaceId,
       id: input.id,
     },
   })
 }
 
-export const findAutomatedResponseOrFail = async (input: {
-  chatbotId: string
-  id: string
-}): Promise<AutomatedResponseModel> => {
+export const findAutomatedResponseOrFail = async (
+  input: FindAutomatedResponseRequest,
+): Promise<AutomatedResponseModel> => {
   const automatedResponse = await findAutomatedResponse(input)
   if (!automatedResponse) {
     throw notFoundException("Automated response not found")

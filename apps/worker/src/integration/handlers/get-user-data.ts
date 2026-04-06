@@ -1,14 +1,17 @@
-import { db, eq, findOrFail } from "@aha.chat/database/client"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import type { ConversationAttributes } from "@chatbotx.io/database/partials"
 import {
   contactCustomFieldModel,
   conversationModel,
   customFieldModel,
-} from "@aha.chat/database/schema"
-import type { ConversationAttributes } from "@aha.chat/database/types"
-import { type GetUserDataStepSchema, ReplyFormat } from "@aha.chat/flow-config"
-import { IntegrationException, type Variable } from "@aha.chat/sdk"
-import { ChatJobAction, chatQueue } from "@aha.chat/worker-config"
-import { createId } from "@paralleldrive/cuid2"
+} from "@chatbotx.io/database/schema"
+import {
+  type GetUserDataStepSchema,
+  ReplyFormat,
+} from "@chatbotx.io/flow-config"
+import { IntegrationException, type Variable } from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
+import { ChatJobAction, chatQueue } from "@chatbotx.io/worker-config"
 import { add, isBefore } from "date-fns"
 import { logger } from "../../lib/logger"
 import type { ExecuteStepProps } from "./flow"
@@ -67,14 +70,14 @@ async function handleSkipOrError(
   // if user data is valid, save to custom field if configured
   if (validUserData.valid && validUserData.userInput) {
     if (step.outputCfId) {
-      await findOrFail(
-        customFieldModel,
-        {
+      await findOrFail({
+        table: customFieldModel,
+        where: {
           id: step.outputCfId,
-          chatbotId: props.conversation.chatbotId,
+          workspaceId: props.conversation.workspaceId,
         },
-        "Field not found",
-      )
+        message: "Field not found",
+      })
 
       await db.transaction(async (tx) => {
         await tx
@@ -101,9 +104,9 @@ async function handleSkipOrError(
     await db
       .update(conversationModel)
       .set({
-        conversationAttributes: {
+        additionalAttributes: {
           ...(props.conversation
-            .conversationAttributes as ConversationAttributes),
+            .additionalAttributes as ConversationAttributes),
           challenge: undefined,
         },
       })
@@ -177,30 +180,30 @@ async function validateUserData(
     return result
   }
 
-  if (lastUserMessage.content) {
+  if (lastUserMessage.text) {
     switch (props.step.replyFormat) {
       case ReplyFormat.number: {
-        const valid = !Number.isNaN(Number.parseFloat(lastUserMessage.content))
+        const valid = !Number.isNaN(Number.parseFloat(lastUserMessage.text))
         if (valid) {
-          result.userInput = lastUserMessage.content
+          result.userInput = lastUserMessage.text
         } else {
           result.errorMessage = "getUserData: invalid email address"
         }
         return result
       }
       case ReplyFormat.email: {
-        const valid = emailPattern.test(lastUserMessage.content)
+        const valid = emailPattern.test(lastUserMessage.text)
         if (valid) {
-          result.userInput = lastUserMessage.content
+          result.userInput = lastUserMessage.text
         } else {
           result.errorMessage = "getUserData: invalid email address"
         }
         return result
       }
       case ReplyFormat.phone: {
-        const valid = phoneRegex.test(lastUserMessage.content)
+        const valid = phoneRegex.test(lastUserMessage.text)
         if (valid) {
-          result.userInput = lastUserMessage.content
+          result.userInput = lastUserMessage.text
         } else {
           result.errorMessage = "getUserData: invalid phone number"
         }
@@ -208,8 +211,8 @@ async function validateUserData(
       }
       case ReplyFormat.link: {
         try {
-          new URL(lastUserMessage.content)
-          result.userInput = lastUserMessage.content
+          new URL(lastUserMessage.text)
+          result.userInput = lastUserMessage.text
         } catch (_err) {
           result.errorMessage = "getUserData: invalid link"
         }
@@ -217,7 +220,7 @@ async function validateUserData(
       }
       case ReplyFormat.date:
       case ReplyFormat.datetime: {
-        const dateObj = new Date(lastUserMessage.content)
+        const dateObj = new Date(lastUserMessage.text)
         if (Number.isNaN(dateObj.getTime())) {
           result.errorMessage = "getUserData: invalid date"
         } else {
@@ -227,7 +230,7 @@ async function validateUserData(
       }
       default:
         result.valid = true
-        result.userInput = lastUserMessage.content
+        result.userInput = lastUserMessage.text
         return result
     }
   }
@@ -254,8 +257,8 @@ async function sendMessage(
   await db
     .update(conversationModel)
     .set({
-      conversationAttributes: {
-        ...(conversation.conversationAttributes as ConversationAttributes),
+      additionalAttributes: {
+        ...(conversation.additionalAttributes as ConversationAttributes),
         challenge: {
           type: "step",
           data: {

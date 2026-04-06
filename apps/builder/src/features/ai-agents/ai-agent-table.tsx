@@ -1,17 +1,17 @@
 "use client"
 
-import type { AIAgentModel } from "@aha.chat/database/types"
-import { DataTable } from "@aha.chat/ui/components/data-table/data-table"
-import { DataTableToolbar } from "@aha.chat/ui/components/data-table/data-table-toolbar"
+import type { AIAgentModel } from "@chatbotx.io/database/types"
+import { DataTable } from "@chatbotx.io/ui/components/data-table/data-table"
+import { DataTableToolbar } from "@chatbotx.io/ui/components/data-table/data-table-toolbar"
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { useDataTable } from "@aha.chat/ui/hooks/use-data-table"
-import { useParams, useRouter } from "next/navigation"
+} from "@chatbotx.io/ui/components/ui/card"
+import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { use, useMemo, useState } from "react"
 import { DeleteAIAgentsDialog } from "@/features/ai-agents/delete-ai-agent"
@@ -28,6 +28,7 @@ import {
 } from "./table-columns"
 
 type AIAgentsTableProps = {
+  workspaceId: string
   listPromises: Promise<[Awaited<ReturnType<typeof listAIAgents>>]>
   createPromises: Promise<
     [
@@ -39,13 +40,13 @@ type AIAgentsTableProps = {
 }
 
 export function AIAgentsTable({
+  workspaceId,
   listPromises,
   createPromises,
 }: AIAgentsTableProps) {
   const [{ data, pageCount }] = use(listPromises)
   const [{ data: files }, { data: functions }, { data: mcpServers }] =
     use(createPromises)
-  const { chatbotId } = useParams<{ chatbotId: string }>()
 
   const t = useTranslations()
   const router = useRouter()
@@ -70,7 +71,7 @@ export function AIAgentsTable({
       sorting: [{ id: "createdAt", desc: true }],
       columnPinning: { right: ["actions"] },
     },
-    getRowId: (originalRow: AIAgentModel) => originalRow.id as string,
+    getRowId: (originalRow: AIAgentModel) => originalRow.id,
     shallow: false,
     clearOnDefault: true,
   })
@@ -91,13 +92,13 @@ export function AIAgentsTable({
               onSuccess={() => {
                 router.refresh()
               }}
+              workspaceId={workspaceId}
             />
           </DataTableToolbar>
         </DataTable>
 
         <DeleteAIAgentsDialog
           agents={rowAction?.row.original ? [rowAction?.row.original] : []}
-          chatbotId={chatbotId}
           onOpenChange={() => setRowAction(null)}
           onSuccess={() => {
             rowAction?.row.toggleSelected(false)
@@ -105,11 +106,11 @@ export function AIAgentsTable({
           }}
           open={rowAction?.variant === "delete"}
           showTrigger={false}
+          workspaceId={workspaceId}
         />
 
         <UpdateAIAgentDialog
           agent={rowAction?.row.original || null}
-          chatbotId={chatbotId}
           files={files}
           functions={functions}
           mcpServers={mcpServers}
@@ -118,6 +119,7 @@ export function AIAgentsTable({
             router.refresh()
           }}
           open={rowAction?.variant === "update"}
+          workspaceId={workspaceId}
         />
 
         <ChangeDefault

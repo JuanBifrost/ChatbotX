@@ -1,7 +1,7 @@
 "use client"
 
-import type { AutomatedResponseModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { AutomatedResponseModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
   DialogClose,
@@ -11,7 +11,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@aha.chat/ui/components/ui/dialog"
+} from "@chatbotx.io/ui/components/ui/dialog"
 import type { Row } from "@tanstack/react-table"
 import { Loader, Trash } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -23,7 +23,7 @@ import { deleteAutomatedResponseAction } from "./actions/delete-automated-respon
 type DeleteAutomatedResponsesDialogProps = ComponentPropsWithoutRef<
   typeof Dialog
 > & {
-  chatbotId: string
+  workspaceId: string
   automatedResponses: Row<AutomatedResponseModel>["original"][]
   showTrigger?: boolean
   onSuccess?: () => void
@@ -31,7 +31,7 @@ type DeleteAutomatedResponsesDialogProps = ComponentPropsWithoutRef<
 }
 
 export function DeleteAutomatedResponsesDialog({
-  chatbotId,
+  workspaceId,
   automatedResponses,
   showTrigger = true,
   onSuccess,
@@ -41,7 +41,7 @@ export function DeleteAutomatedResponsesDialog({
   const t = useTranslations()
 
   const { execute, isPending } = useAction(
-    deleteAutomatedResponseAction.bind(null, chatbotId),
+    deleteAutomatedResponseAction.bind(null, workspaceId),
     {
       onSuccess: () => {
         toast.success(

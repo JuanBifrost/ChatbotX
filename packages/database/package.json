@@ -1,21 +1,20 @@
 {
-  "name": "@aha.chat/database",
+  "name": "@chatbotx.io/database",
   "version": "0.1.0",
   "type": "module",
   "dependencies": {
-    "@t3-oss/env-core": "^0.13.10",
-    "drizzle-cuid2": "^2.2.0",
-    "drizzle-orm": "1.0.0-beta.18-7eb39f0",
+    "@chatbotx.io/utils": "workspace:*",
+    "@t3-oss/env-core": "^0.13.11",
+    "drizzle-orm": "1.0.0-beta.20",
     "pg": "^8.20.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
-    "@aha.chat/typescript-config": "workspace:*",
-    "@paralleldrive/cuid2": "^3.3.0",
+    "@chatbotx.io/typescript-config": "workspace:*",
     "@types/node": "^24.10.4",
     "@types/pg": "^8.20.0",
     "dotenv-cli": "^11.0.0",
-    "drizzle-kit": "1.0.0-beta.18-7eb39f0"
+    "drizzle-kit": "1.0.0-beta.20"
   },
   "scripts": {
     "introspect": "dotenv -e ../../.env -- drizzle-kit introspect",
@@ -24,7 +23,7 @@
     "db:studio": "dotenv -e ../../.env -- drizzle-kit studio",
     "db:seed": "dotenv -e ../../.env -- tsx src/seed/index.ts",
     "db:setup": "pnpm db:migrate && pnpm db:seed",
-    "db:check": "dotenv -e ../../.env -- drizzle-kit check"
+    "db:check": "dotenv -e ../../.env -- drizzle-kit up"
   },
   "exports": {
     ".": "./src/index.ts",
@@ -32,8 +31,9 @@
     "./types": "./src/types.ts",
     "./keys": "./src/keys.ts",
     "./enums": "./src/enums.ts",
-    "./schema": "./src/drizzle/schema/index.ts",
+    "./schema": "./src/schema/index.ts",
     "./errors": "./src/errors.ts",
-    "./utils": "./src/utils.ts"
+    "./utils": "./src/utils.ts",
+    "./partials": "./src/partials/index.ts"
   }
 }

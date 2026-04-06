@@ -1,8 +1,7 @@
 "use client"
 
-import type { FlowModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { Table } from "@tanstack/react-table"
 import { FolderUpIcon } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -10,16 +9,19 @@ import { useTranslations } from "next-intl"
 import { type Dispatch, type SetStateAction, useState } from "react"
 import { ChangeFolderDialog } from "../folders/change-folder"
 import { DeleteFlowsDialog } from "./delete-flow-dialog"
+import type { FlowResource } from "./schemas/resource"
 
 type FlowsTableToolbarActionsProps = {
-  table: Table<FlowModel>
-  chatbotId: string
-  setRowAction: Dispatch<SetStateAction<DataTableRowAction<FlowModel> | null>>
+  table: Table<FlowResource>
+  workspaceId: string
+  setRowAction: Dispatch<
+    SetStateAction<DataTableRowAction<FlowResource> | null>
+  >
 }
 
 export function FlowsTableToolbarActions({
   table,
-  chatbotId,
+  workspaceId,
   setRowAction,
 }: FlowsTableToolbarActionsProps) {
   const t = useTranslations()
@@ -31,7 +33,6 @@ export function FlowsTableToolbarActions({
       {table.getFilteredSelectedRowModel().rows.length > 0 ? (
         <>
           <DeleteFlowsDialog
-            chatbotId={chatbotId}
             flows={table
               .getFilteredSelectedRowModel()
               .rows.map((row) => row.original)}
@@ -40,9 +41,9 @@ export function FlowsTableToolbarActions({
               table.toggleAllRowsSelected(false)
               router.refresh()
             }}
+            workspaceId={workspaceId}
           />
           <ChangeFolderDialog
-            chatbotId={chatbotId}
             currentFolderId={null}
             folderType="flow"
             modelIds={table
@@ -56,6 +57,7 @@ export function FlowsTableToolbarActions({
                 {t("actions.move")}
               </Button>
             }
+            workspaceId={workspaceId}
           />
         </>
       ) : null}

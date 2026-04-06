@@ -1,8 +1,8 @@
 import {
   encodeButtonPayload,
   type SendTextStepSchema,
-} from "@aha.chat/flow-config"
-import type { SendFlowStepProps } from "@aha.chat/sdk"
+} from "@chatbotx.io/flow-config"
+import type { SendFlowStepProps } from "@chatbotx.io/sdk"
 import { chunk } from "remeda"
 import {
   ActionButtons,
@@ -21,7 +21,7 @@ export function* convertFlowStepText(
     data: { step },
   } = props
   if (step.buttons.length === 0) {
-    yield new Text(step.message)
+    yield new Text(step.text)
   } else {
     const chunks = chunk(step.buttons, MAX_BUTTONS)
 
@@ -37,7 +37,7 @@ export function* convertFlowStepText(
 
       yield new Interactive(
         new ActionButtons(...(buttons as [Button, ...Button[]])),
-        new Body(step.message),
+        new Body(step.text),
       )
     }
   }

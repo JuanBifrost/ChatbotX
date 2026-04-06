@@ -1,36 +1,36 @@
 "use server"
 
-import { db, eq, findOrFail } from "@aha.chat/database/client"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import {
   integrationGoogleSheetsModel,
   integrationModel,
-} from "@aha.chat/database/schema"
+} from "@chatbotx.io/database/schema"
 import {
   type GoogleSheetsAuthValue,
   integration as integrationGoogleSheets,
-} from "@aha.chat/integration-google-sheets"
+} from "@chatbotx.io/integration-google-sheets"
 import {
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { logger } from "@/lib/log"
 import { authActionClient } from "@/lib/safe-action"
 
 export const disconnectGoogleSheets = authActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+  .bindArgsSchemas(workspaceIdrequestParams)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
     }) => {
-      const googleSheets = await findOrFail(
-        integrationGoogleSheetsModel,
-        {
-          chatbotId,
+      const googleSheets = await findOrFail({
+        table: integrationGoogleSheetsModel,
+        where: {
+          workspaceId,
         },
-        "Integration Google Sheets not found",
-      )
+        message: "Integration Google Sheets not found",
+      })
       try {
         await integrationGoogleSheets.disconnect?.(
           googleSheets.auth as GoogleSheetsAuthValue,
@@ -38,7 +38,7 @@ export const disconnectGoogleSheets = authActionClient
       } catch (e) {
         logger.error(
           e,
-          `Unable to disconnect google sheets for chatbot: ${chatbotId}`,
+          `Unable to disconnect google sheets for workspace: ${workspaceId}`,
         )
       }
 

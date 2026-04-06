@@ -1,16 +1,17 @@
 "use client"
 
-import type { ContactCustomFieldModel } from "@aha.chat/database/types"
+import type { CustomFieldType } from "@chatbotx.io/database/partials"
+import type { ContactCustomFieldModel } from "@chatbotx.io/database/types"
 import {
   Avatar,
   AvatarFallback,
   AvatarImage,
-} from "@aha.chat/ui/components/ui/avatar"
-import { Button } from "@aha.chat/ui/components/ui/button"
+} from "@chatbotx.io/ui/components/ui/avatar"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { AtSignIcon, PhoneIcon, TextIcon } from "lucide-react"
-import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect, useState } from "react"
+import { useWorkspaceId } from "@/hooks/routing"
 import { useChatStore } from "../chat/store/chat-store-provider"
 import { ContactCustomFieldManage } from "../custom-fields/contact-custom-field-manage"
 import { customFieldIconsMap } from "../custom-fields/provider/custom-field-hook"
@@ -22,7 +23,7 @@ import { getAvatarUrl } from "./utils"
 export const ContactDetail = () => {
   const t = useTranslations()
 
-  const { chatbotId } = useParams<{ chatbotId: string }>()
+  const workspaceId = useWorkspaceId()
   const { activeConversationId, conversations } = useChatStore((state) => state)
 
   const [contact, setContact] = useState<ContactResource | null>(null)
@@ -83,10 +84,12 @@ export const ContactDetail = () => {
           if (targetCustomField) {
             tmpContactFields.push({
               key: cc.customFieldId,
-              icon: customFieldIconsMap[targetCustomField.type],
+              icon: customFieldIconsMap[
+                targetCustomField.type as CustomFieldType
+              ],
               label: targetCustomField.name,
               value: cc.value,
-              type: targetCustomField.type,
+              type: targetCustomField.type as CustomFieldType,
             })
           }
         }
@@ -146,11 +149,10 @@ export const ContactDetail = () => {
           </div>
         ))}
         <ContactCustomFieldManage
-          chatbotId={chatbotId}
           disabledIds={contactFields.map((c) => c.key)}
           onChooseCustomField={(customFieldId) => {
             const targetCustomField = customFields.find(
-              (c) => c.id === customFieldId,
+              (c) => c.id.toString() === customFieldId,
             )
 
             if (targetCustomField) {
@@ -158,19 +160,21 @@ export const ContactDetail = () => {
                 ...contactFields,
                 {
                   key: customFieldId,
-                  icon: customFieldIconsMap[targetCustomField.type],
+                  icon: customFieldIconsMap[
+                    targetCustomField.type as CustomFieldType
+                  ],
                   label: targetCustomField.name,
                   value: "",
-                  type: targetCustomField.type,
+                  type: targetCustomField.type as CustomFieldType,
                 },
               ])
             }
           }}
+          workspaceId={workspaceId}
         />
       </div>
 
       <EditContactField
-        chatbotId={chatbotId}
         contactId={contact.id}
         onDeleted={(key) => {
           const updatedContactFields = contactFields.filter(
@@ -190,6 +194,7 @@ export const ContactDetail = () => {
         }}
         open={Boolean(selectedField)}
         targetField={selectedField}
+        workspaceId={workspaceId}
       />
     </div>
   ) : null

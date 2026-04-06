@@ -1,14 +1,14 @@
 "use client"
 
-import { InputField } from "@aha.chat/ui/components/form/input-field"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import { InputField } from "@chatbotx.io/ui/components/form/input-field"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-} from "@aha.chat/ui/components/ui/card"
-import { Form } from "@aha.chat/ui/components/ui/form"
+} from "@chatbotx.io/ui/components/ui/card"
+import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
@@ -17,13 +17,13 @@ import { useTranslations } from "next-intl"
 import { useState } from "react"
 import { toast } from "sonner"
 import { createSequenceAction } from "@/features/sequences/actions/create-sequence.action"
-import { createSequenceRequest } from "@/features/sequences/schema"
+import { createSequenceRequest } from "@/features/sequences/schema/action"
 
 export function CreateSequenceForm({
-  chatbotId,
+  workspaceId,
   defaultFolderId,
 }: {
-  chatbotId: string
+  workspaceId: string
   defaultFolderId?: string
 }) {
   const t = useTranslations()
@@ -31,7 +31,7 @@ export function CreateSequenceForm({
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const { form, handleSubmitWithAction } = useHookFormAction(
-    createSequenceAction.bind(null, chatbotId),
+    createSequenceAction.bind(null, workspaceId),
     zodResolver(createSequenceRequest),
     {
       actionProps: {
@@ -42,7 +42,7 @@ export function CreateSequenceForm({
             }),
           )
           if (data?.sequenceId) {
-            router.push(`/chatbots/${chatbotId}/sequences/${data.sequenceId}`)
+            router.push(`/space/${workspaceId}/sequences/${data.sequenceId}`)
           }
         },
         onError: ({ error }) => {
@@ -67,7 +67,7 @@ export function CreateSequenceForm({
 
   const handleCancel = () => {
     if (!isSubmitting) {
-      router.push(`/chatbots/${chatbotId}/sequences`)
+      router.push(`/space/${workspaceId}/sequences`)
     }
   }
 

@@ -1,10 +1,10 @@
-import { createId } from "@paralleldrive/cuid2"
+import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { StepType } from "./step-action"
+import { stepTypes } from "./step-action"
 
 export const emailSpacingStepSchema = z.object({
-  id: z.cuid2(),
-  stepType: z.literal(StepType.emailSpacing),
+  id: zodBigintAsString(),
+  stepType: z.literal(stepTypes.enum.emailSpacing),
 })
 
 export type EmailSpacingStepSchema = z.infer<typeof emailSpacingStepSchema>
@@ -14,5 +14,5 @@ export const emailSpacingStepDefaultFn = (
 ): EmailSpacingStepSchema => ({
   ...props,
   id: createId(),
-  stepType: StepType.emailSpacing,
+  stepType: stepTypes.enum.emailSpacing,
 })

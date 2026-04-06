@@ -1,7 +1,7 @@
 "use client"
 
-import type { TagModel } from "@aha.chat/database/types"
-import { Button } from "@aha.chat/ui/components/ui/button"
+import type { TagModel } from "@chatbotx.io/database/types"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
 import type { Table } from "@tanstack/react-table"
 import { FolderUpIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
@@ -11,12 +11,12 @@ import { DeleteTagsDialog } from "./delete-tag-dialog"
 
 type TagsTableToolbarActionsProps = {
   table: Table<TagModel>
-  chatbotId: string
+  workspaceId: string
 }
 
 export function TagsTableToolbarActions({
   table,
-  chatbotId,
+  workspaceId,
 }: TagsTableToolbarActionsProps) {
   const t = useTranslations()
   const [openChangeFolder, setOpenChangeFolder] = useState(false)
@@ -26,14 +26,13 @@ export function TagsTableToolbarActions({
       {table.getFilteredSelectedRowModel().rows.length > 0 ? (
         <>
           <DeleteTagsDialog
-            chatbotId={chatbotId}
             onSuccess={() => table.toggleAllRowsSelected(false)}
             tags={table
               .getFilteredSelectedRowModel()
               .rows.map((row) => row.original)}
+            workspaceId={workspaceId}
           />
           <ChangeFolderDialog
-            chatbotId={chatbotId}
             currentFolderId={null}
             folderType="tag"
             modelIds={table
@@ -47,6 +46,7 @@ export function TagsTableToolbarActions({
                 {t("actions.move")}
               </Button>
             }
+            workspaceId={workspaceId}
           />
         </>
       ) : null}

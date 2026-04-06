@@ -1,38 +1,38 @@
 "use server"
 
-import { findOrFail } from "@aha.chat/database/client"
-import { integrationWhatsappModel } from "@aha.chat/database/schema"
-import { uploader } from "@aha.chat/filesystem"
-import type { WhatsappAuthValue } from "@aha.chat/integration-whatsapp"
+import { findOrFail } from "@chatbotx.io/database/client"
+import { integrationWhatsappModel } from "@chatbotx.io/database/schema"
+import { uploader } from "@chatbotx.io/filesystem"
+import type { WhatsappAuthValue } from "@chatbotx.io/integration-whatsapp"
 import {
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { integrations } from "@/integration"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type UpdateWhatsappIceBreakerSchema,
   updateWhatsappIceBreakerSchema,
 } from "../schemas/update-ice-breaker-schema"
 
-export const updateWhatsappIceBreakerAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const updateWhatsappIceBreakerAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(updateWhatsappIceBreakerSchema)
   .action(
     async ({
       parsedInput,
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
     }: {
       parsedInput: UpdateWhatsappIceBreakerSchema
       bindArgsParsedInputs: ChatbotIdRequestParams
     }) => {
-      const integrationWhatsapp = await findOrFail(
-        integrationWhatsappModel,
-        {
-          chatbotId,
+      const integrationWhatsapp = await findOrFail({
+        table: integrationWhatsappModel,
+        where: {
+          workspaceId,
         },
-        "Integration Whatsapp not found",
-      )
+        message: "Integration Whatsapp not found",
+      })
 
       const ctx = {
         auth: integrationWhatsapp.auth as WhatsappAuthValue,

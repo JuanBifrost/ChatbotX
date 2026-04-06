@@ -1,21 +1,21 @@
 "use client"
 
-import { DataTableColumnHeader } from "@aha.chat/ui/components/data-table/data-table-column-header"
-import { Button } from "@aha.chat/ui/components/ui/button"
-import { Checkbox } from "@aha.chat/ui/components/ui/checkbox"
+import { DataTableColumnHeader } from "@chatbotx.io/ui/components/data-table/data-table-column-header"
+import { Button } from "@chatbotx.io/ui/components/ui/button"
+import { Checkbox } from "@chatbotx.io/ui/components/ui/checkbox"
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from "@aha.chat/ui/components/ui/dropdown-menu"
-import { Switch } from "@aha.chat/ui/components/ui/switch"
+} from "@chatbotx.io/ui/components/ui/dropdown-menu"
+import { Switch } from "@chatbotx.io/ui/components/ui/switch"
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
-} from "@aha.chat/ui/components/ui/tooltip"
-import type { DataTableRowAction } from "@aha.chat/ui/types/data-table"
+} from "@chatbotx.io/ui/components/ui/tooltip"
+import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
   FolderUpIcon,
@@ -32,7 +32,7 @@ import { updateWebhookSettingsAction } from "./actions/update-webhook-settings-a
 import type { WebhookResource } from "./schemas"
 
 type GetColumnsProps = {
-  chatbotId: string
+  workspaceId: string
   t: ReturnType<typeof useTranslations>
   setRowAction: Dispatch<
     SetStateAction<DataTableRowAction<WebhookResource> | null>
@@ -40,7 +40,7 @@ type GetColumnsProps = {
 }
 
 export function getColumns({
-  chatbotId,
+  workspaceId,
   t,
   setRowAction,
 }: GetColumnsProps): ColumnDef<WebhookResource>[] {
@@ -83,7 +83,7 @@ export function getColumns({
           <TooltipTrigger asChild>
             <div className="max-w-[400px] truncate">
               <Link
-                href={`/chatbots/${chatbotId}/webhooks/${row.original.id}/edit`}
+                href={`/space/${workspaceId}/webhooks/${row.original.id}/edit`}
               >
                 <div className="max-w-[400px] truncate">
                   {row.original.name}
@@ -118,7 +118,7 @@ export function getColumns({
         const { execute, isPending } = useAction(
           updateWebhookSettingsAction.bind(
             null,
-            row.original.chatbotId,
+            row.original.workspaceId,
             row.original.id,
           ),
           {
@@ -159,7 +159,7 @@ export function getColumns({
           <DropdownMenuContent align="end">
             <DropdownMenuItem asChild>
               <Link
-                href={`/chatbots/${chatbotId}/webhooks/${row.original.id}/edit`}
+                href={`/space/${workspaceId}/webhooks/${row.original.id}/edit`}
               >
                 <PencilIcon />
                 {t("actions.edit")}

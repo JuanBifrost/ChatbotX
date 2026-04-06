@@ -1,17 +1,18 @@
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 
-export const chatbotIdRequestParams: [z.ZodCUID2] = [
-  z.cuid2().describe("chatbotId"),
+export const workspaceIdrequestParams: [z.ZodString] = [
+  zodBigintAsString().describe("workspaceId"),
 ]
 export type ChatbotIdRequestParams = [string]
 
-export const chatbotIdAndIdRequestParams: [z.ZodCUID2, z.ZodCUID2] = [
-  z.cuid2().describe("chatbotId"),
-  z.cuid2().describe("id"),
+export const workspaceIdAndIdRequestParams: [z.ZodString, z.ZodString] = [
+  zodBigintAsString().describe("workspaceId"),
+  zodBigintAsString().describe("id"),
 ]
-export type ChatbotIdAndIdRequestParams = [string, string]
+export type WorkspaceIdAndIdRequestParams = [string, string]
 
 export const bulkUpdateIdsRequest = z.object({
-  ids: z.array(z.cuid2()),
+  ids: z.array(zodBigintAsString()),
 })
 export type BulkUpdateIdsRequest = z.infer<typeof bulkUpdateIdsRequest>

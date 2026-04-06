@@ -1,22 +1,22 @@
 "use server"
 
-import { and, db, eq, inArray } from "@aha.chat/database/client"
-import { errorLogModel } from "@aha.chat/database/schema"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { errorLogModel } from "@chatbotx.io/database/schema"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
   type ChatbotIdRequestParams,
-  chatbotIdRequestParams,
+  workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { chatbotActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const deleteErrorLogAction = chatbotActionClient
-  .bindArgsSchemas(chatbotIdRequestParams)
+export const deleteErrorLogAction = workspaceActionClient
+  .bindArgsSchemas(workspaceIdrequestParams)
   .inputSchema(bulkUpdateIdsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [chatbotId],
+      bindArgsParsedInputs: [workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: ChatbotIdRequestParams
@@ -26,11 +26,11 @@ export const deleteErrorLogAction = chatbotActionClient
         .delete(errorLogModel)
         .where(
           and(
-            eq(errorLogModel.chatbotId, chatbotId),
+            eq(errorLogModel.workspaceId, workspaceId),
             inArray(errorLogModel.id, parsedInput.ids),
           ),
         )
 
-      revalidateCacheTags(`chatbots:${chatbotId}#errorLogs`)
+      revalidateCacheTags(`workspaces:${workspaceId}#errorLogs`)
     },
   )

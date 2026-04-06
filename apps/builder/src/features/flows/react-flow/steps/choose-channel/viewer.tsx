@@ -1,6 +1,7 @@
 "use client"
 
-import type { ChooseChannelStepSchema } from "@aha.chat/flow-config"
+import { channelTypes } from "@chatbotx.io/database/partials"
+import type { ChooseChannelStepSchema } from "@chatbotx.io/flow-config"
 import { InboxIcon } from "lucide-react"
 import { useEffect, useState } from "react"
 import { useConfiguredInboxTypeOptions } from "@/features/inboxes/provider/inbox-hook"
@@ -12,7 +13,9 @@ const ChooseChannelStepViewer = ({
   data: ChooseChannelStepSchema
 }) => {
   const channelOptions = useConfiguredInboxTypeOptions()
-  const [selectedChannel, setSelectedChannel] = useState<string>("Omnichannel")
+  const [selectedChannel, setSelectedChannel] = useState<string>(
+    channelTypes.enum.omnichannel,
+  )
 
   useEffect(() => {
     const channelOption = channelOptions.find(
