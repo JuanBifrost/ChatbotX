@@ -8,6 +8,7 @@ import botFieldsAPIs from "@/features/bot-fields/api"
 import contactsAPIs from "@/features/contacts/api"
 import { conversationsAPI } from "@/features/conversations/api"
 import customFieldsAPI from "@/features/custom-fields/api"
+import errorLogsAPI from "@/features/error-logs/api"
 import flowsAPI from "@/features/flows/api"
 import { foldersAPI } from "@/features/folders/api"
 import { inboxesAPI } from "@/features/inboxes/api"
@@ -19,6 +20,7 @@ import { sequencesAPI } from "@/features/sequences/api"
 import { spreadsheetsAPI } from "@/features/spreadsheets/api"
 import tagsAPI from "@/features/tags/api"
 import { workspaceMembersAPI } from "@/features/workspace-members/api"
+import { workspacesAPI } from "@/features/workspaces/api"
 import { workspaceAuthorizedMidddleware } from "@/middlewares/auth"
 import { authorizedAPI } from "@/orpc"
 
@@ -46,5 +48,7 @@ export const router = {
   inboxTeamsAPI,
   foldersAPI,
   messagesAPI,
+  errorLogsAPI,
+  workspacesAPI,
   aiFunctionsAPI,
 }
