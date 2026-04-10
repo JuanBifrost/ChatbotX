@@ -1,33 +1,30 @@
 "use server"
 
-import { and, db, eq } from "@chatbotx.io/database/client"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import { savedReplyModel } from "@chatbotx.io/database/schema"
-import {
-  type WorkspaceIdAndIdRequestParams,
-  workspaceIdAndIdRequestParams,
-} from "@/features/common/schemas"
+import { workspaceIdAndIdRequestParams } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { authActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const deleteSavedReplyAction = authActionClient
+export const deleteSavedReplyAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdAndIdRequestParams)
-  .action(
-    async ({
-      bindArgsParsedInputs: [_chatbotId, id],
-      ctx,
-    }: {
-      bindArgsParsedInputs: WorkspaceIdAndIdRequestParams
-      ctx: { user: { id: string } }
-    }) => {
-      await db
-        .delete(savedReplyModel)
-        .where(
-          and(
-            eq(savedReplyModel.userId, ctx.user.id),
-            eq(savedReplyModel.id, id),
-          ),
-        )
+  .action(async (props) => {
+    const {
+      bindArgsParsedInputs: [workspaceId, id],
+    } = props
 
-      revalidateCacheTags(`users:${ctx.user.id}#savedReplies`)
-    },
-  )
+    const savedReply = await findOrFail({
+      table: savedReplyModel,
+      where: {
+        id,
+        workspaceId,
+      },
+      message: "Saved reply not found",
+    })
+
+    await db
+      .delete(savedReplyModel)
+      .where(eq(savedReplyModel.id, savedReply.id))
+
+    revalidateCacheTags(`workspaces:${workspaceId}#savedReplies`)
+  })
