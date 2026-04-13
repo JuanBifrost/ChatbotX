@@ -8,7 +8,12 @@ import {
   SiZalo,
   SiZaloHex,
 } from "@icons-pack/react-simple-icons"
-import { AppWindowIcon, GlobeIcon, type LucideIcon } from "lucide-react"
+import {
+  AppWindowIcon,
+  GlobeIcon,
+  type LucideIcon,
+  MailIcon,
+} from "lucide-react"
 import type { ComponentType, SVGProps } from "react"
 import { memo } from "react"
 
@@ -54,6 +59,11 @@ const INBOX_ICON_CONFIG: Record<ChannelType, InboxIconConfig> = {
     iconClassName: "fill-zinc-100 dark:stroke-zinc-800",
     defaultLabel: "Webchat",
   },
+  smtp: {
+    Icon: MailIcon,
+    iconClassName: "fill-zinc-100 dark:stroke-zinc-800",
+    defaultLabel: "Email",
+  },
   omnichannel: {
     Icon: GlobeIcon,
     defaultLabel: "Omnichannel",
@@ -61,7 +71,7 @@ const INBOX_ICON_CONFIG: Record<ChannelType, InboxIconConfig> = {
 }
 
 type InboxIconProps = {
-  channel: string
+  channel: ChannelType
   wrapperClassName?: string
   iconClassName?: string
   label?: string
@@ -69,6 +79,9 @@ type InboxIconProps = {
   showLabel?: boolean
   size?: IconSize
 }
+
+const isChannelType = (channel: string): channel is ChannelType =>
+  channel in INBOX_ICON_CONFIG
 
 export const InboxIcon = memo(
   ({
@@ -80,8 +93,9 @@ export const InboxIcon = memo(
     showLabel = true,
     size = "medium",
   }: InboxIconProps) => {
-    const config =
-      INBOX_ICON_CONFIG[channel as ChannelType] ?? INBOX_ICON_CONFIG.omnichannel
+    const config = isChannelType(channel)
+      ? INBOX_ICON_CONFIG[channel]
+      : INBOX_ICON_CONFIG.omnichannel
     const {
       Icon,
       fill,
@@ -92,12 +106,12 @@ export const InboxIcon = memo(
     return (
       <div className={cn("flex items-center gap-2", wrapperClassName)}>
         <Icon
-          {...(fill && { fill })}
           className={cn(
             ICON_SIZE_CLASSES[size],
-            iconClassName,
             configIconClassName,
+            iconClassName,
           )}
+          fill={fill}
         />
         {showLabel && (
           <span className={cn(LABEL_SIZE_CLASSES[size], labelClassName)}>
@@ -108,3 +122,4 @@ export const InboxIcon = memo(
     )
   },
 )
+InboxIcon.displayName = "InboxIcon"

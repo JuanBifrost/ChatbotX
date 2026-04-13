@@ -32,6 +32,7 @@ export const cardConfigs: Record<
   webchat: InboxWebchatCard,
   messenger: InboxMessengerCard,
   zalo: InboxZaloCard,
+  smtp: undefined,
 }
 
 export const InboxCardList = memo(function InboxCardList({
