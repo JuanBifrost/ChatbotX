@@ -324,6 +324,10 @@
     "zalo": {
       "label": "Zalo OA"
     },
+    "telegram": {
+      "label": "Telegram",
+      "botToken": "Bot Token"
+    },
     "matchAll": {
       "label": "Khớp tất cả các điều kiện bên dưới"
     },
@@ -1483,6 +1487,10 @@
   "zalo": {
     "title": "Zalo OA",
     "refreshPermissions": "Làm mới quyền"
+  },
+  "telegram": {
+    "description": "Tích hợp này cho phép bạn tạo bot Telegram.",
+    "title": "Telegram"
   },
   "invitation": {
     "chatbotInvitationDescription1": "Tham gia {chatbotName} trên {organizationName}",

@@ -318,6 +318,10 @@
     "zalo": {
       "label": "Zalo OA"
     },
+    "telegram": {
+      "label": "Telegram",
+      "botToken": "Bot Token"
+    },
     "matchAll": {
       "label": "Match all the conditions below"
     },
@@ -1331,7 +1335,8 @@
     "deleteSuccess": "{feature} deleted successfully",
     "error": "Error",
     "moveFolderDescription": "Move {feature} to folder",
-    "noData": "No data"
+    "noData": "No data",
+    "featureNotFound": "{feature} not found"
   },
   "messenger": {
     "greeting": "Greeting",
@@ -1478,6 +1483,10 @@
   "zalo": {
     "title": "Zalo OA",
     "refreshPermissions": "Refresh permissions"
+  },
+  "telegram": {
+    "description": "This integration lets you create Telegram bots.",
+    "title": "Telegram"
   },
   "invitation": {
     "chatbotInvitationDescription1": "Join {chatbotName} on {organizationName}",
