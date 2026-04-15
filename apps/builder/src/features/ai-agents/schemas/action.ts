@@ -1,8 +1,6 @@
-import { openaiModels } from "@chatbotx.io/ai"
+import { aiProviders, geminiModels, openaiModels } from "@chatbotx.io/ai"
 import { aiMessageRoles } from "@chatbotx.io/database/partials"
-import { aiProviders } from "@chatbotx.io/flow-config"
 import { z } from "zod"
-import { geminiModels } from "@/features/integration-gemini/schemas/models"
 
 export const createAIAgentRequest = z.object({
   name: z.string().trim().min(1).max(255),

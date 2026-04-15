@@ -104,9 +104,12 @@ export function AIMcpServersCreate({
     try {
       setIsMcpServerValidating(true)
       const data = await ky
-        .post<Record<string, unknown>[]>("/api/ai-mcp-servers/validate", {
-          json: form.getValues(),
-        })
+        .post<Record<string, unknown>[]>(
+          `/api/workspaces/${workspaceId}/ai-mcp-servers/validate`,
+          {
+            json: form.getValues(),
+          },
+        )
         .json()
 
       const toolKeys = Object.keys(data)
