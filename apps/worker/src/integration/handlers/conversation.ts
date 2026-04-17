@@ -1,5 +1,7 @@
 import { db, eq } from "@chatbotx.io/database/client"
 import { conversationModel } from "@chatbotx.io/database/schema"
+import { emit } from "@chatbotx.io/event-bus"
+import { messageEventTypeSchema } from "@chatbotx.io/flow-config"
 import type {
   IntegrationJobAgentMarkAsRead,
   IntegrationJobContactMarkAsRead,
@@ -8,11 +10,11 @@ import type {
 export const contactMarkAsRead = async (
   props: IntegrationJobContactMarkAsRead["data"],
 ) => {
-  const { contact, integrationType } = props
+  const { sourceConversationId, integrationType } = props
 
   const contactInbox = await db.query.contactInboxModel.findFirst({
     where: {
-      sourceId: contact.sourceId,
+      sourceId: sourceConversationId,
       channel: integrationType,
     },
     with: {
@@ -29,6 +31,18 @@ export const contactMarkAsRead = async (
       contactLastReadAt: new Date(),
     })
     .where(eq(conversationModel.id, contactInbox.conversation.id))
+
+  await emit(messageEventTypeSchema.enum["message:seen"], {
+    context: {
+      workspaceId: contactInbox.conversation.workspaceId,
+      contactId: contactInbox.contactId,
+      conversationId: contactInbox.conversation.id,
+      contactInboxId: contactInbox.id,
+      channel: integrationType,
+    },
+    action: {},
+    occurredAt: new Date(),
+  })
 }
 
 export const agentMarkAsRead = async (

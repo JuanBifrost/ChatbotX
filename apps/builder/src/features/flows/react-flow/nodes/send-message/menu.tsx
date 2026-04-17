@@ -1,3 +1,4 @@
+import { channelTypes } from "@chatbotx.io/database/partials"
 import { stepTypes } from "@chatbotx.io/flow-config"
 import {
   CreditCardIcon,
@@ -13,17 +14,16 @@ import {
   Volume2Icon,
   ZapIcon,
 } from "lucide-react"
-import type { FlowActionState } from "../../stores/flow-action-store"
 import { performActionMenus } from "../perform-action/menu"
-import type { MenuItem, TranslationFn } from "../types"
-import { waTemplateMenus } from "./menus/wa-template-menus"
+import type { MenuData, MenuItem, TranslationFn } from "../types"
+import { integrationMenus } from "./menus/integration-menu"
 
 const ALL_MENU_ITEMS = (
   t: TranslationFn,
-  menuData?: FlowActionState,
+  menuData?: MenuData,
 ): Record<string, MenuItem> => ({
   sendText: {
-    label: t("flows.actions.sendText"),
+  label: t("flows.actions.sendText"),
     icon: TextIcon,
     stepType: stepTypes.enum.sendText,
   },
@@ -61,7 +61,7 @@ const ALL_MENU_ITEMS = (
     label: t("flows.actions.sendWaTemplateMessage"),
     icon: MessageSquareIcon,
     stepType: stepTypes.enum.sendWaTemplateMessage,
-    children: waTemplateMenus(t, menuData),
+    children: integrationMenus(t, menuData, channelTypes.enum.whatsapp),
   },
   typing: {
     label: t("flows.actions.typing"),
@@ -126,7 +126,7 @@ const MENU_ORDER_BY_CHANNEL: Record<string, readonly string[]> = {
 
 export const sendMessageEditorMenus = (
   t: TranslationFn,
-  menuData?: FlowActionState,
+  menuData?: MenuData,
 ): MenuItem[] => {
   const channel = menuData?.beforeStep?.channel
   const allMenuItems = ALL_MENU_ITEMS(t, menuData)

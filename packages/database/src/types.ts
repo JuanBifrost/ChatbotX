@@ -58,7 +58,6 @@ export type SequenceModel = typeof schema.sequenceModel.$inferSelect
 export type SequenceStepModel = typeof schema.sequenceStepModel.$inferSelect
 export type ContactsOnSequenceModel =
   typeof schema.contactsOnSequenceModel.$inferSelect
-export type SequenceEventModel = typeof schema.sequenceEventModel.$inferSelect
 export type SequenceDispatchModel =
   typeof schema.sequenceDispatchModel.$inferSelect
 export type TriggerModel = typeof schema.triggerModel.$inferSelect
@@ -78,3 +77,10 @@ export type OrganizationMember =
   typeof schema.organizationMemberModel.$inferSelect
 export type IntegrationInstagramModel =
   typeof schema.integrationInstagramModel.$inferSelect
+export type WhatsappMessageTemplateModel =
+  typeof schema.whatsappMessageTemplateModel.$inferSelect
+export type FlowAnalyticsSessionModel =
+  typeof schema.flowAnalyticsSessionModel.$inferSelect
+export type FlowNodeStatModel = typeof schema.flowNodeStatModel.$inferSelect
+export type MagicLinkStatModel = typeof schema.magicLinkStatModel.$inferSelect
+export type RefLinkStatModel = typeof schema.refLinkStatModel.$inferSelect

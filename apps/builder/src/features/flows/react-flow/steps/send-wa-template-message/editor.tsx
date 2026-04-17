@@ -6,6 +6,7 @@ import {
   type ParameterInfo,
   type TemplateComponent,
 } from "@chatbotx.io/flow-config"
+import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
 import {
   Select,
   SelectContent,
@@ -14,20 +15,16 @@ import {
   SelectValue,
 } from "@chatbotx.io/ui/components/ui/select"
 import { useTranslations } from "next-intl"
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { useFormContext } from "react-hook-form"
-import { getTemplatesForFlow } from "@/features/integration-whatsapp/message-templates/actions/get-templates-for-flow"
+import { useWhatsappInboxOptions } from "@/features/inboxes/provider/inbox-hook"
 import { TemplateParamsForm } from "@/features/integration-whatsapp/message-templates/components/template-params-form"
 import { TemplatePreview } from "@/features/integration-whatsapp/message-templates/components/template-preview"
-import { useFlowAction } from "../../stores/flow-action-store-provider"
+import {
+  useFlowTemplate,
+} from "../../stores/flow-template-store-provider"
 import { BaseStepEditor } from "../base/editor"
-
-type Template = {
-  id: string
-  name: string
-  language: string
-  components: TemplateComponent[]
-}
+import type { FlowTemplateResource } from "@/features/integration-whatsapp/message-templates/schema/resource"
 
 type SendWaTemplateMessageStepEditorProps = {
   parentName: string
@@ -39,51 +36,66 @@ function SendWaTemplateMessageStepEditor(
   const { parentName } = props
   const t = useTranslations()
   const { setValue, watch } = useFormContext()
-  const workspaceId = useFlowAction((s) => s.workspaceId)
-
-  const [templates, setTemplates] = useState<Template[]>([])
-  const [selectedTemplate, setSelectedTemplate] = useState<Template | null>(
-    null,
-  )
+  const [selectedTemplate, setSelectedTemplate] =
+    useState<FlowTemplateResource | null>(null)
   const [parameters, setParameters] = useState<ParameterInfo[]>([])
+  const prevInboxIdRef = useRef<string | undefined>(undefined)
 
+  const whatsappInboxOptions = useWhatsappInboxOptions()
+  const whatsappTemplates = useFlowTemplate((s) => s.whatsappTemplates)
+
+  const integrationInboxId = watch(`${parentName}.template.inboxId`)
   const templateId = watch(`${parentName}.template.id`)
   const templateParams = watch(`${parentName}.template.params`) || {}
 
   useEffect(() => {
-    const fetchTemplates = async () => {
-      if (!workspaceId) {
-        return
-      }
-      try {
-        const data = await getTemplatesForFlow(workspaceId)
-        setTemplates(data as Template[])
-      } catch (error) {
-        console.error("Failed to fetch templates:", error)
-      }
+    if (
+      prevInboxIdRef.current !== undefined &&
+      prevInboxIdRef.current !== integrationInboxId
+    ) {
+      setValue(`${parentName}.template.id`, "")
+      setValue(`${parentName}.template.name`, "")
+      setValue(`${parentName}.template.language`, "")
+      setValue(`${parentName}.template.params`, {})
+      setSelectedTemplate(null)
+      setParameters([])
     }
-    fetchTemplates()
-  }, [workspaceId])
+    prevInboxIdRef.current = integrationInboxId
+  }, [integrationInboxId, parentName, setValue])
 
   useEffect(() => {
-    if (templateId && templates.length > 0) {
-      const template = templates.find((t) => t.id === templateId)
+    if (
+      templateId &&
+      whatsappTemplates.length > 0
+    ) {
+      const template = whatsappTemplates.find((t) => t.id === templateId)
       if (template) {
         setSelectedTemplate(template)
+        setValue(`${parentName}.template.name`, template.name)
+        setValue(`${parentName}.template.language`, template.language)
         const params = extractParameterInfos(
           template.components as TemplateComponent[],
         )
         setParameters(params)
       }
     }
-  }, [templateId, templates])
+  }, [templateId, whatsappTemplates, parentName, setValue])
+
+  const filteredTemplates = useMemo(
+    () =>
+      (whatsappTemplates ?? []).filter(
+        (template) =>
+          template.integrationWhatsapp?.inboxId === integrationInboxId,
+      ),
+    [whatsappTemplates, integrationInboxId],
+  )
 
   const handleTemplateChange = (value: string) => {
-    const template = templates.find((t) => t.id === value)
+    const template = whatsappTemplates?.find((t) => t.id === value)
     if (template) {
       setValue(`${parentName}.template.id`, template.id)
       setValue(`${parentName}.template.name`, template.name)
-      setValue(`${parentName}.template.languageCode`, template.language)
+      setValue(`${parentName}.template.language`, template.language)
       const initialParams = extractTemplateParams(
         template.components as TemplateComponent[],
       )
@@ -99,22 +111,26 @@ function SendWaTemplateMessageStepEditor(
   return (
     <BaseStepEditor>
       <div className="space-y-3">
-        <div>
-          <Select onValueChange={handleTemplateChange} value={templateId}>
-            <SelectTrigger className="w-full">
-              <SelectValue
-                placeholder={t("flows.fields.selectTemplatePlaceholder")}
-              />
-            </SelectTrigger>
-            <SelectContent>
-              {templates.map((template) => (
-                <SelectItem key={template.id} value={template.id}>
-                  {template.name} ({template.language})
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+        <ComboboxField
+          name={`${parentName}.template.inboxId`}
+          options={whatsappInboxOptions}
+          required={true}
+        />
+
+        <Select onValueChange={handleTemplateChange} value={templateId || ""}>
+          <SelectTrigger className="w-full">
+            <SelectValue
+              placeholder={t("flows.fields.selectTemplatePlaceholder")}
+            />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredTemplates.map((template) => (
+              <SelectItem key={template.id} value={template.id}>
+                {template.name} ({template.language})
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
 
         {parameters.length > 0 && (
           <TemplateParamsForm

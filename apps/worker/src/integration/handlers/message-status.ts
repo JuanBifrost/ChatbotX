@@ -1,21 +1,127 @@
-import { db, eq } from "@chatbotx.io/database/client"
-import { messageModel } from "@chatbotx.io/database/schema"
-import type { IntegrationJobMessageStatus } from "@chatbotx.io/worker-config"
+import { db } from "@chatbotx.io/database/client"
+import type { IntegrationType } from "@chatbotx.io/database/partials"
+import { emit } from "@chatbotx.io/event-bus"
+import { getStoragePrefix, uploader } from "@chatbotx.io/filesystem"
+import {
+
+  messageEventTypeSchema,
+  type MetadataPayload,
+  UPDATE_STATUS_PAYLOAD_TYPE,
+} from "@chatbotx.io/flow-config"
+import { SdkException } from "@chatbotx.io/sdk"
+import {
+  IntegrationJobAction,
+  type IntegrationJobMessageStatus,
+} from "@chatbotx.io/worker-config"
 import { logger } from "../../lib/logger"
+import {
+  allIntegrations,
+  integrationService,
+} from "../../services/integrations"
 import { runFlowPostback } from "./flow"
 
-export const handleMessageStatus = async (job: IntegrationJobMessageStatus) => {
-  const { payload } = job.data
+export const handleMessageStatus = async (
+  job: IntegrationJobMessageStatus["data"],
+) => {
+  const { integrationType, integrationIdentifier, payload } = job
+
+  const dbIntegration =
+    await integrationService.identifyInboxAndIntegrationAuthFromIdentifier(
+      integrationType as IntegrationType,
+      integrationIdentifier,
+    )
+  const { workspace, inbox, integrationAuth } = dbIntegration
+  const ctx = {
+    workspace,
+    auth: integrationAuth,
+    uploader,
+    storagePrefix: getStoragePrefix(inbox.workspaceId, inbox.id),
+    inbox,
+  }
+
+  if (!ctx.workspace?.id) {
+    throw new Error("Unable to handle message status")
+  }
+
+  if (!ctx.inbox?.id) {
+    throw new Error("Unable to handle message status")
+  }
+
+  const parsedMessage = await allIntegrations[
+    integrationType
+  ]?.channels?.channel?.message?.handleMessageStatus?.({
+    ctx,
+    data: job,
+  })
+
+  if (!parsedMessage) {
+    throw new SdkException("Unable to parse received message")
+  }
+
+  const { contact } = parsedMessage
+
+  const eventStatus = String(payload.status).toLowerCase()
 
   try {
-    const message = await db
-      .select()
-      .from(messageModel)
-      .where(eq(messageModel.sourceId, payload.messageId))
-      .limit(1)
-      .then((rows) => rows[0])
+    const contactInbox = await db.query.contactInboxModel.findFirst({
+      where: {
+        sourceId: contact.sourceId,
+        inboxId: ctx.inbox.id,
+      },
+      with: {
+        conversation: true,
+        contact: true,
+      },
+    })
 
-    if (!message) {
+    if (!contactInbox?.conversation) {
+      throw new SdkException("Unable to find conversation")
+    }
+
+    const message = await db.query.messageModel.findFirst({
+      where: {
+        sourceId: payload.messageId,
+        conversationId: contactInbox?.conversation.id,
+        workspaceId: ctx.workspace.id,
+      },
+    })
+
+    const eventLog = {
+      context: {
+        workspaceId: inbox.workspaceId,
+        contactId: contactInbox.contact.id,
+        conversationId: contactInbox.conversation.id,
+        channel: inbox.channel,
+        contactInboxId: contactInbox.id,
+      },
+      action: {
+        messageId: message?.id,
+        flowId: message?.contentAttributes?.flowId as string | undefined,
+        flowVersionId: message?.contentAttributes?.flowVersionId as
+          | string
+          | undefined,
+      },
+      occurredAt: new Date(),
+      stepId: (message?.contentAttributes?.stepId ?? "") as string,
+      nodeId: (message?.contentAttributes?.nodeId ?? "") as string,
+      metadata: {
+        type: UPDATE_STATUS_PAYLOAD_TYPE,
+      } as MetadataPayload,
+    }
+
+    if (message?.contentAttributes?.metadata) {
+      eventLog.metadata = message.contentAttributes.metadata as MetadataPayload
+    }
+
+    if (eventStatus === "delivered") {
+      await emit(messageEventTypeSchema.enum["message:delivered"], eventLog)
+    }
+
+    if (eventStatus === "read") {
+      await emit(messageEventTypeSchema.enum["message:seen"], eventLog)
+    }
+
+    if (!message || (eventStatus !== "delivered" && eventStatus !== "failed")) {
       return
     }
 
@@ -31,11 +137,7 @@ export const handleMessageStatus = async (job: IntegrationJobMessageStatus) => {
       [key: string]: unknown
     }
 
-    if (
-      !contentAttributes ||
-      (contentAttributes.type !== "template" &&
-        contentAttributes.type !== "whatsapp_template")
-    ) {
+    if (!contentAttributes || contentAttributes.type !== "whatsapp_template") {
       return
     }
 
@@ -44,11 +146,7 @@ export const handleMessageStatus = async (job: IntegrationJobMessageStatus) => {
       return
     }
 
-    const buttonLabel =
-      String(payload.status).toLowerCase() === "delivered"
-        ? "Delivered"
-        : "Failed"
-
+    const buttonLabel = eventStatus === "delivered" ? "Delivered" : "Failed"
     const button = buttons.find((b) => b.label === buttonLabel)
     if (!button?.postback) {
       return
@@ -58,6 +156,8 @@ export const handleMessageStatus = async (job: IntegrationJobMessageStatus) => {
       conversationId: message.conversationId,
       action: button.postback,
       ref: null,
+      contactInboxId: contactInbox.id,
+      webhookType: IntegrationJobAction.messageStatus,
     })
   } catch (error) {
     logger.error(

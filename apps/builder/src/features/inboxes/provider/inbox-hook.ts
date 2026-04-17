@@ -1,3 +1,5 @@
+import { channelTypes } from "@chatbotx.io/database/partials"
+import type { SelectOption } from "@chatbotx.io/ui/components/form/select-field"
 import { useEffect, useMemo, useState } from "react"
 import { useInboxStore } from "./inbox-store-context"
 
@@ -51,5 +53,20 @@ export const useConfiguredInboxTypeOptions = () => {
           allInboxConfigs[inboxType as keyof typeof allInboxConfigs],
       ),
     [inboxTypes],
+  )
+}
+
+export const useWhatsappInboxOptions = (): SelectOption[] => {
+  const inboxes = useInboxStore((state) => state.inboxes)
+
+  return useMemo(
+    () =>
+      inboxes
+        .filter((inbox) => inbox.channel === channelTypes.enum.whatsapp)
+        .map((inbox) => ({
+          label: inbox.name,
+          value: inbox.integrationWhatsapp?.id ?? "",
+        })),
+    [inboxes],
   )
 }

@@ -1,4 +1,6 @@
+import { type SQL, sql } from "drizzle-orm"
 import {
+  boolean,
   index,
   integer,
   pgTable,
@@ -12,6 +14,7 @@ import {
   timestampConfig,
 } from "../partials/shared"
 import { contactModel } from "./contact"
+import { contactInboxModel } from "./contact-inbox"
 import { contactsOnSequenceModel } from "./contact-on-sequence"
 import { sequenceModel } from "./sequence"
 import { sequenceStepModel } from "./sequence-step"
@@ -21,7 +24,7 @@ export const sequenceDispatchModel = pgTable(
   "SequenceDispatch",
   {
     ...sharedColumns,
-    runAtMs: integer().notNull(),
+    runAtMs: bigintAsString().notNull(),
     bucket: integer().notNull().default(0),
     status: text(),
     idempotencyKey: text().notNull(),
@@ -30,6 +33,11 @@ export const sequenceDispatchModel = pgTable(
     lockedAt: timestamp(timestampConfig),
     lockOwner: text(),
     completedAt: timestamp(timestampConfig),
+    deliveredAt: timestamp(timestampConfig),
+    seenAt: timestamp(timestampConfig),
+    clickedAt: timestamp(timestampConfig),
+    failedAt: timestamp(timestampConfig),
+    errorContent: text(),
     workspaceId: bigintAsString()
       .notNull()
       .references(() => workspaceModel.id, {
@@ -48,6 +56,12 @@ export const sequenceDispatchModel = pgTable(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
+    contactInboxId: bigintAsString()
+      .notNull()
+      .references(() => contactInboxModel.id, {
+        onDelete: "cascade",
+        onUpdate: "cascade",
+      }),
     stepId: bigintAsString()
       .notNull()
       .references(() => sequenceStepModel.id, {
@@ -60,6 +74,10 @@ export const sequenceDispatchModel = pgTable(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
+    isRead: boolean().generatedAlwaysAs(
+      (): SQL =>
+        sql`case when "seenAt" is null then false when "deliveredAt" is null then false else "seenAt" >= "deliveredAt" end`,
+    ),
   },
   (table) => [
     index("SequenceDispatch_status_runAtMs_idx").on(

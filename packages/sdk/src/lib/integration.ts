@@ -1,3 +1,4 @@
+import type { MetadataPayload } from "@chatbotx.io/flow-config"
 import type { AuthValue, Oauth2AuthValue } from "./auth"
 import type { SendFlowStepData } from "./flow-step-data"
 import type {
@@ -19,6 +20,7 @@ export type ChannelSendFlowStepProps<IAuth extends AuthValue> = {
     flowId: string
     flowVersionId?: string
     step: SendFlowStepData
+    metadata?: MetadataPayload
   }
 }
 
@@ -32,6 +34,7 @@ export type MessageHandlers<
       data: {
         contact: OutgoingContact
         message: OutgoingMessage
+        metadata?: MetadataPayload
       }
     },
     {
@@ -57,11 +60,23 @@ export type MessageHandlers<
         flowId: string
         flowVersionId?: string
         step: TStep
+        metadata?: MetadataPayload
       }
     },
     {
       messageIds: string[]
     }
+  >
+  handleMessageStatus?: Handler<
+    {
+      ctx: Context<IAuth>
+      data: {
+        integrationType: string
+        integrationIdentifier: string
+        payload: unknown
+      }
+    },
+    ReceivedMessageResult | null
   >
 }
 

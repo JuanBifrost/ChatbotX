@@ -4,12 +4,7 @@ import {
   eq,
   inArray,
 } from "@chatbotx.io/database/client"
-import { sequenceEventTypes } from "@chatbotx.io/database/partials"
-import {
-  sequenceDispatchModel,
-  sequenceEventModel,
-} from "@chatbotx.io/database/schema"
-import { createId } from "@chatbotx.io/utils"
+import { sequenceDispatchModel } from "@chatbotx.io/database/schema"
 
 export const sequenceDispatchUtils = {
   bulkCancelPendingDispatches: async (props: {
@@ -18,7 +13,7 @@ export const sequenceDispatchUtils = {
     enrollmentId: string
     reason?: "canceled"
   }) => {
-    const { dbClient, workspaceId, enrollmentId, reason } = props
+    const { dbClient, workspaceId, enrollmentId } = props
 
     // Find all pending dispatches for the enrollment
     const pendingDispatches =
@@ -58,21 +53,6 @@ export const sequenceDispatchUtils = {
     if (updatedDispatches.length === 0) {
       return []
     }
-
-    // Create a sequence event for each pending dispatch
-    await dbClient.insert(sequenceEventModel).values(
-      pendingDispatches.map((d) => ({
-        id: createId(),
-        workspaceId,
-        sequenceId: d.sequenceId,
-        contactId: d.contactId,
-        stepId: d.stepId,
-        dispatchId: d.id,
-        eventType: sequenceEventTypes.enum.dispatch_canceled,
-        payload: { reason },
-        occurredAt: new Date(),
-      })),
-    )
 
     return pendingDispatches.map((d) => ({
       id: d.id,

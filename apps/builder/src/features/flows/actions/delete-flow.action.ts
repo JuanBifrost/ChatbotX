@@ -1,7 +1,10 @@
 "use server"
 
-import { and, db, eq, inArray } from "@chatbotx.io/database/client"
-import { flowModel } from "@chatbotx.io/database/schema"
+import { and, db, eq, inArray, sql } from "@chatbotx.io/database/client"
+import {
+  flowAnalyticsSessionModel,
+  flowModel,
+} from "@chatbotx.io/database/schema"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -22,15 +25,33 @@ export const deleteFlowAction = workspaceActionClient
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: BulkUpdateIdsRequest
     }) => {
-      await db
-        .delete(flowModel)
-        .where(
-          and(
-            eq(flowModel.workspaceId, workspaceId),
-            inArray(flowModel.id, parsedInput.ids),
-          ),
-        )
+      const deletedFlows = await db.query.flowModel.findMany({
+        where: {
+          workspaceId,
+          id: {
+            in: parsedInput.ids,
+          },
+        },
+      })
+      if (deletedFlows.length === 0) {
+        return
+      }
 
-      revalidateCacheTags(`workspaces:${workspaceId}#flows`)
+      const deletedFlowIds = deletedFlows.map((flow) => flow.id)
+
+      await db.transaction(async (tx) => {
+        await tx
+          .delete(flowModel)
+          .where(inArray(flowModel.id, deletedFlowIds))
+
+        await tx
+          .update(flowAnalyticsSessionModel)
+          .set({
+            deletedAt: new Date(),
+          })
+          .where(
+                    inArray(flowAnalyticsSessionModel.flowId, deletedFlowIds),
+          )
+      })
     },
   )

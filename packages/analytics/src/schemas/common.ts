@@ -21,3 +21,23 @@ export const timeRangeQueryWithGranularityDMSchema =
   timeRangeQuerySchema.extend({
     granularity: granularityDayMonthSchema.default("day"),
   })
+
+export const contactInfoSchema = z.object({
+  id: z.string(),
+  firstName: z.string().nullable(),
+  lastName: z.string().nullable(),
+  avatar: z.string().nullable(),
+})
+export type ContactInfo = z.infer<typeof contactInfoSchema>
+
+export const contactEventData = z.object({
+  contactId: z.string(),
+  contactInboxId: z.string(),
+  occurredAt: z.string(),
+  sourceId: z.string().optional(),
+  channel: z.string().optional(),
+  conversationId: z.string().optional(),
+  errorContent: z.string().nullable().optional(),
+})
+
+export type ContactEventData = z.infer<typeof contactEventData>

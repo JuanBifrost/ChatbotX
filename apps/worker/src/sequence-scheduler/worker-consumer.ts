@@ -1,4 +1,10 @@
-import { type Consumer, createConsumer } from "@chatbotx.io/kafka"
+import type { Readable } from "node:stream"
+import { SEQUENCE_SCHEDULE_PAYLOAD_TYPE } from "@chatbotx.io/flow-config"
+import {
+  type Consumer,
+  createConsumer,
+  ensureTopicExists,
+} from "@chatbotx.io/kafka"
 import { sequenceConnections } from "@chatbotx.io/redis"
 import { SchedulerClient } from "@chatbotx.io/scheduler"
 import pLimit, { type LimitFunction } from "p-limit"
@@ -7,6 +13,8 @@ import {
   CONSUMER_CLIENT_ID,
   CONSUMER_GROUP_ID,
   HEARTBEAT_INTERVAL_IN_MS,
+  KAFKA_PARTITIONS,
+  KAFKA_REPLICATION_FACTOR,
   KAFKA_TOPIC,
   MAX_PROCESS,
   MAX_RETRIES,
@@ -27,6 +35,7 @@ import type {
 class DispatchConsumer {
   private running = false
   private consumer: Consumer<string, string, string, string> | null = null
+  private stream: Readable | null = null
   private _scheduler: SchedulerClient | null = null
   private readonly config: ConsumerConfig
   private readonly limitProcess: LimitFunction
@@ -70,14 +79,23 @@ class DispatchConsumer {
 
     this.consumer = createConsumer(CONSUMER_CLIENT_ID, this.config.groupId)
 
-    const stream = await this.consumer.consume({
+    await ensureTopicExists(
+      CONSUMER_CLIENT_ID,
+      KAFKA_TOPIC,
+      KAFKA_PARTITIONS,
+      KAFKA_REPLICATION_FACTOR,
+    )
+
+    this.stream = await this.consumer.consume({
       topics: [KAFKA_TOPIC],
       autocommit: true,
       sessionTimeout: this.config.sessionTimeout,
       heartbeatInterval: this.config.heartbeatInterval,
     })
+    const stream = this.stream
 
     this.running = true
+    console.log("Dispatch consumer fully operational")
 
     for await (const message of stream) {
       if (!this.running) {
@@ -91,6 +109,8 @@ class DispatchConsumer {
         logger.error({ error, message }, "Error processing dispatch message")
       }
     }
+
+    this.stream = null
   }
 
   private async processDispatch(payload: DispatchMessage) {
@@ -103,6 +123,14 @@ class DispatchConsumer {
           const dispatch = await this.dispatchProcessor.fetchDispatch(
             payload.dispatchId,
           )
+
+          if (!dispatch || dispatch === null) {
+            await this.scheduler.removeFromSchedule(
+              payload.bucket,
+              payload.dispatchId,
+            )
+            return
+          }
 
           if (!this.dispatchProcessor.validateDispatch(dispatch)) {
             return
@@ -143,25 +171,24 @@ class DispatchConsumer {
         )
         return
       }
-
       const sentAt = await this.stepExecutor.sendFlowMessage(
         dispatch,
         step as StepWithRelations,
+        {
+          metadata: {
+            type: SEQUENCE_SCHEDULE_PAYLOAD_TYPE,
+            sequenceStepId: step?.id ?? "",
+            sequenceId: step?.sequenceId ?? "",
+            dispatchId: dispatch.id,
+            contactInboxId: dispatch.contactInboxId,
+          },
+        },
       )
 
       await this.stepExecutor.markDispatchCompleted(
         dispatch.id,
         dispatch.workspaceId,
         sentAt,
-      )
-
-      await this.stepExecutor.recordDispatchEvent(
-        dispatch,
-        "dispatch_completed",
-        {
-          attempt: dispatch.attempt,
-          duration: Date.now() - Number(dispatch.runAtMs),
-        },
       )
 
       await this.advanceEnrollment(dispatch, step as StepWithRelations, sentAt)
@@ -183,15 +210,6 @@ class DispatchConsumer {
             dispatch.id,
             dispatch.workspaceId,
             error instanceof Error ? error.message : "Unknown error",
-          )
-
-          await this.stepExecutor.recordDispatchEvent(
-            dispatch,
-            "dispatch_failed",
-            {
-              attempt: dispatch.attempt,
-              error: error instanceof Error ? error.message : "Unknown error",
-            },
           )
         }
       } catch (retryError) {
@@ -256,6 +274,11 @@ class DispatchConsumer {
 
     this.running = false
 
+    if (this.stream) {
+      this.stream.destroy()
+      this.stream = null
+    }
+
     if (this.consumer) {
       await this.consumer.close()
     }
@@ -271,7 +294,6 @@ async function startDispatchConsumer() {
 
   try {
     await consumer.start()
-    console.log("Dispatch consumer fully operational")
   } catch (error) {
     console.error("Error starting dispatch consumer:", error)
     throw error

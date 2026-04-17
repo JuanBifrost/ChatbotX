@@ -43,6 +43,7 @@ yarn-error.log*
 .DS_Store
 *.pem
 .idea/
+.windsurf/skills
 
 .partykit
 test.rest
@@ -53,3 +54,4 @@ packages/database/src/clickhouse/.migrations.local.json
 
 # Cursor
 .cursor/skills/
+CLAUDE.md

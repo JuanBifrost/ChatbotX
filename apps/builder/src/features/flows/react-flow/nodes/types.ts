@@ -1,6 +1,11 @@
-import type { StepType } from "@chatbotx.io/flow-config"
+import type {
+  ChooseChannelStepSchema,
+  StepType,
+} from "@chatbotx.io/flow-config"
 import type { LucideIcon } from "lucide-react"
 import type { useTranslations } from "next-intl"
+import type { InboxResource } from "@/features/inboxes/schema/resource"
+import type { FlowTemplateResource } from "@/features/integration-whatsapp/message-templates/schema/resource"
 
 export type MenuItem = {
   label: string
@@ -12,3 +17,13 @@ export type MenuItem = {
 }
 
 export type TranslationFn = ReturnType<typeof useTranslations>
+
+export type FlowTemplateMenuData = {
+  waTemplates?: FlowTemplateResource[]
+}
+
+export type MenuData = {
+  inboxes: InboxResource[]
+  templates: FlowTemplateMenuData
+  beforeStep: ChooseChannelStepSchema
+}

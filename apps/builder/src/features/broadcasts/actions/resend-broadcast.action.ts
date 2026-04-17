@@ -6,7 +6,6 @@ import {
   contactsOnBroadcastsModel,
 } from "@chatbotx.io/database/schema"
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
-import { revalidateCacheTags } from "@/lib/cache-helper"
 import { ChatbotXException } from "@/lib/errors/exception"
 import { workspaceActionClient } from "@/lib/safe-action"
 
@@ -56,6 +55,8 @@ export const resendBroadcast = async (ctx: {
     const linkedContacts = await tx.query.contactsOnBroadcastsModel.findMany({
       columns: {
         contactId: true,
+        conversationId: true,
+        contactInboxId: true,
       },
       where: {
         broadcastId: broadcast.id,
@@ -66,11 +67,13 @@ export const resendBroadcast = async (ctx: {
       linkedContacts.map((contact) => ({
         broadcastId: newBroadcast.id,
         contactId: contact.contactId,
+        conversationId: contact.conversationId,
+        contactInboxId: contact.contactInboxId,
       })),
     )
 
     return newBroadcast
   })
 
-  revalidateCacheTags(`workspaces:${ctx.workspaceId}#broadcasts`)
+  return broadcast
 }

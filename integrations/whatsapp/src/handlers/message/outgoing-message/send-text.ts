@@ -1,5 +1,6 @@
 import {
   encodeButtonPayload,
+  extractMetadata,
   type SendTextStepSchema,
 } from "@chatbotx.io/flow-config"
 import type { MessageHandlers } from "@chatbotx.io/sdk"
@@ -33,6 +34,11 @@ export function* convertFlowStepText(
           flowId: props.data.flowId,
           flowVersionId: props.data.flowVersionId,
           buttonId: button.id,
+          broadcastId: extractMetadata("broadcastId", props.data.metadata),
+          sequenceStepId: extractMetadata(
+            "sequenceStepId",
+            props.data.metadata,
+          ),
         })
         return new Button(buttonId, button.label)
       })

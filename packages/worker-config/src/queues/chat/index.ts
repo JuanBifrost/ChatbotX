@@ -4,6 +4,7 @@ import type {
   MessageModel,
 } from "@chatbotx.io/database/types"
 import type {
+  MetadataPayload,
   SendAudioStepSchema,
   SendCardStepSchema,
   SendCarouselStepSchema,
@@ -40,6 +41,7 @@ export type ChatJobSendExternalMessage = {
     conversation: ConversationModel
     contactInbox: ContactInboxModel
     message: MessageModel & { clientId?: string | undefined }
+    metadata?: MetadataPayload
   }
 }
 
@@ -61,6 +63,7 @@ export type ChatJobSendFlowStep = {
       | SendQuickReplyStepSchema
       | SendWaTemplateMessageStepSchema
     trackingContext?: BotResponseTrackingContext
+    metadata?: MetadataPayload
   }
 }
 
@@ -72,6 +75,7 @@ export type ChatJobSendChatMessage = {
     text?: string
     url?: string
     trackingContext?: BotResponseTrackingContext
+    metadata?: MetadataPayload
   }
 }
 
@@ -83,6 +87,7 @@ export type ChatJobSendWhatsappTemplateMessage = {
     templateId: string
     broadcastId: string
     templateData?: WaTemplateParams
+    metadata?: MetadataPayload
   }
 }
 
@@ -93,6 +98,7 @@ export type ChatJobSendTyping = {
     contactInbox: ContactInboxModel
     typing: boolean
     seconds?: number
+    metadata?: MetadataPayload
   }
 }
 

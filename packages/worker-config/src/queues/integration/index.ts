@@ -2,7 +2,8 @@ import type {
   ContactModel,
   ConversationModel,
 } from "@chatbotx.io/database/types"
-import type { IncomingContact, OutgoingMessage } from "@chatbotx.io/sdk"
+import type { MetadataPayload } from "@chatbotx.io/flow-config"
+import type { OutgoingMessage } from "@chatbotx.io/sdk"
 import { Queue } from "bullmq"
 import {
   defaultJobOptions,
@@ -28,6 +29,7 @@ export const IntegrationJobAction = {
   unblockContact: "unblockContact",
   assignConversation: "assignConversation",
   createMessage: "createMessage",
+  referral: "referral",
 } as const
 
 export type IntegrationJobReceiveMessage = {
@@ -43,6 +45,7 @@ export type IntegrationJobMessageStatus = {
   type: typeof IntegrationJobAction.messageStatus
   data: {
     integrationType: string
+    integrationIdentifier: string
     payload: {
       messageId: string
       status: "delivered" | "failed"
@@ -60,6 +63,7 @@ export type IntegrationJobRunFlowNode = {
     flowVersionId?: string
     nodeId?: string
     trackingContext?: BotResponseTrackingContext
+    metadata?: MetadataPayload
   }
 }
 
@@ -69,6 +73,8 @@ export type IntegrationJobSendFlowPostback = {
     conversationId: string
     action: string
     ref?: string | null
+    contactInboxId: string
+    webhookType?: string
   }
 }
 
@@ -78,6 +84,8 @@ export type IntegrationJobSendFlowQuickReply = {
     conversationId: string
     action: string
     ref?: string | null
+    inboxId?: string
+    webhookType?: string
   }
 }
 
@@ -108,7 +116,17 @@ export type IntegrationJobContactMarkAsRead = {
   data: {
     integrationType: string
     integrationIdentifier: string
-    contact: IncomingContact
+    sourceConversationId: string
+    payload: unknown
+  }
+}
+
+export type IntegrationJobReferral = {
+  type: typeof IntegrationJobAction.referral
+  data: {
+    integrationType: string
+    integrationIdentifier: string
+    sourceConversationId: string
     payload: unknown
   }
 }
@@ -183,6 +201,7 @@ export type IntegrationJobData =
   | IntegrationJobAssignConversation
   | IntegrationJobCreateMessage
   | IntegrationJobProcessAutomatedResponse
+  | IntegrationJobReferral
 
 export const integrationQueue =
   process.env.NEXT_PHASE === "phase-production-build"

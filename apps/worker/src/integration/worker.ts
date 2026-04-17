@@ -18,8 +18,10 @@ import {
   runFlowPostback,
   runFlowQuickReply,
 } from "./handlers/flow"
+import { handleMessageStatus } from "./handlers/message-status"
 import { receiveMessage } from "./handlers/received-message"
 import { runRef } from "./handlers/ref"
+import { handleReferral } from "./handlers/referral"
 import { sendBroadcast } from "./handlers/send-broadcast"
 
 async function startIntegrationWorker() {
@@ -98,6 +100,10 @@ async function startIntegrationWorker() {
           await contactMarkAsRead(job.data.data)
           return
         }
+        case IntegrationJobAction.referral: {
+          await handleReferral(job.data.data)
+          return
+        }
         case IntegrationJobAction.sendBroadcast: {
           await sendBroadcast(job.data.data.broadcastId)
           return
@@ -120,6 +126,10 @@ async function startIntegrationWorker() {
         }
         case IntegrationJobAction.assignConversation: {
           // await broadcastAssignConversation(job.data.data)
+          return
+        }
+        case IntegrationJobAction.messageStatus: {
+          await handleMessageStatus(job.data.data)
           return
         }
         default:

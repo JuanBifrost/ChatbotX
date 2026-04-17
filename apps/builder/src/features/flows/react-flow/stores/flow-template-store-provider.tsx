@@ -9,37 +9,30 @@ import {
 } from "react"
 import { useStore } from "zustand"
 import {
-  createFlowActionStore,
-  type FlowActionStore,
-} from "./flow-action-store"
+  createFlowTemplateStore,
+  type FlowTemplateStore,
+} from "./flow-template-store"
 
-export type FlowActionStoreApi = ReturnType<typeof createFlowActionStore>
-
-const FlowActionContext = createContext<FlowActionStoreApi | undefined>(
+type FlowTemplateStoreApi = ReturnType<typeof createFlowTemplateStore>
+const FlowActionContext = createContext<FlowTemplateStoreApi | undefined>(
   undefined,
 )
 
-export type FlowActionProviderProps = {
+export type FlowTemplateProviderProps = {
   children: ReactNode
   workspaceId: string
-  data?: Record<string, unknown>
-  beforeStep?: { channel?: string; [key: string]: unknown }
   autoInitialize?: boolean
 }
 
-export function FlowActionProvider({
+export function FlowTemplateStoreProvider({
   children,
   workspaceId,
-  data,
-  beforeStep,
   autoInitialize = true,
-}: FlowActionProviderProps) {
-  const storeRef = useRef<FlowActionStoreApi>(null)
+}: FlowTemplateProviderProps) {
+  const storeRef = useRef<FlowTemplateStoreApi>(null)
   if (!storeRef.current) {
-    storeRef.current = createFlowActionStore({
+    storeRef.current = createFlowTemplateStore({
       workspaceId,
-      data,
-      beforeStep,
     })
   }
 
@@ -56,13 +49,13 @@ export function FlowActionProvider({
   )
 }
 
-export const useFlowAction = <T,>(
-  selector: (store: FlowActionStore) => T,
+export const useFlowTemplate = <T,>(
+  selector: (store: FlowTemplateStore) => T,
 ): T => {
   const flowActionContext = useContext(FlowActionContext)
 
   if (!flowActionContext) {
-    throw new Error("useFlowAction must be used within FlowActionProvider")
+    throw new Error("useFlowAction must be used within FlowTemplateProvider")
   }
 
   return useStore(flowActionContext, selector)

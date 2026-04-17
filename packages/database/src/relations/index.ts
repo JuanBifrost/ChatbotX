@@ -25,6 +25,8 @@ import { conversationParticipantRelations } from "./conversation-participant"
 import { customFieldRelations } from "./custom-field"
 import { errorLogRelations } from "./error-log"
 import { flowRelations } from "./flow"
+import { flowAnalyticsSessionRelations } from "./flow-analytics-session"
+import { flowNodeStatRelations } from "./flow-node-stat"
 import { flowRunRelations } from "./flow-run"
 import { flowVersionRelations } from "./flow-version"
 import { folderRelations } from "./folder"
@@ -52,7 +54,6 @@ import { reflinkRelations } from "./reflink"
 import { savedReplyRelations } from "./save-reply"
 import { sequenceRelations } from "./sequence"
 import { sequenceDispatchRelations } from "./sequence-dispatch"
-import { sequenceEventRelations } from "./sequence-event"
 import { sequenceStepRelations } from "./sequence-step"
 import { spreadsheetRelations } from "./spreadsheet"
 import { tagRelations } from "./tag"
@@ -124,7 +125,6 @@ export const relations = {
   ...sequenceRelations,
   ...sequenceStepRelations,
   ...contactsOnSequenceRelations,
-  ...sequenceEventRelations,
   ...sequenceDispatchRelations,
   ...inboxContactStatsRelations,
   ...organizationMemberRelations,
@@ -142,4 +142,6 @@ export const relations = {
   ...userRelations,
   ...integrationTelegramRelations,
   ...integrationInstagramRelations,
+  ...flowAnalyticsSessionRelations,
+  ...flowNodeStatRelations,
 }

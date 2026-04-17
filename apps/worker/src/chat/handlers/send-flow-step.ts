@@ -6,7 +6,7 @@ import {
   contactTrackingService,
   trackingResponseTypes,
 } from "@chatbotx.io/analytics"
-import { db, eq } from "@chatbotx.io/database/client"
+import { db } from "@chatbotx.io/database/client"
 import {
   channelTypes,
   contentTypes,
@@ -16,11 +16,16 @@ import {
 import { attachmentModel, messageModel } from "@chatbotx.io/database/schema"
 import type { AttachmentModel } from "@chatbotx.io/database/types"
 import { getPublicUrl } from "@chatbotx.io/database/utils"
+import { emit } from "@chatbotx.io/event-bus"
 import { uploadFileFromUrl } from "@chatbotx.io/filesystem/node-upload"
+import type { MetadataPayload } from "@chatbotx.io/flow-config"
 import {
+  appendCodeToMagicLink,
   type ButtonStepProps,
   buttonTypes,
   encodeButtonPayload,
+  extractMetadata,
+  messageEventTypeSchema,
   type SendCardStepSchema,
   stepTypes,
 } from "@chatbotx.io/flow-config"
@@ -34,6 +39,7 @@ import {
   type MessageButtonTemplate,
   type MessageCardTemplate,
   type MessageTemplateEntity,
+  parseSdkError,
   type SendFlowStepData,
 } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
@@ -46,19 +52,30 @@ import { logger } from "../../lib/logger"
 import { sendFlowStepToExternal, sendMessageToExternal } from "./send-message"
 import { processWhatsappTemplate } from "./send-whatsapp-template"
 
-const convertButtonsToTemplate = (props: {
+export const convertButtonsToTemplate = (props: {
   flowId: string
   flowVersionId?: string
   buttons: ButtonStepProps[]
+  metadata?: MetadataPayload
+  contactInboxId?: string
 }): MessageButtonTemplate[] => {
-  const { flowId, flowVersionId, buttons } = props
+  const { flowId, flowVersionId, buttons, metadata, contactInboxId } = props
   return buttons.map((button) => {
+    const buttonPayload = encodeButtonPayload({
+      flowId,
+      flowVersionId,
+      buttonId: button.id,
+      broadcastId: extractMetadata("broadcastId", metadata),
+      sequenceStepId: extractMetadata("sequenceStepId", metadata),
+      contactInboxId,
+    })
+
     if (button.buttonType === buttonTypes.enum.openWebsite) {
       return {
         id: button.id,
         label: button.label,
         buttonType: "url",
-        url: button.beforeStep.url,
+        url: appendCodeToMagicLink(button.beforeStep.url, buttonPayload),
       }
     }
 
@@ -66,11 +83,7 @@ const convertButtonsToTemplate = (props: {
       id: button.id,
       buttonType: "postback",
       label: button.label,
-      postback: encodeButtonPayload({
-        flowId,
-        flowVersionId,
-        buttonId: button.id,
-      }),
+      postback: buttonPayload,
     }
   })
 }
@@ -79,8 +92,10 @@ const convertCardsToTemplate = (props: {
   flowId: string
   flowVersionId?: string
   cards: SendCardStepSchema[]
+  metadata?: MetadataPayload
+  contactInboxId?: string
 }): MessageCardTemplate[] => {
-  const { flowId, flowVersionId, cards } = props
+  const { flowId, flowVersionId, cards, metadata, contactInboxId } = props
 
   return cards.map((card) => ({
     id: card.id,
@@ -93,6 +108,8 @@ const convertCardsToTemplate = (props: {
             flowId,
             flowVersionId,
             buttons: card.buttons,
+            metadata,
+            contactInboxId,
           })
         : undefined,
   }))
@@ -104,6 +121,7 @@ export async function sendFlowStep({
   flowVersionId,
   step,
   trackingContext,
+  metadata,
 }: ChatJobSendFlowStep["data"]) {
   const conversation = await db.query.conversationModel.findFirst({
     where: { id: conversationId },
@@ -134,13 +152,21 @@ export async function sendFlowStep({
     try {
       await processWhatsappTemplate({
         conversation,
-        templateId: step.template.id,
-        templateName: step.template.name,
-        templateLanguage: step.template.languageCode,
-        templateParams: step.template.params,
-        flowId,
-        flowVersionId,
+        contactInbox: targetContactInbox,
+        template: {
+          id: step.template.id,
+          name: step.template.name,
+          language: step.template.language,
+          params: step.template.params,
+        },
+        flow: {
+          id: flowId,
+          versionId: flowVersionId,
+          buttons: step?.buttons ?? [],
+        },
+        step,
         trackingContext,
+        metadata,
       })
     } catch (error) {
       logger.error(
@@ -150,6 +176,23 @@ export async function sendFlowStep({
     }
 
     return
+  }
+
+  const eventLogData = {
+    context: {
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      conversationId: conversation.id,
+      channel: targetContactInbox.channel,
+      contactInboxId: targetContactInbox.id,
+    },
+    action: {
+      flowId,
+      flowVersionId,
+    },
+    metadata,
+    stepId: step.id,
+    nodeId: step.nodeId,
   }
 
   try {
@@ -175,6 +218,8 @@ export async function sendFlowStep({
               flowId,
               flowVersionId,
               buttons: step.buttons,
+              metadata,
+              contactInboxId: targetContactInbox.id,
             }),
           },
         } satisfies MessageTemplateEntity
@@ -188,10 +233,22 @@ export async function sendFlowStep({
               flowId,
               flowVersionId,
               cards: step.cards,
+              metadata,
+              contactInboxId: targetContactInbox.id,
             }),
           },
         } satisfies MessageTemplateEntity
       }
+
+      messageData.contentAttributes = {
+        ...messageData.contentAttributes,
+        metadata,
+        stepId: step.id,
+        nodeId: step.nodeId,
+        flowId,
+        flowVersionId,
+      }
+
       const newMessage = await tx
         .insert(messageModel)
         .values(messageData)
@@ -249,22 +306,18 @@ export async function sendFlowStep({
           flowId,
           flowVersionId,
           step: step as SendFlowStepData,
-        }).then(async (result) => {
-          const firstMessageId = result?.messageIds?.[0]
-
-          if (firstMessageId && message && typeof message !== "string") {
-            await db
-              .update(messageModel)
-              .set({
-                sourceId: firstMessageId,
-              })
-              .where(eq(messageModel.id, message.id))
-          }
+          metadata,
+          messageId: message?.id,
         }),
       )
     }
 
     await Promise.all(promises)
+    await emit(messageEventTypeSchema.enum["message:sent"], {
+      ...eventLogData,
+      action: { messageId: "", flowId },
+      occurredAt: new Date(),
+    })
 
     // Send contact tracking event
     contactTrackingService
@@ -314,6 +367,16 @@ export async function sendFlowStep({
       `sendFlowStep error for conversationId: ${conversationId}`,
     )
 
+    await emit(messageEventTypeSchema.enum["message:failed"], {
+      ...eventLogData,
+      action: {
+        messageId: "",
+        flowId,
+      },
+      errorData: await parseSdkError(error),
+      occurredAt: new Date(),
+    })
+
     if (trackingContext) {
       await trackBotResponse({
         ...trackingContext,
@@ -344,6 +407,7 @@ export const sendChatMessage = async (
     text,
     url,
     trackingContext,
+    metadata,
   } = props
 
   const contactInbox =
@@ -376,6 +440,9 @@ export const sendChatMessage = async (
           senderType: "bot",
           sourceId: null,
           text,
+          contentAttributes: {
+            metadata,
+          },
         })
         .returning()
         .then((result) => result[0])
@@ -428,6 +495,7 @@ export const sendChatMessage = async (
           conversation,
           contactInbox,
           message,
+          metadata,
         }),
       )
     }

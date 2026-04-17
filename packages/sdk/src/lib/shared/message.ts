@@ -3,6 +3,7 @@ import { z } from "zod"
 export type IncomingContact = {
   sourceId: string
   phoneNumber?: string
+  phoneNumberId?: string
   firstName?: string
   lastName?: string
   email?: string
@@ -12,6 +13,7 @@ export type IncomingContact = {
 
 export type OutgoingContact = {
   sourceId: string
+  id: string
 }
 
 export type OutgoingMessage = {
@@ -105,7 +107,7 @@ export type MessageCardTemplate = {
 }
 
 export type MessageTemplateEntity = {
-  type: "template"
+  type: "template" | "whatsapp_template"
   payload:
     | {
         templateType: "button"
@@ -117,7 +119,7 @@ export type MessageTemplateEntity = {
       }
 }
 
-export const contentTypes = z.enum(["text", "location"])
+export const contentTypes = z.enum(["text", "location", "refLink"])
 export type ContentType = z.infer<typeof contentTypes>
 
 export const fileTypes = z.enum(["image", "audio", "video", "file"])

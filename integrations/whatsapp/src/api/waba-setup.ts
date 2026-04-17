@@ -24,14 +24,6 @@ export async function addSystemUser({
   const { version = DEFAULT_API_VERSION } = auth
 
   try {
-    console.debug("Meta API request: add system user", {
-      url: `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
-      searchParams: {
-        user: whatsappSettings.systemUserId,
-        tasks: "MANAGE",
-      },
-    })
-
     await api.post(
       `${API_URL}/${version}/${auth.metadata.wabaId}/assigned_users`,
       {
@@ -46,7 +38,9 @@ export async function addSystemUser({
     )
   } catch (error) {
     console.error("Failed to add system user", error)
-    throw new WhatsappException("Failed to add system user")
+    throw new WhatsappException("Failed to add system user").setOriginError(
+      error,
+    )
   }
 }
 
@@ -61,13 +55,6 @@ export async function shareCreditLine({
 
   try {
     const creditLineId = await retrieveCreditLineId(whatsappSettings)
-    console.debug("Meta API request: share credit line", {
-      url: `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
-      searchParams: {
-        waba_id: auth.metadata.wabaId,
-        waba_currency: "USD",
-      },
-    })
 
     await api.post(
       `${API_URL}/${version}/${creditLineId}/whatsapp_credit_sharing_and_attach`,
@@ -105,7 +92,9 @@ export async function shareCreditLine({
       }
     }
     console.error("Failed to share credit line", error)
-    throw new WhatsappException("Failed to share credit line")
+    throw new WhatsappException("Failed to share credit line").setOriginError(
+      error,
+    )
   }
 }
 
@@ -113,13 +102,6 @@ async function retrieveCreditLineId(
   whatsappSettings: WhatsappSettings,
 ): Promise<string> {
   try {
-    console.debug("Meta API request: retrieve credit line id", {
-      url: `${API_URL}/${DEFAULT_API_VERSION}/${whatsappSettings.businessId}/extendedcredits`,
-      searchParams: {
-        fields: "id,legal_entity_name",
-      },
-    })
-
     const response = await api
       .get(
         `${API_URL}/${DEFAULT_API_VERSION}/${whatsappSettings.businessId}/extendedcredits`,
@@ -145,7 +127,9 @@ async function retrieveCreditLineId(
     return creditLine.id
   } catch (error) {
     console.error("Failed to retrieve credit line ID", error)
-    throw new WhatsappException("Failed to retrieve credit line ID")
+    throw new WhatsappException(
+      "Failed to retrieve credit line ID",
+    ).setOriginError(error)
   }
 }
 
@@ -165,14 +149,6 @@ export async function registerPhoneNumber({
       }
 
       const pin = generatePin(phoneNumber.id, auth.metadata.wabaId)
-      console.debug("Meta API request: register phone number", {
-        url: `${API_URL}/${version}/${phoneNumber.id}/register`,
-        json: {
-          messaging_product: "whatsapp",
-          pin,
-        },
-      })
-
       await api.post(`${API_URL}/${version}/${phoneNumber.id}/register`, {
         json: {
           messaging_product: "whatsapp",
@@ -185,7 +161,9 @@ export async function registerPhoneNumber({
     }
   } catch (error) {
     console.error("Failed to register phone number", error)
-    throw new WhatsappException("Failed to register phone number")
+    throw new WhatsappException(
+      "Failed to register phone number",
+    ).setOriginError(error)
   }
 }
 
@@ -193,10 +171,6 @@ async function getPhoneNumbers(auth: WhatsappAuthValue) {
   const { version = DEFAULT_API_VERSION } = auth
 
   try {
-    console.debug("Meta API request: get phone numbers", {
-      url: `${API_URL}/${version}/${auth.metadata.wabaId}/phone_numbers`,
-    })
-
     const response = await api
       .get(`${API_URL}/${version}/${auth.metadata.wabaId}/phone_numbers`, {
         headers: {
@@ -213,7 +187,9 @@ async function getPhoneNumbers(auth: WhatsappAuthValue) {
     return response.data
   } catch (error) {
     console.error("Failed to get phone numbers", error)
-    throw new WhatsappException("Failed to get phone numbers")
+    throw new WhatsappException("Failed to get phone numbers").setOriginError(
+      error,
+    )
   }
 }
 
