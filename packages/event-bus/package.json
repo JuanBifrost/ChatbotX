@@ -14,5 +14,8 @@
   "devDependencies": {
     "@chatbotx.io/typescript-config": "workspace:*",
     "@types/node": "^24.10.1"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   }
 }

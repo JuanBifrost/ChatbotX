@@ -9,6 +9,6 @@ export const getRealtimeClient = (ctx: Context<AuthValue>): KyInstance => {
     headers: {
       "X-API-KEY": authSchema.apiKey,
     },
-    prefixUrl: authSchema.websocketUrl,
+    baseUrl: authSchema.websocketUrl,
   })
 }

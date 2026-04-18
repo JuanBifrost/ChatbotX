@@ -16,5 +16,8 @@
     "./ai": "./src/ai.ts",
     "./id": "./src/id.ts",
     "./zod": "./src/zod.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   }
 }

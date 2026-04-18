@@ -5,11 +5,11 @@ import { useTranslations } from "next-intl"
 import { memo, useMemo } from "react"
 import { ScanQRCodeDialog } from "@/features/qrcode/scan-qrcode"
 import { getInboxLink } from "@/features/reflinks/helpers"
-import type { InboxResource } from "../schema/resource"
+import type { ListInboxesResponse } from "../schema/action"
 import { InboxIcon } from "./inbox-icon"
 
 type InboxTelegramCardProps = {
-  inbox: InboxResource
+  inbox: ListInboxesResponse["data"][number]
 }
 
 export const InboxTelegramCard = memo(function InboxTelegramCard({

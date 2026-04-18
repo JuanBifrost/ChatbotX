@@ -32,7 +32,7 @@ export async function getUserData(
   const { ctx } = props
   // if state is present, handle logic on skip or failure
   try {
-    if (ctx.variables.conversation.challengeAttempts) {
+    if (ctx?.variables.conversation.challengeAttempts) {
       return await handleSkipOrError(props)
     }
 
@@ -61,7 +61,7 @@ async function handleSkipOrError(
   const { step, ctx } = props
   const validUserData = await validateUserData(props)
 
-  if (!ctx.variables.conversation.challengeAttempts) {
+  if (!ctx?.variables.conversation.challengeAttempts) {
     throw new IntegrationException(
       `getUserData: state is not present for conversation ${props.conversation.id}`,
     )
@@ -127,7 +127,7 @@ async function handleSkipOrError(
   await sendMessage(
     props,
     step.retryMessage ?? step.message,
-    (ctx.variables.conversation.challengeAttempts?.value as number) ?? 1 + 1,
+    (ctx?.variables.conversation.challengeAttempts?.value as number) ?? 1 + 1,
   )
 
   return { result: undefined, status: "retry" }

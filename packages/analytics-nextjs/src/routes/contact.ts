@@ -1,17 +1,15 @@
-import { contactAnalyticsService } from "@chatbotx.io/analytics"
 import {
   type ContactsByDimension,
+  contactAnalyticsService,
   getContactCountsResponseSchema,
   getContactsByDimensionStatsResponseSchema,
   getContactsCountResponseSchema,
-  timeRangeQuerySchema,
-} from "@chatbotx.io/analytics/schemas"
-import { os } from "@orpc/server"
-import z from "zod"
-import {
   getHumanAgentStatsResponseSchema,
   getMessagesByAdminStatsResponseSchema,
-} from "../../../analytics/src/schemas/contact-stats"
+  timeRangeQuerySchema,
+} from "@chatbotx.io/analytics"
+import { os } from "@orpc/server"
+import z from "zod"
 
 export const analyticsContactRoutes = os.router({
   contactCountsPerDayAnalyticsAPI: os

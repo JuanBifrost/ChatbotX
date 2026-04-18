@@ -449,7 +449,7 @@ const EditableInput = React.forwardRef<HTMLInputElement, EditableInputProps>(
       className,
       disabled,
       readOnly,
-      required,
+      required: inputRequired,
       maxLength,
       ...inputProps
     } = props
@@ -459,7 +459,7 @@ const EditableInput = React.forwardRef<HTMLInputElement, EditableInputProps>(
 
     const isDisabled = disabled || context.disabled
     const isReadOnly = readOnly || context.readOnly
-    const required = required || context.required
+    const required = inputRequired || context.required
 
     const onAutosize = React.useCallback(
       (target: InputElement) => {

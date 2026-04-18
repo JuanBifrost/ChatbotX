@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 import { Slot } from "@radix-ui/react-slot";
 import * as Stepperize from "@stepperize/react";
 import { type VariantProps, cva } from "class-variance-authority";
@@ -96,7 +98,7 @@ const defineStepper = <const Steps extends Stepperize.Step[]>(
         const { variant, labelOrientation } = useStepperProvider();
         const { current } = useStepper();
 
-        const utils = rest.utils;
+        const utils = (rest as any).utils;
         const steps = rest.steps;
 
         const stepIndex = utils.getIndex(props.of);

@@ -3,7 +3,7 @@
 import { type ChannelType, channelTypes } from "@chatbotx.io/database/partials"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { memo, useMemo } from "react"
-import type { InboxResource } from "../schema/resource"
+import type { ListInboxesResponse } from "../schema/action"
 import { InboxInstagramCard } from "./inbox-instagram-card"
 import { InboxMessengerCard } from "./inbox-messenger-card"
 import InboxNewCard from "./inbox-new-card"
@@ -17,13 +17,13 @@ type InboxCardListProps = {
   allowAddNew?: boolean
   actionLabel?: string
   direction?: "horizontal" | "vertical"
-  inboxes: InboxResource[]
+  inboxes: ListInboxesResponse["data"]
 }
 
 export const cardConfigs: Record<
   ChannelType,
   | React.ComponentType<{
-      inbox: InboxResource
+      inbox: ListInboxesResponse["data"][number]
       actionLabel?: string
       refId?: string
     }>

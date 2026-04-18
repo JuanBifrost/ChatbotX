@@ -18,8 +18,8 @@
   },
   "scripts": {
     "generate:component": "turbo gen react-component",
-    "typecheck": "tsc --noEmit --emitDeclarationOnly false",
-    "clean": "git clean -xdf .cache .turbo dist node_modules"
+    "clean": "git clean -xdf .cache .turbo dist node_modules",
+    "check-types": "tsc --noEmit --emitDeclarationOnly false"
   },
   "devDependencies": {
     "@chatbotx.io/typescript-config": "workspace:*",

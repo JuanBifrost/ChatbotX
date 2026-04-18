@@ -4,15 +4,18 @@
   "type": "module",
   "devDependencies": {
     "@chatbotx.io/typescript-config": "workspace:*",
+    "@types/node": "24.x",
     "typescript": "^5"
   },
   "dependencies": {
     "@chatbotx.io/flow-config": "workspace:*",
     "@chatbotx.io/logger": "workspace:*",
-    "@types/node": "^24.10.4",
     "zod": "^4.3.6"
   },
   "exports": {
     ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   }
 }

@@ -1,7 +1,7 @@
 import { contactTrackingService } from "@chatbotx.io/analytics"
 import { query } from "@chatbotx.io/clickhouse/client"
 import { and, db, eq, gte, lt } from "@chatbotx.io/database/client"
-import { contactModel } from "@chatbotx.io/database/schema"
+import { contactInboxModel, contactModel } from "@chatbotx.io/database/schema"
 import { logger } from "../../lib/logger"
 
 const BATCH_SIZE = 1000
@@ -51,10 +51,14 @@ export const reconcileContactEvents = async (job: {
         id: contactModel.id,
         workspaceId: contactModel.workspaceId,
         createdAt: contactModel.createdAt,
-        source: contactModel.source,
-        sourceId: contactModel.sourceId,
+        source: contactInboxModel.source,
+        sourceId: contactInboxModel.sourceId,
       })
       .from(contactModel)
+      .leftJoin(
+        contactInboxModel,
+        eq(contactInboxModel.contactId, contactModel.id),
+      )
       .where(
         and(
           eq(contactModel.workspaceId, workspaceId),
@@ -71,12 +75,12 @@ export const reconcileContactEvents = async (job: {
     }
 
     const missingContacts = contacts.filter(
-      (c) => Boolean(c.sourceId) && !existingIds.has(c.sourceId ?? ""),
+      (c) => c.sourceId && !existingIds.has(c.sourceId),
     )
 
     if (missingContacts.length > 0) {
       const events = missingContacts.map((contact) => ({
-        workspaceId: contact.workspaceId,
+        workspaceId: contact.workspaceId as string,
         contactId: contact.id,
         eventType: "contact_created" as const,
         occurredAt: contact.createdAt,

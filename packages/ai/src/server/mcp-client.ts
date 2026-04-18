@@ -6,13 +6,13 @@ import ky, { type Options } from "ky"
 import { normalizeError } from "universal-error-normalizer"
 import { aiTimeouts, helpTexts, mcpConstants } from "../constants"
 import { logger } from "../logger"
+import type { JsonObject, JsonValue } from "../schemas"
 import {
   type MCPTool,
   mcpContentArraySchema,
   mcpJsonRpcErrorResponseSchema,
   mcpJsonRpcSuccessSchema,
 } from "../schemas/mcp"
-import type { JsonObject, JsonValue } from "../utils"
 
 const mcpKy = ky.create({
   throwHttpErrors: false,

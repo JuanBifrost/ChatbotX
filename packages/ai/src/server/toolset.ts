@@ -1,7 +1,7 @@
 import type { ToolSet } from "ai"
 import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../logger"
-import type { JsonValue } from "../utils"
+import type { JsonValue } from "../schemas"
 import {
   getAIFileTools,
   getAIFunctionTools,

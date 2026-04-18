@@ -23,5 +23,8 @@
     ".": "./src/index.ts",
     "./apis/*": "./src/apis/*.ts",
     "./schema": "./src/schema.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   }
 }

@@ -1,4 +1,5 @@
 import { SdkException, UNKNOWN_ERROR } from "../exception"
+import { sdkLogger } from "../logger"
 import type { ParsedError } from "../schemas"
 
 export class MessengerSdkException extends SdkException {
@@ -12,7 +13,7 @@ export class MessengerSdkException extends SdkException {
       const error = body?.error ?? {}
 
       if (!error) {
-        console.error("MessengerSdkException: No error in response", body)
+        sdkLogger.error("MessengerSdkException: No error in response", body)
       }
 
       return {

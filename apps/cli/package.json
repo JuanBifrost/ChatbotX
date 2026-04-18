@@ -11,7 +11,8 @@
     "dev:cli": "dotenv -e .env -- tsx src/index.ts",
     "build": "tsdown",
     "start": "node ./dist/index.cjs",
-    "publish": "pnpm build && pnpm publish --access public --no-git-checks"
+    "publish": "pnpm build && pnpm publish --access public --no-git-checks",
+    "check-types": "tsc --noEmit"
   },
   "keywords": [
     "chatbotX",
@@ -30,6 +31,7 @@
   },
   "devDependencies": {
     "@chatbotx.io/typescript-config": "workspace:*",
+    "@types/node": "~24.12.2",
     "@types/yargs": "^17.0.35",
     "dotenv-cli": "^11.0.0",
     "tsdown": "0.21.9",

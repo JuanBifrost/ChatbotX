@@ -18,7 +18,8 @@
     "dev": "concurrently pnpm:worker:*",
     "https": "pnpm dev",
     "build": "tsdown",
-    "test:domains": "tsx scripts/test-domains.ts"
+    "test:domains": "tsx scripts/test-domains.ts",
+    "check-types": "tsc --noEmit"
   },
   "keywords": [],
   "license": "ISC",
@@ -81,7 +82,7 @@
     "@types/html-to-text": "^9.0.4",
     "@types/mailparser": "^3.4.6",
     "@types/mime-types": "^3.0.1",
-    "@types/node": "^24.10.1",
+    "@types/node": "24.x",
     "concurrently": "^9.2.1",
     "dotenv-cli": "^11.0.0",
     "tsdown": "0.21.9"

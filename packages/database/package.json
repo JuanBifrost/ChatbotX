@@ -23,7 +23,8 @@
     "db:studio": "dotenv -e ../../.env -- drizzle-kit studio",
     "db:seed": "dotenv -e ../../.env -- tsx src/seed/index.ts",
     "db:setup": "pnpm db:migrate && pnpm db:seed",
-    "db:check": "dotenv -e ../../.env -- drizzle-kit up"
+    "db:check": "dotenv -e ../../.env -- drizzle-kit up",
+    "check-types": "tsc --noEmit"
   },
   "exports": {
     ".": "./src/index.ts",

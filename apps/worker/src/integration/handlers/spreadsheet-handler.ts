@@ -10,6 +10,7 @@ import type {
   SpreadsheetModel,
 } from "@chatbotx.io/database/types"
 import { emitCustomFieldChanged } from "@chatbotx.io/events"
+import { getStoragePrefix } from "@chatbotx.io/filesystem"
 import type {
   EdgeSchema,
   FilterMode,
@@ -79,6 +80,10 @@ const getSheetData = async ({
   const headers = await integrationGooglesheets.actions.listSheetHeaders({
     ctx: {
       auth,
+      storagePrefix: getStoragePrefix(
+        conversation.workspaceId,
+        conversation.contactId,
+      ),
     },
     props: {
       spreadsheetId: worksheet.spreadsheetId,
@@ -88,6 +93,10 @@ const getSheetData = async ({
   const values = await integrationGooglesheets.actions.getSheetValues({
     ctx: {
       auth,
+      storagePrefix: getStoragePrefix(
+        conversation.workspaceId,
+        conversation.contactId,
+      ),
     },
     props: {
       spreadsheetId: worksheet.spreadsheetId,
@@ -196,6 +205,10 @@ export const sendSpreadsheetData = async (
     await integrationGooglesheets.actions.insertRow({
       ctx: {
         auth,
+        storagePrefix: getStoragePrefix(
+          props.conversation.workspaceId,
+          props.conversation.contactId,
+        ),
       },
       props: {
         spreadsheetId: worksheet.spreadsheetId,
@@ -251,6 +264,10 @@ export const updateSpreadsheetRow = async (
       await integrationGooglesheets.actions.updateRow({
         ctx: {
           auth,
+          storagePrefix: getStoragePrefix(
+            props.conversation.workspaceId,
+            props.conversation.contactId,
+          ),
         },
         props: {
           spreadsheetId: worksheet.spreadsheetId,
@@ -292,6 +309,10 @@ export const clearSpreadsheetRow = async (
       await integrationGooglesheets.actions.clearRow({
         ctx: {
           auth,
+          storagePrefix: getStoragePrefix(
+            props.conversation.workspaceId,
+            props.conversation.contactId,
+          ),
         },
         props: {
           spreadsheetId: worksheet.spreadsheetId,

@@ -66,14 +66,14 @@ const runMigrations = async () => {
       .map((name) => `'${escapeSqlString(name)}'`)
       .join(",")
 
-    const existingRows = await adminClickhouse
+    const existingRows = (await adminClickhouse
       .query({
         query: `SELECT name FROM system.databases WHERE name IN (${escapedInList})`,
         format: "JSONEachRow",
       })
-      .then((resultSet) => resultSet.json<{ name: string }[]>())
+      .then((resultSet) => resultSet.json())) as { name: string }[]
 
-    const existing = new Set(existingRows.map((r) => r.name))
+    const existing = new Set(existingRows.map((row) => row.name))
 
     for (const dbName of uniqueNames) {
       if (existing.has(dbName)) {

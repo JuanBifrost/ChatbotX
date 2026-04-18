@@ -27,5 +27,8 @@
     "@chatbotx.io/typescript-config": "workspace:*",
     "@types/mime-types": "^3.0.1",
     "typescript": "^5"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   }
 }

@@ -12,10 +12,8 @@ import { inboxModel } from "@chatbotx.io/database/schema"
 import type { InboxModel } from "@chatbotx.io/database/types"
 import { getPaginationWithDefaults } from "@chatbotx.io/database/utils"
 import { createId } from "@chatbotx.io/utils"
-import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
-import type { ListInboxesRequest } from "../schema/action"
-import type { InboxResource } from "../schema/resource"
+import type { ListInboxesRequest, ListInboxesResponse } from "../schema/action"
 
 export const inboxService = {
   create: async (props: {
@@ -65,7 +63,7 @@ export const inboxService = {
 
 export async function listInboxes(
   input: ListInboxesRequest,
-): Promise<PaginatedResponse<InboxResource>> {
+): Promise<ListInboxesResponse> {
   await assertCurrentUserCanAccessChatbot(input.workspaceId)
 
   const where = {

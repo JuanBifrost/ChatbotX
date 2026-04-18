@@ -7,7 +7,7 @@ import { jsonSchema, type ToolSet, tool } from "ai"
 import { normalizeError } from "universal-error-normalizer"
 import { z } from "zod"
 import { logger } from "../../logger"
-import type { JsonObject, JsonValue } from "../../utils"
+import type { JsonObject, JsonValue } from "../../schemas"
 
 const toolNamePattern = /^[a-zA-Z0-9_-]+$/
 

@@ -25,5 +25,8 @@
     ".": "./src/index.ts",
     "./api/*": "./src/api/*.ts",
     "./constants": "./src/constants.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
   }
 }

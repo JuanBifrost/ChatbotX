@@ -29,12 +29,12 @@ export type PublishInboxesRequest = z.infer<typeof publishInboxesRequest>
 export const listInboxesResponse = z.object({
   data: z.array(
     inboxResource.extend({
-      integrationWhatsapp: integrationWhatsappResource.optional(),
-      integrationWebchat: integrationWebchatResource.optional(),
-      integrationMessenger: integrationMessengerResource.optional(),
-      integrationZalo: integrationZaloResource.optional(),
-      integrationTelegram: integrationTelegramResource.optional(),
-      integrationInstagram: integrationInstagramResource.optional(),
+      integrationWhatsapp: integrationWhatsappResource.nullish(),
+      integrationWebchat: integrationWebchatResource.nullish(),
+      integrationMessenger: integrationMessengerResource.nullish(),
+      integrationZalo: integrationZaloResource.nullish(),
+      integrationTelegram: integrationTelegramResource.nullish(),
+      integrationInstagram: integrationInstagramResource.nullish(),
     }),
   ),
   pageCount: z.number(),

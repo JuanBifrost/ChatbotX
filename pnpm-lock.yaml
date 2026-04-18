@@ -411,6 +411,9 @@ importers:
       '@chatbotx.io/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
+      '@types/node':
+        specifier: 24.x
+        version: 24.12.2
       '@types/yargs':
         specifier: ^17.0.35
         version: 17.0.35
@@ -466,9 +469,6 @@ importers:
       '@t3-oss/env-nextjs':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.3.6)
-      '@types/node':
-        specifier: 24.x
-        version: 24.12.2
       ky:
         specifier: ^2.0.1
         version: 2.0.1
@@ -482,6 +482,9 @@ importers:
       '@chatbotx.io/typescript-config':
         specifier: workspace:*
         version: link:../../packages/typescript-config
+      '@types/node':
+        specifier: 24.x
+        version: 24.12.2
       dotenv-cli:
         specifier: ^11.0.0
         version: 11.0.0
@@ -1374,6 +1377,9 @@ importers:
       '@chatbotx.io/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/node':
+        specifier: 24.x
+        version: 24.12.2
       typescript:
         specifier: ^5
         version: 5.9.3
@@ -1471,6 +1477,9 @@ importers:
       '@chatbotx.io/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/node':
+        specifier: 24.x
+        version: 24.12.2
       openapi-typescript:
         specifier: ^7.13.0
         version: 7.13.0(typescript@5.9.3)
@@ -1533,9 +1542,6 @@ importers:
       '@chatbotx.io/logger':
         specifier: workspace:*
         version: link:../logger
-      '@types/node':
-        specifier: 24.x
-        version: 24.12.2
       zod:
         specifier: ^4.3.6
         version: 4.3.6
@@ -1543,6 +1549,9 @@ importers:
       '@chatbotx.io/typescript-config':
         specifier: workspace:*
         version: link:../typescript-config
+      '@types/node':
+        specifier: 24.x
+        version: 24.12.2
       typescript:
         specifier: ^5
         version: 5.9.3

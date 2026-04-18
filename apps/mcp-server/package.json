@@ -8,7 +8,8 @@
     "build": "tsdown",
     "start": "node dist/index.mjs",
     "dev:mcp": "dotenv -e .env -- tsx --watch src/index.ts",
-    "test": "dotenv -e .env -- tsx src/test-tools.ts"
+    "test": "dotenv -e .env -- tsx src/test-tools.ts",
+    "check-types": "tsc --noEmit"
   },
   "keywords": [],
   "license": "ISC",
@@ -22,7 +23,7 @@
   },
   "devDependencies": {
     "@chatbotx.io/typescript-config": "workspace:*",
-    "@types/node": "^25.4.0",
+    "@types/node": "24.x",
     "dotenv-cli": "^11.0.0",
     "tsdown": "0.21.9",
     "typescript": "^5"

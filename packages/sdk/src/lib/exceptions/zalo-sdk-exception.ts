@@ -1,4 +1,5 @@
 import { SdkException, UNKNOWN_ERROR } from "../exception"
+import { sdkLogger } from "../logger"
 import type { ParsedError } from "../schemas"
 
 export class ZaloSdkException extends SdkException {
@@ -12,7 +13,7 @@ export class ZaloSdkException extends SdkException {
       const error = body?.error || {}
 
       if (!error) {
-        console.error("ZaloSdkException: No error in response", body)
+        sdkLogger.error("ZaloSdkException: No error in response", body)
       }
 
       return {

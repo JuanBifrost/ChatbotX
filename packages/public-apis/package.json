@@ -4,6 +4,7 @@
   "type": "module",
   "devDependencies": {
     "@chatbotx.io/typescript-config": "workspace:*",
+    "@types/node": "~24.12.2",
     "openapi-typescript": "^7.13.0",
     "typescript": "^5"
   },
@@ -15,6 +16,7 @@
     ".": "./src/index.ts"
   },
   "scripts": {
-    "generate:chatbotx": "openapi-typescript ${DOMAIN:-https://cloud.chatbotx.io}/api/public-spec.json --output src/generated/chatbotx.ts"
+    "generate:chatbotx": "openapi-typescript ${DOMAIN:-https://cloud.chatbotx.io}/api/public-spec.json --output src/generated/chatbotx.ts",
+    "check-types": "tsc --noEmit"
   }
 }
