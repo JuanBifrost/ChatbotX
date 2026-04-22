@@ -22,7 +22,7 @@ env:
 
 jobs:
   prepare-metadata:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     permissions:
       contents: read
       packages: write
@@ -51,7 +51,7 @@ jobs:
 
   build-image:
     name: Build ${{ matrix.label }}
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs: prepare-metadata
     strategy:
       fail-fast: false
@@ -131,7 +131,7 @@ jobs:
           platforms: ${{ env.BUILD_PLATFORMS }}
 
   output-image-urls:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     needs:
       - prepare-metadata
       - build-image
