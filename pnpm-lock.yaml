@@ -538,6 +538,9 @@ importers:
       '@chatbotx.io/integration-google-sheets':
         specifier: workspace:*
         version: link:../../integrations/google-sheets
+      '@chatbotx.io/integration-instagram':
+        specifier: workspace:*
+        version: link:../../integrations/instagram
       '@chatbotx.io/integration-messenger':
         specifier: workspace:*
         version: link:../../integrations/messenger
