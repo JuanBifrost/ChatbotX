@@ -1,48 +1,37 @@
-import type { Readable } from "node:stream"
+import { and, db, eq } from "@chatbotx.io/database/client"
+import { sequenceDispatchModel } from "@chatbotx.io/database/schema"
 import { SEQUENCE_SCHEDULE_PAYLOAD_TYPE } from "@chatbotx.io/flow-config"
-import {
-  type Consumer,
-  createConsumer,
-  ensureTopicExists,
-} from "@chatbotx.io/kafka"
 import { sequenceConnections } from "@chatbotx.io/redis"
 import { SchedulerClient } from "@chatbotx.io/scheduler"
+import { advanceEnrollment } from "@chatbotx.io/sequence-scheduler"
+import {
+  IntegrationJobAction,
+  integrationQueue,
+  type MessagingConsumer,
+  SEQUENCE_SCHEDULER_QUEUE_NAME,
+} from "@chatbotx.io/worker-config"
+import { createConsumer } from "@chatbotx.io/worker-config/message-queue/factory"
 import pLimit, { type LimitFunction } from "p-limit"
 import { logger } from "../lib/logger"
-import {
-  CONSUMER_CLIENT_ID,
-  CONSUMER_GROUP_ID,
-  HEARTBEAT_INTERVAL_IN_MS,
-  KAFKA_PARTITIONS,
-  KAFKA_REPLICATION_FACTOR,
-  KAFKA_TOPIC,
-  MAX_PROCESS,
-  MAX_RETRIES,
-  MAX_WAIT_TIME_IN_MS,
-  SESSION_TIMEOUT_IN_MS,
-} from "./services/constants"
+import { MAX_PROCESS } from "./services/constants"
 import { DispatchProcessorService } from "./services/dispatch-processor.service"
-import { EnrollmentAdvancerService } from "./services/enrollment-advancer.service"
 import { RetrySchedulerService } from "./services/retry-scheduler.service"
 import { StepExecutorService } from "./services/step-executor.service"
-import type {
-  ConsumerConfig,
-  DispatchMessage,
-  DispatchWithRelations,
-  StepWithRelations,
-} from "./services/types"
+import type { DispatchMessage, DispatchWithRelations } from "./services/types"
+
+interface ConsumerOptions {
+  maxProcess: number
+}
 
 class DispatchConsumer {
   private running = false
-  private consumer: Consumer<string, string, string, string> | null = null
-  private stream: Readable | null = null
+  private consumer: MessagingConsumer | null = null
   private _scheduler: SchedulerClient | null = null
-  private readonly config: ConsumerConfig
+  private readonly options: ConsumerOptions
   private readonly limitProcess: LimitFunction
 
   private readonly dispatchProcessor: DispatchProcessorService
   private readonly stepExecutor: StepExecutorService
-  private readonly enrollmentAdvancer: EnrollmentAdvancerService
   private readonly retryScheduler: RetrySchedulerService
 
   private get scheduler(): SchedulerClient {
@@ -52,20 +41,15 @@ class DispatchConsumer {
     return this._scheduler
   }
 
-  constructor(config: Partial<ConsumerConfig> = {}) {
-    this.config = {
-      groupId: config.groupId || CONSUMER_GROUP_ID,
-      maxWaitTimeInMs: config.maxWaitTimeInMs || MAX_WAIT_TIME_IN_MS,
-      sessionTimeout: config.sessionTimeout || SESSION_TIMEOUT_IN_MS,
-      heartbeatInterval: config.heartbeatInterval || HEARTBEAT_INTERVAL_IN_MS,
-      maxProcess: config.maxProcess || MAX_PROCESS,
+  constructor(options: Partial<ConsumerOptions> = {}) {
+    this.options = {
+      maxProcess: options.maxProcess || MAX_PROCESS,
     }
 
-    this.limitProcess = pLimit(this.config.maxProcess)
+    this.limitProcess = pLimit(this.options.maxProcess)
 
     this.dispatchProcessor = new DispatchProcessorService()
     this.stepExecutor = new StepExecutorService()
-    this.enrollmentAdvancer = new EnrollmentAdvancerService()
     this.retryScheduler = new RetrySchedulerService()
   }
 
@@ -77,40 +61,27 @@ class DispatchConsumer {
     const redisClient = await sequenceConnections.useExisting()
     this._scheduler = new SchedulerClient(redisClient)
 
-    this.consumer = createConsumer(CONSUMER_CLIENT_ID, this.config.groupId)
-
-    await ensureTopicExists(
-      CONSUMER_CLIENT_ID,
-      KAFKA_TOPIC,
-      KAFKA_PARTITIONS,
-      KAFKA_REPLICATION_FACTOR,
-    )
-
-    this.stream = await this.consumer.consume({
-      topics: [KAFKA_TOPIC],
-      autocommit: true,
-      sessionTimeout: this.config.sessionTimeout,
-      heartbeatInterval: this.config.heartbeatInterval,
+    this.consumer = await createConsumer({
+      topic: SEQUENCE_SCHEDULER_QUEUE_NAME,
+      clientId: "sequence-dispatch-consumer",
+      groupId: "sequence-dispatch-consumer",
     })
-    const stream = this.stream
 
     this.running = true
     console.log("Dispatch consumer fully operational")
 
-    for await (const message of stream) {
+    await this.consumer.consume(async (value: string) => {
       if (!this.running) {
-        break
+        return
       }
 
       try {
-        const payload = JSON.parse(message.value || "{}")
+        const payload = JSON.parse(value || "{}")
         await this.limitProcess(() => this.processDispatch(payload))
       } catch (error) {
-        logger.error({ error, message }, "Error processing dispatch message")
+        logger.error({ error, value }, "Error processing dispatch message")
       }
-    }
-
-    this.stream = null
+    })
   }
 
   private async processDispatch(payload: DispatchMessage) {
@@ -169,102 +140,80 @@ class DispatchConsumer {
           dispatch.workspaceId,
           validation.reason,
         )
+
+        if (step) {
+          await advanceEnrollment({
+            enrollmentId: dispatch.enrollmentId,
+            workspaceId: dispatch.workspaceId,
+            sequenceId: dispatch.sequenceId,
+            contactId: dispatch.contactId,
+            currentStep: { id: step.id, order: step.order },
+            sentAt: new Date(),
+            scheduler: this.scheduler,
+          })
+        }
+
+        await this.scheduler.removeFromSchedule(dispatch.bucket, dispatch.id)
         return
       }
-      const sentAt = await this.stepExecutor.sendFlowMessage(
-        dispatch,
-        step as StepWithRelations,
+
+      await integrationQueue.add(
+        IntegrationJobAction.sendSequenceFlow,
         {
-          metadata: {
-            type: SEQUENCE_SCHEDULE_PAYLOAD_TYPE,
-            sequenceStepId: step?.id ?? "",
-            sequenceId: step?.sequenceId ?? "",
+          type: IntegrationJobAction.sendSequenceFlow,
+          data: {
             dispatchId: dispatch.id,
+            workspaceId: dispatch.workspaceId,
+            stepId: dispatch.stepId,
+            contactId: dispatch.contactId,
             contactInboxId: dispatch.contactInboxId,
+            enrollmentId: dispatch.enrollmentId,
+            sequenceId: dispatch.sequenceId,
+            bucket: dispatch.bucket,
+            metadata: {
+              type: SEQUENCE_SCHEDULE_PAYLOAD_TYPE,
+              sequenceStepId: step?.id ?? "",
+              sequenceId: step?.sequenceId ?? "",
+              dispatchId: dispatch.id,
+              contactInboxId: dispatch.contactInboxId,
+            },
           },
         },
+        {
+          jobId: `seq-${dispatch.id}-${dispatch.attempt}`,
+          attempts: 3,
+          backoff: { type: "exponential", delay: 5000 },
+          removeOnComplete: true,
+        },
       )
-
-      await this.stepExecutor.markDispatchCompleted(
-        dispatch.id,
-        dispatch.workspaceId,
-        sentAt,
-      )
-
-      await this.advanceEnrollment(dispatch, step as StepWithRelations, sentAt)
     } catch (error) {
       logger.error(
-        { error, dispatchId: dispatch.id, attempt: dispatch.attempt },
-        "Error executing step",
+        { error, dispatchId: dispatch.id },
+        "Failed to enqueue sendSequenceFlow; reverting dispatch",
       )
 
-      try {
-        if (dispatch.attempt < MAX_RETRIES) {
-          await this.retryScheduler.scheduleRetry(
-            dispatch,
-            error,
-            this.scheduler,
-          )
-        } else {
-          await this.retryScheduler.markDispatchFailed(
-            dispatch.id,
-            dispatch.workspaceId,
-            error instanceof Error ? error.message : "Unknown error",
-          )
-        }
-      } catch (retryError) {
-        logger.error(
-          { retryError, dispatchId: dispatch.id },
-          "Failed to handle dispatch error",
-        )
-      }
+      await this.revertDispatchToPending(dispatch.id, dispatch.workspaceId)
     }
   }
 
-  private async advanceEnrollment(
-    dispatch: DispatchWithRelations,
-    step: StepWithRelations,
-    sentAt: Date,
+  private async revertDispatchToPending(
+    dispatchId: string,
+    workspaceId: string,
   ) {
-    const enrollment = await this.enrollmentAdvancer.fetchEnrollment(
-      dispatch.enrollmentId,
-      dispatch.workspaceId,
-    )
-
-    if (!enrollment) {
-      throw new Error(`Enrollment ${dispatch.enrollmentId} not found`)
-    }
-
-    if (enrollment.status !== "active") {
-      return
-    }
-
-    if (enrollment.lastStepId === step.id) {
-      return
-    }
-
-    const nextStep = await this.enrollmentAdvancer.findNextStep(
-      dispatch.sequenceId,
-      step.order,
-    )
-
-    if (!nextStep) {
-      await this.enrollmentAdvancer.completeEnrollment(
-        dispatch.enrollmentId,
-        dispatch.workspaceId,
-        step,
-        sentAt,
+    await db
+      .update(sequenceDispatchModel)
+      .set({
+        status: "pending",
+        lockedAt: null,
+        lockOwner: null,
+        updatedAt: new Date(),
+      })
+      .where(
+        and(
+          eq(sequenceDispatchModel.id, dispatchId),
+          eq(sequenceDispatchModel.workspaceId, workspaceId),
+        ),
       )
-      return
-    }
-
-    await this.enrollmentAdvancer.advanceToNextStep(
-      dispatch,
-      step,
-      nextStep,
-      sentAt,
-      this.scheduler,
-    )
   }
 
   async stop() {
@@ -274,13 +223,9 @@ class DispatchConsumer {
 
     this.running = false
 
-    if (this.stream) {
-      this.stream.destroy()
-      this.stream = null
-    }
-
     if (this.consumer) {
       await this.consumer.close()
+      this.consumer = null
     }
   }
 }
