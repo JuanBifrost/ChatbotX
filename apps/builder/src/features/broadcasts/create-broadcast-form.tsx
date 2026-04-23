@@ -39,6 +39,7 @@ import { createBroadcastAction } from "@/features/broadcasts/actions/create-broa
 import { createBroadcastRequest } from "@/features/broadcasts/schemas/action"
 import { useWorkspaceId } from "@/hooks/routing"
 import { ContactFilter } from "../contacts/components/contact-filter"
+import { useContactStore } from "../contacts/provider/contact-store-context"
 import { useFlowStore } from "../flows/provider/flow-store-context"
 import { InboxIcon } from "../inboxes/components/inbox-icon"
 import { TemplateParamsForm } from "../integration-whatsapp/message-templates/components/template-params-form"
@@ -216,9 +217,12 @@ export function CreateBroadcastForm({ workspaceId }: CreateBroadcastFormProps) {
   ])
 
   return (
-    <div className="flex h-svh flex-col items-center justify-center">
+    <div className="flex flex-col items-center overflow-y-auto px-10 py-10">
       <Form {...form}>
-        <form className="flex-1 space-y-4" onSubmit={handleSubmitWithAction}>
+        <form
+          className="mx-auto mt-10 mb-10 w-full max-w-2xl flex-1 space-y-4"
+          onSubmit={handleSubmitWithAction}
+        >
           {!watchedChannel && <CreateBroadcastChooseChannel />}
 
           {watchedChannel && !watchedSubAction && (
@@ -267,7 +271,7 @@ function CreateBroadcastChooseChannel() {
   }, [router, workspaceId])
 
   return (
-    <Card className="mt-10 w-lg">
+    <Card>
       <CardHeader>
         <CardTitle className="text-xl">{t("actions.chooseChannel")}</CardTitle>
       </CardHeader>
@@ -321,7 +325,7 @@ function CreateBroadcastChooseSubaction({ channel }: { channel: ChannelType }) {
   }, [setValue])
 
   return (
-    <Card className="mt-10 w-xl">
+    <Card>
       <CardHeader>
         <CardTitle className="text-xl">
           {t("actions.chooseSubaction")}
@@ -458,6 +462,7 @@ type CreateBroadcastChooseFlowProps = {
 function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   const t = useTranslations()
   const router = useRouter()
+  const { count, getContactsCount } = useContactStore((state) => state)
 
   const workspaceId = useWorkspaceId()
 
@@ -495,6 +500,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
     name: "integrationWhatsappId",
   })
   const watchedTemplateId = useWatch({ control, name: "templateId" })
+  const watchedContactFilter = useWatch({ control, name: "contactFilter" })
   const watchedTemplateData = useWatch({ control, name: "templateData" }) as
     | WaTemplateParams
     | undefined
@@ -551,6 +557,11 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
     }
   }, [watchedIntegrationWhatsappId, setIntegrationWhatsappId])
 
+  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch on filter change
+  useEffect(() => {
+    getContactsCount()
+  }, [watchedContactFilter, getContactsCount])
+
   useEffect(() => {
     if (watchedTemplateId && templates.length > 0) {
       const template = templates.find((t) => t.id === watchedTemplateId) as
@@ -570,133 +581,146 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   }, [watchedTemplateId, templates, setValue])
 
   return (
-    <Card className="mt-10 w-xl max-w-3xl">
-      <CardHeader>
-        <CardTitle className="text-xl">{t("broadcasts.details")}</CardTitle>
-      </CardHeader>
+    <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
+      <Card>
+        <CardContent className="flex px-3">
+          <div className="flex flex-1 flex-col gap-2">
+            <InboxIcon channel={props.channel} label={subactionInfo.name} />
+            {subactionInfo.description && (
+              <span className="text-gray-500 text-sm">
+                {subactionInfo.description}
+              </span>
+            )}
+          </div>
 
-      <CardContent className="flex flex-col gap-6">
-        <Card className="flex gap-2 py-3">
-          <CardContent className="flex px-3">
-            <div className="flex flex-1 flex-col gap-2">
-              <InboxIcon channel={props.channel} label={subactionInfo.name} />
-              {subactionInfo.description && (
-                <span className="text-gray-500 text-sm">
-                  {subactionInfo.description}
-                </span>
-              )}
-            </div>
+          <Button
+            className="rounded-full"
+            onClick={handleRemoveInbox}
+            size="icon"
+            type="button"
+            variant="ghost"
+          >
+            <XIcon />
+          </Button>
+        </CardContent>
+      </Card>
 
-            <Button
-              className="rounded-full"
-              onClick={handleRemoveInbox}
-              size="icon"
-              type="button"
-              variant="ghost"
-            >
-              <XIcon />
-            </Button>
-          </CardContent>
-        </Card>
+      <Card>
+        <CardContent className="flex flex-col gap-6">
+          <BroadcastFlowTypeSelector subaction={props.subaction} />
 
-        <BroadcastFlowTypeSelector subaction={props.subaction} />
+          {props.subaction ===
+            broadcastSubactions.enum.whatsappTemplateMessage && (
+            <>
+              <ComboboxField
+                key="integrationWhatsappId"
+                label={t("fields.whatsappChannel.label")}
+                name="integrationWhatsappId"
+                options={integrations.map((integration) => ({
+                  label: integration.name,
+                  value: integration.id,
+                }))}
+                required={true}
+              />
 
-        {props.subaction ===
-          broadcastSubactions.enum.whatsappTemplateMessage && (
-          <>
-            <ComboboxField
-              key="integrationWhatsappId"
-              label={t("fields.whatsappChannel.label")}
-              name="integrationWhatsappId"
-              options={integrations.map((integration) => ({
-                label: integration.name,
-                value: integration.id,
-              }))}
-              required={true}
-            />
+              {watchedTemplateType === broadcastFlowTypes.enum.template && (
+                <>
+                  <ComboboxField
+                    key="templateId"
+                    label={t("fields.templateId.label")}
+                    name="templateId"
+                    options={templates.map((template) => ({
+                      label: `${template.name} (${template.language})`,
+                      value: template.id,
+                    }))}
+                    required={true}
+                  />
 
-            {watchedTemplateType === broadcastFlowTypes.enum.template && (
-              <>
-                <ComboboxField
-                  key="templateId"
-                  label={t("fields.templateId.label")}
-                  name="templateId"
-                  options={templates.map((template) => ({
-                    label: `${template.name} (${template.language})`,
-                    value: template.id,
-                  }))}
-                  required={true}
-                />
-
-                {selectedTemplate && (
-                  <div className="space-y-4">
-                    <TemplateParamsForm
-                      components={
-                        selectedTemplate.components as TemplateComponent[]
-                      }
-                      parentName="templateData"
-                    />
-                    <div>
-                      <div className="mb-2 font-medium text-xs">
-                        {t("flows.fields.preview")}
-                      </div>
-                      <TemplatePreview
-                        bodyParams={watchedTemplateData?.body || []}
-                        buttonParams={watchedTemplateData?.button || []}
+                  {selectedTemplate && (
+                    <div className="space-y-4">
+                      <TemplateParamsForm
                         components={
                           selectedTemplate.components as TemplateComponent[]
                         }
-                        headerParams={watchedTemplateData?.header || []}
+                        parentName="templateData"
                       />
+                      <div>
+                        <div className="mb-2 font-medium text-xs">
+                          {t("flows.fields.preview")}
+                        </div>
+                        <TemplatePreview
+                          bodyParams={watchedTemplateData?.body || []}
+                          buttonParams={watchedTemplateData?.button || []}
+                          components={
+                            selectedTemplate.components as TemplateComponent[]
+                          }
+                          headerParams={watchedTemplateData?.header || []}
+                        />
+                      </div>
                     </div>
-                  </div>
-                )}
-              </>
-            )}
-          </>
-        )}
+                  )}
+                </>
+              )}
+            </>
+          )}
 
-        {(!watchedTemplateType ||
-          watchedTemplateType !== broadcastFlowTypes.enum.template) && (
-          <ComboboxField
-            key="flowId"
-            label={t("fields.flowId.label")}
-            name="flowId"
-            options={flows.map((flow) => ({
-              label: flow.name,
-              value: flow.id,
-            }))}
-            required={true}
-          />
-        )}
+          {(!watchedTemplateType ||
+            watchedTemplateType !== broadcastFlowTypes.enum.template) && (
+            <ComboboxField
+              key="flowId"
+              label={t("fields.flowId.label")}
+              name="flowId"
+              options={flows.map((flow) => ({
+                label: flow.name,
+                value: flow.id,
+              }))}
+              required={true}
+            />
+          )}
+        </CardContent>
+      </Card>
 
-        <SelectField
-          defaultValue="now"
-          label={t("fields.schedule.label")}
-          name="schedulesType"
-          options={schedulesOptions}
-          required
-          triggerValueChange={(value) =>
-            handleScheduleTypeChange(value as BroadcastScheduleType)
-          }
-        />
-
-        {watchedSchedulesType === "future" && (
-          <DateTimePickerField
-            disabled={{
-              before: new Date(),
-            }}
-            displayFormat={{ hour24: "yyyy-MM-dd HH:mm" }}
-            granularity="minute"
-            label={t("fields.chooseTime.label")}
-            name="schedulesAt"
+      <Card>
+        <CardContent className="flex flex-col gap-6">
+          <SelectField
+            defaultValue="now"
+            label={t("fields.schedule.label")}
+            name="schedulesType"
+            options={schedulesOptions}
             required
-            value={defaultDateTime}
+            triggerValueChange={(value) =>
+              handleScheduleTypeChange(value as BroadcastScheduleType)
+            }
           />
-        )}
 
-        <ContactFilter parentName="contactFilter" />
+          {watchedSchedulesType === "future" && (
+            <DateTimePickerField
+              disabled={{
+                before: new Date(),
+              }}
+              displayFormat={{ hour24: "yyyy-MM-dd HH:mm" }}
+              granularity="minute"
+              label={t("fields.chooseTime.label")}
+              name="schedulesAt"
+              required
+              value={defaultDateTime}
+            />
+          )}
+        </CardContent>
+      </Card>
 
+      <Card>
+        <CardContent className="flex flex-col gap-6">
+          <ContactFilter parentName="contactFilter" />
+        </CardContent>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <div className="flex-1 text-gray-500 text-sm">
+          {t("broadcasts.receiversCount", {
+            count: count || 0,
+          })}
+        </div>
         <div className="flex justify-end gap-2">
           <Button onClick={handleCancel} type="button" variant="outline">
             {t("actions.cancel")}
@@ -710,7 +734,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
             {t("actions.confirm")}
           </Button>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

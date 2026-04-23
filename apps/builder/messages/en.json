@@ -255,7 +255,7 @@
       "title": "All Contacts",
       "description": "Send a flow to all contacts."
     },
-    "details": "Broadcast Details",
+    "receiversCount": "Receivers: {count}",
     "whatsappTemplateMessage": {
       "title": "Template Message",
       "description": "Send WhatsApp template message to your contacts"

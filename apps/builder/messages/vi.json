@@ -255,7 +255,7 @@
       "title": "Tất cả liên hệ",
       "description": "Gửi luồng đến tất cả liên hệ."
     },
-    "details": "Chi tiết phát sóng",
+    "receiversCount": "Người nhận: {count}",
     "whatsappTemplateMessage": {
       "title": "Tin nhắn mẫu WhatsApp",
       "description": "Gửi tin nhắn mẫu WhatsApp đến các liên hệ của bạn"
