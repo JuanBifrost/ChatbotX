@@ -24,7 +24,8 @@ export const webhookHandler = async (
 
   if (props.req.method === "GET") {
     const url = new URL(props.req.url)
-    return await middleware.get(url.searchParams as unknown as GetParams)
+    const params = Object.fromEntries(url.searchParams.entries()) as GetParams
+    return await middleware.get(params)
   }
 
   if (props.req.method === "POST") {
