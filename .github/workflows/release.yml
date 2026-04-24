@@ -2,10 +2,10 @@ name: Build and Push Docker Images
 
 on:
   push:
-    branches: [main]
-    tags: ["v*"]
+    branches: [ main ]
+    tags: [ "v*" ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
   workflow_dispatch:
     inputs:
       environment:
@@ -99,8 +99,8 @@ jobs:
           tags: |
             ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE_PREFIX }}/${{ matrix.image }}:main
           labels: ${{ needs.prepare-metadata.outputs.labels }}
-          cache-from: ${{ runner.environment == 'self-hosted' && format('type=local,src=/var/lib/buildx-cache/{0}', matrix.label) || 'type=gha' }}
-          cache-to: ${{ runner.environment == 'self-hosted' && format('type=local,dest=/var/lib/buildx-cache/{0},mode=max', matrix.label) || 'type=gha,mode=max' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: ${{ env.BUILD_PLATFORMS }}
 
       - name: Build and push version image
@@ -114,8 +114,8 @@ jobs:
             ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE_PREFIX }}/${{ matrix.image }}:${{ needs.prepare-metadata.outputs.version }}
             ${{ vars.DOCKER_REGISTRY }}/${{ vars.DOCKER_IMAGE_PREFIX }}/${{ matrix.image }}:latest
           labels: ${{ needs.prepare-metadata.outputs.labels }}
-          cache-from: ${{ runner.environment == 'self-hosted' && format('type=local,src=/var/lib/buildx-cache/{0}', matrix.label) || 'type=gha' }}
-          cache-to: ${{ runner.environment == 'self-hosted' && format('type=local,dest=/var/lib/buildx-cache/{0},mode=max', matrix.label) || 'type=gha,mode=max' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: ${{ env.BUILD_PLATFORMS }}
 
       - name: Build image for pull request
@@ -126,8 +126,8 @@ jobs:
           file: ${{ matrix.dockerfile }}
           push: false
           labels: ${{ needs.prepare-metadata.outputs.labels }}
-          cache-from: ${{ runner.environment == 'self-hosted' && format('type=local,src=/var/lib/buildx-cache/{0}', matrix.label) || 'type=gha' }}
-          cache-to: ${{ runner.environment == 'self-hosted' && format('type=local,dest=/var/lib/buildx-cache/{0},mode=max', matrix.label) || 'type=gha,mode=max' }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           platforms: ${{ env.BUILD_PLATFORMS }}
 
   output-image-urls:
