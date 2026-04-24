@@ -11,8 +11,10 @@ import {
 } from "@chatbotx.io/ui/components/ui/table"
 import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
+import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { use } from "react"
+import { use, useEffect } from "react"
+import { toast } from "sonner"
 import { ZaloDisconnect } from "./components/zalo-disconnect"
 import type { listIntegrationZalo } from "./queries"
 
@@ -29,6 +31,14 @@ export function ZaloManage({
 }: ZaloManageProps) {
   const [{ data: integrationZalos }] = use(promises)
   const t = useTranslations()
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    if (searchParams.get("error") !== "duplicated") {
+      return
+    }
+    toast.error(t("zalo.duplicated"))
+  }, [searchParams, t])
 
   if (!isEnabled) {
     return (
@@ -43,7 +53,7 @@ export function ZaloManage({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex justify-end gap-2">
-        <Button size="sm" variant="secondary">
+        <Button asChild size="sm" variant="secondary">
           <Link
             className="flex items-center gap-2"
             href={`/channels/create?channel=zalo&workspaceId=${workspaceId}`}
@@ -76,7 +86,7 @@ export function ZaloManage({
             ))}
             {integrationZalos.length === 0 && (
               <TableRow>
-                <TableCell colSpan={2}>No data</TableCell>
+                <TableCell colSpan={2}>{t("messages.noData")}</TableCell>
               </TableRow>
             )}
           </TableBody>

@@ -4,7 +4,11 @@ import {
   integrationGoogleSheetsModel,
   integrationModel,
 } from "@chatbotx.io/database/schema"
-import type { AuthValue, Oauth2AuthValue } from "@chatbotx.io/sdk"
+import {
+  type AuthValue,
+  getPublicHostFromRequest,
+  type Oauth2AuthValue,
+} from "@chatbotx.io/sdk"
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { notFound, redirect } from "next/navigation"
 import type { NextRequest } from "next/server"
@@ -13,10 +17,11 @@ import { connectZaloHandler } from "@/features/integration-zalo/actions/connect-
 import { organizationService } from "@/features/organization/organization-service"
 import { workspaceService } from "@/features/workspaces/workspace-service"
 import { type IntegrationKey, integrations } from "@/integration"
+import { getCurrentUserId } from "@/lib/auth/utils"
 import { logger } from "@/lib/log"
 
 const stateValidationSchema = z.object({
-  workspaceId: zodBigintAsString(),
+  workspaceId: zodBigintAsString().optional(),
   referer: z.url(),
 })
 
@@ -46,12 +51,26 @@ export const handleCallback = async (
     return notFound()
   }
 
-  // find workspace and organization config
-  const workspace = await workspaceService.findById(stateParams.workspaceId)
-  const organization = await organizationService.findById(
-    workspace.organizationId,
-  )
+  // find organization from domain and current user
+  const domain = await getPublicHostFromRequest(req)
+  const organization = await organizationService.findByDomain(domain)
   const organizationSettings = organization.settings
+
+  const userId = await getCurrentUserId()
+  if (!userId) {
+    return notFound()
+  }
+
+  const workspace = stateParams.workspaceId
+    ? await workspaceService.findById(stateParams.workspaceId)
+    : await workspaceService.create({
+        data: {
+          organizationId: organization.id,
+          name: "New Workspace",
+        },
+        organization,
+        createdBy: userId,
+      })
 
   let authResult: AuthValue
   let googleSheetsAuth: Oauth2AuthValue | null = null
@@ -63,7 +82,7 @@ export const handleCallback = async (
 
       await connectZaloHandler({
         zaloSettings: organizationSettings.zalo,
-        workspaceId: stateParams.workspaceId,
+        workspaceId: workspace.id,
         req,
       })
 
@@ -104,13 +123,13 @@ export const handleCallback = async (
 
     await tx.insert(integrationModel).values({
       id: integrationId,
-      workspaceId: stateParams.workspaceId,
+      workspaceId: workspace.id,
       integrationType,
     })
 
     if (integrationType === "googleSheets" && googleSheetsAuth) {
       await tx.insert(integrationGoogleSheetsModel).values({
-        workspaceId: stateParams.workspaceId,
+        workspaceId: workspace.id,
         integrationId,
         auth: googleSheetsAuth,
       })
