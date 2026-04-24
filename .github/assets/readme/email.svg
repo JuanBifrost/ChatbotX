@@ -1,0 +1,7 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Email">
+  <rect width="512" height="512" rx="76.8" fill="#F59E0B"/>
+  <rect x="104" y="148" width="304" height="216" rx="28" fill="#FFFFFF"/>
+  <path d="M124 176 256 276 388 176" fill="none" stroke="#111827" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M126 338 220 250" fill="none" stroke="#111827" stroke-width="24" stroke-linecap="round"/>
+  <path d="M386 338 292 250" fill="none" stroke="#111827" stroke-width="24" stroke-linecap="round"/>
+</svg>
