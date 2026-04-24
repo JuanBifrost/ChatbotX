@@ -36,6 +36,7 @@ import { useCallback, useEffect, useMemo, useState } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createBroadcastAction } from "@/features/broadcasts/actions/create-broadcast.action"
+import { BroadcastConfirmDialog } from "@/features/broadcasts/components/broadcast-confirm-dialog"
 import { createBroadcastRequest } from "@/features/broadcasts/schemas/action"
 import { useWorkspaceId } from "@/hooks/routing"
 import { ContactFilter } from "../contacts/components/contact-filter"
@@ -77,31 +78,9 @@ const getConfigs = (t: ReturnType<typeof useTranslations>) =>
       description: "",
       subactions: [
         {
-          value: broadcastSubactions.enum.messengerList,
-          name: t("broadcasts.messengerList.title"),
-          description: t("broadcasts.messengerList.description"),
-        },
-        {
           value: broadcastSubactions.enum.messengerActiveContacts,
           name: t("broadcasts.messengerActiveContacts.title"),
           description: t("broadcasts.messengerActiveContacts.description"),
-        },
-        {
-          value: broadcastSubactions.enum.messengerAccountUpdate,
-          name: t("broadcasts.messengerAccountUpdate.title"),
-          description: t("broadcasts.messengerAccountUpdate.description"),
-        },
-        {
-          value: broadcastSubactions.enum.messengerConfirmedEventUpdate,
-          name: t("broadcasts.messengerConfirmedEventUpdate.title"),
-          description: t(
-            "broadcasts.messengerConfirmedEventUpdate.description",
-          ),
-        },
-        {
-          value: broadcastSubactions.enum.messengerPostPurchaseUpdate,
-          name: t("broadcasts.messengerPostPurchaseUpdate.title"),
-          description: t("broadcasts.messengerPostPurchaseUpdate.description"),
         },
       ],
     },
@@ -221,6 +200,7 @@ export function CreateBroadcastForm({ workspaceId }: CreateBroadcastFormProps) {
       <Form {...form}>
         <form
           className="mx-auto mt-10 mb-10 w-full max-w-2xl flex-1 space-y-4"
+          id="broadcast-form"
           onSubmit={handleSubmitWithAction}
         >
           {!watchedChannel && <CreateBroadcastChooseChannel />}
@@ -462,7 +442,8 @@ type CreateBroadcastChooseFlowProps = {
 function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   const t = useTranslations()
   const router = useRouter()
-  const { count, getContactsCount } = useContactStore((state) => state)
+  const { contactInboxesCount: count, getContactInboxesCount } =
+    useContactStore((state) => state)
 
   const workspaceId = useWorkspaceId()
 
@@ -513,6 +494,8 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
     (state) => state,
   )
 
+  const [confirmOpen, setConfirmOpen] = useState(false)
+
   const handleCancel = useCallback(() => {
     router.push(`/space/${workspaceId}/broadcasts`)
   }, [router, workspaceId])
@@ -557,10 +540,12 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
     }
   }, [watchedIntegrationWhatsappId, setIntegrationWhatsappId])
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: re-fetch on filter change
   useEffect(() => {
-    getContactsCount()
-  }, [watchedContactFilter, getContactsCount])
+    getContactInboxesCount({
+      contactFilter: watchedContactFilter,
+      channel: props.channel,
+    })
+  }, [watchedContactFilter, props.channel, getContactInboxesCount])
 
   useEffect(() => {
     if (watchedTemplateId && templates.length > 0) {
@@ -728,11 +713,19 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
 
           <Button
             disabled={!formState.isValid || formState.isSubmitting}
-            type="submit"
+            onClick={() => setConfirmOpen(true)}
+            type="button"
           >
             {formState.isSubmitting && <Loader2Icon className="animate-spin" />}
             {t("actions.confirm")}
           </Button>
+
+          <BroadcastConfirmDialog
+            count={count || 0}
+            isSubmitting={formState.isSubmitting}
+            onOpenChange={setConfirmOpen}
+            open={confirmOpen}
+          />
         </div>
       </div>
     </div>

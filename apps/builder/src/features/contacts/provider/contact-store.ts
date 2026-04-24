@@ -1,6 +1,8 @@
+import { type ChannelType, channelTypes } from "@chatbotx.io/database/partials"
 import { HTTPError } from "ky"
 import { createStore } from "zustand/vanilla"
 import { client } from "@/lib/orpc/orpc"
+import type { ContactFilterRequest } from "../schemas/query"
 
 export type ContactState = {
   loadingCounts: boolean
@@ -9,11 +11,16 @@ export type ContactState = {
 
   workspaceId: string
   count: number | null
+  contactInboxesCount: number | null
 }
 
 export type ContactActions = {
   initialize: () => Promise<void>
   getContactsCount: () => Promise<void>
+  getContactInboxesCount: (params?: {
+    contactFilter?: ContactFilterRequest["contactFilter"]
+    channel?: ChannelType
+  }) => Promise<void>
 }
 
 export type ContactStore = ContactState & ContactActions
@@ -26,6 +33,7 @@ export const createContactStore = (props: Partial<ContactState>) =>
 
     workspaceId: "",
     count: null,
+    contactInboxesCount: null,
     ...props,
 
     initialize: async () => {
@@ -56,6 +64,37 @@ export const createContactStore = (props: Partial<ContactState>) =>
           })
 
         set({ count: total, loadingCounts: false })
+      } catch (error: unknown) {
+        set({
+          error:
+            error instanceof HTTPError
+              ? error.message
+              : "Failed to fetch contacts count",
+        })
+      } finally {
+        set({ loadingCounts: false })
+      }
+    },
+
+    getContactInboxesCount: async (params) => {
+      const { workspaceId, loadingCounts } = get()
+
+      if (loadingCounts || !workspaceId) {
+        return
+      }
+
+      set({ loadingCounts: true, error: null })
+
+      try {
+        const { total } =
+          await client.contactsAPIs.countContactInboxesAuthenticatedAPI({
+            workspaceId,
+            sort: [],
+            channels: [params?.channel || channelTypes.enum.omnichannel],
+            contactFilter: params?.contactFilter,
+          })
+
+        set({ contactInboxesCount: total, loadingCounts: false })
       } catch (error: unknown) {
         set({
           error:
