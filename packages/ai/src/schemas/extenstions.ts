@@ -3,10 +3,27 @@ import z from "zod"
 export const allowableKnowledgeExtensionsMap = () => ({
   "text/plain": [".txt"],
   "application/pdf": [".pdf"],
-  "text/markdown": [".md"],
+  "text/markdown": [".md", ".markdown"],
+  "text/x-markdown": [".md", ".markdown"],
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document": [
     ".docx",
   ],
+  "application/msword": [".doc"],
+  "text/csv": [".csv"],
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": [
+    ".xlsx",
+  ],
+  "application/vnd.ms-excel": [".xls"],
+  "text/html": [".html", ".htm"],
+  "application/xhtml+xml": [".xhtml"],
+  "application/xml": [".xml"],
+  "text/xml": [".xml"],
+  "text/vtt": [".vtt"],
+  "text/x-java-properties": [".properties"],
+  "message/rfc822": [".eml"],
+  "application/vnd.ms-outlook": [".msg"],
+  "application/rtf": [".rtf"],
+  "text/rtf": [".rtf"],
 })
 
 export const getAllowableKnowledgeExtensions = () =>

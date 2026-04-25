@@ -1445,7 +1445,8 @@
   },
   "validation": {
     "maxSize": "File size exceeds maximum limit",
-    "maxItemsReached": "Maximum {max} {feature} allowed per workspace"
+    "maxItemsReached": "Maximum {max} {feature} allowed per workspace",
+    "invalidApiKey": "Invalid API key"
   },
   "webchat": {
     "description": "Let your customers get instant automated responses from your business directly from your website",
