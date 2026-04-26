@@ -14,7 +14,11 @@ import { logger } from "../lib/logger"
 import { processAutomatedResponse } from "./handlers/automated-response"
 import { trackBotResponse } from "./handlers/automated-response/track-bot-response"
 import { runChallenge } from "./handlers/challenge"
-import { agentMarkAsRead, contactMarkAsRead } from "./handlers/conversation"
+import {
+  agentMarkAsRead,
+  contactMarkAsRead,
+  ensureConversationActive,
+} from "./handlers/conversation"
 import {
   runFlowNode,
   runFlowPostback,
@@ -57,7 +61,7 @@ async function startIntegrationWorker() {
             isNotPostbackOrQuickReply &&
             message.text &&
             message.senderType === "contact" &&
-            conversation.botEnabled
+            (await ensureConversationActive(conversation))
           ) {
             const additionalAttributes =
               conversation.additionalAttributes as ConversationAttributes
