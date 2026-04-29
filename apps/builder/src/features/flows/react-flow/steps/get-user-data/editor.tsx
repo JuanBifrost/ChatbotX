@@ -92,8 +92,6 @@ const GetUserDataStepForm = ({
         className="flex max-h-[calc(100vh-120px)] flex-col gap-6 overflow-y-scroll px-1"
         onSubmit={form.handleSubmit(onSubmit)}
       >
-        <TiptapEditorField label="Message" name="message" required />
-
         <SelectField
           label={t("fields.replyFormat.label")}
           name="replyFormat"
@@ -174,7 +172,11 @@ const GetUserDataStepEditor = ({ parentName }: { parentName: string }) => {
   return (
     <BaseStepEditor icon={KeyboardIcon} title={t("flows.actions.getUserData")}>
       <div className="flex flex-col gap-3">
-        <InputField label="Message" name={`${parentName}.message`} required />
+        <TiptapEditorField
+          label="Message"
+          name={`${parentName}.message`}
+          required
+        />
 
         <Dialog onOpenChange={setOpen} open={open}>
           <DialogTrigger asChild>
