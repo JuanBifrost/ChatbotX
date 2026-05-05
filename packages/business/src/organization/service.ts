@@ -4,9 +4,9 @@ import { organizationModel } from "@chatbotx.io/database/schema"
 import type { OrganizationModel } from "@chatbotx.io/database/types"
 import { withCache } from "@chatbotx.io/redis"
 import { getTranslations } from "next-intl/server"
-import { isCommunity } from "@/env"
-import { BaseService } from "@/features/common/base.service"
-import { notFoundException } from "@/lib/errors/exception"
+import { BaseService } from "../base.service"
+import { notFoundException } from "../errors"
+import { isCommunity } from "../keys"
 
 class OrganizationService extends BaseService {
   find(props: {
@@ -49,9 +49,10 @@ class OrganizationService extends BaseService {
   }
 
   findByDomain(domain: string): Promise<OrganizationModel> {
-    if (isCommunity) {
+    if (isCommunity()) {
       return this.findOrFail({ where: {} })
     }
+
     return this.findOrFail({ where: { domain } })
   }
 
