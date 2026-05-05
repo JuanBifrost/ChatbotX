@@ -22,10 +22,6 @@ export default async function SettingChannelInstagramPage(props: {
   const organization = await organizationService.findOrFail({
     where: { id: workspace.organizationId },
   })
-  const hasInstagramSettings = Boolean(
-    organization.settings?.instagram?.clientId,
-  )
-
   const promises = Promise.all([
     listIntegrationInstagrams({
       workspaceId: params.workspaceId,
@@ -34,8 +30,8 @@ export default async function SettingChannelInstagramPage(props: {
 
   return (
     <InstagramManage
-      isEnabled={hasInstagramSettings}
       promises={promises}
+      settings={organization.settings.instagram}
       workspaceId={workspaceId}
     />
   )
