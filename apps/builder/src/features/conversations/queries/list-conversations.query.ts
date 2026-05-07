@@ -27,6 +27,7 @@ export const listConversations = async (
 
   const where: Record<string, unknown> = {
     workspaceId,
+    archivedAt: { isNull: true },
     ...filterByConversation(data),
     contact: filterByContact(data),
     contactInboxes: filterByContactInbox(data),
@@ -185,7 +186,9 @@ const filterByConversation = (
 const filterByContact = (
   input: ListConversationsRequest,
 ): Record<string, unknown> | undefined => {
-  const where: Record<string, unknown> = {}
+  const where: Record<string, unknown> = {
+    blockedAt: { isNull: true },
+  }
 
   if (input.keyword) {
     where.OR = [
