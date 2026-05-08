@@ -1,5 +1,5 @@
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
-import { channelTypes } from "@chatbotx.io/database/partials"
+import { channelTypes, inboxStatuses } from "@chatbotx.io/database/partials"
 import { inboxModel, integrationSmtpModel } from "@chatbotx.io/database/schema"
 import { smtpHostMap } from "@chatbotx.io/integration-smtp"
 import { createId } from "@chatbotx.io/utils"
@@ -54,7 +54,14 @@ export async function deleteSmtp(workspaceId: string, id: string) {
     message: "SMTP integration not found",
   })
 
-  await db
-    .delete(integrationSmtpModel)
-    .where(eq(integrationSmtpModel.id, integration.id))
+  await db.transaction(async (tx) => {
+    await tx
+      .delete(integrationSmtpModel)
+      .where(eq(integrationSmtpModel.id, integration.id))
+
+    await tx
+      .update(inboxModel)
+      .set({ status: inboxStatuses.enum.disconnected })
+      .where(eq(inboxModel.id, integration.inboxId))
+  })
 }

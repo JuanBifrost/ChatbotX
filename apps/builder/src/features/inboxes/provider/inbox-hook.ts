@@ -41,7 +41,10 @@ export const useConfiguredInboxTypeOptions = () => {
   useEffect(() => {
     const setOfInboxTypes = new Set<string>(["omnichannel"])
     for (const inbox of inboxes) {
-      setOfInboxTypes.add(inbox.channel)
+      // Ignore SMTP inbox type
+      if (inbox.channel !== channelTypes.enum.smtp) {
+        setOfInboxTypes.add(inbox.channel)
+      }
     }
     setInboxTypes(Array.from(setOfInboxTypes))
   }, [inboxes])
@@ -77,10 +80,13 @@ export const useSmtpInboxOptions = (): SelectOption[] => {
   return useMemo(
     () =>
       inboxes
-        .filter((inbox) => inbox.channel === channelTypes.enum.smtp)
+        .filter(
+          (inbox) =>
+            inbox.channel === channelTypes.enum.smtp && !!inbox.integrationSmtp,
+        )
         .map((inbox) => ({
           label: inbox.name,
-          value: inbox.integrationSmtp?.id ?? "",
+          value: inbox.integrationSmtp?.id ?? "-",
         })),
     [inboxes],
   )
