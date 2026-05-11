@@ -21,7 +21,9 @@
 </p>
 
 <p align="center">
-  <a href="https://chatbotx.io">Website</a>
+  <a href="https://chatbotx.io/">Website</a>
+  |
+  <a href="https://chatbotx.canny.io/">Roadmap</a>
   |
   <a href="https://chatbotx.io/coming-soon/">Cloud</a>
   |
@@ -62,32 +64,26 @@
 
 ## ✨ Features
 
-- **Omnichannel Inbox:** Manage customer conversations from supported messaging channels in one workspace.
-- **Flow Builder:** Build automated chatbot flows for qualification, support, routing, follow-up, and data capture.
-- **AI Agents:** Connect AI providers and knowledge workflows to answer questions, analyze inputs, generate content, and hand off to humans.
-- **Broadcasts and Sequences:** Send campaigns, schedule follow-ups, and track channel-level delivery workflows.
-- **Triggers and Webhooks:** React to events and connect ChatbotX with external systems.
-- **APIs, CLI, and MCP:** Automate ChatbotX from scripts, agent workflows, and MCP-compatible clients.
-- **Integrations:** Includes channel and app integrations such as WhatsApp, Messenger, Instagram, Telegram, Zalo, Webchat, Email, OpenAI, and Google Sheets.
+- **Visual Flow Builder:** Drag-and-drop chatbot builder with 15+ node types
+- **AI Agent:** AI-powered responses and actions using OpenAI, DeepSeek, or Gemini
+- **Live Chat Inbox:** Real-time inbox with human takeover and conversation assignment
+- **Contact CRM:** Manage contacts with tags, custom fields, and segmentation
+- **Broadcasting:** Send targeted messages to specific contact segments
+- **Sequences:** Automate drip campaigns with scheduled messages and auto-enrollment
+- **Team Management:** Invite team members, assign roles, and manage permissions
+- **Multi-Platform:** Connect across WhatsApp, Facebook, Instagram, Telegram, Zalo, Email, and Webchat
+- **Rich Messaging:** Support for buttons, quick replies, catalogs, and carousel cards
+- **Comment-to-DM:** Automatically message users who comment with specific keywords
+- **A/B Testing:** Test and optimize different message flows
+- **Triggers:** Execute actions based on events within your bot
+- **Webhooks & HTTP:** Integrate external APIs directly into your flows
+- **Growth Tools:** Generate conversation starter links for each platform
+- **Analytics:** Track performance metrics, user engagement, and campaign results
+- **APIs, CLI, and MCP:** Build advanced agent workflows with MCP-compatible clients
 
-<table width="100%">
-  <tr>
-    <td width="50%" align="center" valign="top">
-      <img alt="Omnichannel Team Inbox" src=".github/assets/readme/omnichannel-team-inbox.gif" width="100%">
-    </td>
-    <td width="50%" align="center" valign="top">
-      <img alt="Smart Contact Import and Bulk Messaging" src=".github/assets/readme/smart-contact-import.gif" width="100%">
-    </td>
-  </tr>
-  <tr>
-    <td width="50%" align="center" valign="top">
-      <img alt="AI-First Platform API CLI and MCP" src=".github/assets/readme/ai-first-platform.gif" width="100%">
-    </td>
-    <td width="50%" align="center" valign="top">
-      <img alt="Built-in AI Agents" src=".github/assets/readme/built-in-ai-agents.gif" width="100%">
-    </td>
-  </tr>
-</table>
+| ![Omnichannel Team Inbox](https://github.com/user-attachments/assets/daa23e91-7ba5-4093-8605-e77cddebe35c) | ![Smart Contact Import](https://github.com/user-attachments/assets/6a4a6c7d-5a77-4f3c-900b-d87cb849e589) |
+| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| ![Visual Flow Builder](https://github.com/user-attachments/assets/6f0448ad-0f32-4065-9e2a-f41b5354a68f) | ![Built-in AI Agents](https://github.com/user-attachments/assets/365167c6-b4d9-498a-8b8c-a5079b82edbf) |
 
 ## Tech Stack
 
@@ -114,7 +110,7 @@ To have the project up and running, please follow the [Quick Start Guide](https:
 |-- apps/
 |   |-- builder/       # Next.js web app and product builder
 |   |-- worker/        # background workers for chat, AI, triggers, webhooks, analytics, sequences
-|   |-- realtime/      # realtime server
+|   |-- partysocket/   # realtime server
 |   |-- cli/           # ChatbotX command line client
 |   `-- mcp-server/    # MCP server backed by public APIs
 |-- integrations/
@@ -149,6 +145,8 @@ pnpm dev              # run turbo dev
 pnpm build            # build all packages/apps through Turborepo
 pnpm lint             # run Ultracite lint
 pnpm fix              # run Ultracite fix
+pnpm check:circular   # check circular dependencies
+pnpm check:unused     # check unused files and dependencies
 ```
 
 Useful package-level commands:
@@ -156,7 +154,7 @@ Useful package-level commands:
 ```bash
 pnpm --filter builder dev
 pnpm --filter worker dev
-pnpm --filter realtime dev
+pnpm --filter partysocket dev
 pnpm --filter chatbotx-cli dev:cli
 pnpm --filter chatbotx-mcp-server dev:mcp
 pnpm --filter @chatbotx.io/database db:studio
