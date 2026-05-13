@@ -6,7 +6,10 @@ import {
   contactTrackingService,
   trackingResponseTypes,
 } from "@chatbotx.io/analytics"
-import { broadcastToWorkspaceParty } from "@chatbotx.io/business"
+import {
+  broadcastToGuestParty,
+  broadcastToWorkspaceParty,
+} from "@chatbotx.io/business"
 import { db } from "@chatbotx.io/database/client"
 import {
   channelTypes,
@@ -297,6 +300,21 @@ export async function sendFlowStep({
         messageId: message?.id,
       }),
     ]
+
+    if (targetContactInbox.channel === channelTypes.enum.webchat) {
+      promises.push(
+        broadcastToGuestParty(
+          {
+            workspaceId: conversation.workspaceId,
+            guestConversationId: targetContactInbox.sourceId,
+          },
+          {
+            eventType: RealtimeEventType.messageCreated,
+            data: message,
+          },
+        ),
+      )
+    }
 
     await Promise.all(promises)
     await emit(messageEventTypeSchema.enum["message:sent"], {
