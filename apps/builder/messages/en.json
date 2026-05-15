@@ -852,7 +852,8 @@
       "label": "Template Messages"
     },
     "text": {
-      "label": "Text"
+      "label": "Text",
+      "placeholder": "Enter text"
     },
     "thisMonth": {
       "label": "This month"
@@ -1168,6 +1169,23 @@
     },
     "webhookVerifyToken": {
       "label": "Webhook Verify Token"
+    },
+    "heading": {
+      "label": "Heading",
+      "placeholder": "Enter heading"
+    },
+    "image": {
+      "label": "Image"
+    },
+    "line": {
+      "label": "Line"
+    },
+    "spacing": {
+      "label": "Spacing"
+    },
+    "code": {
+      "label": "Code",
+      "placeholder": "Enter code"
     }
   },
   "flows": {
@@ -1241,13 +1259,6 @@
       "spreadsheetSendData": "Send Data",
       "spreadsheetGetRandomRow": "Get Random Row",
       "spreadsheetClearRow": "Clear Row",
-      "emailText": "Text",
-      "emailH3": "Heading",
-      "emailImage": "Image",
-      "emailButton": "Button",
-      "emailLine": "Line",
-      "emailSpacing": "Spacing",
-      "emailCode": "Code",
       "typing": "Typing",
       "sequenceActions": "Sequence Actions",
       "subscribeSequence": "Subscribe Sequence",
@@ -1325,6 +1336,7 @@
     "success": "Success",
     "failed": "Failed",
     "copiedToClipboard": "Copied to clipboard",
+    "copyFailed": "Failed to copy to clipboard",
     "createdFailed": "{feature} creation failed",
     "deletedSuccess": "{feature} deleted successfully",
     "deleteFileComingSoon": "Delete file functionality coming soon",
@@ -1913,6 +1925,9 @@
     "setting": {
       "description": "Send emails using your SMTP server.",
       "label": "(Email) SMTP"
+    },
+    "errors": {
+      "connectionFailed": "Cannot connect to SMTP server. Please check your credentials and try again."
     }
   },
   "botSimulator": {

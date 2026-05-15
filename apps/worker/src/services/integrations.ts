@@ -85,6 +85,16 @@ export const integrationService = {
         columnName = "oaId"
         break
       }
+      case "instagram": {
+        modelName = "IntegrationInstagram"
+        columnName = "pageId"
+        break
+      }
+      case "webchat": {
+        modelName = "IntegrationWebchat"
+        columnName = "inboxId"
+        break
+      }
       default:
         throw new Error(`Unsupported integration: ${integrationType}`)
     }

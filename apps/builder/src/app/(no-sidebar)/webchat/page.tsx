@@ -1,4 +1,3 @@
-import { resolvePlatformUrls } from "@chatbotx.io/business"
 import { db } from "@chatbotx.io/database/client"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import type { SearchParams } from "next/dist/server/request/search-params"
@@ -6,7 +5,6 @@ import { notFound } from "next/navigation"
 import z from "zod"
 import { GuestSessionStoreProvider } from "@/features/integration-webchat/providers/store/guest-session-provider"
 import { WebchatWrapper } from "@/features/integration-webchat/webchat-wrapper"
-import { PlatformUrlsProvider } from "@/features/platform"
 
 type WebchatPageProps = {
   searchParams: Promise<SearchParams>
@@ -39,15 +37,9 @@ export default async function WebchatPage(props: WebchatPageProps) {
     return notFound()
   }
 
-  const platformUrls = await resolvePlatformUrls({
-    workspaceId: data.workspaceId,
-  })
-
   return (
-    <PlatformUrlsProvider urls={platformUrls}>
-      <GuestSessionStoreProvider config={targetWebchat}>
-        <WebchatWrapper referral={data.ref} />
-      </GuestSessionStoreProvider>
-    </PlatformUrlsProvider>
+    <GuestSessionStoreProvider config={targetWebchat}>
+      <WebchatWrapper referral={data.ref} />
+    </GuestSessionStoreProvider>
   )
 }

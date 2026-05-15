@@ -30,6 +30,7 @@ import {
 import type { ExecuteStepProps } from "./flow"
 import { handleAIGenerateText } from "./generate-text"
 import { getUserData } from "./get-user-data"
+import { sendEmail } from "./send-email"
 import {
   clearSpreadsheetRow,
   getSpreadsheetRandomRow,
@@ -248,14 +249,7 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.subscribeSequence]: addContactSequence,
   [stepTypes.enum.unsubscribeSequence]: removeContactSequence,
   [stepTypes.enum.sendQuickReply]: sendFlowMessage,
-  [stepTypes.enum.emailH3]: undefined,
-  [stepTypes.enum.emailText]: undefined,
-  [stepTypes.enum.emailImage]: undefined,
-  [stepTypes.enum.emailButton]: undefined,
-  [stepTypes.enum.emailLine]: undefined,
-  [stepTypes.enum.emailSpacing]: undefined,
-  [stepTypes.enum.emailCode]: undefined,
-  [stepTypes.enum.emailHeader]: undefined,
+  [stepTypes.enum.email]: sendEmail,
   [stepTypes.enum.typing]: stepSendTyping,
   [stepTypes.enum.sendWaTemplateMessage]: sendFlowMessage,
 }

@@ -848,7 +848,8 @@
       "label": "Tin nhắn mẫu"
     },
     "text": {
-      "label": "Văn bản"
+      "label": "Văn bản",
+      "placeholder": "Nhập văn bản"
     },
     "timezone": {
       "description": "Liên hệ được gán múi giờ này khi múi giờ liên hệ không xác định.",
@@ -1184,6 +1185,23 @@
     },
     "webhookVerifyToken": {
       "label": "Webhook Verify Token"
+    },
+    "heading": {
+      "label": "Tiêu đề",
+      "placeholder": "Nhập tiêu đề"
+    },
+    "image": {
+      "label": "Hình ảnh"
+    },
+    "line": {
+      "label": "Đường kẻ"
+    },
+    "spacing": {
+      "label": "Khoảng cách"
+    },
+    "code": {
+      "label": "Mã",
+      "placeholder": "Nhập mã"
     }
   },
   "flows": {
@@ -1256,13 +1274,6 @@
       "spreadsheetSendData": "Gửi dữ liệu",
       "spreadsheetGetRandomRow": "Lấy hàng ngẫu nhiên",
       "spreadsheetClearRow": "Xóa hàng",
-      "emailText": "Văn bản",
-      "emailH3": "Tiêu đề",
-      "emailImage": "Hình ảnh",
-      "emailButton": "Nút",
-      "emailLine": "Đường kẻ",
-      "emailSpacing": "Khoảng cách",
-      "emailCode": "Mã",
       "typing": "Đang gõ",
       "sequenceActions": "Hành động chăm sóc",
       "subscribeSequence": "Đăng ký chăm sóc",
@@ -1341,6 +1352,7 @@
     "success": "Thành công",
     "failed": "Thất bại",
     "copiedToClipboard": "Đã sao chép vào bộ nhớ tạm",
+    "copyFailed": "Sao chép thất bại",
     "createdFailed": "Tạo {feature} thất bại",
     "deletedSuccess": "{feature} đã được xóa thành công",
     "deleteFileComingSoon": "Chức năng xóa tệp sẽ sớm có",
@@ -1924,6 +1936,9 @@
     "setting": {
       "description": "Gửi email bằng máy chủ SMTP của bạn.",
       "label": "(Email) SMTP"
+    },
+    "errors": {
+      "connectionFailed": "Không thể kết nối đến máy chủ SMTP. Vui lòng kiểm tra thông tin xác thực và thử lại."
     }
   },
   "botSimulator": {

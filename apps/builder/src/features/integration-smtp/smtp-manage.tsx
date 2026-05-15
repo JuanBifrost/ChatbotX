@@ -9,10 +9,11 @@ import {
   TableHeader,
   TableRow,
 } from "@chatbotx.io/ui/components/ui/table"
-import { PlusCircleIcon } from "lucide-react"
+import { PencilIcon, PlusCircleIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { use } from "react"
 import { CreateSmtpDialog } from "./components/create-smtp-dialog"
+import { EditSmtpDialog } from "./components/edit-smtp-dialog"
 import { SmtpDisconnect } from "./components/smtp-disconnect"
 import type { listIntegrationSmtps } from "./queries"
 
@@ -41,14 +42,23 @@ export const SmtpManage = ({ workspaceId, promises }: SmtpManageProps) => {
           <TableHeader>
             <TableRow>
               <TableHead>{t("fields.name.label")}</TableHead>
-              <TableHead className="w-[200px]" />
+              <TableHead className="w-50" />
             </TableRow>
           </TableHeader>
           <TableBody>
             {integrationSmtps.map((integrationSmtp) => (
               <TableRow key={integrationSmtp.id}>
                 <TableCell>{integrationSmtp.name}</TableCell>
-                <TableCell className="flex w-[200px] justify-end gap-2">
+                <TableCell className="flex w-50 justify-end gap-2">
+                  <EditSmtpDialog
+                    integrationSmtp={integrationSmtp}
+                    workspaceId={workspaceId}
+                  >
+                    <Button size="sm" variant="outline">
+                      <PencilIcon className="h-4 w-4" />
+                      {t("actions.edit")}
+                    </Button>
+                  </EditSmtpDialog>
                   <SmtpDisconnect integrationSmtp={integrationSmtp} />
                 </TableCell>
               </TableRow>

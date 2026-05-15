@@ -2,7 +2,7 @@ import {
   createSelectSchema,
   integrationSmtpModel,
 } from "@chatbotx.io/database/schema"
-import type { smtpProviders } from "@chatbotx.io/integration-smtp"
+import type { smtpProviders } from "@chatbotx.io/integration-smtp/schema"
 import { z } from "zod"
 
 export const smtpProviderLabels: Record<

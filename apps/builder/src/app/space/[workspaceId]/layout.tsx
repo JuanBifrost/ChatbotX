@@ -1,7 +1,4 @@
-import {
-  resolvePlatformUrls,
-  workspaceMemberService,
-} from "@chatbotx.io/business"
+import { workspaceMemberService } from "@chatbotx.io/business"
 import {
   SidebarInset,
   SidebarProvider,
@@ -11,7 +8,6 @@ import { getIdFromParams } from "@chatbotx.io/utils"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
 import { AppSidebar } from "@/components/app-sidebar"
-import { PlatformUrlsProvider } from "@/features/platform"
 import { getCurrentUserId } from "@/lib/auth/utils"
 
 export default async function WorkspaceLayout({
@@ -50,18 +46,14 @@ export default async function WorkspaceLayout({
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
-  const platformUrls = await resolvePlatformUrls({ workspaceId })
-
   return (
-    <PlatformUrlsProvider urls={platformUrls}>
-      <SidebarProvider defaultOpen={defaultOpen}>
-        <AppSidebar allWorkspaces={allWorkspaces} workspaceId={workspaceId} />
-        <SidebarInset>
-          <SidebarTrigger className="absolute top-3 -left-2 z-10 border" />
+    <SidebarProvider defaultOpen={defaultOpen}>
+      <AppSidebar allWorkspaces={allWorkspaces} workspaceId={workspaceId} />
+      <SidebarInset>
+        <SidebarTrigger className="absolute top-3 -left-2 z-10 border" />
 
-          <main className="flex flex-1 flex-col gap-4 p-6">{children}</main>
-        </SidebarInset>
-      </SidebarProvider>
-    </PlatformUrlsProvider>
+        <main className="flex flex-1 flex-col gap-4 p-6">{children}</main>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }

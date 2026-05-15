@@ -51,10 +51,12 @@ export const useConfiguredInboxTypeOptions = () => {
 
   return useMemo(
     () =>
-      inboxTypes.map(
-        (inboxType) =>
-          allInboxConfigs[inboxType as keyof typeof allInboxConfigs],
-      ),
+      inboxTypes
+        .filter((inboxType) => inboxType in allInboxConfigs)
+        .map(
+          (inboxType) =>
+            allInboxConfigs[inboxType as keyof typeof allInboxConfigs],
+        ),
     [inboxTypes],
   )
 }

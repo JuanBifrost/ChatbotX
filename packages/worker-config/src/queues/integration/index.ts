@@ -30,6 +30,7 @@ export const IntegrationJobAction = {
   unblockContact: "unblockContact",
   assignConversation: "assignConversation",
   createMessage: "createMessage",
+  sendEmail: "sendEmail",
 } as const
 
 export type IntegrationJobReceiveMessage = {

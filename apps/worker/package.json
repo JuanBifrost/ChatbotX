@@ -51,6 +51,7 @@
     "@chatbotx.io/integration-whatsapp": "workspace:*",
     "@chatbotx.io/integration-zalo": "workspace:*",
     "@chatbotx.io/logger": "workspace:*",
+    "@chatbotx.io/mail": "workspace:*",
     "@chatbotx.io/partysocket-config": "workspace:*",
     "@chatbotx.io/redis": "workspace:*",
     "@chatbotx.io/scheduler": "workspace:*",
