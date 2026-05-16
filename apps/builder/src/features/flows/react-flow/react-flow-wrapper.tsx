@@ -75,6 +75,7 @@ export function ReactFlowWrapper({
     updateEdge,
     getEdges,
     deleteElements,
+    screenToFlowPosition,
   } = reactFlow
 
   const [nodes, _setNodes, onNodesChange] = useNodesState(
@@ -252,12 +253,12 @@ export function ReactFlowWrapper({
             (node) => node.type === nodeTypeSchema.enum.sendMessage,
           ).length
 
+          const position = connectionState.to
+            ? screenToFlowPosition(connectionState.to)
+            : { x: 300, y: 300 }
           const newNode = sendMessageNodeDefaultFn({
             nodeProps: {
-              position: connectionState.to ?? {
-                x: 300,
-                y: 300,
-              },
+              position,
             },
             dataProps: {
               name: `Send Message #${messageNodesLength + 1}`,
@@ -334,6 +335,7 @@ export function ReactFlowWrapper({
       deleteElements,
       getEdges,
       connectButtonToNode,
+      screenToFlowPosition,
     ],
   )
 
@@ -436,6 +438,8 @@ export function ReactFlowWrapper({
       }}
       edges={edges}
       edgeTypes={edgeTypes}
+      maxZoom={10}
+      minZoom={0.1}
       nodes={nodes}
       nodeTypes={viewerNodeTypes}
       onConnect={onConnect}
