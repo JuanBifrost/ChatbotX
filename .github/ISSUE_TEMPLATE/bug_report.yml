@@ -1,0 +1,82 @@
+name: "🐛 Bug Report"
+description: "Submit a bug report to help us improve ChatbotX."
+title: "[Bug]: <Short description>"
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible to help the ChatbotX team resolve it quickly. 🚀
+  
+  - type: dropdown
+    id: component
+    attributes:
+      label: "🧩 Affected Component"
+      description: "Which part of ChatbotX is experiencing the issue?"
+      options:
+        - "apps/builder (Web UI / Flow Builder)"
+        - "apps/worker (Background Tasks / AI / Sequences)"
+        - "apps/partysocket (Realtime Chat)"
+        - "apps/cli (Command Line Interface)"
+        - "apps/mcp-server (MCP Server)"
+        - "Integrations (WhatsApp, Zalo, OpenAI, etc.)"
+        - "Other / Unknown"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "📝 Bug Description"
+      description: "A clear and concise description of what the bug is."
+      placeholder: "e.g. When saving a Visual Flow with an OpenAI node, the worker crashes..."
+    validations:
+      required: true
+  
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: "🔄 Steps to Reproduce"
+      description: "How can we reproduce this issue?"
+      value: |
+        1. Go to '...'
+        2. Click on '...'
+        3. Fill in '...'
+        4. See the error
+    validations:
+      required: true
+  
+  - type: input
+    id: expected-behavior
+    attributes:
+      label: "✨ Expected Behavior"
+      description: "What did you expect to happen?"
+    validations:
+      required: true
+  
+  - type: dropdown
+    id: environment
+    attributes:
+      label: "🌍 Deployment Environment"
+      description: "How are you running ChatbotX?"
+      options:
+        - Self-Hosted (Docker Compose)
+        - Local Development (pnpm dev)
+        - ChatbotX Cloud
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: "📦 Version Details"
+      description: "Which version/commit of ChatbotX are you using? (Also include Node.js version if running locally)"
+      placeholder: "e.g. v0.2.4 or commit hash abc1234, Node v24"
+    validations:
+      required: true
+  
+  - type: textarea
+    id: logs
+    attributes:
+      label: "📋 Logs & Additional Context"
+      description: "Please paste any relevant error logs (e.g. from `docker compose logs worker` or browser console), screenshots, or OS details."
