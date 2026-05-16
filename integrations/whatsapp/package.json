@@ -28,7 +28,8 @@
     ".": "./src/index.ts",
     "./api/*": "./src/api/*.ts",
     "./constants": "./src/constants.ts",
-    "./test-handlers": "./src/test-handlers.ts"
+    "./test-handlers": "./src/test-handlers.ts",
+    "./exception": "./src/exception.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
