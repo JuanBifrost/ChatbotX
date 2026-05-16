@@ -1292,12 +1292,14 @@
     },
     "additionalSteps": "Additional steps",
     "delayType": {
-      "datetimeCustomField": "Datetime Custom Field",
+      "datetimeCustomField": "Date & Time Custom Field",
       "datetimeCustomFieldValue": "{customField}",
       "duration": "Duration",
       "durationValue": "{duration}",
+      "date": "Date",
       "specificDate": "Specific Date",
-      "specificDateValue": "{date}"
+      "specificDateValue": "{date}",
+      "random": "Random"
     },
     "formatTimezone": {
       "timezone": "Account Timezone",
@@ -1314,7 +1316,32 @@
     },
     "wait": {
       "datetimeTooltip": "The date and time when the flow will be triggered.",
-      "setInterval": "Set Interval"
+      "setInterval": "Set Interval",
+      "delayTypeLabel": "This is a",
+      "fixed": "Fixed",
+      "randomized": "Randomized",
+      "delay": "delay",
+      "durationDetailPrefix": "Wait",
+      "dateDetailPrefix": "Wait until",
+      "customFieldDetailPrefix": "Wait until",
+      "randomDetailPrefix": "Wait between",
+      "randomDetailAnd": "and",
+      "intervalDetailPrefix": "Active between",
+      "offsetAdd": "+",
+      "offsetSubtract": "-",
+      "durationLabel": "Duration",
+      "activeHours": "Active hours",
+      "dateTypeLabel": "Date type",
+      "datetimeLabel": "Date & Time",
+      "customFieldLabel": "Custom field",
+      "offset": "Add offset",
+      "offsetLabel": "Offset",
+      "randomRangeLabel": "Random range",
+      "minLabel": "Min",
+      "maxLabel": "Max",
+      "unitLabel": "Unit",
+      "specific": "Specific",
+      "dynamic": "Dynamic"
     }
   },
   "folders": {

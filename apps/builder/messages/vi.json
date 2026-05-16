@@ -1312,8 +1312,10 @@
       "datetimeCustomFieldValue": "{customField}",
       "duration": "Thời lượng",
       "durationValue": "{duration}",
+      "date": "Ngày",
       "specificDate": "Ngày cụ thể",
-      "specificDateValue": "{date}"
+      "specificDateValue": "{date}",
+      "random": "Ngẫu nhiên"
     },
     "formatTimezone": {
       "timezone": "Múi giờ tài khoản",
@@ -1330,7 +1332,32 @@
     },
     "wait": {
       "datetimeTooltip": "Ngày và giờ khi luồng sẽ được kích hoạt.",
-      "setInterval": "Thiết lập khoảng thời gian"
+      "setInterval": "Thiết lập khoảng thời gian",
+      "delayTypeLabel": "Đây là độ trễ",
+      "fixed": "Cố định",
+      "randomized": "Ngẫu nhiên",
+      "delay": "",
+      "durationDetailPrefix": "Độ trễ là",
+      "dateDetailPrefix": "Độ trễ đến",
+      "customFieldDetailPrefix": "Độ trễ đến",
+      "randomDetailPrefix": "Độ trễ từ",
+      "randomDetailAnd": "đến",
+      "intervalDetailPrefix": "Hoạt động từ",
+      "offsetAdd": "+",
+      "offsetSubtract": "-",
+      "durationLabel": "Thời lượng",
+      "activeHours": "Giờ hoạt động",
+      "dateTypeLabel": "Loại ngày",
+      "datetimeLabel": "Ngày & Giờ",
+      "customFieldLabel": "Trường tùy chỉnh",
+      "offset": "Thêm độ lệch",
+      "offsetLabel": "Độ lệch",
+      "randomRangeLabel": "Khoảng ngẫu nhiên",
+      "minLabel": "Tối thiểu",
+      "maxLabel": "Tối đa",
+      "unitLabel": "Đơn vị",
+      "specific": "Cụ thể",
+      "dynamic": "Tùy chỉnh"
     }
   },
   "folders": {
