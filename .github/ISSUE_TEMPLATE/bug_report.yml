@@ -8,6 +8,15 @@ body:
       value: |
         Thank you for taking the time to report a bug! Please provide as much technical detail as possible to help us quickly reproduce and fix it. 🐞
 
+  - type: checkboxes
+    id: search
+    attributes:
+      label: "Have you checked for existing requests?"
+      description: "Please search the existing issues to ensure your bug hasn't already been reported."
+      options:
+        - label: "I have searched the existing issues and found no similar request."
+          required: true
+
   - type: dropdown
     id: component
     attributes:
