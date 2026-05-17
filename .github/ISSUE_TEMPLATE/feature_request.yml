@@ -8,6 +8,15 @@ body:
       value: |
         Welcome to the ChatbotX Feature Requests! Your ideas help us build a better omnichannel agentic chatbot platform. 💡
 
+  - type: checkboxes
+    id: search
+    attributes:
+      label: "Have you checked for existing requests?"
+      description: "Please search the existing issues to ensure your request hasn't already been reported."
+      options:
+        - label: "I have searched the existing issues and found no similar request."
+          required: true
+
   - type: dropdown
     id: feature_area
     attributes:
