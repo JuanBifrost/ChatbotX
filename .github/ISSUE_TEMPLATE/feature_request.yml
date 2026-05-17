@@ -8,19 +8,23 @@ body:
       value: |
         Welcome to the ChatbotX Feature Requests! Your ideas help us build a better omnichannel agentic chatbot platform. 💡
   
-  - type: dropdown
-    id: area
+    - type: dropdown
+    id: feature_area
     attributes:
-      label: "🎯 Feature Area"
-      description: "Which part of ChatbotX does this feature apply to?"
+      label: Feature Area
+      description: Which area of ChatbotX does this feature request relate to?
       options:
-        - "Visual Flow Builder"
-        - "AI Agent & Models (OpenAI, DeepSeek, Gemini)"
-        - "Live Chat Inbox & CRM"
-        - "Integrations & Channels (WhatsApp, Messenger, Zalo, Telegram, Email, Webchat)"
-        - "Developer Tools (APIs, CLI, MCP Server)"
-        - "Analytics & Reporting"
-        - "Core Infrastructure / Other"
+        - "📊 Analytics"
+        - "💬 Inbox & Live Chat"
+        - "🔀 Flow Builder (Flows, Tags, Custom Fields)"
+        - "👥 Contacts & CRM"
+        - "🤖 AI Agents, Knowledge & MCP"
+        - "⚙️ Keywords Automation"
+        - "📢 Broadcasts & Sequences"
+        - "⚡ Triggers & Webhooks"
+        - "🛠️ Tools & Extensions (Ecommerce, QR, etc.)"
+        - "🔧 Settings, Channels & Integrations"
+        - "🌐 General / Multiple Areas"
     validations:
       required: true
 
