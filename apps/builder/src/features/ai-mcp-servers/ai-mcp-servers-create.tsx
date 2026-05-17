@@ -25,8 +25,8 @@ import { useFieldArray, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { createAIMcpServerAction } from "./actions/create-ai-mcp-server.action"
 import { updateAIMcpServerAction } from "./actions/update-ai-mcp-server.action"
-import { createAIMcpServerRequest } from "./schema/action"
-import type { AIMcpServerResource } from "./schema/resource"
+import { createAIMcpServerRequest } from "./schemas/action"
+import type { AIMcpServerResource } from "./schemas/resource"
 
 type AIMcpServersCreateProps = {
   workspaceId: string
