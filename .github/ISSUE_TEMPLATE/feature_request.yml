@@ -1,18 +1,18 @@
 name: "🚀 Feature Request"
 description: "Submit a proposal for a new feature for ChatbotX."
-title: "[Feature]: <Short description>"
+title: "<Short description>"
 labels: ["enhancement", "feature-request"]
 body:
   - type: markdown
     attributes:
       value: |
         Welcome to the ChatbotX Feature Requests! Your ideas help us build a better omnichannel agentic chatbot platform. 💡
-  
-    - type: dropdown
+
+  - type: dropdown
     id: feature_area
     attributes:
-      label: Feature Area
-      description: Which area of ChatbotX does this feature request relate to?
+      label: "Feature Area"
+      description: "Which area of ChatbotX does this feature request relate to?"
       options:
         - "📊 Analytics"
         - "💬 Inbox & Live Chat"
@@ -31,31 +31,35 @@ body:
   - type: textarea
     id: problem
     attributes:
-      label: "🧐 Is your feature request related to a problem?"
-      description: "A clear and concise description of what the problem is."
-      placeholder: "e.g. I'm always frustrated when I cannot integrate a custom LLM provider..."
+      label: "Is your feature request related to a problem? Please describe."
+      description: "A clear and concise description of what the problem is. Ex. I'm always frustrated when [...]"
+      placeholder: "Describe the problem here..."
     validations:
       required: true
-  
+
   - type: textarea
     id: solution
     attributes:
-      label: "💡 Describe the solution you'd like"
+      label: "Describe the solution you'd like"
       description: "A clear and concise description of what you want to happen."
-      placeholder: "ChatbotX should allow adding custom OpenAI-compatible API endpoints in the AI settings..."
+      placeholder: "Describe the solution here..."
     validations:
       required: true
-  
+
   - type: textarea
     id: alternatives
     attributes:
-      label: "🔄 Describe alternatives you've considered"
+      label: "Describe alternatives you've considered"
       description: "A clear and concise description of any alternative solutions or features you've considered."
-  
-  - type: checkboxes
-    id: checks
+      placeholder: "Describe alternatives here..."
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
     attributes:
-      label: "👀 Have you checked for existing requests?"
-      options:
-        - label: "I have searched the existing issues and found no similar feature request."
-          required: true
+      label: "Additional context"
+      description: "Add any other context or screenshots about the feature request here."
+      placeholder: "Add context or drag and drop screenshots here..."
+    validations:
+      required: false
