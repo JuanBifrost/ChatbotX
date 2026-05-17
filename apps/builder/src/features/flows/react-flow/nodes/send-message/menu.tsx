@@ -5,6 +5,7 @@ import {
   ImageIcon,
   ImagePlayIcon,
   KeyboardIcon,
+  ListIcon,
   MessageSquareIcon,
   PaperclipIcon,
   PictureInPicture2Icon,
@@ -63,6 +64,11 @@ const ALL_MENU_ITEMS = (
     stepType: stepTypes.enum.sendWaTemplateMessage,
     children: integrationMenus(t, menuData, channelTypes.enum.whatsapp),
   },
+  whatsappOptionList: {
+    label: t("flows.actions.whatsappOptionList"),
+    icon: ListIcon,
+    stepType: stepTypes.enum.whatsappOptionList,
+  },
   typing: {
     label: t("flows.actions.typing"),
     icon: TimerIcon,
@@ -115,13 +121,14 @@ const WHATSAPP_MENU_ORDER = [
   "getUserData",
   "sendGif",
   "sendWaTemplateMessage",
+  "whatsappOptionList",
   "typing",
   "sendFile",
   "actions",
 ] as const
 
 const MENU_ORDER_BY_CHANNEL: Record<string, readonly string[]> = {
-  whatsapp: WHATSAPP_MENU_ORDER,
+  [channelTypes.enum.whatsapp]: WHATSAPP_MENU_ORDER,
 }
 
 export const sendMessageEditorMenus = (
@@ -130,6 +137,10 @@ export const sendMessageEditorMenus = (
 ): MenuItem[] => {
   const channel = menuData?.beforeStep?.channel
   const allMenuItems = ALL_MENU_ITEMS(t, menuData)
+
+  if (channel === channelTypes.enum.omnichannel) {
+    return Object.values(allMenuItems)
+  }
 
   const menuOrder =
     channel && MENU_ORDER_BY_CHANNEL[channel]
