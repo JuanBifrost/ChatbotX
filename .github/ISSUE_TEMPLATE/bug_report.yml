@@ -1,82 +1,90 @@
 name: "🐛 Bug Report"
-description: "Submit a bug report to help us improve ChatbotX."
-title: "[Bug]: <Short description>"
+description: "Create a report to help us improve ChatbotX by fixing a bug."
+title: "<Short description>"
 labels: ["bug", "triage"]
 body:
   - type: markdown
     attributes:
       value: |
-        Thanks for taking the time to fill out this bug report! Please provide as much detail as possible to help the ChatbotX team resolve it quickly. 🚀
-  
+        Thank you for taking the time to report a bug! Please provide as much technical detail as possible to help us quickly reproduce and fix it. 🐞
+
   - type: dropdown
     id: component
     attributes:
-      label: "🧩 Affected Component"
-      description: "Which part of ChatbotX is experiencing the issue?"
+      label: "Affected Component"
+      description: "Which area of ChatbotX is experiencing the issue?"
       options:
-        - "apps/builder (Web UI / Flow Builder)"
-        - "apps/worker (Background Tasks / AI / Sequences)"
-        - "apps/partysocket (Realtime Chat)"
-        - "apps/cli (Command Line Interface)"
-        - "apps/mcp-server (MCP Server)"
-        - "Integrations (WhatsApp, Zalo, OpenAI, etc.)"
-        - "Other / Unknown"
+        - "📊 Analytics"
+        - "💬 Inbox & Live Chat"
+        - "🔀 Flow Builder (Flows, Tags, Custom Fields)"
+        - "👥 Contacts & CRM"
+        - "🤖 AI Agents, Knowledge & MCP"
+        - "⚙️ Keywords Automation"
+        - "📢 Broadcasts & Sequences"
+        - "⚡ Triggers & Webhooks"
+        - "🛠️ Tools & Extensions (Ecommerce, QR, etc.)"
+        - "🔧 Settings, Channels & Integrations"
+        - "🌐 Other / Unknown"
     validations:
       required: true
 
-  - type: textarea
-    id: description
-    attributes:
-      label: "📝 Bug Description"
-      description: "A clear and concise description of what the bug is."
-      placeholder: "e.g. When saving a Visual Flow with an OpenAI node, the worker crashes..."
-    validations:
-      required: true
-  
-  - type: textarea
-    id: reproduction
-    attributes:
-      label: "🔄 Steps to Reproduce"
-      description: "How can we reproduce this issue?"
-      value: |
-        1. Go to '...'
-        2. Click on '...'
-        3. Fill in '...'
-        4. See the error
-    validations:
-      required: true
-  
-  - type: input
-    id: expected-behavior
-    attributes:
-      label: "✨ Expected Behavior"
-      description: "What did you expect to happen?"
-    validations:
-      required: true
-  
   - type: dropdown
     id: environment
     attributes:
-      label: "🌍 Deployment Environment"
+      label: "Deployment Environment"
       description: "How are you running ChatbotX?"
       options:
-        - Self-Hosted (Docker Compose)
-        - Local Development (pnpm dev)
-        - ChatbotX Cloud
+        - "Self-Hosted (Docker Compose)"
+        - "Self-Hosted (Source Code / Node.js)"
+        - "ChatbotX Cloud"
     validations:
       required: true
 
   - type: input
     id: version
     attributes:
-      label: "📦 Version Details"
-      description: "Which version/commit of ChatbotX are you using? (Also include Node.js version if running locally)"
-      placeholder: "e.g. v0.2.4 or commit hash abc1234, Node v24"
+      label: "ChatbotX Version"
+      description: "Which version are you currently running? (Provide the version tag, e.g., v1.2.0)"
+      placeholder: "e.g., v1.2.0 or 'latest'"
     validations:
       required: true
-  
+
+  - type: textarea
+    id: description
+    attributes:
+      label: "Describe the bug"
+      description: "A clear and concise description of what the bug is."
+      placeholder: "When I click on X, instead of Y happening, Z happens..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: "Steps To Reproduce"
+      description: "Detailed steps to reproduce the behavior. The more specific, the faster we can fix it."
+      value: |
+        1. Go to '...'
+        2. Click on '....'
+        3. Scroll down to '....'
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: "Expected behavior"
+      description: "A clear and concise description of what you expected to happen."
+      placeholder: "I expected the node to save successfully without throwing an error."
+    validations:
+      required: true
+
   - type: textarea
     id: logs
     attributes:
-      label: "📋 Logs & Additional Context"
-      description: "Please paste any relevant error logs (e.g. from `docker compose logs worker` or browser console), screenshots, or OS details."
+      label: "Screenshots or Error Logs"
+      description: "If applicable, drag and drop screenshots, browser console errors, or server terminal logs here."
+      placeholder: "Paste your error logs or drop screenshots here..."
+    validations:
+      required: false
