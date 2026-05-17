@@ -1,4 +1,7 @@
-import { organizationService, workspaceService } from "@chatbotx.io/business"
+import {
+  organizationCredentialService,
+  workspaceService,
+} from "@chatbotx.io/business"
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound } from "next/navigation"
 import { MessengerManage } from "@/features/integration-messenger/messenger-manage"
@@ -15,8 +18,9 @@ export default async function SettingChannelMessengerPage(props: {
   const workspace = await workspaceService.findOrFail({
     where: { id: workspaceId },
   })
-  const organization = await organizationService.findOrFail({
-    where: { id: workspace.organizationId },
+  const credential = await organizationCredentialService.find({
+    organizationId: workspace.organizationId,
+    type: "messenger",
   })
 
   const promises = Promise.all([
@@ -28,7 +32,7 @@ export default async function SettingChannelMessengerPage(props: {
   return (
     <MessengerManage
       promises={promises}
-      settings={organization.settings.messenger}
+      publicConfig={credential?.publicConfig ?? null}
       workspaceId={workspaceId}
     />
   )

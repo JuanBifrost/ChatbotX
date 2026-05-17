@@ -1,5 +1,5 @@
 import nodemailer from "nodemailer"
-import { keys } from "./keys"
+import { mailEnv } from "./keys"
 
 export type SmtpTransportOptions = {
   host: string
@@ -8,10 +8,8 @@ export type SmtpTransportOptions = {
   password: string
 }
 
-export const createSmtpTransporter = (options?: SmtpTransportOptions) => {
-  const env = keys()
-
-  return nodemailer.createTransport(
+export const createSmtpTransporter = (options?: SmtpTransportOptions) =>
+  nodemailer.createTransport(
     options
       ? {
           host: options.host,
@@ -19,6 +17,5 @@ export const createSmtpTransporter = (options?: SmtpTransportOptions) => {
           secure: options.port === 465,
           auth: { user: options.username, pass: options.password },
         }
-      : env.SMTP_SERVER,
+      : mailEnv.SMTP_SERVER,
   )
-}

@@ -52,6 +52,10 @@ const TEST_DEFAULTS: Readonly<Record<string, string>> = {
 
   // Logging
   LOG_LEVEL: "silent",
+
+  // Encryption — 32-byte hex test key
+  ENCRYPTION_KEY:
+    "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 }
 
 for (const [key, value] of Object.entries(TEST_DEFAULTS)) {

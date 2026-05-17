@@ -1,9 +1,9 @@
 "use client"
 
 import {
-  type InstagramSettingsSchema,
-  instagramSettingsSchema,
-  type OrganizationSettings,
+  type InstagramCredentialPublic,
+  type InstagramCredentialUpdate,
+  instagramCredentialUpdateSchema,
 } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -33,9 +33,9 @@ import { useCopyToClipboard } from "usehooks-ts"
 import { updateInstagramSettingAction } from "./update-instagram-settings.action"
 
 export function InstagramSettings({
-  config,
+  publicConfig,
 }: {
-  config: OrganizationSettings["instagram"]
+  publicConfig: InstagramCredentialPublic | null
 }) {
   const t = useTranslations()
   const [_, copy] = useCopyToClipboard()
@@ -74,20 +74,20 @@ export function InstagramSettings({
           <span>Instagram</span>
         </CardTitle>
         <CardAction>
-          <EditInstagramSettingsDialog config={config ?? null} />
+          <EditInstagramSettingsDialog publicConfig={publicConfig} />
         </CardAction>
       </CardHeader>
       <CardContent>
-        {config?.clientId ? (
+        {publicConfig?.clientId ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
               <div className="font-bold">App ID:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">{config.clientId}</span>
+                <span className="truncate">{publicConfig.clientId}</span>
                 <Button className="flex-none" size="icon" variant="outline">
                   <CopyIcon
                     className="size-4"
-                    onClick={handleCopy(config.clientId)}
+                    onClick={handleCopy(publicConfig.clientId)}
                   />
                 </Button>
               </div>
@@ -122,11 +122,11 @@ export function InstagramSettings({
             <div className="flex flex-col gap-2">
               <div className="font-bold">Webhook Verify Token:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">{config.verifyToken}</span>
+                <span className="truncate">{publicConfig.verifyToken}</span>
                 <Button className="flex-none" size="icon" variant="outline">
                   <CopyIcon
                     className="size-4"
-                    onClick={handleCopy(config.verifyToken)}
+                    onClick={handleCopy(publicConfig.verifyToken)}
                   />
                 </Button>
               </div>
@@ -143,9 +143,9 @@ export function InstagramSettings({
 }
 
 export function EditInstagramSettingsDialog({
-  config,
+  publicConfig,
 }: {
-  config: InstagramSettingsSchema | null
+  publicConfig: InstagramCredentialPublic | null
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -164,11 +164,11 @@ export function EditInstagramSettingsDialog({
         </DialogTitle>
 
         <EditInstagramSettingsForm
-          config={config}
           onClose={() => {
             setOpen(false)
             router.refresh()
           }}
+          publicConfig={publicConfig}
         />
       </DialogContent>
     </Dialog>
@@ -176,10 +176,10 @@ export function EditInstagramSettingsDialog({
 }
 
 export function EditInstagramSettingsForm({
-  config,
+  publicConfig,
   onClose,
 }: {
-  config: InstagramSettingsSchema | null
+  publicConfig: InstagramCredentialPublic | null
   onClose?: () => void
 }) {
   const t = useTranslations()
@@ -187,7 +187,7 @@ export function EditInstagramSettingsForm({
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
       updateInstagramSettingAction,
-      zodResolver(instagramSettingsSchema),
+      zodResolver(instagramCredentialUpdateSchema),
       {
         actionProps: {
           onSuccess: () => {
@@ -202,14 +202,16 @@ export function EditInstagramSettingsForm({
         formProps: {
           mode: "onChange",
           defaultValues: {
-            clientId: config?.clientId ?? "",
-            clientSecret: config?.clientSecret ?? "",
-            version: config?.version ?? "v25.0",
-            verifyToken: config?.verifyToken ?? "",
-          },
+            clientId: publicConfig?.clientId ?? "",
+            version: publicConfig?.version ?? "v25.0",
+            verifyToken: publicConfig?.verifyToken ?? "",
+            clientSecret: "",
+          } satisfies InstagramCredentialUpdate,
         },
       },
     )
+
+  const isConfigured = publicConfig !== null
 
   return (
     <Form {...form}>
@@ -217,9 +219,12 @@ export function EditInstagramSettingsForm({
         <InputField label={t("fields.appId.label")} name="clientId" required />
 
         <InputField
+          description={
+            isConfigured ? t("messages.leaveEmptyToKeepSecret") : undefined
+          }
           label={t("fields.appSecret.label")}
           name="clientSecret"
-          required
+          required={!isConfigured}
           type="password"
         />
 

@@ -1385,6 +1385,9 @@ importers:
       '@chatbotx.io/database':
         specifier: workspace:*
         version: link:../database
+      '@chatbotx.io/encryption':
+        specifier: workspace:*
+        version: link:../encryption
       '@chatbotx.io/filesystem':
         specifier: workspace:*
         version: link:../filesystem
@@ -1465,6 +1468,9 @@ importers:
 
   packages/database:
     dependencies:
+      '@chatbotx.io/encryption':
+        specifier: workspace:*
+        version: link:../encryption
       '@chatbotx.io/utils':
         specifier: workspace:*
         version: link:../utils
@@ -1499,6 +1505,31 @@ importers:
       esbuild:
         specifier: ^0.28.0
         version: 0.28.0
+      vitest:
+        specifier: ^3.2.4
+        version: 3.2.4(@types/node@24.12.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.12.2)(typescript@5.9.3))(tsx@4.21.0)(yaml@2.8.3)
+
+  packages/encryption:
+    dependencies:
+      '@t3-oss/env-core':
+        specifier: ^0.13.11
+        version: 0.13.11(typescript@5.9.3)(zod@4.3.6)
+      zod:
+        specifier: ^4.3.6
+        version: 4.3.6
+    devDependencies:
+      '@chatbotx.io/typescript-config':
+        specifier: workspace:*
+        version: link:../typescript-config
+      '@chatbotx.io/vitest-config':
+        specifier: workspace:*
+        version: link:../vitest-config
+      '@types/node':
+        specifier: 24.x
+        version: 24.12.2
+      typescript:
+        specifier: ^5
+        version: 5.9.3
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/node@24.12.2)(jiti@2.6.1)(jsdom@25.0.1)(lightningcss@1.32.0)(msw@2.14.6(@types/node@24.12.2)(typescript@5.9.3))(tsx@4.21.0)(yaml@2.8.3)
@@ -1703,7 +1734,7 @@ importers:
       '@react-email/components':
         specifier: 1.0.12
         version: 1.0.12(react-dom@19.2.5(react@19.2.5))(react@19.2.5)
-      '@t3-oss/env-nextjs':
+      '@t3-oss/env-core':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.3.6)
       mjml:

@@ -1,6 +1,6 @@
 "use client"
 
-import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import type { MessengerCredentialPublic } from "@chatbotx.io/database/partials"
 import type { FacebookPage } from "@chatbotx.io/integration-messenger/schema"
 import {
   Dialog,
@@ -35,13 +35,13 @@ const MESSENGER_SCOPE = [
 
 export type MessengerConnectProps = {
   workspaceId?: string | null
-  settings: NonNullable<OrganizationSettings["messenger"]>
+  publicConfig: MessengerCredentialPublic
   trigger?: ReactNode
 }
 
 export function MessengerConnect({
   workspaceId,
-  settings,
+  publicConfig,
   trigger,
 }: MessengerConnectProps) {
   const t = useTranslations()
@@ -66,7 +66,7 @@ export function MessengerConnect({
       <DialogTrigger asChild>
         <MessengerConnectButton
           onLoginSuccess={onLoginSuccess}
-          settings={settings}
+          publicConfig={publicConfig}
           trigger={trigger}
         />
       </DialogTrigger>
@@ -89,11 +89,11 @@ export function MessengerConnect({
 }
 
 export function MessengerConnectButton({
-  settings,
+  publicConfig,
   onLoginSuccess,
   trigger,
 }: {
-  settings: NonNullable<OrganizationSettings["messenger"]>
+  publicConfig: MessengerCredentialPublic
   trigger?: ReactNode
   onLoginSuccess: () => Promise<void>
 }) {
@@ -101,10 +101,10 @@ export function MessengerConnectButton({
 
   return (
     <FacebookLogin
-      appId={settings.clientId as string}
+      appId={publicConfig.clientId}
       className="inline-flex h-8 items-center justify-start gap-2 whitespace-nowrap rounded-md bg-secondary px-4 py-2 font-medium text-secondary-foreground text-sm shadow-xs transition-all hover:bg-secondary/80 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
       initParams={{
-        version: (settings.version as InitParams["version"]) ?? "v18.0",
+        version: (publicConfig.version as InitParams["version"]) ?? "v18.0",
       }}
       onFail={(error) => {
         console.log("error", error)

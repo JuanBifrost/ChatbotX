@@ -1,9 +1,8 @@
 "use client"
 
 import {
-  type GiphySettingsSchema,
-  giphySettingsSchema,
-  type OrganizationSettings,
+  type GiphyCredentialUpdate,
+  giphyCredentialUpdateSchema,
 } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -30,11 +29,7 @@ import { useState } from "react"
 import { toast } from "sonner"
 import { updateGiphySettingsAction } from "./update-giphy-settings.action"
 
-export function GiphySettings({
-  config,
-}: {
-  config: OrganizationSettings["giphy"]
-}) {
+export function GiphySettings({ isConfigured }: { isConfigured: boolean }) {
   const t = useTranslations()
 
   return (
@@ -44,11 +39,11 @@ export function GiphySettings({
           <span className="font-semibold text-lg">GIPHY</span>
         </CardTitle>
         <CardAction>
-          <EditGiphySettingsDialog config={config ?? null} />
+          <EditGiphySettingsDialog isConfigured={isConfigured} />
         </CardAction>
       </CardHeader>
       <CardContent>
-        {config?.apiKey ? (
+        {isConfigured ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
               <div className="font-bold">{t("fields.apiKey.label")}:</div>
@@ -68,9 +63,9 @@ export function GiphySettings({
 }
 
 export function EditGiphySettingsDialog({
-  config,
+  isConfigured,
 }: {
-  config: GiphySettingsSchema | null
+  isConfigured: boolean
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -89,7 +84,7 @@ export function EditGiphySettingsDialog({
         </DialogTitle>
 
         <EditGiphySettingsForm
-          config={config}
+          isConfigured={isConfigured}
           onClose={() => {
             setOpen(false)
             router.refresh()
@@ -101,10 +96,10 @@ export function EditGiphySettingsDialog({
 }
 
 export function EditGiphySettingsForm({
-  config,
+  isConfigured,
   onClose,
 }: {
-  config: GiphySettingsSchema | null
+  isConfigured: boolean
   onClose?: () => void
 }) {
   const t = useTranslations()
@@ -112,7 +107,7 @@ export function EditGiphySettingsForm({
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
       updateGiphySettingsAction,
-      zodResolver(giphySettingsSchema),
+      zodResolver(giphyCredentialUpdateSchema),
       {
         actionProps: {
           onSuccess: () => {
@@ -127,8 +122,8 @@ export function EditGiphySettingsForm({
         formProps: {
           mode: "onChange",
           defaultValues: {
-            apiKey: config?.apiKey ?? "",
-          },
+            apiKey: "",
+          } satisfies GiphyCredentialUpdate,
         },
       },
     )
@@ -136,7 +131,15 @@ export function EditGiphySettingsForm({
   return (
     <Form {...form}>
       <form className="flex flex-col gap-4" onSubmit={handleSubmitWithAction}>
-        <InputField label={t("fields.apiKey.label")} name="apiKey" required />
+        <InputField
+          description={
+            isConfigured ? t("messages.leaveEmptyToKeepSecret") : undefined
+          }
+          label={t("fields.apiKey.label")}
+          name="apiKey"
+          required={!isConfigured}
+          type="password"
+        />
 
         <div className="flex justify-end gap-2">
           <Button

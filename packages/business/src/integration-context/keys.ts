@@ -13,4 +13,5 @@ export const integrationContextEnv = () =>
       REALTIME_BROADCAST_SECRET: z.string().min(1).default("secretkey"),
     },
     runtimeEnv: process.env,
+    skipValidation: process.env.SKIP_ENV_CHECK === "true",
   })

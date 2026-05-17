@@ -1,4 +1,7 @@
-import { organizationService, workspaceService } from "@chatbotx.io/business"
+import {
+  organizationCredentialService,
+  workspaceService,
+} from "@chatbotx.io/business"
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound } from "next/navigation"
 import { InstagramManage } from "@/features/integration-instagram/components/instagram-manage"
@@ -9,7 +12,7 @@ export default async function SettingChannelInstagramPage(props: {
 }) {
   const params = await props.params
 
-  const workspaceId = getIdFromParams(await params, "workspaceId")
+  const workspaceId = getIdFromParams(params, "workspaceId")
   if (!workspaceId) {
     return notFound()
   }
@@ -17,8 +20,9 @@ export default async function SettingChannelInstagramPage(props: {
   const workspace = await workspaceService.findOrFail({
     where: { id: workspaceId },
   })
-  const organization = await organizationService.findOrFail({
-    where: { id: workspace.organizationId },
+  const credential = await organizationCredentialService.find({
+    organizationId: workspace.organizationId,
+    type: "instagram",
   })
   const promises = Promise.all([
     listIntegrationInstagrams({
@@ -29,7 +33,7 @@ export default async function SettingChannelInstagramPage(props: {
   return (
     <InstagramManage
       promises={promises}
-      settings={organization.settings.instagram}
+      publicConfig={credential?.publicConfig ?? null}
       workspaceId={workspaceId}
     />
   )

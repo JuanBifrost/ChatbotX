@@ -18,25 +18,26 @@ export default async function ManageLayoutPage({
 
   // Find organization by domain
   const currentDomain = await getDomainFromHeader()
-  const organization = await organizationService.findByDomain(currentDomain)
-  if (!organization) {
+  try {
+    const organization = await organizationService.findByDomain(currentDomain)
+
+    // Check if user is a member of the organization
+    const organizationMember = await organizationMemberService.findBy({
+      where: {
+        organizationId: organization.id,
+        userId: user.id,
+      },
+    })
+
+    if (
+      !organizationMember ||
+      organizationMember.role !== organizationMemberRoles.enum.admin
+    ) {
+      return notFound()
+    }
+
+    return <ManageLayout>{children}</ManageLayout>
+  } catch {
     return notFound()
   }
-
-  // Check if user is a member of the organization
-  const organizationMember = await organizationMemberService.findBy({
-    where: {
-      organizationId: organization.id,
-      userId: user.id,
-    },
-  })
-
-  if (
-    !organizationMember ||
-    organizationMember.role !== organizationMemberRoles.enum.admin
-  ) {
-    return notFound()
-  }
-
-  return <ManageLayout>{children}</ManageLayout>
 }

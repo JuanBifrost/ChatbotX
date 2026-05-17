@@ -1,6 +1,6 @@
 "use client"
 
-import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import type { InstagramCredentialPublic } from "@chatbotx.io/database/partials"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Table,
@@ -20,20 +20,20 @@ import { InstagramDisconnect } from "./instagram-disconnect"
 import { InstagramRefreshPermissions } from "./instagram-refresh-permissions"
 
 type InstagramManageProps = {
-  settings: OrganizationSettings["instagram"]
+  publicConfig: InstagramCredentialPublic | null
   workspaceId: string
   promises: Promise<[Awaited<ReturnType<typeof listIntegrationInstagrams>>]>
 }
 
 export function InstagramManage({
-  settings,
+  publicConfig,
   workspaceId,
   promises,
 }: InstagramManageProps) {
   const [{ data: integrationInstagrams }] = use(promises)
   const t = useTranslations()
 
-  if (!settings?.clientId) {
+  if (!publicConfig?.clientId) {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-muted-foreground text-sm">
@@ -47,7 +47,7 @@ export function InstagramManage({
     <div className="flex flex-col gap-2">
       <div className="flex justify-end gap-2">
         <InstagramConnect
-          settings={settings}
+          publicConfig={publicConfig}
           trigger={
             <div className="flex items-center gap-2">
               <PlusCircleIcon className="h-4 w-4" />

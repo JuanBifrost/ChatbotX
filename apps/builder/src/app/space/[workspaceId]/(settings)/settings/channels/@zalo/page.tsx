@@ -1,4 +1,7 @@
-import { organizationService, workspaceService } from "@chatbotx.io/business"
+import {
+  organizationCredentialService,
+  workspaceService,
+} from "@chatbotx.io/business"
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound } from "next/navigation"
 import { listIntegrationZalo } from "@/features/integration-zalo/queries"
@@ -15,10 +18,11 @@ export default async function SettingChannelZaloPage(props: {
   const workspace = await workspaceService.findOrFail({
     where: { id: workspaceId },
   })
-  const organization = await organizationService.findOrFail({
-    where: { id: workspace.organizationId },
+  const credential = await organizationCredentialService.find({
+    organizationId: workspace.organizationId,
+    type: "zalo",
   })
-  const hasZaloSettings = Boolean(organization.settings?.zalo?.clientId)
+  const hasZaloSettings = Boolean(credential?.publicConfig.clientId)
 
   const promises = Promise.all([
     listIntegrationZalo({

@@ -49,6 +49,7 @@ import { integrationZaloRelations } from "./integration-zalo"
 import { magicLinkRelations } from "./magic-link"
 import { messageRelations } from "./message"
 import { organizationRelations } from "./organization"
+import { organizationCredentialRelations } from "./organization-credential"
 import { organizationMemberRelations } from "./organization-member"
 import { planRelations } from "./plan"
 import { reflinkRelations } from "./reflink"
@@ -89,6 +90,7 @@ export const relations = {
   ...messageRelations,
   ...automatedResponseRelations,
   ...organizationRelations,
+  ...organizationCredentialRelations,
   ...workspaceUsageRelations,
   ...contactCustomFieldRelations,
   ...customFieldRelations,

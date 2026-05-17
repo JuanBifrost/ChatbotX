@@ -1,9 +1,10 @@
 "use server"
 
-import { organizationService } from "@chatbotx.io/business"
+import { organizationCredentialService } from "@chatbotx.io/business"
 import {
-  type GiphySettingsSchema,
-  giphySettingsSchema,
+  type GiphyCredential,
+  type GiphyCredentialUpdate,
+  giphyCredentialUpdateSchema,
 } from "@chatbotx.io/database/partials"
 import type { OrganizationModel } from "@chatbotx.io/database/types"
 import ky from "ky"
@@ -27,29 +28,42 @@ const isValidGiphyApiKey = async (apiKey: string) => {
 }
 
 export const updateGiphySettingsAction = organizationActionClient
-  .inputSchema(giphySettingsSchema)
+  .inputSchema(giphyCredentialUpdateSchema)
   .action(
     async ({
       ctx,
       parsedInput,
     }: {
       ctx: { organization: OrganizationModel }
-      parsedInput: GiphySettingsSchema
+      parsedInput: GiphyCredentialUpdate
     }) => {
-      const isValid = await isValidGiphyApiKey(parsedInput.apiKey)
-      if (!isValid) {
-        return returnValidationErrors(giphySettingsSchema, {
-          apiKey: {
-            _errors: ["Invalid GIPHY API key"],
-          },
-        })
+      const existing = await organizationCredentialService.findDecrypted({
+        organizationId: ctx.organization.id,
+        type: "giphy",
+      })
+
+      if (parsedInput.apiKey) {
+        const isValid = await isValidGiphyApiKey(parsedInput.apiKey)
+        if (!isValid) {
+          return returnValidationErrors(giphyCredentialUpdateSchema, {
+            apiKey: {
+              _errors: ["Invalid GIPHY API key"],
+            },
+          })
+        }
       }
 
-      await organizationService.updateSettings({
-        organization: ctx.organization,
-        newSettings: {
-          giphy: parsedInput,
-        },
+      const apiKey = parsedInput.apiKey || existing?.config.apiKey
+      if (!apiKey) {
+        throw new Error("API Key is required to configure GIPHY.")
+      }
+
+      const config: GiphyCredential = { apiKey }
+
+      await organizationCredentialService.upsert({
+        organizationId: ctx.organization.id,
+        type: "giphy",
+        config,
       })
     },
   )

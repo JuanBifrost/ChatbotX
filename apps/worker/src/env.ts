@@ -14,4 +14,5 @@ export const env = createEnv({
     NEXT_PUBLIC_REALTIME_URL: z.url(),
   },
   runtimeEnv: process.env,
+  skipValidation: process.env.SKIP_ENV_CHECK === "true",
 })

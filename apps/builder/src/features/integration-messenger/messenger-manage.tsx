@@ -1,6 +1,6 @@
 "use client"
 
-import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import type { MessengerCredentialPublic } from "@chatbotx.io/database/partials"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Table,
@@ -20,19 +20,19 @@ import { MessengerRefreshPermissions } from "./components/messenger-refresh-perm
 import type { listIntegrationMessengers } from "./queries"
 
 type MessengerManageProps = {
-  settings: OrganizationSettings["messenger"]
+  publicConfig: MessengerCredentialPublic | null
   workspaceId: string
   promises: Promise<[Awaited<ReturnType<typeof listIntegrationMessengers>>]>
 }
 
 export function MessengerManage({
-  settings,
+  publicConfig,
   workspaceId,
   promises,
 }: MessengerManageProps) {
   const [{ data: integrationMessengers }] = use(promises)
   const t = useTranslations()
-  if (!settings?.clientId) {
+  if (!publicConfig?.clientId) {
     return (
       <div className="flex flex-col gap-2">
         <p className="text-muted-foreground text-sm">
@@ -46,7 +46,7 @@ export function MessengerManage({
     <div className="flex flex-col gap-2">
       <div className="flex justify-end gap-2">
         <MessengerConnect
-          settings={settings}
+          publicConfig={publicConfig}
           trigger={
             <div className="flex items-center gap-2">
               <PlusCircleIcon className="h-4 w-4" />

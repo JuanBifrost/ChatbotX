@@ -1,11 +1,15 @@
 "use server"
 
-import { organizationService, workspaceService } from "@chatbotx.io/business"
+import {
+  organizationCredentialService,
+  organizationService,
+  workspaceService,
+} from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, eq, type Transaction } from "@chatbotx.io/database/client"
 import {
   inboxStatuses,
-  type WhatsappSettingsSchema,
+  type WhatsappCredential,
 } from "@chatbotx.io/database/partials"
 
 import {
@@ -42,7 +46,7 @@ import {
 
 async function resolveAccessToken(
   input: ConnectWhatsappSchema,
-  whatsappSettings: WhatsappSettingsSchema,
+  whatsappSettings: WhatsappCredential,
 ): Promise<string> {
   if (input.accessToken) {
     return input.accessToken
@@ -104,7 +108,7 @@ function buildWebhookConfig(params: {
   isManual: boolean
   integrationId: string
   originUrl: string
-  whatsappSettings: WhatsappSettingsSchema
+  whatsappSettings: WhatsappCredential
 }): { webhookUrl: string; verifyToken: string } {
   const { isManual, integrationId, originUrl, whatsappSettings } = params
 
@@ -125,7 +129,7 @@ function buildWebhookConfig(params: {
 }
 
 async function buildAuthValue(params: {
-  whatsappSettings: WhatsappSettingsSchema
+  whatsappSettings: WhatsappCredential
   accessToken: string
   verifyToken: string
   webhookUrl: string
@@ -185,7 +189,7 @@ async function buildAuthValue(params: {
 
 async function setupOAuthResources(
   auth: WhatsappAuthValue,
-  whatsappSettings: WhatsappSettingsSchema,
+  whatsappSettings: WhatsappCredential,
 ): Promise<void> {
   await addSystemUser({ auth, whatsappSettings })
   console.info("addSystemUser")
@@ -338,11 +342,16 @@ export const connectWhatsappAction = authActionClient
       try {
         const domain = await getDomainFromHeader()
         const organization = await organizationService.findByDomain(domain)
-        const whatsappSettings = organization.settings.whatsapp
+        const whatsappCredential =
+          await organizationCredentialService.findDecrypted({
+            organizationId: organization.id,
+            type: "whatsapp",
+          })
 
-        if (!whatsappSettings) {
+        if (!whatsappCredential) {
           throw new ChatbotXException("Whatsapp App settings not found")
         }
+        const whatsappSettings = whatsappCredential.config
 
         const accessToken = await resolveAccessToken(
           parsedInput,

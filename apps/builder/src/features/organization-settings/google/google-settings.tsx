@@ -1,9 +1,9 @@
 "use client"
 
 import {
-  type GoogleSettingsSchema,
-  googleSettingsSchema,
-  type OrganizationSettings,
+  type GoogleCredentialPublic,
+  type GoogleCredentialUpdate,
+  googleCredentialUpdateSchema,
 } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -33,9 +33,9 @@ import { useCopyToClipboard } from "usehooks-ts"
 import { updateGoogleSettingsAction } from "./update-google-settings.action"
 
 export function GoogleSettings({
-  config,
+  publicConfig,
 }: {
-  config: OrganizationSettings["google"]
+  publicConfig: GoogleCredentialPublic | null
 }) {
   const t = useTranslations()
   const [_, copy] = useCopyToClipboard()
@@ -67,20 +67,20 @@ export function GoogleSettings({
           <span>Google</span>
         </CardTitle>
         <CardAction>
-          <EditGoogleSettingsDialog config={config ?? null} />
+          <EditGoogleSettingsDialog publicConfig={publicConfig} />
         </CardAction>
       </CardHeader>
       <CardContent>
-        {config?.clientId ? (
+        {publicConfig?.clientId ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
               <div className="font-bold">Client ID:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">{config.clientId}</span>
+                <span className="truncate">{publicConfig.clientId}</span>
                 <Button className="flex-none" size="icon" variant="outline">
                   <CopyIcon
                     className="size-4"
-                    onClick={handleCopy(config.clientId)}
+                    onClick={handleCopy(publicConfig.clientId)}
                   />
                 </Button>
               </div>
@@ -110,9 +110,9 @@ export function GoogleSettings({
 }
 
 export function EditGoogleSettingsDialog({
-  config,
+  publicConfig,
 }: {
-  config: GoogleSettingsSchema | null
+  publicConfig: GoogleCredentialPublic | null
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -131,11 +131,11 @@ export function EditGoogleSettingsDialog({
         </DialogTitle>
 
         <GoogleEditSettingsForm
-          config={config}
           onClose={() => {
             setOpen(false)
             router.refresh()
           }}
+          publicConfig={publicConfig}
         />
       </DialogContent>
     </Dialog>
@@ -143,10 +143,10 @@ export function EditGoogleSettingsDialog({
 }
 
 export function GoogleEditSettingsForm({
-  config,
+  publicConfig,
   onClose,
 }: {
-  config: GoogleSettingsSchema | null
+  publicConfig: GoogleCredentialPublic | null
   onClose?: () => void
 }) {
   const t = useTranslations()
@@ -154,7 +154,7 @@ export function GoogleEditSettingsForm({
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
       updateGoogleSettingsAction,
-      zodResolver(googleSettingsSchema),
+      zodResolver(googleCredentialUpdateSchema),
       {
         actionProps: {
           onSuccess: () => {
@@ -169,13 +169,18 @@ export function GoogleEditSettingsForm({
         formProps: {
           mode: "onChange",
           defaultValues: {
-            clientId: config?.clientId ?? "",
-            clientSecret: config?.clientSecret ?? "",
-            verifyToken: config?.verifyToken ?? "",
-          },
+            clientId: publicConfig?.clientId ?? "",
+            clientSecret: "",
+            verifyToken: "",
+          } satisfies GoogleCredentialUpdate,
         },
       },
     )
+
+  const isConfigured = publicConfig !== null
+  const keepCurrentHint = isConfigured
+    ? t("messages.leaveEmptyToKeepSecret")
+    : undefined
 
   return (
     <Form {...form}>
@@ -187,16 +192,18 @@ export function GoogleEditSettingsForm({
         />
 
         <InputField
+          description={keepCurrentHint}
           label={t("fields.clientSecret.label")}
           name="clientSecret"
-          required
+          required={!isConfigured}
           type="password"
         />
 
         <InputField
+          description={keepCurrentHint}
           label={t("fields.verifyToken.label")}
           name="verifyToken"
-          required
+          required={!isConfigured}
         />
 
         <div className="flex justify-end gap-2">

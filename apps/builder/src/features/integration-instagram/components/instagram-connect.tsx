@@ -1,6 +1,6 @@
 "use client"
 
-import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import type { InstagramCredentialPublic } from "@chatbotx.io/database/partials"
 import {
   Dialog,
   DialogContent,
@@ -30,13 +30,13 @@ const INSTAGRAM_SCOPE = [
 
 export type InstagramConnectProps = {
   workspaceId?: string | null
-  settings: NonNullable<OrganizationSettings["instagram"]>
+  publicConfig: InstagramCredentialPublic
   trigger?: ReactNode
 }
 
 export function InstagramConnect({
   workspaceId,
-  settings,
+  publicConfig,
   trigger,
 }: InstagramConnectProps) {
   const t = useTranslations()
@@ -61,7 +61,7 @@ export function InstagramConnect({
       <DialogTrigger asChild>
         <InstagramConnectButton
           onLoginSuccess={onLoginSuccess}
-          settings={settings}
+          publicConfig={publicConfig}
           trigger={trigger}
         />
       </DialogTrigger>
@@ -84,11 +84,11 @@ export function InstagramConnect({
 }
 
 export function InstagramConnectButton({
-  settings,
+  publicConfig,
   onLoginSuccess,
   trigger,
 }: {
-  settings: NonNullable<OrganizationSettings["instagram"]>
+  publicConfig: InstagramCredentialPublic
   trigger?: ReactNode
   onLoginSuccess: () => Promise<void>
 }) {
@@ -96,10 +96,10 @@ export function InstagramConnectButton({
 
   return (
     <FacebookLogin
-      appId={settings.clientId as string}
+      appId={publicConfig.clientId}
       className="inline-flex h-8 items-center justify-start gap-2 whitespace-nowrap rounded-md bg-secondary px-4 py-2 font-medium text-secondary-foreground text-sm shadow-xs transition-all hover:bg-secondary/80 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40"
       initParams={{
-        version: (settings.version as InitParams["version"]) ?? "v21.0",
+        version: (publicConfig.version as InitParams["version"]) ?? "v21.0",
       }}
       onFail={(error) => {
         console.log("error", error)

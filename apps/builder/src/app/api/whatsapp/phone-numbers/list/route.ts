@@ -1,4 +1,7 @@
-import { organizationService } from "@chatbotx.io/business"
+import {
+  organizationCredentialService,
+  organizationService,
+} from "@chatbotx.io/business"
 import { listPhoneNumbers as whatsappListPhoneNumbers } from "@chatbotx.io/integration-whatsapp/api/phone-number"
 import { DEFAULT_API_VERSION } from "@chatbotx.io/integration-whatsapp/constants"
 import { type NextRequest, NextResponse } from "next/server"
@@ -13,8 +16,11 @@ export async function POST(request: NextRequest) {
 
     const domain = await getDomainFromHeader()
     const organization = await organizationService.findByDomain(domain)
-    const version =
-      organization.settings.whatsapp?.version ?? DEFAULT_API_VERSION
+    const credential = await organizationCredentialService.find({
+      organizationId: organization.id,
+      type: "whatsapp",
+    })
+    const version = credential?.publicConfig.version ?? DEFAULT_API_VERSION
 
     const body = await request.json()
     const parsedBody = listPhoneNumbersRequest.parse(body)

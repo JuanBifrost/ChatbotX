@@ -11,4 +11,5 @@ export const keys = () =>
       S3_BUCKET: z.string().min(1),
     },
     runtimeEnv: process.env,
+    skipValidation: process.env.SKIP_ENV_CHECK === "true",
   })

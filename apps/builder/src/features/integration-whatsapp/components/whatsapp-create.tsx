@@ -1,6 +1,6 @@
 "use client"
 
-import type { OrganizationSettings } from "@chatbotx.io/database/partials"
+import type { WhatsappCredentialPublic } from "@chatbotx.io/database/partials"
 import type {
   WhatsappPhoneNumber,
   WhatsappPhoneNumberResponse,
@@ -104,7 +104,7 @@ function usePhoneNumbers() {
 
 type WhatsappCreateProps = {
   workspaceId?: string | null
-  settings: NonNullable<OrganizationSettings["whatsapp"]>
+  settings: WhatsappCredentialPublic
 }
 
 export default function WhatsappCreate({
@@ -280,7 +280,7 @@ export default function WhatsappCreate({
 type SdkConnectSectionProps = {
   visibility: FormVisibility
   watchManualConnect: boolean
-  settings: NonNullable<OrganizationSettings["whatsapp"]>
+  settings: WhatsappCredentialPublic
 }
 
 function SdkConnectSection({

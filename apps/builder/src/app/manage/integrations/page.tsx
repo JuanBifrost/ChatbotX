@@ -3,7 +3,6 @@ import { notFound } from "next/navigation"
 import { getTranslations } from "next-intl/server"
 import { Suspense } from "react"
 import { ManageOrganizationSettings } from "@/features/organization-settings/manage-organization-settings"
-
 import { getDomainFromHeader } from "@/lib/domain"
 
 export default async function ManageIntegrationsPage() {
@@ -22,7 +21,7 @@ export default async function ManageIntegrationsPage() {
       </h3>
 
       <Suspense>
-        <ManageOrganizationSettings organization={organization} />
+        <ManageOrganizationSettings organizationId={organization.id} />
       </Suspense>
     </div>
   )

@@ -14,6 +14,7 @@ export const keys = () =>
     runtimeEnv: {
       NEXT_PUBLIC_REALTIME_URL: process.env.NEXT_PUBLIC_REALTIME_URL,
     },
+    skipValidation: process.env.SKIP_ENV_CHECK === "true",
   })
 
 export const env = keys()

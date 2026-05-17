@@ -1,9 +1,9 @@
 "use client"
 
 import {
-  type OrganizationSettings,
-  type StripeSettingsSchema,
-  stripeSettingsSchema,
+  type StripeCredentialPublic,
+  type StripeCredentialUpdate,
+  stripeCredentialUpdateSchema,
 } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -32,9 +32,9 @@ import { useCopyToClipboard } from "usehooks-ts"
 import { updateStripeSettingsAction } from "./update-stripe-settings.action"
 
 export function StripeSettings({
-  config,
+  publicConfig,
 }: {
-  config: OrganizationSettings["stripe"]
+  publicConfig: StripeCredentialPublic | null
 }) {
   const t = useTranslations()
   const [_, copy] = useCopyToClipboard()
@@ -65,25 +65,37 @@ export function StripeSettings({
           <span className="font-semibold text-lg">Stripe</span>
         </CardTitle>
         <CardAction>
-          <EditStripeSettingsDialog config={config ?? null} />
+          <EditStripeSettingsDialog publicConfig={publicConfig} />
         </CardAction>
       </CardHeader>
       <CardContent>
-        {config?.publishableKey ? (
+        {publicConfig?.publishableKey ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
               <div className="font-bold">
                 {t("fields.publishableKey.label")}:
               </div>
               <div className="flex items-center gap-2">
-                <span className="truncate">••••••••</span>
+                <span className="truncate">{publicConfig.publishableKey}</span>
+                <Button className="flex-none" size="icon" variant="outline">
+                  <CopyIcon
+                    className="size-4"
+                    onClick={handleCopy(publicConfig.publishableKey)}
+                  />
+                </Button>
               </div>
             </div>
 
             <div className="flex flex-col gap-2">
-              <div className="font-bold">{t("fields.secretKey.label")}:</div>
+              <div className="font-bold">{t("fields.verifyToken.label")}:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">••••••••</span>
+                <span className="truncate">{publicConfig.verifyToken}</span>
+                <Button className="flex-none" size="icon" variant="outline">
+                  <CopyIcon
+                    className="size-4"
+                    onClick={handleCopy(publicConfig.verifyToken)}
+                  />
+                </Button>
               </div>
             </div>
 
@@ -111,9 +123,9 @@ export function StripeSettings({
 }
 
 export function EditStripeSettingsDialog({
-  config,
+  publicConfig,
 }: {
-  config: StripeSettingsSchema | null
+  publicConfig: StripeCredentialPublic | null
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -132,11 +144,11 @@ export function EditStripeSettingsDialog({
         </DialogTitle>
 
         <EditStripeSettingsForm
-          config={config}
           onClose={() => {
             setOpen(false)
             router.refresh()
           }}
+          publicConfig={publicConfig}
         />
       </DialogContent>
     </Dialog>
@@ -144,10 +156,10 @@ export function EditStripeSettingsDialog({
 }
 
 export function EditStripeSettingsForm({
-  config,
+  publicConfig,
   onClose,
 }: {
-  config: StripeSettingsSchema | null
+  publicConfig: StripeCredentialPublic | null
   onClose?: () => void
 }) {
   const t = useTranslations()
@@ -155,7 +167,7 @@ export function EditStripeSettingsForm({
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
       updateStripeSettingsAction,
-      zodResolver(stripeSettingsSchema),
+      zodResolver(stripeCredentialUpdateSchema),
       {
         actionProps: {
           onSuccess: () => {
@@ -170,13 +182,15 @@ export function EditStripeSettingsForm({
         formProps: {
           mode: "onChange",
           defaultValues: {
-            publishableKey: config?.publishableKey ?? "",
-            secretKey: config?.secretKey ?? "",
-            verifyToken: config?.verifyToken ?? "",
-          },
+            publishableKey: publicConfig?.publishableKey ?? "",
+            verifyToken: publicConfig?.verifyToken ?? "",
+            secretKey: "",
+          } satisfies StripeCredentialUpdate,
         },
       },
     )
+
+  const isConfigured = publicConfig !== null
 
   return (
     <Form {...form}>
@@ -188,9 +202,12 @@ export function EditStripeSettingsForm({
         />
 
         <InputField
+          description={
+            isConfigured ? t("messages.leaveEmptyToKeepSecret") : undefined
+          }
           label={t("fields.secretKey.label")}
           name="secretKey"
-          required
+          required={!isConfigured}
           type="password"
         />
 

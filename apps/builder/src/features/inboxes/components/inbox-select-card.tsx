@@ -2,7 +2,8 @@
 
 import type {
   ChannelType,
-  OrganizationSettings,
+  InstagramCredentialPublic,
+  MessengerCredentialPublic,
 } from "@chatbotx.io/database/partials"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
@@ -19,16 +20,26 @@ import { InstagramConnect } from "@/features/integration-instagram/components/in
 import { MessengerConnect } from "@/features/integration-messenger/components/messenger-connect"
 import { InboxIcon } from "./inbox-icon"
 
-function InboxSelectCard({ settings }: { settings: OrganizationSettings }) {
+type InboxSelectCardProps = {
+  messengerPublicConfig: MessengerCredentialPublic | null
+  instagramPublicConfig: InstagramCredentialPublic | null
+  configuredChannels: ChannelType[]
+}
+
+function InboxSelectCard({
+  messengerPublicConfig,
+  instagramPublicConfig,
+  configuredChannels,
+}: InboxSelectCardProps) {
   const t = useTranslations()
   const router = useRouter()
   const searchParams = useSearchParams()
 
   const connectMessengerTrigger = useMemo(() => {
-    if (settings.messenger) {
+    if (messengerPublicConfig) {
       return (
         <MessengerConnect
-          settings={settings.messenger}
+          publicConfig={messengerPublicConfig}
           trigger={t("actions.continue")}
         />
       )
@@ -39,13 +50,13 @@ function InboxSelectCard({ settings }: { settings: OrganizationSettings }) {
         {t("actions.continue")}
       </Button>
     )
-  }, [settings.messenger, t])
+  }, [messengerPublicConfig, t])
 
   const connectInstagramTrigger = useMemo(() => {
-    if (settings.instagram) {
+    if (instagramPublicConfig) {
       return (
         <InstagramConnect
-          settings={settings.instagram}
+          publicConfig={instagramPublicConfig}
           trigger={t("actions.continue")}
         />
       )
@@ -56,9 +67,8 @@ function InboxSelectCard({ settings }: { settings: OrganizationSettings }) {
         {t("actions.continue")}
       </Button>
     )
-  }, [settings.instagram, t])
+  }, [instagramPublicConfig, t])
 
-  // Memoize inbox options to prevent recreation on every render
   const inboxOptions: { value: ChannelType; trigger?: ReactNode }[] = useMemo(
     () => [
       {
@@ -85,7 +95,6 @@ function InboxSelectCard({ settings }: { settings: OrganizationSettings }) {
     [connectMessengerTrigger, connectInstagramTrigger],
   )
 
-  // Memoize navigation handler to prevent recreation on every render
   const handleInboxSelect = useCallback(
     (channel: ChannelType) => {
       router.push(
@@ -115,7 +124,7 @@ function InboxSelectCard({ settings }: { settings: OrganizationSettings }) {
                   disabled={
                     inbox.value !== "webchat" &&
                     inbox.value !== "telegram" &&
-                    !(inbox.value in settings)
+                    !configuredChannels.includes(inbox.value)
                   }
                   onClick={() => handleInboxSelect(inbox.value)}
                   type="button"

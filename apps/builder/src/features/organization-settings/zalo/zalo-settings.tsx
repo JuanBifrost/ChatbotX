@@ -1,9 +1,9 @@
 "use client"
 
 import {
-  type OrganizationSettings,
-  type ZaloSettingsSchema,
-  zaloSettingsSchema,
+  type ZaloCredentialPublic,
+  type ZaloCredentialUpdate,
+  zaloCredentialUpdateSchema,
 } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -33,9 +33,9 @@ import { useCopyToClipboard } from "usehooks-ts"
 import { updateZaloSettingsAction } from "./update-zalo-settings.action"
 
 export function ZaloSettings({
-  config,
+  publicConfig,
 }: {
-  config: OrganizationSettings["zalo"]
+  publicConfig: ZaloCredentialPublic | null
 }) {
   const t = useTranslations()
   const [_, copy] = useCopyToClipboard()
@@ -68,20 +68,20 @@ export function ZaloSettings({
           <span>Zalo</span>
         </CardTitle>
         <CardAction>
-          <EditZaloSettingsDialog config={config ?? null} />
+          <EditZaloSettingsDialog publicConfig={publicConfig} />
         </CardAction>
       </CardHeader>
       <CardContent>
-        {config?.clientId ? (
+        {publicConfig?.clientId ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
               <div className="font-bold">App ID:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">{config.clientId}</span>
+                <span className="truncate">{publicConfig.clientId}</span>
                 <Button className="flex-none" size="icon" variant="outline">
                   <CopyIcon
                     className="size-4"
-                    onClick={handleCopy(config.clientId)}
+                    onClick={handleCopy(publicConfig.clientId)}
                   />
                 </Button>
               </div>
@@ -116,11 +116,11 @@ export function ZaloSettings({
             <div className="flex flex-col gap-2">
               <div className="font-bold">Webhook Verify Token:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">{config.verifyToken}</span>
+                <span className="truncate">{publicConfig.verifyToken}</span>
                 <Button className="flex-none" size="icon" variant="outline">
                   <CopyIcon
                     className="size-4"
-                    onClick={handleCopy(config.verifyToken)}
+                    onClick={handleCopy(publicConfig.verifyToken)}
                   />
                 </Button>
               </div>
@@ -137,9 +137,9 @@ export function ZaloSettings({
 }
 
 export function EditZaloSettingsDialog({
-  config,
+  publicConfig,
 }: {
-  config: ZaloSettingsSchema | null
+  publicConfig: ZaloCredentialPublic | null
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -158,11 +158,11 @@ export function EditZaloSettingsDialog({
         </DialogTitle>
 
         <EditZaloSettingsForm
-          config={config}
           onClose={() => {
             setOpen(false)
             router.refresh()
           }}
+          publicConfig={publicConfig}
         />
       </DialogContent>
     </Dialog>
@@ -170,10 +170,10 @@ export function EditZaloSettingsDialog({
 }
 
 export function EditZaloSettingsForm({
-  config,
+  publicConfig,
   onClose,
 }: {
-  config: ZaloSettingsSchema | null
+  publicConfig: ZaloCredentialPublic | null
   onClose?: () => void
 }) {
   const t = useTranslations()
@@ -181,7 +181,7 @@ export function EditZaloSettingsForm({
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
       updateZaloSettingsAction,
-      zodResolver(zaloSettingsSchema),
+      zodResolver(zaloCredentialUpdateSchema),
       {
         actionProps: {
           onSuccess: () => {
@@ -196,14 +196,16 @@ export function EditZaloSettingsForm({
         formProps: {
           mode: "onChange",
           defaultValues: {
-            clientId: config?.clientId ?? "",
-            clientSecret: config?.clientSecret ?? "",
-            verifyToken: config?.verifyToken ?? "",
-            version: config?.version ?? "v2.0",
-          },
+            clientId: publicConfig?.clientId ?? "",
+            version: publicConfig?.version ?? "v2.0",
+            verifyToken: publicConfig?.verifyToken ?? "",
+            clientSecret: "",
+          } satisfies ZaloCredentialUpdate,
         },
       },
     )
+
+  const isConfigured = publicConfig !== null
 
   return (
     <Form {...form}>
@@ -211,9 +213,12 @@ export function EditZaloSettingsForm({
         <InputField label={t("fields.appId.label")} name="clientId" required />
 
         <InputField
+          description={
+            isConfigured ? t("messages.leaveEmptyToKeepSecret") : undefined
+          }
           label={t("fields.appSecret.label")}
           name="clientSecret"
-          required
+          required={!isConfigured}
           type="password"
         />
 

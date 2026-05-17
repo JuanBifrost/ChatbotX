@@ -1394,6 +1394,7 @@
     "failedToCopy": "Failed to copy",
     "failedToPreviewImage": "Failed to preview image",
     "loadingData": "Loading data...",
+    "leaveEmptyToKeepSecret": "Leave empty to keep the current secret",
     "needToAddSettings": "You need to add settings to use this integration",
     "noDataAvailable": "No data available",
     "savedSuccessfully": "Saved successfully",

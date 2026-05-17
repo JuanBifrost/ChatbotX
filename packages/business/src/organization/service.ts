@@ -1,6 +1,4 @@
-import { type DatabaseClient, db, eq } from "@chatbotx.io/database/client"
-import type { OrganizationSettings } from "@chatbotx.io/database/partials"
-import { organizationModel } from "@chatbotx.io/database/schema"
+import { type DatabaseClient, db } from "@chatbotx.io/database/client"
 import type { OrganizationModel } from "@chatbotx.io/database/types"
 import { withCache } from "@chatbotx.io/redis"
 import { BaseService } from "../base.service"
@@ -54,28 +52,6 @@ class OrganizationService extends BaseService {
 
   findById(id: string): Promise<OrganizationModel> {
     return this.findOrFail({ where: { id } })
-  }
-
-  async updateSettings(props: {
-    tx?: DatabaseClient
-    organization: OrganizationModel
-    newSettings: OrganizationSettings
-  }): Promise<void> {
-    const { organization, newSettings, tx = db } = props
-    await tx
-      .update(organizationModel)
-      .set({
-        settings: {
-          ...organization.settings,
-          ...newSettings,
-        },
-      })
-      .where(eq(organizationModel.id, organization.id))
-
-    await this.invalidateCacheTags([
-      `organizations:${organization.id}`,
-      `organizations:${organization.id}:settings`,
-    ])
   }
 }
 

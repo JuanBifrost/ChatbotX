@@ -1,4 +1,7 @@
-import { organizationService } from "@chatbotx.io/business"
+import {
+  organizationCredentialService,
+  organizationService,
+} from "@chatbotx.io/business"
 import { db } from "@chatbotx.io/database/client"
 import {
   accountModel,
@@ -48,8 +51,12 @@ export function createAuth(config: AuthConfig) {
           }
         }
 
-        const googleSettings = organization.settings.google
-        if (!googleSettings) {
+        const googleCredential =
+          await organizationCredentialService.findDecrypted({
+            organizationId: organization.id,
+            type: "google",
+          })
+        if (!googleCredential) {
           return await {
             enabled: false,
             clientId: "",
@@ -59,8 +66,8 @@ export function createAuth(config: AuthConfig) {
 
         return await {
           enabled: true,
-          clientId: googleSettings.clientId,
-          clientSecret: googleSettings.clientSecret,
+          clientId: googleCredential.config.clientId,
+          clientSecret: googleCredential.config.clientSecret,
         }
       },
     },

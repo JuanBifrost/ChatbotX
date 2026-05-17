@@ -1,9 +1,9 @@
 "use client"
 
 import {
-  type OrganizationSettings,
-  type WhatsappSettingsSchema,
-  whatsappSettingsSchema,
+  type WhatsappCredentialPublic,
+  type WhatsappCredentialUpdate,
+  whatsappCredentialUpdateSchema,
 } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -33,9 +33,9 @@ import { useCopyToClipboard } from "usehooks-ts"
 import { updateWhatsappSettingsAction } from "./update-whatsapp-settings.action"
 
 export function WhatsappSettings({
-  config,
+  publicConfig,
 }: {
-  config: OrganizationSettings["whatsapp"]
+  publicConfig: WhatsappCredentialPublic | null
 }) {
   const t = useTranslations()
   const [_, copy] = useCopyToClipboard()
@@ -74,34 +74,34 @@ export function WhatsappSettings({
           <span>WhatsApp</span>
         </CardTitle>
         <CardAction>
-          <EditWhatsappSettingsDialog config={config ?? null} />
+          <EditWhatsappSettingsDialog publicConfig={publicConfig} />
         </CardAction>
       </CardHeader>
       <CardContent>
-        {config?.clientId ? (
+        {publicConfig?.clientId ? (
           <div className="flex flex-col gap-4">
             <div className="flex flex-col">
               <div className="font-bold">App ID:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">{config.clientId}</span>
+                <span className="truncate">{publicConfig.clientId}</span>
                 <Button className="flex-none" size="icon" variant="outline">
                   <CopyIcon
                     className="size-4"
-                    onClick={handleCopy(config.clientId)}
+                    onClick={handleCopy(publicConfig.clientId)}
                   />
                 </Button>
               </div>
             </div>
 
-            {config.businessName && (
+            {publicConfig.businessName && (
               <div className="flex flex-col gap-2">
                 <div className="font-bold">Business Name:</div>
                 <div className="flex items-center gap-2">
-                  <span className="truncate">{config.businessName}</span>
+                  <span className="truncate">{publicConfig.businessName}</span>
                   <Button className="flex-none" size="icon" variant="outline">
                     <CopyIcon
                       className="size-4"
-                      onClick={handleCopy(config.businessName)}
+                      onClick={handleCopy(publicConfig.businessName)}
                     />
                   </Button>
                 </div>
@@ -137,11 +137,11 @@ export function WhatsappSettings({
             <div className="flex flex-col gap-2">
               <div className="font-bold">Webhook Verify Token:</div>
               <div className="flex items-center gap-2">
-                <span className="truncate">{config.verifyToken}</span>
+                <span className="truncate">{publicConfig.verifyToken}</span>
                 <Button className="flex-none" size="icon" variant="outline">
                   <CopyIcon
                     className="size-4"
-                    onClick={handleCopy(config.verifyToken)}
+                    onClick={handleCopy(publicConfig.verifyToken)}
                   />
                 </Button>
               </div>
@@ -158,9 +158,9 @@ export function WhatsappSettings({
 }
 
 export function EditWhatsappSettingsDialog({
-  config,
+  publicConfig,
 }: {
-  config: WhatsappSettingsSchema | null
+  publicConfig: WhatsappCredentialPublic | null
 }) {
   const t = useTranslations()
   const [open, setOpen] = useState(false)
@@ -179,11 +179,11 @@ export function EditWhatsappSettingsDialog({
         </DialogTitle>
 
         <EditWhatsappSettingsForm
-          config={config}
           onClose={() => {
             setOpen(false)
             router.refresh()
           }}
+          publicConfig={publicConfig}
         />
       </DialogContent>
     </Dialog>
@@ -191,10 +191,10 @@ export function EditWhatsappSettingsDialog({
 }
 
 export function EditWhatsappSettingsForm({
-  config,
+  publicConfig,
   onClose,
 }: {
-  config: WhatsappSettingsSchema | null
+  publicConfig: WhatsappCredentialPublic | null
   onClose?: () => void
 }) {
   const t = useTranslations()
@@ -202,7 +202,7 @@ export function EditWhatsappSettingsForm({
   const { form, handleSubmitWithAction, resetFormAndAction } =
     useHookFormAction(
       updateWhatsappSettingsAction,
-      zodResolver(whatsappSettingsSchema),
+      zodResolver(whatsappCredentialUpdateSchema),
       {
         actionProps: {
           onSuccess: () => {
@@ -217,19 +217,24 @@ export function EditWhatsappSettingsForm({
         formProps: {
           mode: "onChange",
           defaultValues: {
-            clientId: config?.clientId ?? "",
-            clientSecret: config?.clientSecret ?? "",
-            verifyToken: config?.verifyToken ?? "",
-            version: config?.version ?? "v20.0",
-            configId: config?.configId ?? "",
-            systemUserId: config?.systemUserId ?? "",
-            systemUserToken: config?.systemUserToken ?? "",
-            businessId: config?.businessId ?? "",
-            businessName: config?.businessName ?? "",
-          },
+            clientId: publicConfig?.clientId ?? "",
+            version: publicConfig?.version ?? "v20.0",
+            configId: publicConfig?.configId ?? "",
+            systemUserId: publicConfig?.systemUserId ?? "",
+            businessId: publicConfig?.businessId ?? "",
+            businessName: publicConfig?.businessName ?? "",
+            verifyToken: publicConfig?.verifyToken ?? "",
+            clientSecret: "",
+            systemUserToken: "",
+          } satisfies WhatsappCredentialUpdate,
         },
       },
     )
+
+  const isConfigured = publicConfig !== null
+  const keepCurrentHint = isConfigured
+    ? t("messages.leaveEmptyToKeepSecret")
+    : undefined
 
   return (
     <Form {...form}>
@@ -237,9 +242,10 @@ export function EditWhatsappSettingsForm({
         <InputField label={t("fields.appId.label")} name="clientId" required />
 
         <InputField
+          description={keepCurrentHint}
           label={t("fields.appSecret.label")}
           name="clientSecret"
-          required
+          required={!isConfigured}
           type="password"
         />
 
@@ -268,9 +274,10 @@ export function EditWhatsappSettingsForm({
         />
 
         <InputField
+          description={keepCurrentHint}
           label={t("fields.systemUserToken.label")}
           name="systemUserToken"
-          required
+          required={!isConfigured}
           type="password"
         />
 

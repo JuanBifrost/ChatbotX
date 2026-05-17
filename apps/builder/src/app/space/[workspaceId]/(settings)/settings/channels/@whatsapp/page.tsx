@@ -1,4 +1,7 @@
-import { organizationService, workspaceService } from "@chatbotx.io/business"
+import {
+  organizationCredentialService,
+  workspaceService,
+} from "@chatbotx.io/business"
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound } from "next/navigation"
 import { listIntegrationWhatsapps } from "@/features/integration-whatsapp/queries"
@@ -15,11 +18,12 @@ export default async function SettingChannelWhatsappPage(props: {
   const workspace = await workspaceService.findOrFail({
     where: { id: workspaceId },
   })
-  const organization = await organizationService.findOrFail({
-    where: { id: workspace.organizationId },
+  const credential = await organizationCredentialService.find({
+    organizationId: workspace.organizationId,
+    type: "whatsapp",
   })
 
-  const hasWhatsappSettings = Boolean(organization.settings?.whatsapp?.clientId)
+  const hasWhatsappSettings = Boolean(credential?.publicConfig.clientId)
 
   const promises = Promise.all([
     listIntegrationWhatsapps({
