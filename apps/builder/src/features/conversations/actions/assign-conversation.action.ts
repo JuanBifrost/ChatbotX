@@ -1,11 +1,10 @@
 "use server"
 
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { db, inArray } from "@chatbotx.io/database/client"
 import { conversationModel } from "@chatbotx.io/database/schema"
 import type { UserModel } from "@chatbotx.io/database/types"
+import { emit } from "@chatbotx.io/event-bus"
 import { emitConversationAssigned } from "@chatbotx.io/events"
-import { createId } from "@chatbotx.io/utils"
 import {
   IntegrationJobAction,
   integrationQueue,
@@ -20,6 +19,7 @@ import {
   assignConversationSchema,
 } from "@/features/conversations/schema/action"
 import { revalidateCacheTags } from "@/lib/cache-helper"
+import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 
 export const assignConversationAction = workspaceActionClient
@@ -117,7 +117,10 @@ export const assignConversationAction = workspaceActionClient
             assignedBy,
           )
         } catch (error) {
-          console.error("Failed to emit conversationAssigned event:", error)
+          logger.error(
+            { err: error },
+            "Failed to emit conversationAssigned event:",
+          )
         }
       }
 
@@ -126,48 +129,50 @@ export const assignConversationAction = workspaceActionClient
       if (toAssignee) {
         for (const conv of conversations) {
           for (const contactInbox of conv.contactInboxes) {
-            await conversationTrackingService.trackEvent(
-              {
-                workspaceId,
-                conversationId: conv.id,
-                eventType: "conversation_assigned",
-                eventId: createId(),
-                toAssignee,
-                occurredAt: new Date(),
-                channel: contactInbox.channel,
-                metadata: {
-                  triggerContext: {
-                    triggerSource: "api",
-                    triggerHandler: "assignConversation",
-                    triggerType: "conversation_assigned",
-                  },
+            emit("analytics:dashboard", {
+              eventType: "conversation:assigned",
+              workspaceId,
+              conversationId: conv.id,
+              toAssignee,
+              occurredAt: new Date(),
+              channel: contactInbox.channel,
+              metadata: {
+                triggerContext: {
+                  triggerSource: "api",
+                  triggerHandler: "assignConversation",
+                  triggerType: "conversation_assigned",
                 },
               },
-              { skipSpooler: true },
-            )
+            }).catch((error) => {
+              logger.error(
+                { err: error },
+                "[assignConversation] Failed to emit",
+              )
+            })
           }
         }
       } else {
         for (const conv of conversations) {
           for (const contactInbox of conv.contactInboxes) {
-            await conversationTrackingService.trackEvent(
-              {
-                workspaceId,
-                conversationId: conv.id,
-                eventType: "conversation_unassigned",
-                eventId: createId(),
-                occurredAt: new Date(),
-                channel: contactInbox.channel,
-                metadata: {
-                  triggerContext: {
-                    triggerSource: "api",
-                    triggerHandler: "assignConversation",
-                    triggerType: "conversation_unassigned",
-                  },
+            emit("analytics:dashboard", {
+              eventType: "conversation:unassigned",
+              workspaceId,
+              conversationId: conv.id,
+              occurredAt: new Date(),
+              channel: contactInbox.channel,
+              metadata: {
+                triggerContext: {
+                  triggerSource: "api",
+                  triggerHandler: "assignConversation",
+                  triggerType: "conversation_unassigned",
                 },
               },
-              { skipSpooler: true },
-            )
+            }).catch((error) => {
+              logger.error(
+                { err: error },
+                "[assignConversation] Failed to emit",
+              )
+            })
           }
         }
       }

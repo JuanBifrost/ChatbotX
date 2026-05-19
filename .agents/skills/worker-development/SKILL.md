@@ -24,7 +24,6 @@ Workers run as separate Node processes in `apps/worker/`. They consume jobs from
 | default | `default` | `src/default/worker.ts` |
 | trigger | `trigger` | `src/trigger/worker.ts` |
 | webhook | `webhook` | `src/webhook/worker.ts` |
-| analytics | `analytics` | `src/analytics/worker.ts` |
 | schedule | (cron) | `src/schedule/worker.ts` |
 | sequence-scheduler | Kafka | `src/sequence-scheduler/worker*.ts` |
 
@@ -220,6 +219,30 @@ Only used for sequence dispatch currently. Prefer BullMQ for standard job queues
 | Integration handlers | `../services/integrations` (within worker) |
 | Logger | `@chatbotx.io/logger` |
 | SDK types | `@chatbotx.io/sdk` |
+
+## Logging
+
+Import the child logger from `../../lib/logger` inside `apps/worker`, or `@chatbotx.io/logger` for shared packages.
+
+**Always use `err` (not `error`) as the key for Error objects.**
+
+pino's built-in serializer is keyed on `err`. Using any other key (e.g. `error`) skips serialization, so the stack trace and error message are lost from structured logs.
+
+```typescript
+// ✅ correct — stack trace preserved
+logger.error({ err: error, conversationId }, "Failed to emit analytics event")
+
+// ❌ wrong — object serialized as [Object] with no stack trace
+logger.error({ error, conversationId }, "Failed to emit analytics event")
+```
+
+For fire-and-forget `.catch()` handlers on analytics/event-bus emissions, always log the error rather than swallowing it:
+
+```typescript
+emit("analytics:dashboard", payload).catch((err) => {
+  logger.error({ err, conversationId }, "[handler] Failed to emit analytics event")
+})
+```
 
 ## Environment
 

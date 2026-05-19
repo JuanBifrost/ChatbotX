@@ -21,7 +21,7 @@ import { logger } from "../../lib/logger"
 import { saveResultToCustomField } from "./generate-text"
 
 export async function runRef(data: IntegrationJobRunRef["data"]) {
-  const { conversationId, contactInboxId, ref } = data
+  const { conversationId, contactInboxId, ref, messageId } = data
   const { conversation, contactInbox } =
     await detectConversationAndContactInbox({
       conversationId,
@@ -33,64 +33,127 @@ export async function runRef(data: IntegrationJobRunRef["data"]) {
     return
   }
 
-  if (refData.type === "draft") {
-    logger.debug(`Draft ref: ${ref}`)
-    const { flowId } = refData
-    if (!flowId) {
-      logger.warn(`Invalid draft ref: ${ref}`)
+  const startTime = Date.now()
+  const emitSuccess = () => {
+    if (!messageId) {
+      return
+    }
+    emit("analytics:dashboard", {
+      eventType: "message:bot_received",
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      messageId,
+      occurredAt: new Date(),
+      hasResponse: true,
+      responseType: "flow",
+      routeType: "flow",
+      result: "success",
+      aiProvider: "none",
+      metadata: {
+        latency: Date.now() - startTime,
+        triggerContext: {
+          triggerSource: "worker",
+          triggerHandler: "runRef",
+          triggerType: "contact_ref",
+        },
+      },
+    }).catch((err) => logger.error(err, "[runRef] Failed to emit bot_received"))
+  }
+  const emitFallback = () => {
+    if (!messageId) {
+      return
+    }
+    emit("analytics:dashboard", {
+      eventType: "message:bot_received",
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      messageId,
+      occurredAt: new Date(),
+      hasResponse: false,
+      responseType: "flow",
+      routeType: "flow",
+      result: "fallback",
+      aiProvider: "none",
+      metadata: {
+        latency: Date.now() - startTime,
+        fallbackReason: "handler_error_to_fallback",
+        triggerContext: {
+          triggerSource: "worker",
+          triggerHandler: "runRef",
+          triggerType: "contact_ref_failed",
+        },
+      },
+    }).catch((err) =>
+      logger.error(err, "[runRef] Failed to emit bot_received fallback"),
+    )
+  }
+
+  try {
+    if (refData.type === "draft") {
+      logger.debug(`Draft ref: ${ref}`)
+      const { flowId } = refData
+      if (!flowId) {
+        logger.warn(`Invalid draft ref: ${ref}`)
+        return
+      }
+
+      const flowVersion = await findOrFail({
+        table: flowVersionModel,
+        where: { flowId, isDraft: true },
+        message: "Flow version not found",
+      })
+
+      await integrationQueue.add(IntegrationJobAction.sendFlow, {
+        type: IntegrationJobAction.sendFlow,
+        data: {
+          conversationId: conversation,
+          contactInboxId: contactInbox,
+          flowId: flowVersion.flowId,
+          flowVersionId: flowVersion.id,
+        },
+      })
+      emitSuccess()
       return
     }
 
-    const flowVersion = await findOrFail({
-      table: flowVersionModel,
-      where: { flowId, isDraft: true },
-      message: "Flow version not found",
-    })
+    if (refData.type === "flow") {
+      logger.debug(`Start flow ref: ${ref}`)
+      const { flowId, nodeId } = refData
+      if (!flowId) {
+        logger.warn(`Invalid flow ref: ${ref}`)
+        return
+      }
 
-    await integrationQueue.add(IntegrationJobAction.sendFlow, {
-      type: IntegrationJobAction.sendFlow,
-      data: {
-        conversationId: conversation,
-        contactInboxId: contactInbox,
-        flowId: flowVersion.flowId,
-        flowVersionId: flowVersion.id,
-      },
-    })
-    return
-  }
+      const flow = await findOrFail({
+        table: flowModel,
+        where: { id: flowId, workspaceId: conversation.workspaceId },
+        message: "Flow not found",
+      })
 
-  if (refData.type === "flow") {
-    logger.debug(`Start flow ref: ${ref}`)
-    const { flowId, nodeId } = refData
-    if (!flowId) {
-      logger.warn(`Invalid flow ref: ${ref}`)
+      await integrationQueue.add(IntegrationJobAction.sendFlow, {
+        type: IntegrationJobAction.sendFlow,
+        data: {
+          conversationId: conversation,
+          contactInboxId: contactInbox,
+          flowId: flow.id,
+          nodeId,
+        },
+      })
+      emitSuccess()
       return
     }
 
-    const flow = await findOrFail({
-      table: flowModel,
-      where: { id: flowId, workspaceId: conversation.workspaceId },
-      message: "Flow not found",
+    // Trigger reflink
+    handleReflink({
+      conversation,
+      contactInbox,
+      refData,
     })
-
-    await integrationQueue.add(IntegrationJobAction.sendFlow, {
-      type: IntegrationJobAction.sendFlow,
-      data: {
-        conversationId: conversation,
-        contactInboxId: contactInbox,
-        flowId: flow.id,
-        nodeId,
-      },
-    })
-    return
+    emitSuccess()
+  } catch (error) {
+    emitFallback()
+    throw error
   }
-
-  // Trigger reflink
-  handleReflink({
-    conversation,
-    contactInbox,
-    refData,
-  })
 }
 
 async function handleReflink(props: {

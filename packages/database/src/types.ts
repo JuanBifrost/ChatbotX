@@ -99,3 +99,15 @@ export type InboxWithIntegrations = InboxModel & {
 
 export type ContactOnSmartDelayModel =
   typeof schema.contactOnSmartDelayModel.$inferSelect
+export type AnalyticsContactEventModel =
+  typeof schema.analyticsContactEventModel.$inferSelect
+export type AnalyticsBotMessageEventModel =
+  typeof schema.analyticsBotMessageEventModel.$inferSelect
+export type AnalyticsConversationEventModel =
+  typeof schema.analyticsConversationEventModel.$inferSelect
+export type AnalyticsBroadcastEventModel =
+  typeof schema.analyticsBroadcastEventModel.$inferSelect
+export type AnalyticsSequenceEventModel =
+  typeof schema.analyticsSequenceEventModel.$inferSelect
+export type AnalyticsFlowNodeEventModel =
+  typeof schema.analyticsFlowNodeEventModel.$inferSelect

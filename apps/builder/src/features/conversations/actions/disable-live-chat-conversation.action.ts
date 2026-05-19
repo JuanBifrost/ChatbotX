@@ -1,8 +1,7 @@
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { db } from "@chatbotx.io/database/client"
 import type { UserModel } from "@chatbotx.io/database/types"
+import { emit } from "@chatbotx.io/event-bus"
 import { emitConversationTransferredToBot } from "@chatbotx.io/events"
-import { createId } from "@chatbotx.io/utils"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -10,6 +9,7 @@ import {
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
+import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 import { enableConversationState } from "../queries/bot-state"
 
@@ -51,32 +51,33 @@ export const disableLiveChatConversationAction = workspaceActionClient
             ctx.user.id,
           )
         } catch (error) {
-          console.error(
+          logger.error(
+            { err: error },
             "Failed to emit conversationTransferredToBot event:",
-            error,
           )
         }
       }
 
       for (const conv of conversations) {
-        await conversationTrackingService.trackEvent(
-          {
-            workspaceId,
-            conversationId: conv.id,
-            eventType: "conversation_transferred_to_bot",
-            eventId: createId(),
-            channel: "webchat", // TODO: replace correct channel from contact inbox
-            occurredAt: new Date(),
-            metadata: {
-              triggerContext: {
-                triggerSource: "api",
-                triggerHandler: "disableLiveChatConversationAction",
-                triggerType: "conversation_transferred_to_bot",
-              },
+        emit("analytics:dashboard", {
+          eventType: "conversation:transferred_to_bot",
+          workspaceId,
+          conversationId: conv.id,
+          channel: "webchat", // TODO: replace correct channel from contact inbox
+          occurredAt: new Date(),
+          metadata: {
+            triggerContext: {
+              triggerSource: "api",
+              triggerHandler: "disableLiveChatConversationAction",
+              triggerType: "conversation_transferred_to_bot",
             },
           },
-          { skipSpooler: true },
-        )
+        }).catch((error) => {
+          logger.error(
+            { err: error },
+            "[disableLiveChatConversationAction] Failed to emit",
+          )
+        })
       }
 
       revalidateCacheTags([

@@ -1,10 +1,11 @@
 "use server"
 
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { and, db, eq } from "@chatbotx.io/database/client"
 import { conversationModel } from "@chatbotx.io/database/schema"
-import { createId, zodBigintAsString } from "@chatbotx.io/utils"
+import { emit } from "@chatbotx.io/event-bus"
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { revalidateCacheTags } from "@/lib/cache-helper"
+import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 
 export const unfollowConversationAction = workspaceActionClient
@@ -48,24 +49,22 @@ export const unfollowConversation = async (ctx: {
     )
 
   for (const contactInbox of conversation.contactInboxes) {
-    await conversationTrackingService.trackEvent(
-      {
-        workspaceId: ctx.workspaceId,
-        conversationId: conversation.id,
-        eventType: "conversation_unfollowed",
-        eventId: createId(),
-        channel: contactInbox.channel,
-        occurredAt: new Date(),
-        metadata: {
-          triggerContext: {
-            triggerSource: "api",
-            triggerHandler: "unfollowConversationAction",
-            triggerType: "conversation_unfollowed",
-          },
+    emit("analytics:dashboard", {
+      eventType: "conversation:unfollowed",
+      workspaceId: ctx.workspaceId,
+      conversationId: conversation.id,
+      channel: contactInbox.channel,
+      occurredAt: new Date(),
+      metadata: {
+        triggerContext: {
+          triggerSource: "api",
+          triggerHandler: "unfollowConversationAction",
+          triggerType: "conversation_unfollowed",
         },
       },
-      { skipSpooler: true },
-    )
+    }).catch((error) => {
+      logger.error({ err: error }, "[unfollowConversation] Failed to emit")
+    })
   }
 
   revalidateCacheTags([

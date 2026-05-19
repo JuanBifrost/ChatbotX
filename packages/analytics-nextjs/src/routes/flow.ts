@@ -3,7 +3,13 @@ import {
   flowNodeStatsResponse,
   flowStatsRequest,
 } from "@chatbotx.io/analytics/schemas"
+import { invalidateCacheByTags, withCache } from "@chatbotx.io/redis"
 import { os } from "@orpc/server"
+import { logger } from "../lib/log"
+
+const flowStatsCacheTag = (flowId: string) => `flow-stats:${flowId}`
+const flowStatsCacheKey = (workspaceId: string, flowId: string) =>
+  `flow:stats:${workspaceId}:${flowId}`
 
 export const analyticsFlowRoutes = os.router({
   resetFlowAnalytics: os
@@ -15,10 +21,16 @@ export const analyticsFlowRoutes = os.router({
     })
     .input(flowStatsRequest)
     .handler(async ({ input }) => {
-      await flowAnalyticsService.resetStatsSession({
-        workspaceId: input.workspaceId,
-        flowId: input.flowId,
-      })
+      try {
+        await flowAnalyticsService.resetStatsSession({
+          workspaceId: input.workspaceId,
+          flowId: input.flowId,
+        })
+        await invalidateCacheByTags([flowStatsCacheTag(input.flowId)])
+      } catch (error) {
+        logger.error({ err: error }, "[analytics:resetFlowAnalytics] failed")
+        throw error
+      }
     }),
   getFlowAnalytics: os
     .route({
@@ -29,11 +41,21 @@ export const analyticsFlowRoutes = os.router({
     })
     .input(flowStatsRequest)
     .output(flowNodeStatsResponse)
-    .handler(
-      async ({ input }) =>
-        await flowAnalyticsService.getFlowStats({
-          workspaceId: input.workspaceId,
-          flowId: input.flowId,
-        }),
+    .handler(async ({ input }) =>
+      withCache(
+        flowStatsCacheKey(input.workspaceId, input.flowId),
+        async () => {
+          try {
+            return await flowAnalyticsService.getFlowStats({
+              workspaceId: input.workspaceId,
+              flowId: input.flowId,
+            })
+          } catch (error) {
+            logger.error({ err: error }, "[analytics:getFlowAnalytics] failed")
+            throw error
+          }
+        },
+        { ttl: 120, tags: [flowStatsCacheTag(input.flowId)] },
+      ),
     ),
 })

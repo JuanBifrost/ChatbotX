@@ -1,4 +1,3 @@
-import { contactTrackingService } from "@chatbotx.io/analytics"
 import { broadcastToWorkspaceParty, buildContext } from "@chatbotx.io/business"
 import { db, findOrFail } from "@chatbotx.io/database/client"
 import type { IntegrationType } from "@chatbotx.io/database/partials"
@@ -173,31 +172,6 @@ export const receiveMessage = async (
       // re-assign if is new message
       createdMessage = newMessage
 
-      contactTrackingService
-        .trackEvent({
-          workspaceId: inbox.workspaceId,
-          contactId: contactInbox.contactId,
-          eventType: "contact_message_in",
-          senderType: "human",
-          occurredAt: newMessage.createdAt,
-          source: integrationType,
-          sourceId: newMessage.sourceId,
-          channel: inbox.channel,
-          metadata: {
-            triggerContext: {
-              triggerSource: "worker",
-              triggerHandler: "receiveMessage",
-              triggerType: "contact_message_in",
-            },
-          },
-        })
-        .catch((error) => {
-          logger.error(
-            error,
-            "[receiveMessage] Failed to track contact_message_in",
-          )
-        })
-
       if (postbackAction) {
         await integrationQueue.add(IntegrationJobAction.runFlowPostback, {
           type: IntegrationJobAction.runFlowPostback,
@@ -206,6 +180,7 @@ export const receiveMessage = async (
             contactInboxId: contactInbox,
             action: postbackAction,
             ref,
+            messageId: createdMessage?.id,
           },
         })
       }
@@ -218,6 +193,7 @@ export const receiveMessage = async (
             contactInboxId: contactInbox,
             action: quickReplyAction,
             ref,
+            messageId: createdMessage?.id,
           },
         })
       }
@@ -231,6 +207,7 @@ export const receiveMessage = async (
         conversationId: conversation,
         contactInboxId: contactInbox,
         ref,
+        messageId: createdMessage?.id,
       },
     })
   }
@@ -380,7 +357,8 @@ const detectContactAndConversation = async (props: {
     }
 
     if (contactInbox.sourceId) {
-      emit("contact:created", {
+      emit("analytics:dashboard", {
+        eventType: "contact:created",
         workspaceId: newContact.workspaceId,
         contactId: contactInbox.id,
         occurredAt: newContact.createdAt,

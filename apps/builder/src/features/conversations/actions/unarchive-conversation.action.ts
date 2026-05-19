@@ -1,9 +1,8 @@
 "use server"
 
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { and, db, eq, inArray } from "@chatbotx.io/database/client"
 import { conversationModel } from "@chatbotx.io/database/schema"
-import { createId } from "@chatbotx.io/utils"
+import { emit } from "@chatbotx.io/event-bus"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -11,6 +10,7 @@ import {
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
+import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 
 export const unarchiveConversationAction = workspaceActionClient
@@ -50,24 +50,25 @@ export const unarchiveConversationAction = workspaceActionClient
 
       for (const conv of conversations) {
         for (const contactInbox of conv.contactInboxes) {
-          await conversationTrackingService.trackEvent(
-            {
-              workspaceId,
-              conversationId: conv.id,
-              eventType: "conversation_unarchived",
-              eventId: createId(),
-              channel: contactInbox.channel,
-              occurredAt: new Date(),
-              metadata: {
-                triggerContext: {
-                  triggerSource: "api",
-                  triggerHandler: "unarchiveConversationAction",
-                  triggerType: "conversation_unarchived",
-                },
+          emit("analytics:dashboard", {
+            eventType: "conversation:unarchived",
+            workspaceId,
+            conversationId: conv.id,
+            channel: contactInbox.channel,
+            occurredAt: new Date(),
+            metadata: {
+              triggerContext: {
+                triggerSource: "api",
+                triggerHandler: "unarchiveConversationAction",
+                triggerType: "conversation_unarchived",
               },
             },
-            { skipSpooler: true },
-          )
+          }).catch((error) => {
+            logger.error(
+              { err: error },
+              "[unarchiveConversation] Failed to emit",
+            )
+          })
         }
       }
 

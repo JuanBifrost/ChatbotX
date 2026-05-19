@@ -1,4 +1,3 @@
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import {
   and,
   db,
@@ -10,6 +9,7 @@ import {
   sql,
 } from "@chatbotx.io/database/client"
 import { contactModel, conversationModel } from "@chatbotx.io/database/schema"
+import { emit } from "@chatbotx.io/event-bus"
 import {
   emitConversationArchived,
   emitConversationAssigned,
@@ -31,8 +31,8 @@ import {
   type UnassignConversationStepSchema,
   type UnfollowConversationStepSchema,
 } from "@chatbotx.io/flow-config"
-import { createId } from "@chatbotx.io/utils"
 import { subHours } from "date-fns"
+import { logger } from "../../lib/logger"
 import {
   allIntegrations,
   resolveIntegrationContextFromContactInbox,
@@ -72,28 +72,30 @@ export async function stepArchiveConversation({
       conversation.id,
     )
   } catch (error) {
-    console.error("Failed to emit conversationArchived event:", error)
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepArchiveConversation] Failed to emit realtime event",
+    )
   }
 
-  // conversationTrackingService
-  //   .trackEvent({
-  //     eventId: createId(),
-  //     workspaceId: conversation.workspaceId,
-  //     conversationId: conversation.id,
-  //     eventType: "conversation_archived",
-  //     channel: conversation.channel,
-  //     occurredAt: new Date(),
-  //     metadata: {
-  //       triggerContext: {
-  //         triggerSource: "worker",
-  //         triggerHandler: "stepArchiveConversation",
-  //         triggerType: "flow_action",
-  //       },
-  //     },
-  //   })
-  //   .catch((error) => {
-  //     console.error("[stepArchiveConversation] Failed to track", error)
-  //   })
+  emit("analytics:dashboard", {
+    eventType: "conversation:archived",
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "worker",
+        triggerHandler: "stepArchiveConversation",
+        triggerType: "flow_action",
+      },
+    },
+  }).catch((error) => {
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepArchiveConversation] Failed to emit analytics event",
+    )
+  })
 }
 
 export async function stepUnarchiveConversation({
@@ -106,25 +108,24 @@ export async function stepUnarchiveConversation({
     })
     .where(eq(conversationModel.id, conversation.id))
 
-  // conversationTrackingService
-  //   .trackEvent({
-  //     eventId: createId(),
-  //     workspaceId: conversation.workspaceId,
-  //     conversationId: conversation.id,
-  //     eventType: "conversation_unarchived",
-  //     channel: conversation.channel,
-  //     occurredAt: new Date(),
-  //     metadata: {
-  //       triggerContext: {
-  //         triggerSource: "worker",
-  //         triggerHandler: "stepUnarchiveConversation",
-  //         triggerType: "flow_action",
-  //       },
-  //     },
-  //   })
-  //   .catch((error) => {
-  //     console.error("[stepUnarchiveConversation] Failed to track", error)
-  //   })
+  emit("analytics:dashboard", {
+    eventType: "conversation:unarchived",
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "worker",
+        triggerHandler: "stepUnarchiveConversation",
+        triggerType: "flow_action",
+      },
+    },
+  }).catch((error) => {
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepUnarchiveConversation] Failed to emit analytics event",
+    )
+  })
 }
 
 export async function stepAssignConversation({
@@ -179,29 +180,31 @@ export async function stepAssignConversation({
         assignedTo,
       )
     } catch (error) {
-      console.error("Failed to emit conversationAssigned event:", error)
+      logger.error(
+        { err: error, conversationId: conversation.id },
+        "[stepAssignConversation] Failed to emit realtime event",
+      )
     }
 
-    // conversationTrackingService
-    //   .trackEvent({
-    //     eventId: createId(),
-    //     workspaceId: conversation.workspaceId,
-    //     conversationId: conversation.id,
-    //     eventType: "conversation_assigned",
-    //     channel: conversation.channel,
-    //     occurredAt: new Date(),
-    //     toAssignee: assignedTo,
-    //     metadata: {
-    //       triggerContext: {
-    //         triggerSource: "worker",
-    //         triggerHandler: "stepAssignConversation",
-    //         triggerType: "flow_action",
-    //       },
-    //     },
-    //   })
-    //   .catch((error) => {
-    //     console.error("[stepAssignConversation] Failed to track", error)
-    //   })
+    emit("analytics:dashboard", {
+      eventType: "conversation:assigned",
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      occurredAt: new Date(),
+      toAssignee: assignedTo,
+      metadata: {
+        triggerContext: {
+          triggerSource: "worker",
+          triggerHandler: "stepAssignConversation",
+          triggerType: "flow_action",
+        },
+      },
+    }).catch((error) => {
+      logger.error(
+        { err: error, conversationId: conversation.id },
+        "[stepAssignConversation] Failed to emit analytics event",
+      )
+    })
   }
 }
 
@@ -376,29 +379,31 @@ export async function stepAutoAssignConversation({
         assignedTo,
       )
     } catch (error) {
-      console.error("Failed to emit conversationAssigned event:", error)
+      logger.error(
+        { err: error, conversationId: conversation.id },
+        "[stepAutoAssignConversation] Failed to emit realtime event",
+      )
     }
 
-    // conversationTrackingService
-    //   .trackEvent({
-    //     eventId: createId(),
-    //     workspaceId: conversation.workspaceId,
-    //     conversationId: conversation.id,
-    //     eventType: "conversation_assigned",
-    //     channel: conversation.channel,
-    //     occurredAt: new Date(),
-    //     toAssignee: assignedTo,
-    //     metadata: {
-    //       triggerContext: {
-    //         triggerSource: "worker",
-    //         triggerHandler: "stepAutoAssignConversation",
-    //         triggerType: "flow_action",
-    //       },
-    //     },
-    //   })
-    //   .catch((error) => {
-    //     console.error("[stepAutoAssignConversation] Failed to track", error)
-    //   })
+    emit("analytics:dashboard", {
+      eventType: "conversation:assigned",
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      occurredAt: new Date(),
+      toAssignee: assignedTo,
+      metadata: {
+        triggerContext: {
+          triggerSource: "worker",
+          triggerHandler: "stepAutoAssignConversation",
+          triggerType: "flow_action",
+        },
+      },
+    }).catch((error) => {
+      logger.error(
+        { err: error, conversationId: conversation.id },
+        "[stepAutoAssignConversation] Failed to emit analytics event",
+      )
+    })
   }
 }
 
@@ -421,29 +426,32 @@ export async function stepUnassignConversation({
       conversation.id,
     )
   } catch (error) {
-    console.error("Failed to emit conversationUnassigned event:", error)
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepUnassignConversation] Failed to emit realtime event",
+    )
   }
 
-  conversationTrackingService
-    .trackEvent({
-      eventId: createId(),
-      workspaceId: conversation.workspaceId,
-      conversationId: conversation.id,
-      eventType: "conversation_unassigned",
-      fromAssignee:
-        conversation.assignedUserId || conversation.assignedInboxTeamId || "",
-      occurredAt: new Date(),
-      metadata: {
-        triggerContext: {
-          triggerSource: "worker",
-          triggerHandler: "stepUnassignConversation",
-          triggerType: "flow_action",
-        },
+  emit("analytics:dashboard", {
+    eventType: "conversation:unassigned",
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    fromAssignee:
+      conversation.assignedUserId || conversation.assignedInboxTeamId || "",
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "worker",
+        triggerHandler: "stepUnassignConversation",
+        triggerType: "flow_action",
       },
-    })
-    .catch((error) => {
-      console.error("[stepUnassignConversation] Failed to track", error)
-    })
+    },
+  }).catch((error) => {
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepUnassignConversation] Failed to emit analytics event",
+    )
+  })
 }
 
 export async function stepFollowConversation({
@@ -456,25 +464,24 @@ export async function stepFollowConversation({
     })
     .where(eq(conversationModel.id, conversation.id))
 
-  // conversationTrackingService
-  //   .trackEvent({
-  //     eventId: createId(),
-  //     workspaceId: conversation.workspaceId,
-  //     conversationId: conversation.id,
-  //     eventType: "conversation_followed",
-  //     channel: conversation.channel,
-  //     occurredAt: new Date(),
-  //     metadata: {
-  //       triggerContext: {
-  //         triggerSource: "worker",
-  //         triggerHandler: "stepFollowConversation",
-  //         triggerType: "flow_action",
-  //       },
-  //     },
-  //   })
-  //   .catch((error) => {
-  //     console.error("[stepFollowConversation] Failed to track", error)
-  //   })
+  emit("analytics:dashboard", {
+    eventType: "conversation:followed",
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "worker",
+        triggerHandler: "stepFollowConversation",
+        triggerType: "flow_action",
+      },
+    },
+  }).catch((error) => {
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepFollowConversation] Failed to emit analytics event",
+    )
+  })
 }
 
 export async function stepUnfollowConversation({
@@ -487,25 +494,24 @@ export async function stepUnfollowConversation({
     })
     .where(eq(conversationModel.id, conversation.id))
 
-  // conversationTrackingService
-  //   .trackEvent({
-  //     eventId: createId(),
-  //     workspaceId: conversation.workspaceId,
-  //     conversationId: conversation.id,
-  //     eventType: "conversation_unfollowed",
-  //     channel: conversation.channel,
-  //     occurredAt: new Date(),
-  //     metadata: {
-  //       triggerContext: {
-  //         triggerSource: "worker",
-  //         triggerHandler: "stepUnfollowConversation",
-  //         triggerType: "flow_action",
-  //       },
-  //     },
-  //   })
-  //   .catch((error) => {
-  //     console.error("[stepUnfollowConversation] Failed to track", error)
-  //   })
+  emit("analytics:dashboard", {
+    eventType: "conversation:unfollowed",
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "worker",
+        triggerHandler: "stepUnfollowConversation",
+        triggerType: "flow_action",
+      },
+    },
+  }).catch((error) => {
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepUnfollowConversation] Failed to emit analytics event",
+    )
+  })
 }
 
 export async function stepDisableBot({
@@ -524,28 +530,30 @@ export async function stepDisableBot({
       conversation.id,
     )
   } catch (error) {
-    console.error("Failed to emit conversationTransferredToHuman event:", error)
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepDisableBot] Failed to emit realtime event",
+    )
   }
 
-  // conversationTrackingService
-  //   .trackEvent({
-  //     eventId: createId(),
-  //     workspaceId: conversation.workspaceId,
-  //     conversationId: conversation.id,
-  //     eventType: "conversation_transferred_to_human",
-  //     channel: conversation.channel,
-  //     occurredAt: new Date(),
-  //     metadata: {
-  //       triggerContext: {
-  //         triggerSource: "worker",
-  //         triggerHandler: "stepDisableBot",
-  //         triggerType: "flow_action",
-  //       },
-  //     },
-  //   })
-  //   .catch((error) => {
-  //     console.error("[stepDisableBot] Failed to track", error)
-  //   })
+  emit("analytics:dashboard", {
+    eventType: "conversation:transferred_to_human",
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "worker",
+        triggerHandler: "stepDisableBot",
+        triggerType: "flow_action",
+      },
+    },
+  }).catch((error) => {
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepDisableBot] Failed to emit analytics event",
+    )
+  })
 }
 
 export async function stepEnableBot({
@@ -564,28 +572,30 @@ export async function stepEnableBot({
       conversation.id,
     )
   } catch (error) {
-    console.error("Failed to emit conversationTransferredToBot event:", error)
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepEnableBot] Failed to emit realtime event",
+    )
   }
 
-  // conversationTrackingService
-  //   .trackEvent({
-  //     eventId: createId(),
-  //     workspaceId: conversation.workspaceId,
-  //     conversationId: conversation.id,
-  //     eventType: "conversation_transferred_to_bot",
-  //     channel: conversation.channel,
-  //     occurredAt: new Date(),
-  //     metadata: {
-  //       triggerContext: {
-  //         triggerSource: "worker",
-  //         triggerHandler: "stepEnableBot",
-  //         triggerType: "flow_action",
-  //       },
-  //     },
-  //   })
-  //   .catch((error) => {
-  //     console.error("[stepEnableBot] Failed to track", error)
-  //   })
+  emit("analytics:dashboard", {
+    eventType: "conversation:transferred_to_bot",
+    workspaceId: conversation.workspaceId,
+    conversationId: conversation.id,
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "worker",
+        triggerHandler: "stepEnableBot",
+        triggerType: "flow_action",
+      },
+    },
+  }).catch((error) => {
+    logger.error(
+      { err: error, conversationId: conversation.id },
+      "[stepEnableBot] Failed to emit analytics event",
+    )
+  })
 }
 
 export const stepSendTyping = async (

@@ -1,11 +1,12 @@
 "use server"
 
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { db, eq } from "@chatbotx.io/database/client"
 import { conversationModel } from "@chatbotx.io/database/schema"
+import { emit } from "@chatbotx.io/event-bus"
 import { emitConversationFollowUp } from "@chatbotx.io/events"
-import { createId, zodBigintAsString } from "@chatbotx.io/utils"
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { revalidateCacheTags } from "@/lib/cache-helper"
+import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 
 export const followConversationAction = workspaceActionClient
@@ -51,27 +52,25 @@ export const followConversation = async (ctx: {
       ctx.userId,
     )
   } catch (error) {
-    console.error("Failed to emit conversationFollowUp event:", error)
+    logger.error({ err: error }, "Failed to emit conversationFollowUp event:")
   }
 
-  await conversationTrackingService.trackEvent(
-    {
-      workspaceId: ctx.workspaceId,
-      conversationId: conversation.id,
-      eventType: "conversation_followed",
-      eventId: createId(),
-      channel: "webchat", // TODO: replace correct channel from contact inbox
-      occurredAt: new Date(),
-      metadata: {
-        triggerContext: {
-          triggerSource: "api",
-          triggerHandler: "followConversationAction",
-          triggerType: "conversation_followed",
-        },
+  emit("analytics:dashboard", {
+    eventType: "conversation:followed",
+    workspaceId: ctx.workspaceId,
+    conversationId: conversation.id,
+    channel: "webchat", // TODO: replace correct channel from contact inbox
+    occurredAt: new Date(),
+    metadata: {
+      triggerContext: {
+        triggerSource: "api",
+        triggerHandler: "followConversationAction",
+        triggerType: "conversation_followed",
       },
     },
-    { skipSpooler: true },
-  )
+  }).catch((error) => {
+    logger.error({ err: error }, "[followConversation] Failed to emit")
+  })
 
   revalidateCacheTags([
     `workspaces:${ctx.workspaceId}#contacts`,

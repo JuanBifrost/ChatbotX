@@ -1,9 +1,8 @@
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { and, db, eq } from "@chatbotx.io/database/client"
 import { conversationModel } from "@chatbotx.io/database/schema"
+import { emit } from "@chatbotx.io/event-bus"
 import { emitConversationTransferredToHuman } from "@chatbotx.io/events"
 import baseLogger from "@chatbotx.io/logger"
-import { createId } from "@chatbotx.io/utils"
 import { normalizeError } from "universal-error-normalizer"
 
 export interface HandoffRequest {
@@ -23,11 +22,11 @@ export class HandoffExecutorService {
     const {
       workspaceId,
       conversationId,
-      contactId,
       reason,
       source,
       channel,
       metadata,
+      contactId,
     } = request
 
     try {
@@ -50,37 +49,38 @@ export class HandoffExecutorService {
 
       const resolvedChannel = channel ?? DEFAULT_CHANNEL
 
-      await emitConversationTransferredToHuman(
+      emitConversationTransferredToHuman(
         workspaceId,
         contactId,
         conversationId,
-      )
+      ).catch((error) => {
+        baseLogger.error(
+          { error, conversationId },
+          "[handoffExecutor] Failed to emit realtime handoff event",
+        )
+      })
 
-      await conversationTrackingService
-        .trackEvent({
-          eventId: createId(),
-          workspaceId,
-          conversationId,
-          eventType: "conversation_transferred_to_human",
-          channel: resolvedChannel,
-          occurredAt: new Date(),
-          metadata: {
-            ...metadata,
-            handoffReason: reason,
-            triggerContext: {
-              triggerSource: "worker",
-              triggerHandler: "handoffExecutor",
-              triggerType: source,
-            },
+      emit("analytics:dashboard", {
+        eventType: "conversation:transferred_to_human",
+        workspaceId,
+        conversationId,
+        channel: resolvedChannel,
+        occurredAt: new Date(),
+        metadata: {
+          ...metadata,
+          handoffReason: reason,
+          triggerContext: {
+            triggerSource: "worker",
+            triggerHandler: "handoffExecutor",
+            triggerType: source,
           },
-        })
-        .catch((err) => {
-          const normalizedError = normalizeError(err)
-          baseLogger.error(
-            { error: normalizedError, conversationId },
-            "[handoff-executor] Failed to track analytics",
-          )
-        })
+        },
+      }).catch((error) => {
+        baseLogger.error(
+          { error, conversationId },
+          "[handoffExecutor] Failed to emit analytics event",
+        )
+      })
     } catch (error) {
       const normalizedError = normalizeError(error)
       baseLogger.error(

@@ -9,6 +9,7 @@ import {
   timeRangeQuerySchema,
 } from "@chatbotx.io/analytics/schemas"
 import { os } from "@orpc/server"
+import { logger } from "../lib/log"
 
 export const analyticsConversationRoutes = os.router({
   conversationHandoffsAnalyticsAPI: os
@@ -21,8 +22,13 @@ export const analyticsConversationRoutes = os.router({
     .input(timeRangeQuerySchema)
     .output(getConversationHandoffsResponseSchema)
     .handler(async ({ input }) => {
-      const data = await conversationAnalyticsService.getHandoffsByDay(input)
-      return { data }
+      try {
+        const data = await conversationAnalyticsService.getHandoffsByDay(input)
+        return { data }
+      } catch (error) {
+        logger.error({ err: error }, "[analytics:conversationHandoffs] failed")
+        throw error
+      }
     }),
   conversationFollowUpsAnalyticsAPI: os
     .route({
@@ -34,8 +40,13 @@ export const analyticsConversationRoutes = os.router({
     .input(timeRangeQuerySchema)
     .output(getConversationFollowUpsResponseSchema)
     .handler(async ({ input }) => {
-      const data = await conversationAnalyticsService.getFollowUpsByDay(input)
-      return { data }
+      try {
+        const data = await conversationAnalyticsService.getFollowUpsByDay(input)
+        return { data }
+      } catch (error) {
+        logger.error({ err: error }, "[analytics:conversationFollowUps] failed")
+        throw error
+      }
     }),
   conversationArchivedAnalyticsAPI: os
     .route({
@@ -47,8 +58,13 @@ export const analyticsConversationRoutes = os.router({
     .input(timeRangeQuerySchema)
     .output(getConversationArchivedResponseSchema)
     .handler(async ({ input }) => {
-      const data = await conversationAnalyticsService.getArchivedByDay(input)
-      return { data }
+      try {
+        const data = await conversationAnalyticsService.getArchivedByDay(input)
+        return { data }
+      } catch (error) {
+        logger.error({ err: error }, "[analytics:conversationArchived] failed")
+        throw error
+      }
     }),
   conversationAssignedAnalyticsAPI: os
     .route({
@@ -60,8 +76,13 @@ export const analyticsConversationRoutes = os.router({
     .input(timeRangeQuerySchema)
     .output(getConversationAssignedResponseSchema)
     .handler(async ({ input }) => {
-      const data = await conversationAnalyticsService.getAssignedByDay(input)
-      return { data }
+      try {
+        const data = await conversationAnalyticsService.getAssignedByDay(input)
+        return { data }
+      } catch (error) {
+        logger.error({ err: error }, "[analytics:conversationAssigned] failed")
+        throw error
+      }
     }),
   conversationAssignedByAdminAnalyticsAPI: os
     .route({
@@ -73,8 +94,17 @@ export const analyticsConversationRoutes = os.router({
     .input(timeRangeQuerySchema)
     .output(getConversationAssignedByAdminResponseSchema)
     .handler(async ({ input }) => {
-      const data = await conversationAnalyticsService.getAssignedByAdmin(input)
-      return { data }
+      try {
+        const data =
+          await conversationAnalyticsService.getAssignedByAdmin(input)
+        return { data }
+      } catch (error) {
+        logger.error(
+          { err: error },
+          "[analytics:conversationAssignedByAdmin] failed",
+        )
+        throw error
+      }
     }),
   uniqueConversationsByAdminAnalyticsAPI: os
     .route({
@@ -86,8 +116,18 @@ export const analyticsConversationRoutes = os.router({
     .input(timeRangeQuerySchema)
     .output(getUniqueConversationsByAdminResponseSchema)
     .handler(async ({ input }) => {
-      const data =
-        await conversationAnalyticsService.getUniqueConversationsByAdmin(input)
-      return { data }
+      try {
+        const data =
+          await conversationAnalyticsService.getUniqueConversationsByAdmin(
+            input,
+          )
+        return { data }
+      } catch (error) {
+        logger.error(
+          { err: error },
+          "[analytics:uniqueConversationsByAdmin] failed",
+        )
+        throw error
+      }
     }),
 })

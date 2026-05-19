@@ -1,10 +1,9 @@
 "use server"
 
-import { conversationTrackingService } from "@chatbotx.io/analytics"
 import { db } from "@chatbotx.io/database/client"
 import type { UserModel } from "@chatbotx.io/database/types"
+import { emit } from "@chatbotx.io/event-bus"
 import { emitConversationTransferredToHuman } from "@chatbotx.io/events"
-import { createId } from "@chatbotx.io/utils"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -12,6 +11,7 @@ import {
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { revalidateCacheTags } from "@/lib/cache-helper"
+import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 import { disableConversationState } from "../queries/bot-state"
 
@@ -53,32 +53,30 @@ export const disableBotAction = workspaceActionClient
             ctx.user.id,
           )
         } catch (error) {
-          console.error(
+          logger.error(
+            { err: error },
             "Failed to emit conversationTransferredToHuman event:",
-            error,
           )
         }
       }
 
       for (const conv of conversations) {
-        await conversationTrackingService.trackEvent(
-          {
-            workspaceId,
-            conversationId: conv.id,
-            eventType: "conversation_transferred_to_human",
-            eventId: createId(),
-            channel: "webchat", // TODO: replace correct channel from contact inbox
-            occurredAt: new Date(),
-            metadata: {
-              triggerContext: {
-                triggerSource: "api",
-                triggerHandler: "disableBotAction",
-                triggerType: "conversation_transferred_to_human",
-              },
+        emit("analytics:dashboard", {
+          eventType: "conversation:transferred_to_human",
+          workspaceId,
+          conversationId: conv.id,
+          channel: "webchat", // TODO: replace correct channel from contact inbox
+          occurredAt: new Date(),
+          metadata: {
+            triggerContext: {
+              triggerSource: "api",
+              triggerHandler: "disableBotAction",
+              triggerType: "conversation_transferred_to_human",
             },
           },
-          { skipSpooler: true },
-        )
+        }).catch((error) => {
+          logger.error({ err: error }, "[disableBotAction] Failed to emit")
+        })
       }
 
       revalidateCacheTags(`workspaces:${workspaceId}#conversations`)

@@ -1,17 +1,17 @@
 import { automatedResponseService } from "@chatbotx.io/automated-response"
 import { db } from "@chatbotx.io/database/client"
 import { aiMessageRoles } from "@chatbotx.io/database/partials"
+import { emit } from "@chatbotx.io/event-bus"
 import type { IntegrationJobProcessAutomatedResponse } from "@chatbotx.io/worker-config"
 import type { ModelMessage } from "ai"
 import { detectConversationAndContactInbox } from "../../../lib/db"
 import { logger } from "../../../lib/logger"
 import { replyByAI } from "./replies"
-import { trackBotResponse } from "./track-bot-response"
 
 export async function processAutomatedResponse(
   props: IntegrationJobProcessAutomatedResponse["data"],
 ) {
-  const { conversationId, contactInboxId } = props
+  const { conversationId, contactInboxId, messageId } = props
   const { conversation, contactInbox } =
     await detectConversationAndContactInbox({
       conversationId,
@@ -35,25 +35,29 @@ export async function processAutomatedResponse(
     })
 
     if (!aiAgent) {
-      await trackBotResponse({
-        workspaceId: conversation.workspaceId,
-        conversationId: conversation.id,
-        messageId: "",
-        hasResponse: false,
-        responseType: "none",
-        routeType: "fallback",
-        result: "fallback",
-        aiProvider: "none",
-        metadata: {
-          fallbackReason: "no_ai_agent",
-        },
-        startTime: Date.now(),
-        triggerContext: {
-          triggerSource: "worker",
-          triggerHandler: "triggerAutomatedResponse",
-          triggerType: "bot_response_fallback_no_ai_agent",
-        },
-      })
+      if (messageId) {
+        await emit("analytics:dashboard", {
+          eventType: "message:bot_received",
+          workspaceId: conversation.workspaceId,
+          conversationId: conversation.id,
+          messageId,
+          occurredAt: new Date(),
+          hasResponse: false,
+          responseType: "none",
+          routeType: "fallback",
+          result: "fallback",
+          aiProvider: "none",
+          metadata: {
+            latency: 0,
+            fallbackReason: "no_ai_agent",
+            triggerContext: {
+              triggerSource: "worker",
+              triggerHandler: "triggerAutomatedResponse",
+              triggerType: "bot_response_fallback_no_ai_agent",
+            },
+          },
+        })
+      }
       return
     }
 
@@ -86,46 +90,75 @@ export async function processAutomatedResponse(
       conversation,
       messages,
       aiAgent,
+      trackingContext: messageId
+        ? {
+            aiProvider: "none",
+            conversationId: conversation.id,
+            messageId,
+            responseType: "ai_agent",
+            startTime,
+            triggerType: "bot_response_ai_agent",
+            workspaceId: conversation.workspaceId,
+          }
+        : undefined,
     })
 
-    if (aiResult) {
-      // Step 3: AI Agent exists → Route to AGENT
-      await trackBotResponse({
+    if (aiResult && !aiResult.usedFallbackText) {
+      // AI produced its own response; bot_received emit happens inside
+      // sendChatMessage via trackingContext (first streamed part only).
+      return
+    }
+
+    if (aiResult?.usedFallbackText && messageId) {
+      // AI used the canned fallback help text → fallback flow.
+      await emit("analytics:dashboard", {
+        eventType: "message:bot_received",
         workspaceId: conversation.workspaceId,
         conversationId: conversation.id,
-        messageId: "",
+        messageId,
+        occurredAt: new Date(),
         hasResponse: true,
         responseType: "ai_agent",
         routeType: "agent",
-        result: "success",
+        result: "fallback",
         aiProvider: aiResult.provider,
-        metadata: {},
-        startTime,
+        metadata: {
+          latency: Date.now() - startTime,
+          fallbackReason: "no_intent_match",
+          triggerContext: {
+            triggerSource: "worker",
+            triggerHandler: "triggerAutomatedResponse",
+            triggerType: "bot_response_ai_agent_fallback_text",
+          },
+        },
       })
       return
     }
 
-    // Step 4: AI Agent failed to respond → Still routed to AGENT, but response failed
-    // This is NOT fallback - routing decision was AGENT, but execution failed
-    await trackBotResponse({
-      workspaceId: conversation.workspaceId,
-      conversationId: conversation.id,
-      messageId: "",
-      hasResponse: false,
-      responseType: "ai_agent",
-      routeType: "agent",
-      result: "success",
-      aiProvider: "none",
-      metadata: {
-        fallbackReason: "no_intent_match",
-      },
-      startTime: Date.now(),
-      triggerContext: {
-        triggerSource: "worker",
-        triggerHandler: "triggerAutomatedResponse",
-        triggerType: "bot_response_ai_agent_failed",
-      },
-    })
+    // AI agent exists but failed to produce a response → fallback flow.
+    if (messageId) {
+      await emit("analytics:dashboard", {
+        eventType: "message:bot_received",
+        workspaceId: conversation.workspaceId,
+        conversationId: conversation.id,
+        messageId,
+        occurredAt: new Date(),
+        hasResponse: false,
+        responseType: "ai_agent",
+        routeType: "agent",
+        result: "fallback",
+        aiProvider: "none",
+        metadata: {
+          latency: Date.now() - startTime,
+          fallbackReason: "no_intent_match",
+          triggerContext: {
+            triggerSource: "worker",
+            triggerHandler: "triggerAutomatedResponse",
+            triggerType: "bot_response_ai_agent_failed",
+          },
+        },
+      })
+    }
   } catch (error) {
     logger.error(
       {
