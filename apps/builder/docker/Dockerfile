@@ -54,6 +54,7 @@ WORKDIR /app
 
 # Build the application
 FROM base AS release
+
 COPY apps/builder/docker/rootfs/ /
 
 # Automatically leverage output traces to reduce image size

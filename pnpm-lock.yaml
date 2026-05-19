@@ -2241,15 +2241,24 @@ importers:
 
   packages/variables:
     dependencies:
+      '@chatbotx.io/business':
+        specifier: workspace:*
+        version: link:../business
       '@chatbotx.io/database':
         specifier: workspace:*
         version: link:../database
+      '@chatbotx.io/integration-instagram':
+        specifier: workspace:*
+        version: link:../../integrations/instagram
       '@chatbotx.io/logger':
         specifier: workspace:*
         version: link:../logger
       '@chatbotx.io/redis':
         specifier: workspace:*
         version: link:../redis
+      date-fns-tz:
+        specifier: ^3.2.0
+        version: 3.2.0(date-fns@4.1.0)
       zod:
         specifier: ^4.3.6
         version: 4.3.6

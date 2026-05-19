@@ -9,8 +9,11 @@
   },
   "dependencies": {
     "@chatbotx.io/database": "workspace:*",
+    "@chatbotx.io/integration-instagram": "workspace:*",
     "@chatbotx.io/logger": "workspace:*",
     "@chatbotx.io/redis": "workspace:*",
+    "@chatbotx.io/business": "workspace:*",
+    "date-fns-tz": "^3.2.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {
