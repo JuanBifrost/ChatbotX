@@ -5,6 +5,7 @@ import { ZodToJsonSchemaConverter } from "@orpc/zod/zod4"
 import { router } from "@/routers"
 import "@/polyfill"
 
+// Singleton handler — instantiating per request is expensive (rebuilds plugins every call).
 const openAPIHandler = new OpenAPIHandler(router, {
   plugins: [
     new SmartCoercionPlugin({
@@ -55,7 +56,6 @@ export async function handleRequest(request: Request) {
     prefix: "/api",
     context: { headers: request.headers },
   })
-
   return response ?? new Response("Not found", { status: 404 })
 }
 
