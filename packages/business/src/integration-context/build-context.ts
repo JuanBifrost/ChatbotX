@@ -22,16 +22,18 @@ const buildGetRealtimeAuthHeaders =
 
 export type PlatformData = {
   appUrl: string
-  realtimeUrl: string
+  wsUrl: string
+  storageUrl: string
   getRealtimeAuthHeaders: GetRealtimeAuthHeaders
-  assetUrl: string
 }
 
 const resolvePlatformData = async (
   workspaceId: string,
 ): Promise<PlatformData> => {
-  const platformSettings = await resolvePlatformSettings({ workspaceId })
-  const realtimeSecret = await resolveBroadcastSecret({ workspaceId })
+  const [platformSettings, realtimeSecret] = await Promise.all([
+    resolvePlatformSettings({ workspaceId }),
+    resolveBroadcastSecret({ workspaceId }),
+  ])
 
   return {
     ...platformSettings,
@@ -64,7 +66,7 @@ export type BuildContextIntegrationRow<TAuth extends AuthValue = AuthValue> =
  * - `auth`, `id`, and (optionally) `inboxId` are read off the row
  * - `authStore` is auto-wired (load/save/lock + markOffline) from `channel + row.id`
  * - The remaining row fields become `ctx.integrationDetail`
- * - `platformData` are resolved from the workspace's organization on enterprise/cloud
+ * - `platformData` are resolved from the user's PlatformCredential on enterprise/cloud
  *   editions, and from `NEXT_PUBLIC_*` env vars on community
  *
  * Used identically from worker handlers and builder server actions.

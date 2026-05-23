@@ -2,8 +2,7 @@
 
 import {
   buildContext,
-  organizationCredentialService,
-  organizationService,
+  platformCredentialService,
   resolvePlatformSettings,
   workspaceService,
 } from "@chatbotx.io/business"
@@ -28,7 +27,6 @@ import {
   getBrandingUrl,
 } from "@/features/integration-webchat/lib"
 import { revalidateCacheTags } from "@/lib/cache-helper"
-import { getDomainFromHeader } from "@/lib/domain"
 import { logger } from "@/lib/log"
 import { authActionClient } from "@/lib/safe-action"
 import { type SelectPageRequest, selectPageRequest } from "../schema/action"
@@ -46,21 +44,24 @@ export const selectPageAction = authActionClient
       try {
         let workspaceId = parsedInput.workspaceId
 
-        const domain = await getDomainFromHeader()
-        const organization = await organizationService.findByDomain(domain)
+        const platformOwnerId = parsedInput.workspaceId
+          ? ((
+              await workspaceService.find({
+                where: { id: parsedInput.workspaceId },
+              })
+            )?.ownerId ?? ctx.user.id)
+          : ctx.user.id
+
         const messengerCredential =
-          await organizationCredentialService.findDecrypted({
-            organizationId: organization.id,
+          await platformCredentialService.resolveForOwner({
+            ownerId: platformOwnerId,
             type: "messenger",
           })
+
         if (!messengerCredential) {
           throw new ChatbotXException("Messenger App settings not found")
         }
         const messengerSettings = messengerCredential.config
-
-        const { appUrl } = await resolvePlatformSettings({
-          organizationId: organization.id,
-        })
 
         // make sure the page is unique
         const existedPage = await db.query.integrationMessengerModel.findFirst({
@@ -78,15 +79,19 @@ export const selectPageAction = authActionClient
             const workspace = await workspaceService.create({
               tx,
               createdBy: ctx.user.id,
-              organization,
               data: {
                 name: parsedInput.pageName,
                 timezone: "UTC",
-                organizationId: organization.id,
+                ownerId: ctx.user.id,
               },
             })
             workspaceId = workspace.id
           }
+
+          const { appUrl } = await resolvePlatformSettings({
+            workspaceId,
+            tx,
+          })
 
           const longLivedToken = await exchangeLongLivedToken(
             messengerSettings,
@@ -183,7 +188,7 @@ export const selectPageAction = authActionClient
           throw new ChatbotXException("Page already connected")
         }
 
-        logger.error(error, "Failed to connect Facebook page")
+        logger.error({ err: error }, "Failed to connect Facebook page")
         throw new ChatbotXException("Failed to connect Facebook page")
       }
     },

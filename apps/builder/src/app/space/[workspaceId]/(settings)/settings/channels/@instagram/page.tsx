@@ -1,5 +1,5 @@
 import {
-  organizationCredentialService,
+  platformCredentialService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { getIdFromParams } from "@chatbotx.io/utils"
@@ -17,11 +17,12 @@ export default async function SettingChannelInstagramPage(props: {
     return notFound()
   }
 
-  const workspace = await workspaceService.findOrFail({
-    where: { id: workspaceId },
-  })
-  const credential = await organizationCredentialService.find({
-    organizationId: workspace.organizationId,
+  const workspace = await workspaceService.find({ where: { id: workspaceId } })
+  if (!workspace) {
+    return notFound()
+  }
+  const credential = await platformCredentialService.resolveForOwner({
+    ownerId: workspace.ownerId,
     type: "instagram",
   })
   const promises = Promise.all([

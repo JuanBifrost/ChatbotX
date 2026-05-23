@@ -1,16 +1,16 @@
 import {
-  organizationCredentialService,
-  organizationService,
+  platformCredentialService,
+  workspaceService,
 } from "@chatbotx.io/business"
 import type { ChannelType } from "@chatbotx.io/database/partials"
 import { getIdFromParams } from "@chatbotx.io/utils"
-import { redirect } from "next/navigation"
+import { notFound, redirect } from "next/navigation"
 import InboxSelectCard from "@/features/inboxes/components/inbox-select-card"
 import { TelegramConnect } from "@/features/integration-telegram/components/telegram-connect"
 import { SimpleCreateWebchat } from "@/features/integration-webchat/simple-create-webchat"
 import WhatsappCreate from "@/features/integration-whatsapp/components/whatsapp-create"
 import { generateZaloRedirectUri } from "@/features/integration-zalo/libs/zalo"
-import { getDomainFromHeader } from "@/lib/domain"
+import { getCurrentUserId } from "@/lib/auth/utils"
 
 export const dynamic = "force-dynamic"
 
@@ -34,23 +34,31 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
     return <SimpleCreateWebchat workspaceId={workspaceId} />
   }
 
-  const domain = await getDomainFromHeader()
-  const organization = await organizationService.findByDomain(domain)
+  const userId = await getCurrentUserId()
+  if (!userId) {
+    return notFound()
+  }
+
+  const platformOwnerId = workspaceId
+    ? ((await workspaceService.find({ where: { id: workspaceId } }))?.ownerId ??
+      userId)
+    : userId
+
   const [whatsapp, messenger, instagram, zalo] = await Promise.all([
-    organizationCredentialService.find({
-      organizationId: organization.id,
+    platformCredentialService.resolveForOwner({
+      ownerId: platformOwnerId,
       type: "whatsapp",
     }),
-    organizationCredentialService.find({
-      organizationId: organization.id,
+    platformCredentialService.resolveForOwner({
+      ownerId: platformOwnerId,
       type: "messenger",
     }),
-    organizationCredentialService.find({
-      organizationId: organization.id,
+    platformCredentialService.resolveForOwner({
+      ownerId: platformOwnerId,
       type: "instagram",
     }),
-    organizationCredentialService.find({
-      organizationId: organization.id,
+    platformCredentialService.resolveForOwner({
+      ownerId: platformOwnerId,
       type: "zalo",
     }),
   ])
@@ -91,6 +99,7 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
       configuredChannels={configuredChannels}
       instagramPublicConfig={instagram?.publicConfig ?? null}
       messengerPublicConfig={messenger?.publicConfig ?? null}
+      workspaceId={workspaceId}
     />
   )
 }
