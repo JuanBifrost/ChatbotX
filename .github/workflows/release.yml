@@ -48,6 +48,7 @@ jobs:
             ${{ env.DOCKER_REGISTRY }}/${{ steps.image_namespace.outputs.owner_lc }}/chatbotx-builder
             ${{ env.DOCKER_REGISTRY }}/${{ steps.image_namespace.outputs.owner_lc }}/chatbotx-worker
             ${{ env.DOCKER_REGISTRY }}/${{ steps.image_namespace.outputs.owner_lc }}/chatbotx-realtime
+            ${{ env.DOCKER_REGISTRY }}/${{ steps.image_namespace.outputs.owner_lc }}/chatbotx-mcp
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -72,6 +73,9 @@ jobs:
           - label: realtime
             image: chatbotx-realtime
             dockerfile: ./apps/realtime/docker/Dockerfile
+          - label: mcp-server
+            image: chatbotx-mcp
+            dockerfile: ./apps/mcp-server/docker/Dockerfile
     permissions:
       contents: read
       packages: write
@@ -155,7 +159,8 @@ jobs:
             printf '%s\n' \
               "Builder image (main): ${REGISTRY}/chatbotx-builder:main" \
               "Worker image (main): ${REGISTRY}/chatbotx-worker:main" \
-              "Realtime image (main): ${REGISTRY}/chatbotx-realtime:main"
+              "Realtime image (main): ${REGISTRY}/chatbotx-realtime:main" \
+              "MCP Server image (main): ${REGISTRY}/chatbotx-mcp:main"
           elif [[ "${{ github.ref }}" == refs/tags/v* ]]; then
             printf '%s\n' \
               "Builder image (version): ${REGISTRY}/chatbotx-builder:${VERSION}" \
@@ -163,7 +168,9 @@ jobs:
               "Worker image (version): ${REGISTRY}/chatbotx-worker:${VERSION}" \
               "Worker image (latest): ${REGISTRY}/chatbotx-worker:latest" \
               "Realtime image (version): ${REGISTRY}/chatbotx-realtime:${VERSION}" \
-              "Realtime image (latest): ${REGISTRY}/chatbotx-realtime:latest"
+              "Realtime image (latest): ${REGISTRY}/chatbotx-realtime:latest" \
+              "MCP Server image (version): ${REGISTRY}/chatbotx-mcp:${VERSION}" \
+              "MCP Server image (latest): ${REGISTRY}/chatbotx-mcp:latest"
           else
             echo "No publish tags for ref ${GITHUB_REF}."
           fi
