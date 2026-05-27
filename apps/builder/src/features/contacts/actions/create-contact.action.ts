@@ -1,13 +1,13 @@
 "use server"
 
-import { db, eq, findOrFail, sql } from "@chatbotx.io/database/client"
+import { userQuotaService, workspaceService } from "@chatbotx.io/business"
+import { db, findOrFail } from "@chatbotx.io/database/client"
 import { channelTypes, contactSources } from "@chatbotx.io/database/partials"
 import {
   contactInboxModel,
   contactModel,
   conversationModel,
   inboxModel,
-  workspaceUsageModel,
 } from "@chatbotx.io/database/schema"
 import { emit } from "@chatbotx.io/event-bus"
 import { emitContactCreated } from "@chatbotx.io/events"
@@ -70,17 +70,18 @@ export const createContact = async ({
     message: "Inbox not found",
   })
 
-  const workspaceUsage = await findOrFail({
-    table: workspaceUsageModel,
-    where: { workspaceId },
-    message: "Workspace usage not found",
-  })
-  if (workspaceUsage.contactsCount >= workspaceUsage.maxContacts) {
+  const workspace = await workspaceService.find({ where: { id: workspaceId } })
+  if (!workspace) {
+    return returnValidationErrors(createContactRequest, {
+      _errors: ["Workspace not found"],
+      phoneNumber: { _errors: [] },
+    })
+  }
+
+  if (await userQuotaService.isLimitReached(workspace.ownerId, "contacts")) {
     return returnValidationErrors(createContactRequest, {
       _errors: ["Validation Exception"],
-      phoneNumber: {
-        _errors: ["Max contacts reached"],
-      },
+      phoneNumber: { _errors: ["Contact limit reached"] },
     })
   }
 
@@ -106,13 +107,6 @@ export const createContact = async ({
       })
       .returning()
 
-    await tx
-      .update(workspaceUsageModel)
-      .set({
-        contactsCount: sql`${workspaceUsageModel.contactsCount} + 1`,
-      })
-      .where(eq(workspaceUsageModel.workspaceId, workspaceId))
-
     await tx.insert(conversationModel).values({
       workspaceId,
       contactId: newContact.id,
@@ -121,6 +115,8 @@ export const createContact = async ({
 
     return [newContact, newContactInbox]
   })
+
+  await userQuotaService.increment(workspace.ownerId, "contacts")
 
   // Emit contact created event
   try {

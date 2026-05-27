@@ -1,5 +1,6 @@
 "use server"
 
+import { userQuotaService, workspaceService } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, findOrFail } from "@chatbotx.io/database/client"
 import {
@@ -43,6 +44,21 @@ export const acceptInvitationAction = authActionClient
     })
     if (existingMember) {
       throw new ChatbotXException("You are already a member of this workspace")
+    }
+
+    const workspace = await workspaceService.find({
+      where: { id: invitation.workspaceId },
+    })
+    if (workspace) {
+      const allowed = await userQuotaService.tryIncrement(
+        workspace.ownerId,
+        "teamMembers",
+      )
+      if (!allowed) {
+        throw new ChatbotXException(
+          "Team member limit reached for this workspace plan",
+        )
+      }
     }
 
     await db.insert(workspaceMemberModel).values({

@@ -1,17 +1,17 @@
-import { type DatabaseClient, db } from "@chatbotx.io/database/client"
+import { type DatabaseClient, db, eq } from "@chatbotx.io/database/client"
 import { workspaceMemberRoles } from "@chatbotx.io/database/partials"
-import {
-  workspaceModel,
-  workspaceUsageModel,
-} from "@chatbotx.io/database/schema"
+import { workspaceModel } from "@chatbotx.io/database/schema"
 import type { WorkspaceModel } from "@chatbotx.io/database/types"
 import { withCache } from "@chatbotx.io/redis"
-import { createId } from "@chatbotx.io/utils"
 import { BaseService } from "../base.service"
 import { notFoundException } from "../errors"
+import { userQuotaService } from "../user-quota/service"
 import { workspaceMemberService } from "../workspace-member/service"
 
-type WorkspaceWhere = Partial<{ id: string; ownerId: string }>
+type WorkspaceWhere = Partial<{ id: string; ownerId: string; token: string }>
+
+const stableKey = (where: WorkspaceWhere) =>
+  JSON.stringify(Object.fromEntries(Object.entries(where).sort()))
 
 class WorkspaceService extends BaseService {
   async findOrFail(props: {
@@ -39,15 +39,31 @@ class WorkspaceService extends BaseService {
     const { where, tx = db } = props
 
     return await withCache(
-      `workspaces:${JSON.stringify(props.where)}`,
+      `workspaces:${stableKey(props.where)}`,
       async () =>
         await tx.query.workspaceModel.findFirst({
           where,
         }),
       {
-        tags: ["workspaces"],
+        dynamicTags: (result) =>
+          result ? [`workspaces:${result.id}`] : undefined,
       },
     )
+  }
+
+  async update(props: {
+    id: string
+    data: Partial<typeof workspaceModel.$inferInsert>
+    tx?: DatabaseClient
+  }): Promise<WorkspaceModel> {
+    const { id, data, tx = db } = props
+    const [updated] = await tx
+      .update(workspaceModel)
+      .set(data)
+      .where(eq(workspaceModel.id, id))
+      .returning()
+    await this.invalidateCacheTags([`workspaces:${id}`])
+    return updated
   }
 
   async create(props: {
@@ -57,16 +73,18 @@ class WorkspaceService extends BaseService {
   }): Promise<WorkspaceModel> {
     const { data, tx = db } = props
 
+    const allowed = await userQuotaService.tryIncrement(
+      props.createdBy,
+      "workspaces",
+    )
+    if (!allowed) {
+      throw new Error("Workspace limit reached for this plan")
+    }
+
     const [newWorkspace] = await tx
       .insert(workspaceModel)
       .values(data)
       .returning()
-
-    // Create workspace usage
-    await tx.insert(workspaceUsageModel).values({
-      id: createId(),
-      workspaceId: newWorkspace.id,
-    })
 
     // Create workspace member
     await workspaceMemberService.create({

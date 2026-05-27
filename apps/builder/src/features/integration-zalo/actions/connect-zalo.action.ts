@@ -1,9 +1,10 @@
-import { db } from "@chatbotx.io/database/client"
 import {
-  inboxStatuses,
-  type ZaloCredential,
-} from "@chatbotx.io/database/partials"
-import { inboxModel, integrationZaloModel } from "@chatbotx.io/database/schema"
+  connectChannelIntegration,
+  workspaceService,
+} from "@chatbotx.io/business"
+import { db } from "@chatbotx.io/database/client"
+import type { ZaloCredential } from "@chatbotx.io/database/partials"
+import { integrationZaloModel } from "@chatbotx.io/database/schema"
 import type { ZaloAuthValue } from "@chatbotx.io/integration-zalo"
 import { redirect } from "next/navigation"
 import { integrations } from "@/integration"
@@ -22,56 +23,37 @@ export async function connectZaloHandler({
     config: {
       ...zaloSettings,
       redirectUrl: new URL("/integrations/zalo/callback", req.url).toString(),
-      stateParams: {
-        workspaceId,
-      },
+      stateParams: { workspaceId },
     },
     req,
   })) as ZaloAuthValue
 
+  const { ownerId } = await workspaceService.findById({ id: workspaceId })
+
   await db.transaction(async (tx) => {
-    const inbox = await tx
-      .insert(inboxModel)
-      .values({
+    await connectChannelIntegration({
+      tx,
+      ownerId,
+      inboxData: {
         workspaceId,
         name: authValue.metadata.oaName,
         channel: "zalo",
         sourceId: authValue.oaId,
-      })
-      .onConflictDoUpdate({
-        target: [
-          inboxModel.workspaceId,
-          inboxModel.channel,
-          inboxModel.sourceId,
-        ],
-        set: {
-          status: inboxStatuses.enum.connected,
-        },
-      })
-      .returning()
-      .then((result) => result[0])
-
-    const isExistingIntegration = await tx.query.integrationZaloModel.findFirst(
-      {
-        where: {
-          inboxId: inbox.id,
-          oaId: authValue.oaId,
-        },
       },
-    )
-
-    if (isExistingIntegration) {
-      redirect(
-        `/space/${workspaceId}/settings/channels?channel=zalo&error=duplicated`,
-      )
-    }
-
-    await tx.insert(integrationZaloModel).values({
-      inboxId: inbox.id,
-      workspaceId,
-      oaId: authValue.oaId,
-      auth: authValue,
-      name: authValue.metadata.oaName,
+      insertIntegration: async (inboxId, wasCreated) => {
+        if (!wasCreated) {
+          redirect(
+            `/space/${workspaceId}/settings/channels?channel=zalo&error=duplicated`,
+          )
+        }
+        await tx.insert(integrationZaloModel).values({
+          inboxId,
+          workspaceId,
+          oaId: authValue.oaId,
+          auth: authValue,
+          name: authValue.metadata.oaName,
+        })
+      },
     })
   })
 

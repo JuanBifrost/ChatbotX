@@ -2,6 +2,8 @@ import {
   broadcastToWorkspaceParty,
   buildContext,
   resolvePlatformSettings,
+  userQuotaService,
+  workspaceService,
 } from "@chatbotx.io/business"
 import { getPublicFileUrl } from "@chatbotx.io/business/utils"
 import { db, findOrFail } from "@chatbotx.io/database/client"
@@ -12,7 +14,6 @@ import {
   contactModel,
   conversationModel,
   messageModel,
-  workspaceUsageModel,
 } from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
@@ -247,21 +248,58 @@ const detectContactAndConversation = async (props: {
     workspaceId: inbox.workspaceId,
   }
 
+  const existingContactInbox = await db.query.contactInboxModel.findFirst({
+    where: {
+      inboxId: inbox.id,
+      channel: inbox.channel,
+      sourceId: incomingContact.sourceId,
+    },
+  })
+
+  let workspaceOwnerId: string | null = null
+  if (!existingContactInbox) {
+    if (canGetUserProfileIfNeeded(inbox.channel)) {
+      const profileIntegration = allIntegrations[inbox.channel]
+      if (profileIntegration) {
+        const profileCtx = await buildContext({
+          workspaceId: inbox.workspaceId,
+          integrationType: inbox.channel,
+          integration: integrationRow,
+        })
+        const userProfile = await profileIntegration.runChannelHandler(
+          "contact",
+          "getProfile",
+          {
+            ctx: profileCtx,
+            data: { sourceId: incomingContact.sourceId },
+          },
+        )
+        contactData = {
+          ...contactData,
+          ...userProfile,
+        }
+      }
+    }
+
+    const ws = await workspaceService.find({ where: { id: inbox.workspaceId } })
+    if (!ws) {
+      throw new Error("Workspace not found")
+    }
+    workspaceOwnerId = ws.ownerId
+
+    if (await userQuotaService.isLimitReached(ws.ownerId, "contacts")) {
+      throw new Error("Contact limit reached")
+    }
+  }
+
   const { contactInbox, conversation, newContact } = await db.transaction(
     async (tx) => {
       let contactInbox: ContactInboxModel | null | undefined = null
       let conversation: ConversationModel | null | undefined = null
       let newContact: ContactModel | null | undefined = null
 
-      contactInbox = await tx.query.contactInboxModel.findFirst({
-        where: {
-          inboxId: inbox.id,
-          channel: inbox.channel,
-          sourceId: incomingContact.sourceId,
-        },
-      })
-
-      if (contactInbox) {
+      if (existingContactInbox) {
+        contactInbox = existingContactInbox
         conversation = await findOrFail({
           table: conversationModel,
           where: {
@@ -270,38 +308,6 @@ const detectContactAndConversation = async (props: {
           },
         })
       } else {
-        if (canGetUserProfileIfNeeded(inbox.channel)) {
-          const profileIntegration = allIntegrations[inbox.channel]
-          if (profileIntegration) {
-            const profileCtx = await buildContext({
-              workspaceId: inbox.workspaceId,
-              integrationType: inbox.channel,
-              integration: integrationRow,
-            })
-            const userProfile = await profileIntegration.runChannelHandler(
-              "contact",
-              "getProfile",
-              {
-                ctx: profileCtx,
-                data: { sourceId: incomingContact.sourceId },
-              },
-            )
-            contactData = {
-              ...contactData,
-              ...userProfile,
-            }
-          }
-        }
-
-        const workspaceUsage = await findOrFail({
-          table: workspaceUsageModel,
-          where: { workspaceId: inbox.workspaceId },
-          message: "Workspace usage not found",
-        })
-        if (workspaceUsage.contactsCount >= workspaceUsage.maxContacts) {
-          throw new Error("Max contacts reached")
-        }
-
         newContact = await tx
           .insert(contactModel)
           .values({
@@ -349,6 +355,10 @@ const detectContactAndConversation = async (props: {
       return { contactInbox, conversation, newContact }
     },
   )
+
+  if (newContact && workspaceOwnerId) {
+    await userQuotaService.increment(workspaceOwnerId, "contacts")
+  }
 
   if (newContact) {
     try {
