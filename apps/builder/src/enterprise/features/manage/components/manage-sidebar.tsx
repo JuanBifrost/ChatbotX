@@ -12,36 +12,47 @@ import { useTranslations } from "next-intl"
 import { BrandIcon } from "@/components/brand-icon"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
+import { portalNavConfigs } from "@/enterprise/features/manage/portal-nav"
 import { authClient } from "@/lib/auth/auth-client"
 
-export function ManageSidebar() {
+type Props = {
+  showEnterpriseItems: boolean
+}
+
+export function ManageSidebar({ showEnterpriseItems }: Props) {
   const t = useTranslations()
+  const tManage = useTranslations("manageSidebar")
   const { data: session } = authClient.useSession()
 
-  const data = {
-    user: {
-      name: session?.user.name ?? "",
-      email: session?.user.email ?? "",
-      avatar: session?.user.image ?? "",
-    },
-    navMain: [
-      {
-        title: t("platformCredentials.title"),
-        url: "/manage/platform-credentials",
-        icon: Grid2x2PlusIcon,
-      },
-      {
-        title: t("platformBranding.title"),
-        url: "/manage/branding",
-        icon: PaletteIcon,
-      },
-      {
-        title: t("platformEmailTemplates.title"),
-        url: "/manage/email-templates",
-        icon: MailIcon,
-      },
-    ],
+  const user = {
+    name: session?.user.name ?? "",
+    email: session?.user.email ?? "",
+    avatar: session?.user.image ?? "",
   }
+
+  const platformItems = [
+    {
+      title: t("platformCredentials.title"),
+      url: "/manage/platform-credentials",
+      icon: Grid2x2PlusIcon,
+    },
+    {
+      title: t("platformBranding.title"),
+      url: "/manage/branding",
+      icon: PaletteIcon,
+    },
+    {
+      title: t("platformEmailTemplates.title"),
+      url: "/manage/email-templates",
+      icon: MailIcon,
+    },
+  ]
+
+  const portalItems = portalNavConfigs.map(({ key, url, icon }) => ({
+    title: tManage(key),
+    url,
+    icon,
+  }))
 
   return (
     <Sidebar collapsible="icon">
@@ -54,10 +65,14 @@ export function ManageSidebar() {
         </Link>
       </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
+        <NavMain items={platformItems} label={tManage("platformGroup")} />
+
+        {showEnterpriseItems && (
+          <NavMain crossZone items={portalItems} label={tManage("saasGroup")} />
+        )}
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={user} />
       </SidebarFooter>
     </Sidebar>
   )
