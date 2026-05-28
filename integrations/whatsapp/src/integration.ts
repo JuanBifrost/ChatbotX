@@ -11,6 +11,7 @@ import {
 import { listFlows, listMessageTemplates } from "./api/waba"
 import { unsubscribeWebhook } from "./api/webhook"
 import { uploadMedia, verifyAccessToken } from "./client"
+import { botHandlers } from "./handlers/bot"
 import { conversationHandlers } from "./handlers/conversation"
 import { messageHandlers } from "./handlers/message"
 import { webhookHandler } from "./handlers/webhook"
@@ -30,6 +31,7 @@ const config: IntegrationDefinition<
     channel: {
       message: messageHandlers,
       conversation: conversationHandlers,
+      bot: botHandlers,
     },
   },
   actions: {
