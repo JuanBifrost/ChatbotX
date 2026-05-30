@@ -5,18 +5,19 @@ import type { EmailTemplate } from "../../platform/settings"
 
 type PlatformSettingUpsertData = {
   brandName?: string | null
-  logoLightPath?: string | null
-  logoDarkPath?: string | null
-  faviconPath?: string | null
   customCss?: string | null
   customJs?: string | null
-  theme?: string | null
-  storageUrl?: string | null
-  policyUrl?: string | null
-  termsOfServiceUrl?: string | null
-  signupEmailTemplate?: EmailTemplate | null
+  faviconPath?: string | null
   forgotPasswordEmailTemplate?: EmailTemplate | null
+  isEnabled?: boolean
+  logoDarkPath?: string | null
+  logoLightPath?: string | null
   magicLinkEmailTemplate?: EmailTemplate | null
+  policyUrl?: string | null
+  signupEmailTemplate?: EmailTemplate | null
+  storageUrl?: string | null
+  termsOfServiceUrl?: string | null
+  theme?: string | null
 }
 
 export const platformSettingService = {
