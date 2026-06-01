@@ -75,19 +75,14 @@ export async function countCharacters({
       },
     })
 
-  // Emit custom field changed event
-  try {
-    await emitCustomFieldChanged(
-      conversation.workspaceId,
-      conversation.contactId,
-      step.outputFieldId,
-      customField?.name || step.outputFieldId,
-      existing?.value || null,
-      value,
-    )
-  } catch (error) {
-    console.error("Failed to emit customFieldChanged event:", error)
-  }
+  await emitCustomFieldChanged(
+    conversation.workspaceId,
+    conversation.contactId,
+    step.outputFieldId,
+    customField?.name || step.outputFieldId,
+    existing?.value || null,
+    value,
+  )
 }
 
 export async function formatDate({
@@ -139,19 +134,14 @@ export async function formatDate({
       },
     })
 
-  // Emit custom field changed event
-  try {
-    await emitCustomFieldChanged(
-      conversation.workspaceId,
-      conversation.contactId,
-      step.outputFieldId,
-      customField?.name || step.outputFieldId,
-      existing?.value || null,
-      newValue,
-    )
-  } catch (error) {
-    console.error("Failed to emit customFieldChanged event:", error)
-  }
+  await emitCustomFieldChanged(
+    conversation.workspaceId,
+    conversation.contactId,
+    step.outputFieldId,
+    customField?.name || step.outputFieldId,
+    existing?.value || null,
+    newValue,
+  )
 }
 
 export async function generateCode({
@@ -211,19 +201,14 @@ export async function generateCode({
         },
       })
 
-    // Emit custom field changed event
-    try {
-      await emitCustomFieldChanged(
-        conversation.workspaceId,
-        conversation.contactId,
-        step.outputFieldId,
-        customField?.name || step.outputFieldId,
-        existing?.value || null,
-        value,
-      )
-    } catch (error) {
-      console.error("Failed to emit customFieldChanged event:", error)
-    }
+    await emitCustomFieldChanged(
+      conversation.workspaceId,
+      conversation.contactId,
+      step.outputFieldId,
+      customField?.name || step.outputFieldId,
+      existing?.value || null,
+      value,
+    )
   }
 }
 
@@ -319,19 +304,14 @@ export async function getDataFromJSON({
     return updated
   })
 
-  // Emit custom field changed events
   for (const field of updatedFields) {
-    try {
-      await emitCustomFieldChanged(
-        conversation.workspaceId,
-        conversation.contactId,
-        field.customFieldId,
-        field.customFieldName,
-        field.oldValue,
-        field.newValue,
-      )
-    } catch (error) {
-      console.error("Failed to emit customFieldChanged event:", error)
-    }
+    await emitCustomFieldChanged(
+      conversation.workspaceId,
+      conversation.contactId,
+      field.customFieldId,
+      field.customFieldName,
+      field.oldValue,
+      field.newValue,
+    )
   }
 }

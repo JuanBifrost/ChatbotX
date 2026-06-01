@@ -42,6 +42,7 @@ import {
   enableConversationState,
 } from "./conversation"
 import type { ExecuteStepProps } from "./flow"
+import type { ExecuteStepResult } from "./step"
 
 export async function stepBlockContact({
   conversation,
@@ -64,19 +65,11 @@ export async function stepArchiveConversation({
     })
     .where(eq(conversationModel.id, conversation.id))
 
-  // Emit conversation archived event
-  try {
-    await emitConversationArchived(
-      conversation.workspaceId,
-      conversation.contactId,
-      conversation.id,
-    )
-  } catch (error) {
-    logger.error(
-      { err: error, conversationId: conversation.id },
-      "[stepArchiveConversation] Failed to emit realtime event",
-    )
-  }
+  await emitConversationArchived(
+    conversation.workspaceId,
+    conversation.contactId,
+    conversation.id,
+  )
 
   emit("analytics:dashboard", {
     eventType: "conversation:archived",
@@ -170,21 +163,13 @@ export async function stepAssignConversation({
     }
   }
 
-  // Emit conversation assigned event
   if (assignedTo) {
-    try {
-      await emitConversationAssigned(
-        conversation.workspaceId,
-        conversation.contactId,
-        conversation.id,
-        assignedTo,
-      )
-    } catch (error) {
-      logger.error(
-        { err: error, conversationId: conversation.id },
-        "[stepAssignConversation] Failed to emit realtime event",
-      )
-    }
+    await emitConversationAssigned(
+      conversation.workspaceId,
+      conversation.contactId,
+      conversation.id,
+      assignedTo,
+    )
 
     emit("analytics:dashboard", {
       eventType: "conversation:assigned",
@@ -211,9 +196,13 @@ export async function stepAssignConversation({
 export async function stepAutoAssignConversation({
   conversation,
   step,
-}: ExecuteStepProps<AutoAssignConversationStepSchema>) {
+}: ExecuteStepProps<AutoAssignConversationStepSchema>): Promise<ExecuteStepResult> {
   if (step.assignedIds.length === 0) {
-    return
+    return {
+      status: "error",
+      errorMessage: "No assignees configured",
+      result: undefined,
+    }
   }
 
   const userIds: string[] = []
@@ -305,7 +294,11 @@ export async function stepAutoAssignConversation({
   }
 
   if (Object.keys(allocation).length === 0) {
-    return
+    return {
+      status: "error",
+      errorMessage: "No eligible agents found for allocation",
+      result: undefined,
+    }
   }
 
   // Count conversations of assignee during time
@@ -366,24 +359,16 @@ export async function stepAutoAssignConversation({
     })
     .where(eq(conversationModel.id, conversation.id))
 
-  // Emit conversation assigned event
   const assignedTo =
     allocation[smallestKey].assignedUserId ||
     allocation[smallestKey].assignedInboxTeamId
   if (assignedTo) {
-    try {
-      await emitConversationAssigned(
-        conversation.workspaceId,
-        conversation.contactId,
-        conversation.id,
-        assignedTo,
-      )
-    } catch (error) {
-      logger.error(
-        { err: error, conversationId: conversation.id },
-        "[stepAutoAssignConversation] Failed to emit realtime event",
-      )
-    }
+    await emitConversationAssigned(
+      conversation.workspaceId,
+      conversation.contactId,
+      conversation.id,
+      assignedTo,
+    )
 
     emit("analytics:dashboard", {
       eventType: "conversation:assigned",
@@ -405,6 +390,8 @@ export async function stepAutoAssignConversation({
       )
     })
   }
+
+  return { status: "success", result: undefined }
 }
 
 export async function stepUnassignConversation({
@@ -418,19 +405,11 @@ export async function stepUnassignConversation({
     })
     .where(eq(conversationModel.id, conversation.id))
 
-  // Emit conversation unassigned event
-  try {
-    await emitConversationUnassigned(
-      conversation.workspaceId,
-      conversation.contactId,
-      conversation.id,
-    )
-  } catch (error) {
-    logger.error(
-      { err: error, conversationId: conversation.id },
-      "[stepUnassignConversation] Failed to emit realtime event",
-    )
-  }
+  await emitConversationUnassigned(
+    conversation.workspaceId,
+    conversation.contactId,
+    conversation.id,
+  )
 
   emit("analytics:dashboard", {
     eventType: "conversation:unassigned",
@@ -522,19 +501,11 @@ export async function stepDisableBot({
     conversationIds: [conversation.id],
   })
 
-  // Emit conversation transferred to human event
-  try {
-    await emitConversationTransferredToHuman(
-      conversation.workspaceId,
-      conversation.contactId,
-      conversation.id,
-    )
-  } catch (error) {
-    logger.error(
-      { err: error, conversationId: conversation.id },
-      "[stepDisableBot] Failed to emit realtime event",
-    )
-  }
+  await emitConversationTransferredToHuman(
+    conversation.workspaceId,
+    conversation.contactId,
+    conversation.id,
+  )
 
   emit("analytics:dashboard", {
     eventType: "conversation:transferred_to_human",
@@ -564,19 +535,11 @@ export async function stepEnableBot({
     conversationIds: [conversation.id],
   })
 
-  // Emit conversation transferred to bot event
-  try {
-    await emitConversationTransferredToBot(
-      conversation.workspaceId,
-      conversation.contactId,
-      conversation.id,
-    )
-  } catch (error) {
-    logger.error(
-      { err: error, conversationId: conversation.id },
-      "[stepEnableBot] Failed to emit realtime event",
-    )
-  }
+  await emitConversationTransferredToBot(
+    conversation.workspaceId,
+    conversation.contactId,
+    conversation.id,
+  )
 
   emit("analytics:dashboard", {
     eventType: "conversation:transferred_to_bot",

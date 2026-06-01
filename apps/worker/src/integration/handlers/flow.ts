@@ -1,3 +1,5 @@
+import { and, db, eq } from "@chatbotx.io/database/client"
+import { contactsOnBroadcastsModel } from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
   ConversationModel,
@@ -6,6 +8,8 @@ import type {
 import { emit } from "@chatbotx.io/event-bus"
 import {
   type BaseStepSchema,
+  BROADCAST_PAYLOAD_TYPE,
+  type BroadcastMetadataPayload,
   type ButtonStepProps,
   decodeButtonPayload,
   type EdgeSchema,
@@ -32,7 +36,17 @@ import {
 } from "../../lib/db"
 import { logger } from "../../lib/logger"
 import { type ExecuteMultipleStepsProps, seekConnectedNode } from "./flow-utils"
-import { flowStepHandlers } from "./step"
+import {
+  type ExecuteStepResult,
+  flowStepHandlers,
+  type StepRoutingStatus,
+} from "./step"
+
+const ROUTING_STATUSES = new Set<StepRoutingStatus>([
+  "success",
+  "error",
+  "skip",
+])
 
 export type {
   ExecuteMultipleStepsProps,
@@ -51,7 +65,7 @@ type ExecuteStepsAndQuickRepliesProps = {
     steps?: BaseStepSchema[] | null
     quickReplies?: ButtonStepProps[] | null
   }
-  startFromStepIndex?: number
+  startFromStepId?: string
   targetType: "node" | "button" | "step" | "quickReply"
   targetId: string
   targetNodeId?: string
@@ -96,21 +110,47 @@ export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
     throw new SdkException("FlowVersion does not contain start node")
   }
 
-  await runStepsAndQuickReplies({
-    conversation,
-    contactInbox,
-    flowVersion,
-    useLatestFlowVersion,
-    details: targetNode.data.details,
-    targetType: "node",
-    targetId: targetNode.id,
-    targetNodeId: targetNode.id,
-    ctx: {
-      variables: initVariables(),
-    },
-    trackingContext,
-    metadata,
-  })
+  try {
+    await runStepsAndQuickReplies({
+      conversation,
+      contactInbox,
+      flowVersion,
+      useLatestFlowVersion,
+      details: targetNode.data.details,
+      targetType: "node",
+      targetId: targetNode.id,
+      targetNodeId: targetNode.id,
+      startFromStepId: props.startFromStepId,
+      ctx: {
+        variables: initVariables(),
+      },
+      trackingContext,
+      metadata,
+    })
+  } catch (error) {
+    if (props.metadata?.type === BROADCAST_PAYLOAD_TYPE) {
+      const broadcastMeta = props.metadata as BroadcastMetadataPayload
+      await db
+        .update(contactsOnBroadcastsModel)
+        .set({ failed: true, failedAt: new Date() })
+        .where(
+          and(
+            eq(
+              contactsOnBroadcastsModel.broadcastId,
+              broadcastMeta.broadcastId,
+            ),
+            eq(contactsOnBroadcastsModel.contactId, conversation.contactId),
+          ),
+        )
+        .catch((dbErr) =>
+          logger.error(
+            { err: dbErr },
+            "Failed to mark broadcast contact as failed",
+          ),
+        )
+    }
+    throw error
+  }
 }
 
 export async function runStepsAndQuickReplies(
@@ -131,25 +171,65 @@ export async function runStepsAndQuickReplies(
     (targetType === "button" || targetType === "quickReply") &&
     details.beforeStep?.stepType === stepTypes.enum.startAnotherNode
 
-  if (details.beforeStep && !props.startFromStepIndex && !skipBeforeStep) {
+  if (details.beforeStep && !props.startFromStepId && !skipBeforeStep) {
     await executeMultipleSteps({
       ...props,
       steps: [details.beforeStep],
     })
   }
 
-  // run steps
-  if ("steps" in details && details.steps) {
+  // run steps — one per BullMQ job, re-dispatching for subsequent steps
+  if ("steps" in details && details.steps && details.steps.length > 0) {
+    const startIdx = props.startFromStepId
+      ? details.steps.findIndex((s) => s.id === props.startFromStepId)
+      : 0
+
+    if (startIdx === -1) {
+      logger.warn(
+        {
+          startFromStepId: props.startFromStepId,
+          targetNodeId: props.targetNodeId,
+        },
+        "startFromStepId not found in node steps",
+      )
+      return
+    }
+
+    const currentStep = details.steps[startIdx]
     const result = await executeMultipleSteps({
       ...props,
-      steps: props.startFromStepIndex
-        ? details.steps.slice(props.startFromStepIndex)
-        : details.steps,
+      steps: [currentStep],
     })
 
     if (result?.status === "wait" || result?.status === "retry") {
       return result
     }
+
+    if (result?.branched) {
+      return
+    }
+
+    const nextIdx = startIdx + 1
+    if (nextIdx < details.steps.length) {
+      const nextStep = details.steps[nextIdx]
+      await integrationQueue.add(IntegrationJobAction.sendFlow, {
+        type: IntegrationJobAction.sendFlow,
+        data: {
+          conversationId: props.conversation.id,
+          contactInboxId: props.contactInbox.id,
+          flowId: flowVersion.flowId,
+          flowVersionId: props.useLatestFlowVersion
+            ? undefined
+            : flowVersion.id,
+          nodeId: props.targetNodeId,
+          startFromStepId: nextStep.id,
+          metadata: props.metadata,
+          trackingContext: props.trackingContext,
+        },
+      })
+      return
+    }
+    // Last step — fall through to quickReplies + next-node dispatch
   }
 
   if (
@@ -192,26 +272,33 @@ export async function runStepsAndQuickReplies(
     (node) => node.id === relatedEdge.target,
   )
   if (nextNode) {
-    await runStepsAndQuickReplies({
-      ...props,
-      details: nextNode.data.details,
-      targetType: "node",
-      targetId: nextNode.id,
-      targetNodeId: nextNode.id,
+    await integrationQueue.add(IntegrationJobAction.sendFlow, {
+      type: IntegrationJobAction.sendFlow,
+      data: {
+        conversationId: props.conversation.id,
+        contactInboxId: props.contactInbox.id,
+        flowId: flowVersion.flowId,
+        flowVersionId: props.useLatestFlowVersion ? undefined : flowVersion.id,
+        nodeId: nextNode.id,
+        metadata: props.metadata,
+        trackingContext: props.trackingContext,
+      },
     })
   }
 }
 
 export async function executeMultipleSteps(props: ExecuteMultipleStepsProps) {
   const gen = executeMultipleStepsGenerator(props)
+  let lastResult: (ExecuteStepResult & { branched: boolean }) | undefined
 
   for await (const result of gen) {
     logger.debug({ result }, "execute multiple steps result")
     if (result?.status === "wait" || result?.status === "retry") {
       return result
     }
-    await new Promise((resolve) => setTimeout(resolve, 500))
+    lastResult = result
   }
+  return lastResult
 }
 
 async function* executeMultipleStepsGenerator(
@@ -220,24 +307,27 @@ async function* executeMultipleStepsGenerator(
   const { steps, ...rest } = props
 
   for (const step of steps) {
-    step.nodeId = props.targetNodeId || ""
+    const stepWithNodeId = { ...step, nodeId: props.targetNodeId || "" }
 
-    const result = await flowStepHandlers[step.stepType as StepType]?.({
+    const rawResult = await flowStepHandlers[step.stepType as StepType]?.({
       ...rest,
-      step,
+      step: stepWithNodeId,
     })
 
-    // Try to send nested step based on state of action
-    const resultStatus = result?.status || ""
+    // void handlers are treated as implicit success (fire-and-forget, no routing)
+    const result = rawResult ?? { status: "success" as const, result: null }
+
+    // Route to a connected node based on the step's outcome state
+    let branched = false
     if (
-      resultStatus &&
-      ["success", "skip", "error"].includes(resultStatus) &&
-      step.states &&
-      step.states.length > 0
+      ROUTING_STATUSES.has(result.status as StepRoutingStatus) &&
+      stepWithNodeId.states &&
+      stepWithNodeId.states.length > 0
     ) {
-      const targetState = step.states.find((s) => s.stateType === resultStatus)
+      const targetState = stepWithNodeId.states.find(
+        (s) => s.stateType === result.status,
+      )
       if (targetState) {
-        // Find connected node
         const connectedNodeId = seekConnectedNode(
           props.flowVersion,
           targetState.id,
@@ -246,19 +336,23 @@ async function* executeMultipleStepsGenerator(
           await integrationQueue.add(IntegrationJobAction.sendFlow, {
             type: IntegrationJobAction.sendFlow,
             data: {
-              conversationId: props.conversation,
-              contactInboxId: props.contactInbox,
+              conversationId: props.conversation.id,
+              contactInboxId: props.contactInbox.id,
               flowId: props.flowVersion.flowId,
-              flowVersionId: props.flowVersion.id,
+              flowVersionId: props.useLatestFlowVersion
+                ? undefined
+                : props.flowVersion.id,
               nodeId: connectedNodeId,
               metadata: props.metadata,
+              trackingContext: props.trackingContext,
             },
           })
+          branched = true
         }
       }
     }
 
-    yield result
+    yield { ...result, branched }
   }
 }
 
@@ -360,7 +454,7 @@ export async function runFlowPostback(
           },
         },
       }).catch((err) =>
-        logger.error(err, "[runFlowPostback] Failed to emit bot_received"),
+        logger.error({ err }, "[runFlowPostback] Failed to emit bot_received"),
       )
     }
   } catch (error) {
@@ -388,7 +482,7 @@ export async function runFlowPostback(
         },
       }).catch((err) =>
         logger.error(
-          err,
+          { err },
           "[runFlowPostback] Failed to emit bot_received fallback",
         ),
       )
@@ -498,7 +592,10 @@ export async function runFlowQuickReply(
           },
         },
       }).catch((err) =>
-        logger.error(err, "[runFlowQuickReply] Failed to emit bot_received"),
+        logger.error(
+          { err },
+          "[runFlowQuickReply] Failed to emit bot_received",
+        ),
       )
     }
   } catch (error) {
@@ -526,7 +623,7 @@ export async function runFlowQuickReply(
         },
       }).catch((err) =>
         logger.error(
-          err,
+          { err },
           "[runFlowQuickReply] Failed to emit bot_received fallback",
         ),
       )
