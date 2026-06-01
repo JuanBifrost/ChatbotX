@@ -26,6 +26,7 @@ import {
   integrationQueue,
 } from "@chatbotx.io/worker-config"
 import { logger } from "../../lib/logger"
+import { handleAIAnalyzeImage } from "./analyze-image"
 import {
   addContactNotes,
   addContactSequence,
@@ -39,10 +40,15 @@ import {
   removeContactTag,
   setContactCustomField,
 } from "./contact"
+import { handleAIEditImage } from "./edit-image"
+import { handleAIExtractData } from "./extract-data/index"
 import { type ExecuteStepProps, seekConnectedNode } from "./flow-utils"
+import { handleAIGenerateImage } from "./generate-image"
 import { handleAIGenerateText } from "./generate-text"
+import { handleAIGenerateTextAgent } from "./generate-text-agent"
 import { getUserData } from "./get-user-data"
 import { sendEmail } from "./send-email"
+import { handleAISpeechToText } from "./speech-to-text"
 import {
   clearSpreadsheetRow,
   getSpreadsheetRandomRow,
@@ -63,6 +69,7 @@ import {
   stepUnassignConversation,
   stepUnfollowConversation,
 } from "./step-handlers"
+import { handleAITextToSpeech } from "./text-to-speech"
 import {
   countCharacters,
   formatDate,
@@ -330,13 +337,15 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.markEmailVerified]: markEmailVerified,
   [stepTypes.enum.notifyAgent]: undefined,
   [stepTypes.enum.openWebsite]: undefined,
-  [stepTypes.enum.aiAnalyzeImage]: undefined,
+  [stepTypes.enum.aiAnalyzeImage]: handleAIAnalyzeImage,
   [stepTypes.enum.aiDeleteMessageHistory]: undefined,
-  [stepTypes.enum.aiGenerateImage]: undefined,
-  [stepTypes.enum.aiGenerateTextAgent]: undefined,
+  [stepTypes.enum.aiEditImage]: handleAIEditImage,
+  [stepTypes.enum.aiGenerateImage]: handleAIGenerateImage,
+  [stepTypes.enum.aiGenerateTextAgent]: handleAIGenerateTextAgent,
   [stepTypes.enum.aiGenerateText]: handleAIGenerateText,
-  [stepTypes.enum.aiSpeechToText]: undefined,
-  [stepTypes.enum.aiTextToSpeech]: undefined,
+  [stepTypes.enum.aiExtractData]: handleAIExtractData,
+  [stepTypes.enum.aiSpeechToText]: handleAISpeechToText,
+  [stepTypes.enum.aiTextToSpeech]: handleAITextToSpeech,
   [stepTypes.enum.optInEmail]: optInEmail,
   [stepTypes.enum.optOutEmail]: optOutEmail,
   [stepTypes.enum.performAction]: undefined,

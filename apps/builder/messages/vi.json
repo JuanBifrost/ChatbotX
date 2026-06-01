@@ -336,6 +336,9 @@
     "messenger": {
       "label": "Messenger"
     },
+    "image": {
+      "label": "Hình ảnh"
+    },
     "instagram": {
       "label": "Instagram"
     },
@@ -640,11 +643,15 @@
       "label": "ID Luồng"
     },
     "flows": {
-      "aiGenerateText": {
-        "label": "{aiName}: Tạo văn bản"
-      },
+      "aiGenerateText": "{aiName}: Tạo văn bản",
+      "aiGenerateImage": "{aiName}: Tạo hình ảnh",
+      "aiEditImage": "{aiName}: Chỉnh sửa hình ảnh",
+      "aiAnalyzeImage": "{aiName}: AI Phân tích hình ảnh",
+      "aiSpeechToText": "{aiName}: AI Chuyển giọng nói thành văn bản",
+      "aiTextToSpeech": "{aiName}: AI Chuyển văn bản thành giọng nói",
       "label": "Luồng",
-      "placeholder": "Chọn luồng"
+      "placeholder": "Chọn luồng",
+      "aiGenerateTextAgent": "{aiName}: AI tạo văn bản agent"
     },
     "steps": {
       "label": "Bước",
@@ -729,6 +736,28 @@
     "errorLog": {
       "label": "Nhật ký lỗi"
     },
+    "inputType": {
+      "label": "Loại đầu vào",
+      "options": {
+        "text": "Văn bản",
+        "image": "Hình ảnh",
+        "file": "Tệp"
+      }
+    },
+    "extractFields": {
+      "label": "Các trường cần trích xuất",
+      "key": {
+        "label": "Khóa JSON",
+        "placeholder": "Ví dụ: email, phone, address"
+      },
+      "customFieldId": {
+        "label": "Lưu vào trường tùy chỉnh"
+      },
+      "description": {
+        "label": "Mô tả (Tùy chọn)",
+        "placeholder": "Mô tả dữ liệu cần trích xuất"
+      }
+    },
     "max": {
       "label": "Tối đa"
     },
@@ -739,7 +768,14 @@
       "label": "MCP Server"
     },
     "systemFunction": {
-      "label": "Hàm hệ thống"
+      "label": "Hàm hệ thống",
+      "names": {
+        "connectUserToHuman": "Kết nối người dùng với nhân viên",
+        "documentReader": "Trình đọc tài liệu",
+        "imageReader": "Trình đọc hình ảnh",
+        "urlContext": "Trình đọc URL",
+        "webSearch": "Tìm kiếm web"
+      }
     },
     "min": {
       "label": "Tối thiểu"
@@ -863,8 +899,26 @@
     "showLogo": {
       "label": "Hiển thị logo cá nhân"
     },
+    "quality": {
+      "label": "Chất lượng",
+      "options": {
+        "auto": "Tự động",
+        "hd": "HD",
+        "md": "Trung bình",
+        "ld": "Thấp"
+      }
+    },
     "size": {
-      "label": "Kích thước"
+      "label": "Kích thước",
+      "options": {
+        "auto": "Tự động",
+        "square1024": "Vuông - 1024×1024",
+        "landscape1536x1024": "Ngang - 1536×1024",
+        "portrait1024x1536": "Dọc - 1024×1536",
+        "dalle2_256": "256×256 (DALL·E 2)",
+        "dalle2_512": "512×512 (DALL·E 2)",
+        "dalle3_1792x1024": "1792×1024 (DALL·E 3)"
+      }
     },
     "status": {
       "label": "Trạng thái",
@@ -1039,8 +1093,24 @@
     "inputFieldId": {
       "label": "Trường tùy chỉnh đầu vào"
     },
+    "aiEditImage": {
+      "inputFieldId": {
+        "label": "Hình ảnh"
+      }
+    },
+    "inputText": {
+      "label": "Văn bản đầu vào"
+    },
     "outputFieldId": {
       "label": "Lưu kết quả vào trường tùy chỉnh"
+    },
+    "voiceType": {
+      "label": "Kiểu giọng nói",
+      "placeholder": "Chọn kiểu giọng nói"
+    },
+    "voiceTone": {
+      "label": "Tông giọng (Tùy chọn)",
+      "placeholder": "Nói với giọng điệu vui vẻ."
     },
     "jsonPath": {
       "placeholder": "Nhập đường dẫn JSON"
@@ -1250,9 +1320,6 @@
       "label": "Tiêu đề",
       "placeholder": "Nhập tiêu đề"
     },
-    "image": {
-      "label": "Hình ảnh"
-    },
     "line": {
       "label": "Đường kẻ"
     },
@@ -1275,13 +1342,22 @@
     "aiGenerateText": {
       "label": "{name}: AI Tạo văn bản"
     },
+    "aiGenerateImage": {
+      "label": "{name}: AI Tạo hình ảnh"
+    },
+    "aiEditImage": {
+      "label": "{name}: AI Chỉnh sửa hình ảnh"
+    },
+    "aiExtractData": {
+      "label": "{name}: AI Trích xuất dữ liệu"
+    },
     "actions": {
       "addContactNotes": "Thêm ghi chú liên hệ",
       "addContactTag": "Thêm thẻ liên hệ",
       "aiAnalyzeImage": "AI phân tích hình ảnh",
+      "aiSpeechToText": "AI chuyển giọng nói thành văn bản",
       "aiGenerateImage": "AI tạo hình ảnh",
       "aiGenerateTextAgent": "AI tạo văn bản agent",
-      "aiSpeechToText": "AI chuyển giọng nói thành văn bản",
       "aiTextToSpeech": "AI chuyển văn bản thành giọng nói",
       "archiveConversation": "Lưu trữ cuộc trò chuyện",
       "assignConversation": "Gán cuộc trò chuyện",
@@ -1346,7 +1422,8 @@
       "subscribeSequence": "Đăng ký chăm sóc",
       "unsubscribeSequence": "Hủy đăng ký chăm sóc",
       "noTemplatesAvailable": "No templates available",
-      "splitTraffic": "Chia lưu lượng"
+      "splitTraffic": "Chia lưu lượng",
+      "aiEditImage": "AI Chỉnh sửa hình ảnh"
     },
     "splitTraffic": {
       "balanceHint": "Tổng phần trăm phải bằng 100%.",

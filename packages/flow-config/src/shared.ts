@@ -1,6 +1,13 @@
 import { addContactNotesStepSchema } from "./steps/add-contact-notes"
 import { addContactTagStepSchema } from "./steps/add-contact-tag"
+import { aiAnalyzeImageSchema } from "./steps/ai-analyze-image"
+import { aiEditImageSchema } from "./steps/ai-edit-image"
+import { aiExtractDataSchema } from "./steps/ai-extract-data"
+import { aiGenerateImageSchema } from "./steps/ai-generate-image"
 import { aiGenerateTextSchema } from "./steps/ai-generate-text"
+import { aiGenerateTextAgentSchema } from "./steps/ai-generate-text-agent"
+import { aiSpeechToTextSchema } from "./steps/ai-speech-to-text"
+import { aiTextToSpeechSchema } from "./steps/ai-text-to-speech"
 import { archiveConversationStepSchema } from "./steps/archive-conversation"
 import { assignConversationStepSchema } from "./steps/assign-conversation"
 import { autoAssignConversationStepSchema } from "./steps/auto-assign-conversation"
@@ -86,7 +93,16 @@ const flowSteps = [
   startExternalNodeStepSchema,
 ]
 
-const aiSteps = [aiGenerateTextSchema]
+const aiSteps = [
+  aiGenerateTextSchema,
+  aiGenerateImageSchema,
+  aiEditImageSchema,
+  aiAnalyzeImageSchema,
+  aiGenerateTextAgentSchema,
+  aiExtractDataSchema,
+  aiSpeechToTextSchema,
+  aiTextToSpeechSchema,
+]
 
 const googleSheetStep = [
   spreadsheetGetRowSchema,

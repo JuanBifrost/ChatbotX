@@ -1,5 +1,5 @@
 "use server"
-
+import { aiIntegrationService } from "@chatbotx.io/ai/server"
 import { db, eq } from "@chatbotx.io/database/client"
 import {
   integrationGeminiModel,
@@ -88,6 +88,8 @@ export const connectGeminiAction = workspaceActionClient
           })
         }
       })
+
+      await aiIntegrationService.invalidateCache(workspaceId, "gemini")
 
       return
     },

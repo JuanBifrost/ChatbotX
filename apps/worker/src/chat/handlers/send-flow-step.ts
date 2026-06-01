@@ -452,6 +452,7 @@ export const sendChatMessage = async (
     contactInbox: targetContactInbox,
     text,
     url,
+    storagePath,
     trackingContext,
     metadata,
   } = props
@@ -494,12 +495,36 @@ export const sendChatMessage = async (
         .then((result) => result[0])
 
       if (url) {
-        const attachment = await insertAttachmentForMessage(tx, {
+        const { storageUrl } = await resolvePlatformSettings({
           workspaceId: conversation.workspaceId,
-          conversationId: conversation.id,
-          messageId: newMessage.id,
-          url,
         })
+        const uploadedFile = storagePath
+          ? {
+              originPath: storagePath,
+              mimeType: "audio/mpeg" as const,
+              size: 0,
+              fileType: "audio" as const,
+            }
+          : await uploadFileFromUrl(
+              url,
+              `public/space/${newMessage.workspaceId}/conversations/${conversation.id}/${createId()}`,
+            )
+
+        const attachment = await tx
+          .insert(attachmentModel)
+          .values({
+            id: createId(),
+            workspaceId: conversation.workspaceId,
+            conversationId: conversation.id,
+            messageId: newMessage.id,
+            ...uploadedFile,
+          })
+          .returning()
+          .then((result) => ({
+            ...result[0],
+            url: getPublicFileUrl(result[0].originPath, storageUrl),
+          }))
+
         ;(newMessage as { attachments?: AttachmentModel[] }).attachments = [
           attachment,
         ]

@@ -329,6 +329,9 @@
     "messenger": {
       "label": "Messenger"
     },
+    "image": {
+      "label": "Image"
+    },
     "instagram": {
       "label": "Instagram"
     },
@@ -632,11 +635,16 @@
       "label": "Flow ID"
     },
     "flows": {
-      "aiGenerateText": {
-        "label": "{aiName}: Generate Text"
-      },
+      "aiGenerateText": "{aiName}: Generate Text",
+      "aiGenerateImage": "{aiName}: Generate Image",
+      "aiEditImage": "{aiName}: Edit Image",
+      "aiAnalyzeImage": "{aiName}: AI Analyze Image",
+      "aiExtractData": "{aiName}: Extract Data",
+      "aiSpeechToText": "{aiName}: AI Speech to Text",
+      "aiTextToSpeech": "{aiName}: AI Text to Speech",
       "label": "Flows",
-      "placeholder": "Select flow"
+      "placeholder": "Select flow",
+      "aiGenerateTextAgent": "{aiName}: Generate Text Agent"
     },
     "steps": {
       "label": "Steps",
@@ -739,6 +747,28 @@
     "errorLog": {
       "label": "Error Log"
     },
+    "inputType": {
+      "label": "Input Type",
+      "options": {
+        "text": "Text",
+        "image": "Image",
+        "file": "File"
+      }
+    },
+    "extractFields": {
+      "label": "Fields to Extract",
+      "key": {
+        "label": "JSON Key",
+        "placeholder": "e.g. email, phone, address"
+      },
+      "customFieldId": {
+        "label": "Save to Custom Field"
+      },
+      "description": {
+        "label": "Description (Optional)",
+        "placeholder": "Describe what to extract"
+      }
+    },
     "max": {
       "label": "Maximum"
     },
@@ -749,7 +779,14 @@
       "label": "MCP Server"
     },
     "systemFunction": {
-      "label": "System Function"
+      "label": "System Function",
+      "names": {
+        "connectUserToHuman": "Connect user to Human",
+        "documentReader": "Document Reader",
+        "imageReader": "Image Reader",
+        "urlContext": "Url Reader",
+        "webSearch": "Web search"
+      }
     },
     "min": {
       "label": "Minimum"
@@ -873,8 +910,26 @@
     "showLogo": {
       "label": "Show Personal Logo"
     },
+    "quality": {
+      "label": "Quality",
+      "options": {
+        "auto": "Auto",
+        "hd": "HD",
+        "md": "Medium",
+        "ld": "Low"
+      }
+    },
     "size": {
-      "label": "Size"
+      "label": "Size",
+      "options": {
+        "auto": "Auto",
+        "square1024": "Square - 1024×1024",
+        "landscape1536x1024": "Landscape - 1536×1024",
+        "portrait1024x1536": "Portrait - 1024×1536",
+        "dalle2_256": "256×256 (DALL·E 2)",
+        "dalle2_512": "512×512 (DALL·E 2)",
+        "dalle3_1792x1024": "1792×1024 (DALL·E 3)"
+      }
     },
     "status": {
       "label": "Status",
@@ -1058,8 +1113,24 @@
     "inputFieldId": {
       "label": "Input Custom Field"
     },
+    "aiEditImage": {
+      "inputFieldId": {
+        "label": "Image"
+      }
+    },
+    "inputText": {
+      "label": "Input Text"
+    },
     "outputFieldId": {
       "label": "Save result to a custom field"
+    },
+    "voiceType": {
+      "label": "Voice Type",
+      "placeholder": "Select a voice type"
+    },
+    "voiceTone": {
+      "label": "Voice tone (Optional)",
+      "placeholder": "Speak in a cheerful tone."
     },
     "jsonPath": {
       "placeholder": "Enter JSON path"
@@ -1234,9 +1305,6 @@
       "label": "Heading",
       "placeholder": "Enter heading"
     },
-    "image": {
-      "label": "Image"
-    },
     "line": {
       "label": "Line"
     },
@@ -1259,13 +1327,23 @@
     "aiGenerateText": {
       "label": "{name}: AI Generate Text"
     },
+    "aiGenerateImage": {
+      "label": "{name}: AI Generate Image"
+    },
+    "aiEditImage": {
+      "label": "{name}: AI Edit Image"
+    },
+    "aiExtractData": {
+      "label": "{name}: AI Extract Data"
+    },
     "actions": {
       "addContactNotes": "Add Contact Notes",
       "addContactTag": "Add Contact Tag",
+      "aiExtractData": "AI Extract Data",
       "aiAnalyzeImage": "AI Analyze Image",
+      "aiSpeechToText": "AI Speech to Text",
       "aiGenerateImage": "AI Generate Image",
       "aiGenerateTextAgent": "AI Generate Text Agent",
-      "aiSpeechToText": "AI Speech to Text",
       "aiTextToSpeech": "AI Text to Speech",
       "archiveConversation": "Archive Conversation",
       "assignConversation": "Assign Conversation",
@@ -1330,7 +1408,8 @@
       "sequenceActions": "Sequence Actions",
       "subscribeSequence": "Subscribe Sequence",
       "unsubscribeSequence": "Unsubscribe Sequence",
-      "splitTraffic": "Split Traffic"
+      "splitTraffic": "Split Traffic",
+      "aiEditImage": "AI Edit Image"
     },
     "splitTraffic": {
       "balanceHint": "The total sum must equal 100%.",

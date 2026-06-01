@@ -17,6 +17,18 @@ export const helpTexts = {
     "- If you use a tool, summarize the result concisely in natural language.",
     "- Only provide the most relevant information the customer is asking for.",
   ].join("\n"),
+  summarizer: {
+    previousSummary: (summary: string) =>
+      `This is the previous summary of the conversation: "${summary}"`,
+    latestMessages: "Here are the latest messages:",
+    updateSummaryPrompt:
+      "Please update the previous summary by incorporating the new information. Keep the summary concise and succinct (under 1000 characters), focusing on key information such as: customer name, issues encountered, needs, order status, and agreed decisions. Return the new summary.",
+    conversationHistory: "Below is the conversation history:",
+    newSummaryPrompt:
+      "Please summarize the above conversation concisely and succinctly (under 1000 characters). Focus on key information such as: customer name, issues encountered, needs, order status, and agreed decisions. Return the summary.",
+    shortenPrompt: (summary: string) =>
+      `The following summary is too long: "${summary}". Please shorten it to under 1000 characters while still retaining the most important key points.`,
+  },
 } as const
 
 export const mcpConstants = {
@@ -41,6 +53,43 @@ export const aiTimeouts = {
 
 export const systemFunctionNames = {
   connectUserToHuman: "connect_user_to_human",
+  documentReader: "document_reader",
+  imageReader: "image_reader",
+  urlContext: "url_context",
+  webSearch: "web_search",
+} as const
+
+export const systemFunctionCatalog = {
+  [systemFunctionNames.connectUserToHuman]: {
+    id: systemFunctionNames.connectUserToHuman,
+    capability: "handoff",
+    description:
+      "Transfer the current conversation to a human agent when the user explicitly asks for human support or the assistant cannot safely resolve the issue.",
+  },
+  [systemFunctionNames.documentReader]: {
+    id: systemFunctionNames.documentReader,
+    capability: "document_context",
+    description:
+      "Read and extract relevant context from user-uploaded documents in the current conversation.",
+  },
+  [systemFunctionNames.imageReader]: {
+    id: systemFunctionNames.imageReader,
+    capability: "image_context",
+    description:
+      "Analyze user-uploaded images in the current conversation and return visual context relevant to the query.",
+  },
+  [systemFunctionNames.urlContext]: {
+    id: systemFunctionNames.urlContext,
+    capability: "url_context",
+    description:
+      "Retrieve and summarize context from user-provided URLs for the current conversation.",
+  },
+  [systemFunctionNames.webSearch]: {
+    id: systemFunctionNames.webSearch,
+    capability: "web_search",
+    description:
+      "Search publicly available web information relevant to the user's request and summarize findings.",
+  },
 } as const
 
 export const aiPolicies = {
@@ -56,3 +105,4 @@ export const aiPolicies = {
 export const toolPrefixes = z.enum(["file", "fn", "mcp", "sys"])
 
 export const MAX_CONVERSATION_HISTORY = 100
+export const MAX_SUMMARY_LENGTH = 1000
