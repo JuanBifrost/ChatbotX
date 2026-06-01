@@ -121,12 +121,16 @@ export const useCustomFieldSelectOptions = (
     customFieldTypes?: CustomFieldType[]
     includeReserved?: boolean
     prefix?: string
+    customFieldValueKey?: "name"
   } = {},
 ): SelectOption[] => {
-  const { customFieldTypes, includeReserved, prefix } = props
+  const { customFieldTypes, includeReserved, prefix, customFieldValueKey } =
+    props
   const t = useTranslations()
 
-  const { customFields } = useCustomFieldStore((state) => state)
+  const { customFields: rawCustomFields } = useCustomFieldStore(
+    (state) => state,
+  )
 
   const reservedCustomFieldOptions = useMemo(
     () =>
@@ -138,33 +142,39 @@ export const useCustomFieldSelectOptions = (
   )
 
   return useMemo(() => {
-    const allFields = includeReserved
-      ? [...reservedCustomFieldOptions, ...customFields]
-      : customFields
+    const matchesType = (type: string) =>
+      !customFieldTypes || customFieldTypes.includes(type as CustomFieldType)
 
-    if (customFieldTypes) {
-      return allFields
-        .filter((customField) =>
-          customFieldTypes.includes(customField.type as CustomFieldType),
-        )
-        .map((customField) => ({
-          label: customField.name,
-          value: prefix
-            ? `${prefix}:${customField.id}`
-            : customField.id.toString(),
-          Icon: customFieldIconsMap[customField.type as CustomFieldType],
-        }))
-    }
+    const toOption = (
+      field: { id: string | number; name: string; type: string },
+      value: string,
+    ): SelectOption => ({
+      label: field.name,
+      value: prefix ? `${prefix}:${value}` : value,
+      icon: customFieldIconsMap[field.type as CustomFieldType],
+    })
 
-    return allFields.map((customField) => ({
-      label: customField.name,
-      value: customField.id,
-      Icon: customFieldIconsMap[customField.type as CustomFieldType],
-    }))
+    const reservedOptions = includeReserved
+      ? reservedCustomFieldOptions
+          .filter((field) => matchesType(field.type))
+          .map((field) => toOption(field, field.id.toString()))
+      : []
+
+    const customOptions = rawCustomFields
+      .filter((field) => matchesType(field.type))
+      .map((field) =>
+        toOption(
+          field,
+          customFieldValueKey === "name" ? field.name : field.id.toString(),
+        ),
+      )
+
+    return [...reservedOptions, ...customOptions]
   }, [
     customFieldTypes,
+    customFieldValueKey,
     includeReserved,
-    customFields,
+    rawCustomFields,
     prefix,
     reservedCustomFieldOptions,
   ])
