@@ -18,10 +18,13 @@ import {
 } from "@chatbotx.io/ui/components/ui/sortable"
 import { MoveVerticalIcon, PlusIcon, XIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
-import { useCallback } from "react"
-import { useFieldArray, useFormContext } from "react-hook-form"
+import { useCallback, useEffect, useRef } from "react"
+import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
 import { TiptapEditorField } from "@/components/tiptap/tiptap-editor-field"
-import { useSmtpInboxOptions } from "@/features/inboxes/provider/inbox-hook"
+import {
+  useSmtpInboxFromAddressMap,
+  useSmtpInboxOptions,
+} from "@/features/inboxes/provider/inbox-hook"
 import { PageElementBuilder } from "../../components/page-element-builder"
 import { PAGE_ELEMENTS } from "./page-node-menu"
 
@@ -33,7 +36,22 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
   const { parentName } = props
   const t = useTranslations()
   const smtpInboxOptions = useSmtpInboxOptions()
-  const { control } = useFormContext()
+  const smtpFromAddressMap = useSmtpInboxFromAddressMap()
+  const smtpFromAddressMapRef = useRef(smtpFromAddressMap)
+  smtpFromAddressMapRef.current = smtpFromAddressMap
+  const { control, setValue } = useFormContext()
+
+  const integrationSmtpId = useWatch({
+    name: `${parentName}.integrationSmtpId`,
+  })
+  // Always sync `from` when the inbox changes so the form value stays consistent
+  // with the editor remount triggered by the `key` prop above.
+  useEffect(() => {
+    setValue(
+      `${parentName}.from`,
+      smtpFromAddressMapRef.current[integrationSmtpId] ?? "",
+    )
+  }, [integrationSmtpId, setValue, parentName])
 
   const { fields, append, move, remove } = useFieldArray({
     control,
@@ -55,23 +73,21 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
         options={smtpInboxOptions}
       />
 
-      <SelectField
-        label={t("fields.topicId.label")}
-        name={`${parentName}.topicId`}
-        options={[]}
-      />
-
       <TiptapEditorField
+        key={`from-${integrationSmtpId}`}
         label={t("fields.from.label")}
         name={`${parentName}.from`}
+        required
       />
       <TiptapEditorField
         label={t("fields.to.label")}
         name={`${parentName}.to`}
+        required
       />
       <TiptapEditorField
         label={t("fields.subject.label")}
         name={`${parentName}.subject`}
+        required
       />
       <TiptapEditorField
         label={t("fields.preheader.label")}

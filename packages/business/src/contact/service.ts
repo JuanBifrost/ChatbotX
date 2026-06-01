@@ -1,6 +1,7 @@
-import { type DatabaseClient, db } from "@chatbotx.io/database/client"
+import { type DatabaseClient, db, eq } from "@chatbotx.io/database/client"
+import { contactModel } from "@chatbotx.io/database/schema"
 import type { ContactModel } from "@chatbotx.io/database/types"
-import { withCache } from "@chatbotx.io/redis"
+import { invalidateCacheByTags, withCache } from "@chatbotx.io/redis"
 import { BaseService } from "../base.service"
 
 type FindByProps = {
@@ -8,8 +9,6 @@ type FindByProps = {
 }
 
 class ContactService extends BaseService {
-  protected readonly cachePrefix: string = "contacts"
-
   async findBy(props: {
     tx?: DatabaseClient
     where: Partial<FindByProps>
@@ -31,6 +30,14 @@ class ContactService extends BaseService {
         },
       },
     )
+  }
+
+  async unsubscribeEmail(cid: string) {
+    await db
+      .update(contactModel)
+      .set({ emailOptIn: false })
+      .where(eq(contactModel.id, cid))
+    await invalidateCacheByTags([`contacts:${cid}`])
   }
 }
 
