@@ -15,11 +15,12 @@ import { ExternalLink } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import React from "react"
-import type { listWhatsappFlows } from "@/features/integration-whatsapp/flows/queries"
+import { WhatsappFlowsTableToolbarActions } from "./flows-table-toolbar-actions"
+import type { WhatsappFlowResource } from "./schema/resource"
 
 type WhatsappFlowsTableProps = {
   integrationWhatsapp: IntegrationWhatsappModel
-  promises: Promise<[Awaited<ReturnType<typeof listWhatsappFlows>>]>
+  promises: Promise<WhatsappFlowResource[]>
 }
 
 export function WhatsappFlowsTable({
@@ -27,13 +28,17 @@ export function WhatsappFlowsTable({
   promises,
 }: WhatsappFlowsTableProps) {
   const t = useTranslations()
-  const [{ data }] = React.use(promises)
+  const data = React.use(promises)
 
   const auth = integrationWhatsapp.auth as unknown as WhatsappAuthValue
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex justify-end">
+      <div className="flex items-center justify-between">
+        <WhatsappFlowsTableToolbarActions
+          integrationWhatsappId={integrationWhatsapp.id}
+          workspaceId={integrationWhatsapp.workspaceId}
+        />
         <Button size="sm" variant="secondary">
           <Link
             href={`https://business.facebook.com/latest/whatsapp_manager/flows?business_id=${auth.metadata.businessId}&asset_id=${auth.metadata.wabaId}`}
@@ -49,6 +54,7 @@ export function WhatsappFlowsTable({
             <TableRow>
               <TableHead>{t("fields.name.label")}</TableHead>
               <TableHead>{t("fields.status.label")}</TableHead>
+              <TableHead>{t("fields.completed.label")}</TableHead>
               <TableHead />
             </TableRow>
           </TableHeader>
@@ -57,9 +63,10 @@ export function WhatsappFlowsTable({
               <TableRow key={flow.id}>
                 <TableCell>{flow.name}</TableCell>
                 <TableCell>{flow.status}</TableCell>
+                <TableCell>{flow.completedCount}</TableCell>
                 <TableCell>
                   <Link
-                    href={`https://business.facebook.com/latest/whatsapp_manager/flow_edit/?business_id=${auth.metadata.businessId}&tab=flow-edit&id=${flow.id}&nav_ref=whatsapp_manager&asset_id=${auth.metadata.wabaId}`}
+                    href={`https://business.facebook.com/latest/whatsapp_manager/flow_edit/?business_id=${auth.metadata.businessId}&tab=flow-edit&id=${flow.sourceId}&nav_ref=whatsapp_manager&asset_id=${auth.metadata.wabaId}`}
                     target="_blank"
                   >
                     <ExternalLink className="size-4" />
@@ -69,7 +76,7 @@ export function WhatsappFlowsTable({
             ))}
             {data.length === 0 && (
               <TableRow>
-                <TableCell className="text-center" colSpan={3}>
+                <TableCell className="text-center" colSpan={4}>
                   {t("messages.noData")}
                 </TableCell>
               </TableRow>

@@ -1,7 +1,11 @@
 import ky from "ky"
 import { API_URL, DEFAULT_API_VERSION } from "../constants"
 import { rescue } from "../exception"
-import type { WhatsappAuthValue, WhatsappPagination } from "../schema"
+import type {
+  MessageTemplateEntity,
+  WhatsappAuthValue,
+  WhatsappPagination,
+} from "../schema"
 import type { WhatsappPhoneNumberResponse } from "./phone-number"
 
 export type WhatsappWabaMMLite = {
@@ -70,18 +74,29 @@ export function listFlows({
 }): Promise<ListFlowsResponse> {
   const { version = DEFAULT_API_VERSION } = auth
 
-  return rescue(() =>
-    ky
-      .get<ListFlowsResponse>(
-        `${API_URL}/${version}/${auth.metadata.wabaId}/flows`,
-        {
+  return rescue(async () => {
+    const allFlows: WhatsappFlow[] = []
+    let nextUrl: string | undefined =
+      `${API_URL}/${version}/${auth.metadata.wabaId}/flows`
+
+    while (nextUrl) {
+      const response: ListFlowsResponse = await ky
+        .get<ListFlowsResponse>(nextUrl, {
           headers: {
             Authorization: `Bearer ${auth.tokens.accessToken}`,
           },
-        },
-      )
-      .json(),
-  )
+        })
+        .json()
+
+      allFlows.push(...response.data)
+      nextUrl = response.paging?.next
+    }
+
+    return {
+      data: allFlows,
+      paging: { cursors: { before: "", after: "" } },
+    }
+  })
 }
 
 export type ListMessageTemplatesReponse = {
@@ -89,15 +104,6 @@ export type ListMessageTemplatesReponse = {
   paging: {
     next: string
   }
-}
-
-export type MessageTemplateEntity = {
-  id: string
-  name: string
-  status: "APPROVED" | "PENDING" | "REJECTED"
-  language: string
-  category: "AUTHENTICATION" | "MARKETING" | "UTILITY"
-  components: JSON[]
 }
 
 export type CreateMessageTemplateProps = {

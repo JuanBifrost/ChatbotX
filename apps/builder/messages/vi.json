@@ -518,6 +518,9 @@
     "category": {
       "label": "Danh mục"
     },
+    "completed": {
+      "label": "Đã hoàn thành"
+    },
     "workspace": {
       "label": "Workspace"
     },
@@ -1422,8 +1425,10 @@
       "subscribeSequence": "Đăng ký chăm sóc",
       "unsubscribeSequence": "Hủy đăng ký chăm sóc",
       "noTemplatesAvailable": "No templates available",
+      "noFlowsAvailable": "Không có flow nào",
       "splitTraffic": "Chia lưu lượng",
-      "aiEditImage": "AI Chỉnh sửa hình ảnh"
+      "aiEditImage": "AI Chỉnh sửa hình ảnh",
+      "whatsappFlow": "Luồng WhatsApp"
     },
     "splitTraffic": {
       "balanceHint": "Tổng phần trăm phải bằng 100%.",
@@ -1436,6 +1441,20 @@
       "addOption": "Thêm mới",
       "editButtonTitle": "Chỉnh sửa nút",
       "editOptionTitle": "Chỉnh sửa tùy chọn"
+    },
+    "whatsappFlow": {
+      "buttonLabel": "Nhãn nút",
+      "editDialogTitle": "Chỉnh sửa Luồng WhatsApp",
+      "selectFlow": "Luồng WhatsApp",
+      "selectFlowPlaceholder": "Chọn luồng",
+      "startScreen": "Màn hình bắt đầu",
+      "selectScreenPlaceholder": "Chọn màn hình",
+      "fieldMappings": "Lưu phản hồi vào trường tùy chỉnh",
+      "paramKey": "Tham số",
+      "customField": "Trường tùy chỉnh",
+      "selectCustomFieldPlaceholder": "Chọn trường tùy chỉnh",
+      "addMapping": "Thêm ánh xạ",
+      "addCustomField": "Thêm mới"
     },
     "additionalSteps": "Các bước bổ sung",
     "delayType": {
@@ -1555,6 +1574,7 @@
     "failedToCopy": "Sao chép thất bại",
     "failedToPreviewImage": "Không thể xem trước hình ảnh",
     "loadingData": "Đang tải dữ liệu...",
+    "errorLoadingData": "Tải dữ liệu thất bại. Vui lòng thử lại.",
     "leaveEmptyToKeepSecret": "Để trống để giữ nguyên secret hiện tại",
     "needToAddSettings": "Bạn cần thêm cài đặt để sử dụng tích hợp này",
     "noDataAvailable": "Không có dữ liệu",

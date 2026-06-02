@@ -2,11 +2,10 @@
 
 import {
   WHATSAPP_OPTION_LIST_MAX_OPTIONS,
-  WHATSAPP_OPTION_LIST_MIN_OPTIONS,
-  type WhatsappOptionListButton,
   type WhatsappOptionListButtonLabelFormValues,
+  type WhatsappOptionListItem,
   type WhatsappOptionListOptionFormValues,
-  whatsappOptionListButtonDefaultFn,
+  whatsappOptionListItemDefaultFn,
 } from "@chatbotx.io/flow-config"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Pencil, PlusIcon } from "lucide-react"
@@ -39,12 +38,10 @@ const WhatsappOptionListStepEditor = ({
     update,
   } = useFieldArray({
     control,
-    name: `${parentName}.buttons`,
+    name: `${parentName}.options`,
     keyName: "_key",
   })
-  const fields = rawFields as unknown as (WhatsappOptionListButton & {
-    _key: string
-  })[]
+  const fields = rawFields as Array<WhatsappOptionListItem & { _key: string }>
 
   const [buttonDialogOpen, setButtonDialogOpen] = useState(false)
   const [activeOptionIndex, setActiveOptionIndex] = useState<number | null>(
@@ -52,28 +49,25 @@ const WhatsappOptionListStepEditor = ({
   )
 
   const handleAddOption = useCallback(() => {
-    const currentButtons =
-      (getValues(`${parentName}.buttons`) as WhatsappOptionListButton[]) ?? []
+    const currentOptions =
+      (getValues(`${parentName}.options`) as WhatsappOptionListItem[]) ?? []
 
-    if (currentButtons.length >= WHATSAPP_OPTION_LIST_MAX_OPTIONS) {
+    if (currentOptions.length >= WHATSAPP_OPTION_LIST_MAX_OPTIONS) {
       return
     }
 
     append(
-      whatsappOptionListButtonDefaultFn({
-        label: `Title #${currentButtons.length + 1}`,
+      whatsappOptionListItemDefaultFn({
+        title: `Title #${currentOptions.length + 1}`,
       }),
     )
   }, [append, getValues, parentName])
 
   const handleRemoveOption = useCallback(
     (index: number) => {
-      if (fields.length <= WHATSAPP_OPTION_LIST_MIN_OPTIONS) {
-        return
-      }
       remove(index)
     },
-    [fields.length, remove],
+    [remove],
   )
 
   const handleEditOption = useCallback((index: number) => {
@@ -83,12 +77,12 @@ const WhatsappOptionListStepEditor = ({
   const handleSaveOption = useCallback(
     (index: number, values: WhatsappOptionListOptionFormValues) => {
       const current = getValues(
-        `${parentName}.buttons.${index}`,
-      ) as WhatsappOptionListButton
+        `${parentName}.options.${index}`,
+      ) as WhatsappOptionListItem
 
       update(index, {
         ...current,
-        label: values.title,
+        title: values.title,
         description: values.description ? values.description : undefined,
       })
     },
@@ -174,7 +168,6 @@ const WhatsappOptionListStepEditor = ({
         <OptionDialog
           currentItem={fields[activeOptionIndex]}
           index={activeOptionIndex}
-          key={activeOptionIndex}
           onOpenChange={handleOptionDialogOpenChange}
           onSave={handleSaveOption}
           open={activeOptionIndex !== null}

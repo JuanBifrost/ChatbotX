@@ -507,6 +507,9 @@
     "category": {
       "label": "Category"
     },
+    "completed": {
+      "label": "Completed"
+    },
     "workspace": {
       "label": "Workspace"
     },
@@ -1382,6 +1385,7 @@
       "sendWaTemplateMessage": "Template Message",
       "whatsappOptionList": "Option List",
       "noTemplatesAvailable": "No templates available",
+      "noFlowsAvailable": "No flows available",
       "setCustomField": "Set Custom Field",
       "startAnotherNode": "Start Another Node",
       "startExternalFlow": "Start External Flow",
@@ -1409,7 +1413,8 @@
       "subscribeSequence": "Subscribe Sequence",
       "unsubscribeSequence": "Unsubscribe Sequence",
       "splitTraffic": "Split Traffic",
-      "aiEditImage": "AI Edit Image"
+      "aiEditImage": "AI Edit Image",
+      "whatsappFlow": "WhatsApp Flow"
     },
     "splitTraffic": {
       "balanceHint": "The total sum must equal 100%.",
@@ -1422,6 +1427,20 @@
       "addOption": "Add New",
       "editButtonTitle": "Edit Button",
       "editOptionTitle": "Edit Option"
+    },
+    "whatsappFlow": {
+      "buttonLabel": "Button Label",
+      "editDialogTitle": "Edit WhatsApp Flow",
+      "selectFlow": "WhatsApp Flow",
+      "selectFlowPlaceholder": "Select a flow",
+      "startScreen": "Start Screen",
+      "selectScreenPlaceholder": "Select a screen",
+      "fieldMappings": "Save Response to Custom Fields",
+      "paramKey": "Parameter",
+      "customField": "Custom Field",
+      "selectCustomFieldPlaceholder": "Select custom field",
+      "addMapping": "Add Mapping",
+      "addCustomField": "Add New"
     },
     "additionalSteps": "Additional steps",
     "delayType": {
@@ -1541,6 +1560,7 @@
     "failedToCopy": "Failed to copy",
     "failedToPreviewImage": "Failed to preview image",
     "loadingData": "Loading data...",
+    "errorLoadingData": "Failed to load data. Please try again.",
     "leaveEmptyToKeepSecret": "Leave empty to keep the current secret",
     "needToAddSettings": "You need to add settings to use this integration",
     "noDataAvailable": "No data available",

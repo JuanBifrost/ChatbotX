@@ -4,6 +4,7 @@ import type { FlowNode } from "./nodes"
 import type { BaseStepSchema } from "./steps/base"
 import type { ButtonStepProps } from "./steps/button"
 import type { SendCardStepSchema } from "./steps/send-card"
+import type { WhatsappOptionListItem } from "./steps/whatsapp-option-list"
 
 export const extractMetadata = (
   key: string,
@@ -50,8 +51,7 @@ export const encodeButtonPayload = (props: ButtonPayload) =>
 export const decodeButtonPayload = (payload: string): ButtonPayload | null => {
   try {
     return buttonPayloadSchema.parse(JSON.parse(atob(payload)))
-  } catch (error) {
-    console.error("Unable to decode button payload", { error })
+  } catch {
     return null
   }
 }
@@ -96,7 +96,7 @@ export function getNodeFromButton(nodes: FlowNode[], buttonId: string) {
       continue
     }
     for (const step of node.data.details.steps as BaseStepSchema[]) {
-      if (!("buttons" in step || "cards" in step)) {
+      if (!("buttons" in step || "cards" in step || "options" in step)) {
         continue
       }
 
@@ -115,6 +115,22 @@ export function getNodeFromButton(nodes: FlowNode[], buttonId: string) {
         foundedButton = button
         foundedNodeId = step.nodeId ?? node.id
         break
+      }
+
+      if ("options" in step) {
+        const options = (step.options ?? []) as WhatsappOptionListItem[]
+        const option = options.find((o) => o.id === buttonId)
+        if (option) {
+          foundedButton = {
+            id: option.id,
+            label: option.title,
+            buttonType: null,
+            beforeStep: null,
+            steps: [],
+          }
+          foundedNodeId = step.nodeId ?? node.id
+          break
+        }
       }
     }
     if (foundedButton) {
