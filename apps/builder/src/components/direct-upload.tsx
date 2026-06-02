@@ -24,10 +24,12 @@ export function DirectUploadOrInsertLink({
   parentName,
   fileType,
   uploadPath,
+  onSuccess,
 }: {
   parentName: string
   fileType: FileType
   uploadPath: string
+  onSuccess?: (url: string) => void
 }) {
   const t = useTranslations()
 
@@ -111,6 +113,27 @@ export function DirectUploadOrInsertLink({
             {(field) => <Input type="hidden" {...field} />}
           </FormFieldWrapper>
 
+          <DirectUploadButton
+            accept={fileConfigs.mimeType}
+            className="hidden"
+            label={t("actions.uploadFile")}
+            maxSize={10_485_760} // 10MB
+            multiple={false}
+            onUploadError={(error, file) => {
+              toast.error(`Failed to upload ${file.name}`, {
+                description: error.message,
+              })
+            }}
+            onUploadSuccess={(_filePath, _file, finalUrl) => {
+              if (onSuccess) {
+                onSuccess(finalUrl)
+              } else {
+                setValue(`${parentName}.url`, finalUrl)
+              }
+            }}
+            triggerRef={triggerRef}
+            uploadPath={uploadPath}
+          />
           {publicUrl && publicUrl.length > 0 ? (
             <Button
               className="relative flex h-full w-full p-0!"
@@ -161,29 +184,27 @@ export function DirectUploadOrInsertLink({
         </>
       ) : (
         <div className="flex w-full items-center gap-2 py-2">
-          {publicUrl.length ? (
+          <fileConfigs.icon size={24} />
+          <InputField
+            className="flex-1"
+            name={`${parentName}.url`}
+            placeholder={t("fields.url.placeholder")}
+          />
+          {onSuccess && (
             <Button
-              className="h-full p-0!"
-              onClick={chooseUploadFile}
+              disabled={!publicUrl}
+              onClick={() => {
+                if (publicUrl) {
+                  onSuccess(publicUrl)
+                  setValue(`${parentName}.url`, "")
+                  setValue(`${parentName}.mode`, "file")
+                }
+              }}
+              size="sm"
               type="button"
-              variant="ghost"
             >
-              <Image
-                alt={stepId}
-                fill={true}
-                objectFit="contain"
-                src={publicUrl}
-              />
+              {t("actions.add")}
             </Button>
-          ) : (
-            <>
-              <fileConfigs.icon size={24} />
-              <InputField
-                className="flex-1"
-                name={`${parentName}.url`}
-                placeholder={t("fields.url.placeholder")}
-              />
-            </>
           )}
         </div>
       )}

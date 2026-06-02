@@ -56,17 +56,41 @@ export const myModel = pgTable(
 
 ### Enums
 
-Use `pgEnum` backed by Zod enums from `partials/`:
+Any column whose value is constrained to a fixed set of strings **must** use `pgEnum`, not `text`. This enforces the constraint at the database level and provides TypeScript types automatically.
+
+**Step 1** — define the Zod enum in `src/partials/<domain>.ts`:
 
 ```typescript
-import { pgEnum } from "drizzle-orm/pg-core"
-import { myStatusTypes } from "../partials/my-feature"
+import z from "zod"
+
+export const myStatusTypes = z.enum(["active", "inactive", "pending"])
+export type MyStatusType = z.infer<typeof myStatusTypes>
+```
+
+**Step 2** — export it from `src/partials/index.ts`:
+
+```typescript
+export * from "./<domain>"
+```
+
+**Step 3** — create the `pgEnum` and use it in the table schema:
+
+```typescript
+import { pgEnum, pgTable } from "drizzle-orm/pg-core"
+import { myStatusTypes } from "../partials/<domain>"
 
 export const myStatus = pgEnum(
   "myStatus",
   myStatusTypes.options as [string, ...string[]],
 )
+
+export const myModel = pgTable("MyModel", {
+  ...sharedColumns,
+  status: myStatus().default("active").notNull(),
+})
 ```
+
+The enum name passed to `pgEnum` becomes the PostgreSQL enum type name — use `camelCase` matching the column name.
 
 ## Relations
 
@@ -183,6 +207,27 @@ import { myModel } from "@chatbotx.io/database/schema"
 
 const item = await findOrFail({ table: myModel, where: { id } })
 ```
+
+## Transactions
+
+**Rule:** Use `db.transaction()` whenever an action performs 2 or more write operations (INSERT, UPDATE, DELETE) so all succeed or fail together.
+
+```typescript
+import { db } from "@chatbotx.io/database/client"
+
+await db.transaction(async (tx) => {
+  const product = await productService.create({ data, tx })
+
+  await Promise.all([
+    productVariantService.createBulk({ productId: product.id, variants, tx }),
+    productAddonService.createBulk({ productId: product.id, addons, tx }),
+  ])
+})
+```
+
+- Pass `tx` down to every service method inside the callback — never mix `tx` and bare `db` within the same transaction.
+- Services accept `tx?: DatabaseClient` as an optional parameter (defaults to `db`), so they work both inside and outside a transaction.
+- Return values from the transaction callback are returned by `db.transaction()`.
 
 ## Imports Cheatsheet
 

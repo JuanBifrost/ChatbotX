@@ -55,9 +55,8 @@ export default async function WorkspaceLayout({
     <SidebarProvider defaultOpen={defaultOpen}>
       <AppSidebar allWorkspaces={allWorkspaces} workspaceId={workspaceId} />
       <SidebarInset>
-        <SidebarTrigger className="absolute top-3 -left-2 z-10 border" />
-
         <main className="flex flex-1 flex-col gap-4 p-6">{children}</main>
+        <SidebarTrigger className="absolute top-3 -left-2 z-10 border" />
       </SidebarInset>
     </SidebarProvider>
   )
