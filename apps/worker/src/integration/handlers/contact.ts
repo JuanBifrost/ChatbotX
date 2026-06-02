@@ -1,4 +1,4 @@
-import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { and, db, eq, inArray, isNull } from "@chatbotx.io/database/client"
 import {
   contactCustomFieldModel,
   contactModel,
@@ -23,7 +23,9 @@ import type {
   OptInEmailStepSchema,
   OptOutEmailStepSchema,
   SetCustomFieldStepSchema,
+  SubscribeBroadcastStepSchema,
   SubscribeSequenceStepSchema,
+  UnsubscribeBroadcastStepSchema,
   UnsubscribeSequenceStepSchema,
 } from "@chatbotx.io/flow-config"
 import {
@@ -386,4 +388,33 @@ export async function removeContactSequence({
       reason: "unsubscribed_via_flow",
     })
   }
+}
+
+export async function subscribeBroadcast({
+  conversation,
+}: ExecuteStepProps<SubscribeBroadcastStepSchema>) {
+  await db
+    .update(contactModel)
+    .set({ broadcastSubscribedAt: new Date() })
+    .where(
+      and(
+        eq(contactModel.id, conversation.contactId),
+        eq(contactModel.workspaceId, conversation.workspaceId),
+        isNull(contactModel.broadcastSubscribedAt),
+      ),
+    )
+}
+
+export async function unsubscribeBroadcast({
+  conversation,
+}: ExecuteStepProps<UnsubscribeBroadcastStepSchema>) {
+  await db
+    .update(contactModel)
+    .set({ broadcastSubscribedAt: null })
+    .where(
+      and(
+        eq(contactModel.id, conversation.contactId),
+        eq(contactModel.workspaceId, conversation.workspaceId),
+      ),
+    )
 }
