@@ -1,11 +1,12 @@
 "use server"
 
-import { db } from "@chatbotx.io/database/client"
+import { contactService } from "@chatbotx.io/business"
+import { and, db, eq, inArray } from "@chatbotx.io/database/client"
+import { contactCustomFieldModel } from "@chatbotx.io/database/schema"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
-import { revalidateCacheTags } from "@/lib/cache-helper"
 import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type DeleteContactCustomFieldsRequest,
@@ -34,69 +35,28 @@ export const deleteContactCustomFieldAction = workspaceActionClient
 export const deleteContactCustomFields = async ({
   workspaceId,
   contactIds,
+  customFieldId,
 }: {
   workspaceId: string
   contactIds: string[]
   customFieldId: string
 }) => {
-  const contacts = await db.query.contactModel.findMany({
-    where: {
-      workspaceId,
-      id: {
-        in: contactIds,
-      },
-    },
-    columns: {
-      id: true,
-    },
+  const contacts = await contactService.findManyByIds({
+    workspaceId,
+    ids: contactIds,
   })
+
   if (contacts.length === 0) {
     return
   }
 
-  // if (isCuid(customFieldId)) {
-  //   const customField = await findOrFail(
-  //     customFieldModel,
-  //     {
-  //       workspaceId,
-  //       id: customFieldId,
-  //     },
-  //     "Custom field not found",
-  //   )
-
-  //   await db.transaction(async (tx) => {
-  //     await tx.delete(contactCustomFieldModel).where(
-  //       and(
-  //         inArray(
-  //           contactCustomFieldModel.contactId,
-  //           contacts.map((c) => c.id),
-  //         ),
-  //         eq(contactCustomFieldModel.customFieldId, customField.id),
-  //       ),
-  //     )
-  //   })
-  // } else if (
-  //   fillableContactKeys.includes(customFieldId as FillableContactKeys)
-  // ) {
-  //   await db
-  //     .update(contactModel)
-  //     .set({
-  //       [customFieldId]: "",
-  //     })
-  //     .where(
-  //       and(
-  //         inArray(
-  //           contactModel.id,
-  //           contacts.map((c) => c.id),
-  //         ),
-  //         eq(contactModel.workspaceId, workspaceId),
-  //       ),
-  //     )
-  // }
-
-  revalidateCacheTags([
-    `workspaces:${workspaceId}#contacts`,
-    `workspaces:${workspaceId}#conversations`,
-    `workspaces:${workspaceId}#fields`,
-  ])
+  await db.delete(contactCustomFieldModel).where(
+    and(
+      inArray(
+        contactCustomFieldModel.contactId,
+        contacts.map((c) => c.id),
+      ),
+      eq(contactCustomFieldModel.customFieldId, customFieldId),
+    ),
+  )
 }

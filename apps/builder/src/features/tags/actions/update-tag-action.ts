@@ -1,13 +1,12 @@
 "use server"
 
-import { db, eq } from "@chatbotx.io/database/client"
+import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import { tagModel } from "@chatbotx.io/database/schema"
 import { returnValidationErrors } from "next-safe-action"
 import {
   type WorkspaceIdAndIdRequestParams,
   workspaceIdAndIdRequestParams,
 } from "@/features/common/schemas"
-import { revalidateCacheTags } from "@/lib/cache-helper"
 import { workspaceActionClient } from "@/lib/safe-action"
 import { type UpdateTagSchema, updateTagSchema } from "../schema/action"
 
@@ -55,16 +54,20 @@ export const updateTag = async ({
     })
   }
 
+  const tag = await findOrFail({
+    table: tagModel,
+    where: { id, workspaceId },
+    message: "Tag not found",
+  })
+
   const updatedTag = await db
     .update(tagModel)
     .set({
       name: parsedInput.name,
     })
-    .where(eq(tagModel.id, id))
+    .where(eq(tagModel.id, tag.id))
     .returning()
     .then((result) => result[0])
-
-  revalidateCacheTags(`workspaces:${workspaceId}#tags`)
 
   return updatedTag
 }

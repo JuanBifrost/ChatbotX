@@ -8,8 +8,6 @@ import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
-import { revalidateCacheTags } from "@/lib/cache-helper"
-import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 import { disableConversationState } from "../queries/bot-state"
 
@@ -64,19 +62,7 @@ export const enableLiveChatConversationAction = workspaceActionClient
               triggerType: "conversation_transferred_to_human",
             },
           },
-        }).catch((error) => {
-          logger.error(
-            { err: error },
-            "[enableLiveChatConversationAction] Failed to emit",
-          )
         })
       }
-
-      revalidateCacheTags([
-        `workspaces:${workspaceId}#conversations`,
-        ...parsedInput.ids.map(
-          (id) => `workspaces:${workspaceId}#conversations:${id}`,
-        ),
-      ])
     },
   )

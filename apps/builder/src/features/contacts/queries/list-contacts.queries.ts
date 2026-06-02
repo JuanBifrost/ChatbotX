@@ -5,6 +5,7 @@ import {
   parseOrderByAsObject,
 } from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
+import { logger } from "@/lib/log"
 import { applyContactFilter } from "../apply-contact-filter"
 import type {
   ListContactsRequest,
@@ -12,6 +13,57 @@ import type {
 } from "../schemas/query"
 
 export async function listContacts(
+  input: ListContactsRequest,
+): Promise<ListContactsResponse> {
+  await assertCurrentUserCanAccessChatbot(input.workspaceId)
+  return queryContacts(input)
+}
+
+export function listContactsForAPI(
+  input: ListContactsRequest,
+): Promise<ListContactsResponse> {
+  return queryContacts(input)
+}
+
+async function queryContacts(
+  input: ListContactsRequest,
+): Promise<ListContactsResponse> {
+  const where = generateWhere(input)
+
+  const pagination = getPaginationWithDefaults(input)
+  const orderBy = parseOrderByAsObject(contactModel, input)
+
+  const [data, totalRows] = await Promise.all([
+    db.query.contactModel.findMany({
+      where,
+      ...pagination,
+      orderBy,
+      with: {
+        tags: true,
+        contactCustomFields: true,
+        contactInboxes: {
+          with: {
+            inbox: true,
+          },
+        },
+        conversation: {
+          with: {
+            assignedUser: true,
+            assignedInboxTeam: true,
+          },
+        },
+      },
+    }),
+    // biome-ignore lint/suspicious/noExplicitAny: relationsFilterToSQL requires typed Drizzle filter
+    db.$count(contactModel, relationsFilterToSQL(contactModel, where as any)),
+  ])
+
+  const pageCount = Math.ceil(totalRows / pagination.limit)
+
+  return { data, pageCount }
+}
+
+export async function listContactsRSC(
   input: ListContactsRequest & { workspaceId: string },
 ): Promise<ListContactsResponse> {
   await assertCurrentUserCanAccessChatbot(input.workspaceId)
@@ -27,7 +79,11 @@ export async function listContacts(
       ...pagination,
       orderBy,
       with: {
-        contactInboxes: true,
+        contactInboxes: {
+          with: {
+            inbox: true,
+          },
+        },
         conversation: {
           with: {
             assignedUser: true,
@@ -83,21 +139,22 @@ async function getTotalContactsFromStats(
 
     return { total }
   } catch (error) {
-    console.error("Error getting total contacts from stats:", error)
+    logger.error({ err: error }, "Error getting total contacts from stats")
     return { total: 0 }
   }
 }
 
 const generateWhere = (input: ListContactsRequest) => {
+  const keyword = input.keyword?.toLowerCase()
   const where: Record<string, unknown> = {
     workspaceId: input.workspaceId,
-    ...(input.keyword
+    ...(keyword
       ? {
           OR: [
-            { firstName: { ilike: `%${input.keyword.toLowerCase()}%` } },
-            { lastName: { ilike: `%${input.keyword.toLowerCase()}%` } },
-            { email: { ilike: `%${input.keyword.toLowerCase()}%` } },
-            { phoneNumber: { ilike: `%${input.keyword.toLowerCase()}%` } },
+            { firstName: { ilike: `%${keyword}%` } },
+            { lastName: { ilike: `%${keyword}%` } },
+            { email: { ilike: `%${keyword}%` } },
+            { phoneNumber: { ilike: `%${keyword}%` } },
           ],
         }
       : {}),

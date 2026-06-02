@@ -18,30 +18,31 @@ const businessError = {
   status: 400,
 }
 
-export const posibleErrorsOnFindingResource = {
+export const possibleErrorsOnFindingResource = {
   rateLimitExceeded,
   notFound,
   businessError,
 }
 
-export const posibleErrorsOnListingResource = {
+export const possibleErrorsOnListingResource = {
   rateLimitExceeded,
   businessError,
 }
 
-export const posibleErrorsOnCreatingResource = {
+export const possibleErrorsOnCreatingResource = {
   rateLimitExceeded,
   invalidRequestData,
   businessError,
 }
 
-export const posibleErrorsOnUpdatingResource = {
+export const possibleErrorsOnUpdatingResource = {
   rateLimitExceeded,
   invalidRequestData,
   businessError,
 }
 
-export const posibleErrorsOnDeletingResource = {
+export const possibleErrorsOnDeletingResource = {
   rateLimitExceeded,
+  notFound,
   businessError,
 }

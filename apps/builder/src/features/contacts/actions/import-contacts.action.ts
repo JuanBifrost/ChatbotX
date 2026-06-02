@@ -4,7 +4,6 @@ import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
-import { revalidateCacheTags } from "@/lib/cache-helper"
 import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type ImportContactsRequest,
@@ -16,19 +15,13 @@ export const importContactsAction = workspaceActionClient
   .inputSchema(importContactsRequest)
   .action(
     async ({
-      bindArgsParsedInputs: [workspaceId],
+      bindArgsParsedInputs: [_workspaceId],
       parsedInput,
     }: {
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: ImportContactsRequest
     }) => {
-      // TODO
-      console.log(JSON.stringify(parsedInput, null, 2))
+      // TODO: implement import
       await Promise.resolve(parsedInput)
-
-      revalidateCacheTags([
-        `workspaces:${workspaceId}#contacts`,
-        `workspaces:${workspaceId}#conversations`,
-      ])
     },
   )

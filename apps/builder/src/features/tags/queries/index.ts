@@ -5,6 +5,7 @@ import {
   parseOrderByAsObject,
   parsePagination,
 } from "@chatbotx.io/database/utils"
+import { isNumericId } from "@chatbotx.io/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
   FindTagRequest,
@@ -63,11 +64,19 @@ export async function listTags(
 }
 
 export const findTag = async (input: FindTagRequest) => {
-  const { folderId, ...where } = input
+  const { folderId, workspaceId } = input
+  const folderWhere = folderId === null ? { isNull: true as const } : folderId
+
+  if (isNumericId(input.key)) {
+    const byId = await db.query.tagModel.findFirst({
+      where: { id: input.key, folderId: folderWhere, workspaceId },
+    })
+    if (byId) {
+      return byId
+    }
+  }
+
   return await db.query.tagModel.findFirst({
-    where: {
-      ...where,
-      folderId: folderId === null ? { isNull: true as const } : folderId,
-    },
+    where: { name: input.key, folderId: folderWhere, workspaceId },
   })
 }
