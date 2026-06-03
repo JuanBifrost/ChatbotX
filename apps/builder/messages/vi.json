@@ -1324,6 +1324,17 @@
       "label": "Tiêu đề",
       "placeholder": "Nhập tiêu đề"
     },
+    "import": {
+      "label": "Nhập",
+      "uploading": "Đang tải lên…",
+      "histories": {
+        "title": "Lịch sử nhập",
+        "progress": "Tiến độ",
+        "success": "Thành công",
+        "failed": "Thất bại",
+        "completedAt": "Hoàn thành lúc"
+      }
+    },
     "line": {
       "label": "Đường kẻ"
     },
@@ -2022,7 +2033,9 @@
     "description": "Tạo token để cho phép workspace của bạn truy cập API ChatbotX. Giữ token này bí mật và không chia sẻ với ai."
   },
   "contacts": {
-    "title": "Liên hệ"
+    "title": "Liên hệ",
+    "exportTakingLong": "Xuất dữ liệu đang mất nhiều thời gian hơn dự kiến",
+    "exportTakingLongDescription": "Quá trình xuất vẫn đang xử lý. Bạn có thể đóng hộp thoại này và kiểm tra lại sau vài phút từ lịch sử xuất."
   },
   "errorLogs": {
     "title": "Nhật ký lỗi"

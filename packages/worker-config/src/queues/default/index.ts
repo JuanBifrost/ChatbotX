@@ -1,3 +1,4 @@
+import type { ContactFilterCriteriaInput } from "@chatbotx.io/database/queries"
 import { Queue } from "bullmq"
 import {
   defaultJobOptions,
@@ -16,23 +17,35 @@ export const defaultQueue =
 
 export const DefaultJobAction = {
   exportContacts: "exportContacts",
+  runImport: "runImport",
   sendErrorLog: "sendErrorLog",
   sendAuditLog: "sendAuditLog",
 } as const
+
+export type ExportContactsFilter = {
+  keyword?: string
+  contactFilter?: ContactFilterCriteriaInput
+}
 
 export type JobExportContacts = {
   type: typeof DefaultJobAction.exportContacts
   data: {
     requestedUserId: string
     workspaceId: string
+    fileId: string
     fields: string[]
-    contactIds: string[]
     outputPath: string
     outputFormat: "csv"
-    cursor?: {
-      createdAt: string
-      id: string
-    }
+  } & (
+    | { contactIds: string[]; filter?: undefined }
+    | { contactIds?: undefined; filter: ExportContactsFilter }
+  )
+}
+
+export type JobRunImport = {
+  type: typeof DefaultJobAction.runImport
+  data: {
+    importId: string
   }
 }
 
@@ -60,5 +73,6 @@ export type JobSendAuditLog = {
 
 export type DefaultJobData =
   | JobExportContacts
+  | JobRunImport
   | JobSendErrorLog
   | JobSendAuditLog

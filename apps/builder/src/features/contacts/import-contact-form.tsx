@@ -1,6 +1,10 @@
 "use client"
 
-import { channelTypes } from "@chatbotx.io/database/partials"
+import {
+  channelTypes,
+  importTypes,
+  uploadTypes,
+} from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import {
@@ -10,148 +14,153 @@ import {
   AccordionTrigger,
 } from "@chatbotx.io/ui/components/ui/accordion"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
-import { Card, CardContent } from "@chatbotx.io/ui/components/ui/card"
 import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { Input } from "@chatbotx.io/ui/components/ui/input"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
-import { ArrowRightIcon, Loader2Icon } from "lucide-react"
+import {
+  ArrowRightIcon,
+  HistoryIcon,
+  Loader2Icon,
+  Trash2Icon,
+} from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useState } from "react"
+import { useEffect, useState } from "react"
+import { useFieldArray, useFormContext } from "react-hook-form"
 import { toast } from "sonner"
-import FileDropzone from "@/components/file-dropzone"
-import { CustomFieldSelect } from "../custom-fields/custom-field-select"
-import { useConfiguredInboxTypeOptions } from "../inboxes/provider/inbox-hook"
-import { useTagSelectOptions } from "../tags/provider/tag-hook"
-import { importContactsAction } from "./actions/import-contacts.action"
-import { importContactsRequest } from "./schemas/action"
+import { importContactsAction } from "@/features/contacts/actions/import-contacts.action"
+import { importContactsRequest } from "@/features/contacts/schemas/contact-import"
+import { CustomFieldSelect } from "@/features/custom-fields/custom-field-select"
+import { ImportDropzone } from "@/features/import/components/import-dropzone"
+import {
+  useConfiguredInboxTypeOptions,
+  useInboxOptionsByChannel,
+} from "@/features/inboxes/provider/inbox-hook"
+import { useTagSelectOptions } from "@/features/tags/provider/tag-hook"
 
 export function ImportContactsForm({ workspaceId }: { workspaceId: string }) {
   const t = useTranslations()
   const router = useRouter()
-
+  const [fileId, setFileId] = useState("")
   const [csvHeaders, setCsvHeaders] = useState<string[]>([])
+  const [isUploading, setIsUploading] = useState(false)
+  const hasFile = fileId !== ""
 
-  const {
-    form,
-    form: { register, setValue, resetField, unregister, formState },
-    handleSubmitWithAction,
-  } = useHookFormAction(
+  const { form, handleSubmitWithAction } = useHookFormAction(
     importContactsAction.bind(null, workspaceId),
     zodResolver(importContactsRequest),
     {
       actionProps: {
         onSuccess: () => {
-          // TODO
-          router.push(`/space/${workspaceId}/contacts`)
+          toast.success(
+            t("messages.createdSuccess", {
+              feature: t("fields.import.label"),
+            }),
+          )
+          router.push(`/space/${workspaceId}/contacts/import/histories`)
         },
         onError: ({ error }) => {
           if (error.serverError) {
             toast.error(error.serverError)
+            return
           }
+
+          const rootErrors = error.validationErrors?._errors
+          if (rootErrors?.length) {
+            toast.error(rootErrors[0])
+            return
+          }
+
+          toast.error(
+            t("messages.createdFailed", { feature: t("fields.import.label") }),
+          )
         },
       },
       formProps: {
         mode: "onChange",
         defaultValues: {
-          channel: "messenger",
-          fieldMapping: [
-            {
-              column: "",
-              customFieldId: "",
-            },
-          ],
+          fileId: "",
+          inboxId: "",
+          countryCode: undefined,
+          fieldMapping: [{ column: "", customFieldId: "" }],
         },
       },
       errorMapProps: {},
     },
   )
 
-  const handleCancel = () => {
-    router.push(`/space/${workspaceId}/contacts`)
-  }
-
-  const handleSelectFile = (file: File) => {
-    if (file) {
-      const reader = new FileReader()
-      reader.onload = (e: ProgressEvent<FileReader>) => {
-        const csvContent = e.target?.result as string
-        const headerRow = csvContent.split("\n")[0]
-        const columnNames = headerRow.split(",")
-        setCsvHeaders(columnNames)
-      }
-
-      reader.readAsText(file)
-    } else {
-      setCsvHeaders([])
-    }
-  }
+  useEffect(() => {
+    form.setValue("fileId", fileId, { shouldValidate: true })
+  }, [fileId, form.setValue])
 
   return (
-    <div className="my-4 flex flex-col items-center justify-center">
-      <Form {...form}>
-        <form className="flex-1 space-y-4" onSubmit={handleSubmitWithAction}>
-          <Card className="w-xl">
-            <CardContent className="flex flex-col gap-4">
-              <Card className="border-dashed">
-                <FileDropzone
-                  configs={{
-                    uploadKeyName: "actions.uploadDocument",
-                    accept: {
-                      "application/csv": [".csv"],
-                    },
-                    isCard: true,
-                  }}
-                  mode="file"
-                  onDrop={(file: File) => {
-                    setValue("file", file, {
-                      shouldValidate: true,
-                    })
-                    handleSelectFile(file)
-                  }}
-                  onRemove={() => {
-                    resetField("file")
-                    setCsvHeaders([])
-                  }}
-                  parentName="file"
-                  register={register}
-                  type="file"
-                  unregister={unregister}
-                />
-              </Card>
-
-              {csvHeaders.length > 0 && (
-                <ContactsSettings csvHeaders={csvHeaders} />
-              )}
-
-              <div className="mt-5 flex justify-end gap-2">
-                <Button onClick={handleCancel} type="button" variant="outline">
-                  {t("actions.cancel")}
-                </Button>
-
-                <Button
-                  disabled={!formState.isValid || formState.isSubmitting}
-                  type="submit"
-                >
-                  {formState.isSubmitting && (
-                    <Loader2Icon className="animate-spin" />
-                  )}
-                  {t("actions.confirm")}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </form>
-      </Form>
-    </div>
+    <>
+      <div className="flex justify-end">
+        <Link
+          className="inline-flex items-center gap-1 text-blue-600 text-sm hover:underline"
+          href={`/space/${workspaceId}/contacts/import/histories`}
+        >
+          <HistoryIcon size={16} />
+          {t("fields.import.histories.title")}
+        </Link>
+      </div>
+      <ImportDropzone
+        onCleared={() => {
+          setFileId("")
+          setCsvHeaders([])
+        }}
+        onUploaded={(result, headers) => {
+          setFileId(result.fileId)
+          setCsvHeaders(headers)
+        }}
+        onUploadingChange={setIsUploading}
+        subType={importTypes.enum.contacts}
+        type={uploadTypes.enum.import}
+        workspaceId={workspaceId}
+      />
+      {hasFile && (
+        <Form {...form}>
+          <form className="flex-1 space-y-4" onSubmit={handleSubmitWithAction}>
+            <SettingsSection csvHeaders={csvHeaders} />
+            <div className="flex justify-end gap-4">
+              <Button
+                onClick={() => router.push(`/space/${workspaceId}/contacts`)}
+                type="button"
+                variant="ghost"
+              >
+                {t("actions.cancel")}
+              </Button>
+              <Button
+                disabled={
+                  isUploading ||
+                  !form.formState.isValid ||
+                  form.formState.isSubmitting
+                }
+                type="submit"
+              >
+                {form.formState.isSubmitting && (
+                  <Loader2Icon className="animate-spin" />
+                )}
+                {t("actions.confirm")}
+              </Button>
+            </div>
+          </form>
+        </Form>
+      )}
+    </>
   )
 }
 
-export function ContactsSettings({ csvHeaders }: { csvHeaders: string[] }) {
+function SettingsSection({ csvHeaders }: { csvHeaders: string[] }) {
   const t = useTranslations()
-  const channelOptions = useConfiguredInboxTypeOptions()
+  const channelOptions = useConfiguredInboxTypeOptions().filter(
+    (option) => option.value !== channelTypes.enum.omnichannel,
+  )
   const [channel, setChannel] = useState<string | undefined>(undefined)
+  const inboxOptions = useInboxOptionsByChannel(channel)
+  const { setValue } = useFormContext()
 
   return (
     <div className="flex flex-col gap-4">
@@ -159,7 +168,18 @@ export function ContactsSettings({ csvHeaders }: { csvHeaders: string[] }) {
         label={t("fields.source.label")}
         name="channel"
         options={channelOptions}
-        triggerValueChange={setChannel}
+        required
+        triggerValueChange={(value) => {
+          setChannel(value)
+          setValue("inboxId", "")
+          setValue("countryCode", undefined)
+        }}
+      />
+      <SelectField
+        label={t("fields.inbox.label")}
+        name="inboxId"
+        options={inboxOptions}
+        required
       />
       {channel === channelTypes.enum.whatsapp && (
         <InputField
@@ -168,53 +188,60 @@ export function ContactsSettings({ csvHeaders }: { csvHeaders: string[] }) {
           placeholder="+1"
         />
       )}
-      {channel !== channelTypes.enum.whatsapp && (
-        <>
-          <HeaderConnectContactField
+      <div className="mt-8 flex flex-col gap-4">
+        {channel !== channelTypes.enum.whatsapp && (
+          <HeaderConnectField
             csvHeaders={csvHeaders}
             label={t("fields.contactId.label")}
             name="contactId"
           />
-          <HeaderConnectContactField
-            csvHeaders={csvHeaders}
-            label={t("fields.phoneNumber.label")}
-            name="phoneNumber"
-          />
-          <HeaderConnectContactField
-            csvHeaders={csvHeaders}
-            label={t("fields.email.label")}
-            name="email"
-          />
-          <HeaderConnectContactField
-            csvHeaders={csvHeaders}
-            label={t("fields.firstName.label")}
-            name="firstName"
-          />
-          <HeaderConnectContactField
-            csvHeaders={csvHeaders}
-            label={t("fields.lastName.label")}
-            name="lastName"
-          />
-          <MoreOptions csvHeaders={csvHeaders} />
-        </>
-      )}
+        )}
+        <HeaderConnectField
+          allowClear={channel !== channelTypes.enum.whatsapp}
+          csvHeaders={csvHeaders}
+          label={t("fields.phoneNumber.label")}
+          name="phoneNumber"
+        />
+        <HeaderConnectField
+          allowClear
+          csvHeaders={csvHeaders}
+          label={t("fields.email.label")}
+          name="email"
+        />
+        <HeaderConnectField
+          allowClear
+          csvHeaders={csvHeaders}
+          label={t("fields.firstName.label")}
+          name="firstName"
+        />
+        <HeaderConnectField
+          allowClear
+          csvHeaders={csvHeaders}
+          label={t("fields.lastName.label")}
+          name="lastName"
+        />
+      </div>
+      <MoreOptions csvHeaders={csvHeaders} />
     </div>
   )
 }
 
-export function HeaderConnectContactField({
+function HeaderConnectField({
   csvHeaders,
   name,
   label,
+  allowClear,
 }: {
   csvHeaders: string[]
   name: string
   label: string
+  allowClear?: boolean
 }) {
   return (
     <div className="flex items-center gap-4">
       <div className="flex-1">
         <SelectField
+          allowClear={allowClear}
           name={name}
           options={csvHeaders.map((col) => ({ label: col, value: col }))}
         />
@@ -227,10 +254,14 @@ export function HeaderConnectContactField({
   )
 }
 
-export function MoreOptions({ csvHeaders }: { csvHeaders: string[] }) {
+function MoreOptions({ csvHeaders }: { csvHeaders: string[] }) {
   const t = useTranslations()
   const tagOptions = useTagSelectOptions()
-  const [fieldLength, setFieldLength] = useState<number>(1)
+  const { control } = useFormContext()
+  const { fields, append, remove } = useFieldArray({
+    control,
+    name: "fieldMapping",
+  })
 
   return (
     <Accordion className="w-full" collapsible type="single">
@@ -256,11 +287,11 @@ export function MoreOptions({ csvHeaders }: { csvHeaders: string[] }) {
               <div className="select-none font-medium text-sm leading-none">
                 {t("actions.setCustomField")}
               </div>
-              {Array.from({ length: fieldLength }).map((_, index) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: wip
-                <div className="flex items-center gap-4" key={index}>
+              {fields.map((field, index) => (
+                <div className="flex items-center gap-4" key={field.id}>
                   <div className="flex-1">
                     <SelectField
+                      allowClear
                       name={`fieldMapping.${index}.column`}
                       options={csvHeaders.map((col) => ({
                         label: col,
@@ -275,12 +306,25 @@ export function MoreOptions({ csvHeaders }: { csvHeaders: string[] }) {
                       name={`fieldMapping.${index}.customFieldId`}
                     />
                   </div>
+                  <Button
+                    aria-label={t("actions.delete")}
+                    disabled={fields.length <= 1}
+                    onClick={() => remove(index)}
+                    size="icon"
+                    type="button"
+                    variant="ghost"
+                  >
+                    <Trash2Icon size={16} />
+                  </Button>
                 </div>
               ))}
             </div>
 
+            {/* M-7: Server schema limits fieldMapping to 10 entries; disable Add
+                button at the cap so the user gets immediate feedback. */}
             <Button
-              onClick={() => setFieldLength((prev) => prev + 1)}
+              disabled={fields.length >= 10}
+              onClick={() => append({ column: "", customFieldId: "" })}
               type="button"
               variant="outline"
             >

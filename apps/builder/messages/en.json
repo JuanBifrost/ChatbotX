@@ -1309,6 +1309,17 @@
       "label": "Heading",
       "placeholder": "Enter heading"
     },
+    "import": {
+      "label": "Import",
+      "uploading": "Uploading…",
+      "histories": {
+        "title": "Import history",
+        "progress": "Progress",
+        "success": "Success",
+        "failed": "Failed",
+        "completedAt": "Completed at"
+      }
+    },
     "line": {
       "label": "Line"
     },
@@ -2026,7 +2037,18 @@
     "description": "Generate a token to allow your workspace to access ChatbotX APIs. Keep this token secret and do not share it with anyone."
   },
   "contacts": {
-    "title": "Contacts"
+    "title": "Contacts",
+    "exportPreparing": "Preparing your export…",
+    "exportPreparingDescription": "We're generating your CSV file. This may take a moment.",
+    "exportReadyTitle": "Your export is ready",
+    "exportReadyDescription": "Copy the link below or download the file directly.",
+    "exportDownloadCount": "Download ({count})",
+    "exportFailed": "Export failed. Please try again.",
+    "copyLink": "Copy link",
+    "linkCopied": "Link copied to clipboard",
+    "exportAllNotice": "All contacts matching the current filter will be exported.",
+    "exportTakingLong": "Export is taking longer than expected",
+    "exportTakingLongDescription": "The export is still processing. You can close this dialog and check back in a few minutes from the export history."
   },
   "auditLogs": {
     "title": "Audit Logs"
