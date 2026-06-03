@@ -25,6 +25,7 @@ import {
   emitContactCreated,
   setWebhookExecutionContext,
 } from "@chatbotx.io/events"
+import { messageEventTypeSchema } from "@chatbotx.io/flow-config"
 import { RealtimeEventType } from "@chatbotx.io/partysocket-config"
 import type { IncomingAttachment } from "@chatbotx.io/sdk"
 import {
@@ -176,6 +177,16 @@ export const receiveMessage = async (
 
     if (isNewMessage) {
       createdMessage = newMessage
+
+      emit(messageEventTypeSchema.enum["message:received"], {
+        workspaceId: inbox.workspaceId,
+        contactId: contactInbox.contactId,
+        contactInboxId: contactInbox.id,
+        channel: inbox.channel,
+        inboxId: inbox.id,
+        occurredAt: newMessage.createdAt,
+        sourceId: newMessage.sourceId ?? undefined,
+      })
 
       if (postbackAction) {
         await integrationQueue.add(IntegrationJobAction.runFlowPostback, {

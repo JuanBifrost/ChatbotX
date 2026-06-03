@@ -1,3 +1,4 @@
+import { anchoredPeriod, macRepository } from "@chatbotx.io/analytics"
 import { type DatabaseClient, db, eq } from "@chatbotx.io/database/client"
 import { workspaceMemberRoles } from "@chatbotx.io/database/partials"
 import { workspaceModel } from "@chatbotx.io/database/schema"
@@ -5,6 +6,7 @@ import type { WorkspaceModel } from "@chatbotx.io/database/types"
 import { withCache } from "@chatbotx.io/redis"
 import { BaseService } from "../base.service"
 import { notFoundException } from "../errors"
+import { logger } from "../logger"
 import { userQuotaService } from "../user-quota/service"
 import { workspaceMemberService } from "../workspace-member/service"
 
@@ -86,7 +88,6 @@ class WorkspaceService extends BaseService {
       .values(data)
       .returning()
 
-    // Create workspace member
     await workspaceMemberService.create({
       tx,
       data: {
@@ -117,9 +118,46 @@ class WorkspaceService extends BaseService {
       },
     })
 
+    await this.ensureMacRollup({
+      workspaceId: newWorkspace.id,
+      userId: props.createdBy,
+      tx,
+    })
+
     this.invalidateCacheTags([`users:${props.createdBy}:workspace-members`])
 
     return newWorkspace
+  }
+
+  private async ensureMacRollup(props: {
+    workspaceId: string
+    userId: string
+    tx: DatabaseClient
+  }): Promise<void> {
+    try {
+      const quota = await userQuotaService.getForUser(props.userId)
+      if (!quota?.periodStart) {
+        return
+      }
+
+      const { start, end } = anchoredPeriod(new Date(), quota.periodStart)
+
+      await macRepository.ensureWorkspaceMac(
+        [
+          {
+            workspaceId: props.workspaceId,
+            periodStart: start,
+            periodEnd: end,
+          },
+        ],
+        props.tx,
+      )
+    } catch (error) {
+      logger.error(
+        { err: error, workspaceId: props.workspaceId, userId: props.userId },
+        "Failed to pre-provision WorkspaceMac",
+      )
+    }
   }
 }
 

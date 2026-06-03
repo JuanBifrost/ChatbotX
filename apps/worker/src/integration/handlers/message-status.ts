@@ -117,6 +117,16 @@ export const handleMessageStatus = async (
 
     if (eventStatus === "delivered") {
       await emit(messageEventTypeSchema.enum["message:delivered"], eventLog)
+
+      emit(messageEventTypeSchema.enum["message:received"], {
+        workspaceId: inbox.workspaceId,
+        contactId: contactInbox.contactId,
+        contactInboxId: contactInbox.id,
+        channel: inbox.channel,
+        inboxId: inbox.id,
+        occurredAt: message?.createdAt ?? new Date(),
+        sourceId: message?.sourceId ?? undefined,
+      })
     }
 
     if (eventStatus === "read") {
