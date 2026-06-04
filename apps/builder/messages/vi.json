@@ -1680,6 +1680,29 @@
     "refreshPermissions": "Làm mới quyền",
     "title": "Instagram"
   },
+  "coexist": {
+    "title": "Đồng bộ liên hệ và lịch sử chat hiện có?",
+    "descriptionWhatsapp": "Khi bật, ChatbotX sẽ nhập liên hệ và tối đa 6 tháng lịch sử chat từ số WhatsApp này.",
+    "descriptionMessenger": "Khi bật, ChatbotX sẽ nhập liên hệ Messenger hiện có và tối đa 3 tháng lịch sử hội thoại từ Page này.",
+    "enable": "Bật đồng bộ",
+    "decline": "Không đồng bộ",
+    "billingNote": "Page lớn có thể mất vài giờ để hoàn tất.",
+    "toggleLabel": "Đồng bộ liên hệ và lịch sử chat hiện có",
+    "toggleHelper": "Bật lại chỉ hoạt động nếu Meta còn đệm dữ liệu (trong vòng 24 giờ kể từ khi onboarding). Nếu không, hãy ngắt kết nối và kết nối lại.",
+    "toggleHelperMessenger": "Bật lại chỉ hoạt động nếu Meta còn đệm dữ liệu (trong vòng 24 giờ kể từ khi onboarding). Nếu không, hãy ngắt kết nối và kết nối lại trang Messenger.",
+    "toggleHelperWhatsapp": "Bật lại chỉ hoạt động nếu Meta còn đệm dữ liệu (trong vòng 24 giờ kể từ khi onboarding). Nếu không, hãy ngắt kết nối và kết nối lại số WhatsApp.",
+    "success": {
+      "enabled": "Đã bắt đầu đồng bộ. Liên hệ và tin nhắn lịch sử sẽ xuất hiện sớm.",
+      "disabled": "Đã tắt đồng bộ."
+    },
+    "errors": {
+      "alreadyTriggered": "Đồng bộ đã được kích hoạt cho số này. Vui lòng chờ Meta gửi dữ liệu lịch sử.",
+      "windowExpired": "Cửa sổ đồng bộ 24 giờ đã hết hạn. Vui lòng ngắt kết nối và kết nối lại số này để đồng bộ.",
+      "notEligible": "Số này không đủ điều kiện đồng bộ lịch sử.",
+      "triggerFailed": "Không thể bắt đầu đồng bộ. Vui lòng thử lại sau.",
+      "unknown": "Không thể bật đồng bộ. Vui lòng thử lại sau."
+    }
+  },
   "messenger": {
     "description": "Tích hợp này cho phép bạn tạo bot Messenger.",
     "welcomeMessage": "Tin nhắn chào mừng",
@@ -1781,6 +1804,8 @@
       "label": "Lệnh"
     },
     "connectExisting": "Kết nối tài khoản WhatsApp Business hiện có",
+    "fillRequiredFields": "Vui lòng điền đầy đủ các trường bắt buộc",
+    "continueManualConnect": "Tiếp tục — kết nối thủ công",
     "icebreakers": {
       "description": "Đây là những câu hỏi phổ biến mà mọi người có thể dễ dàng hỏi bạn.",
       "label": "Câu mở đầu"

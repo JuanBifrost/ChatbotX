@@ -83,6 +83,22 @@ class MessengerHttpClient {
     return this.request(() => this.client.get(url, options).json<T>())
   }
 
+  /**
+   * Like `get` but also returns the response `Headers`. Used for inspecting
+   * Meta's `X-Business-Use-Case-Usage` quota header in the Coexist historical
+   * sync to drive adaptive concurrency.
+   */
+  getWithHeaders<T>(
+    url: string,
+    options?: GetOptions,
+  ): Promise<{ data: T; headers: Headers }> {
+    return this.request(async () => {
+      const response = await this.client.get(url, options)
+      const data = await response.json<T>()
+      return { data, headers: response.headers }
+    })
+  }
+
   post<T>(url: string, options?: PostOptions): Promise<T> {
     return this.request(() => this.client.post(url, options).json<T>())
   }
@@ -104,4 +120,15 @@ export const facebookAttachmentClient = new MessengerHttpClient({
   timeout: 60_000,
   retries: 2,
   retryDelay: 2000,
+})
+
+/**
+ * Coexist historical sync client: ky-level retry disabled. The handler owns
+ * retry via `withInlineRetry` + BUC-driven pause; doubling retries here pushes
+ * worst-case attempts past CHUNK_BUDGET_MS and triggers BullMQ lock expiry.
+ */
+export const facebookCoexistGraphClient = new MessengerHttpClient({
+  baseUrl: "https://graph.facebook.com",
+  timeout: 30_000,
+  retries: 0,
 })

@@ -2,6 +2,7 @@ import {
   broadcastToWorkspaceParty,
   buildContext,
   resolvePlatformSettings,
+  updateContactFromMessage,
   userQuotaService,
   workspaceService,
 } from "@chatbotx.io/business"
@@ -101,11 +102,37 @@ export const receiveMessage = async (
     ref,
   } = parsedMessage
 
-  const { contactInbox, conversation } = await detectContactAndConversation({
+  const detected = await detectContactAndConversation({
     incomingContact,
     inbox,
     integrationRow,
   })
+  if (!detected) {
+    throw new SdkException("Unable to resolve contact and conversation")
+  }
+  const { contactInbox, conversation } = detected
+
+  // Overwrite Contact.phoneNumber/email from message text — every inbound
+  // channel. Unconditional: the customer just typed the value, so it's
+  // treated as fresher truth than any prior column value.
+  //
+  // Guarded on messageType !== 'outgoing' so bot/agent-authored text never
+  // feeds the libphonenumber extractor (would otherwise false-positive on
+  // long order/ticket IDs in templated outbound messages).
+  if (incomingMessage?.text && incomingMessage.messageType !== "outgoing") {
+    try {
+      await updateContactFromMessage({
+        contactId: contactInbox.contactId,
+        workspaceId: inbox.workspaceId,
+        text: incomingMessage.text,
+      })
+    } catch (error) {
+      logger.warn(
+        { error, contactId: contactInbox.contactId, channel: inbox.channel },
+        "Contact update from message text failed",
+      )
+    }
+  }
 
   let createdMessage: MessageModel | null = null
   if (incomingMessage) {

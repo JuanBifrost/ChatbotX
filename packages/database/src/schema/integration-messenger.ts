@@ -1,5 +1,12 @@
 import { sql } from "drizzle-orm"
-import { index, jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
+import {
+  boolean,
+  index,
+  jsonb,
+  pgTable,
+  text,
+  uniqueIndex,
+} from "drizzle-orm/pg-core"
 import type {
   MessengerConversationStarter,
   MessengerPersistentMenu,
@@ -27,6 +34,7 @@ export const integrationMessengerModel = pgTable(
       .notNull(),
     personas: jsonb().$type<MessengerPersona[]>().default(sql`[]`).notNull(),
     personaId: text(),
+    coexistEnabled: boolean().notNull().default(false),
     workspaceId: bigintAsString()
       .notNull()
       .references(() => workspaceModel.id, {

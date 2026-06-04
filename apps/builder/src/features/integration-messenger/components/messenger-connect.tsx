@@ -12,12 +12,14 @@ import {
 import FacebookLogin, {
   type InitParams,
 } from "@greatsumini/react-facebook-login"
+import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { type ReactNode, useState } from "react"
 import { toast } from "sonner"
 import { InboxIcon } from "@/features/inboxes/components/inbox-icon"
+import { CoexistPopup } from "@/features/shared/coexist-popup"
 import { getFacebookPages } from "../libs/facebook"
-import { FacebookPages } from "./messenger-pages"
+import { type CoexistTrigger, FacebookPages } from "./messenger-pages"
 
 const MESSENGER_SCOPE = [
   "email",
@@ -45,8 +47,10 @@ export function MessengerConnect({
   trigger,
 }: MessengerConnectProps) {
   const t = useTranslations()
+  const router = useRouter()
   const [open, setOpen] = useState(false)
   const [pages, setPages] = useState<FacebookPage[]>([])
+  const [coexist, setCoexist] = useState<CoexistTrigger | null>(null)
 
   const onLoginSuccess = async () => {
     const allPages = await getFacebookPages()
@@ -61,30 +65,61 @@ export function MessengerConnect({
     }
   }
 
+  const handleCoexistRequired = (trigger: CoexistTrigger) => {
+    setCoexist(trigger)
+    // Hide the page-selection popup once coexist takes over the foreground.
+    setOpen(false)
+    setPages([])
+  }
+
+  const handleCoexistDone = () => {
+    const resolvedWorkspaceId = coexist?.resolvedWorkspaceId ?? ""
+    setCoexist(null)
+    if (workspaceId) {
+      router.refresh()
+    } else if (resolvedWorkspaceId) {
+      router.push(
+        `/space/${resolvedWorkspaceId}/settings/channels?channel=messenger`,
+      )
+    } else {
+      router.push("/")
+    }
+  }
+
   return (
-    <Dialog onOpenChange={handleOpenChange} open={open}>
-      <DialogTrigger asChild>
-        <MessengerConnectButton
-          onLoginSuccess={onLoginSuccess}
-          publicConfig={publicConfig}
-          trigger={trigger}
-        />
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>
-            {t("actions.connectFeature", { feature: "Messenger" })}
-          </DialogTitle>
-        </DialogHeader>
-        {pages.length && (
-          <FacebookPages
-            onSuccess={() => setOpen(false)}
-            pages={pages}
-            workspaceId={workspaceId}
+    <>
+      <Dialog onOpenChange={handleOpenChange} open={open}>
+        <DialogTrigger asChild>
+          <MessengerConnectButton
+            onLoginSuccess={onLoginSuccess}
+            publicConfig={publicConfig}
+            trigger={trigger}
           />
-        )}
-      </DialogContent>
-    </Dialog>
+        </DialogTrigger>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              {t("actions.connectFeature", { feature: "Messenger" })}
+            </DialogTitle>
+          </DialogHeader>
+          {pages.length && (
+            <FacebookPages
+              onCoexistRequired={handleCoexistRequired}
+              pages={pages}
+              workspaceId={workspaceId}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      {coexist && (
+        <CoexistPopup
+          channel="messenger"
+          integrationId={coexist.integrationId}
+          onDone={handleCoexistDone}
+          workspaceId={coexist.resolvedWorkspaceId}
+        />
+      )}
+    </>
   )
 }
 
@@ -106,8 +141,7 @@ export function MessengerConnectButton({
       initParams={{
         version: (publicConfig.version as InitParams["version"]) ?? "v18.0",
       }}
-      onFail={(error) => {
-        console.log("error", error)
+      onFail={() => {
         toast.error(t("messages.connectFailed", { feature: "Messenger" }))
       }}
       onSuccess={() => {

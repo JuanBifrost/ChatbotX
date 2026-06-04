@@ -1,0 +1,147 @@
+import { DEFAULT_API_VERSION } from "../constants"
+import { rescue } from "../exception"
+import { facebookCoexistGraphClient } from "../lib/http-client"
+import { type BucUsage, parseBucHeader } from "./usage"
+
+/** A Messenger participant as returned by the Graph conversations edge. */
+export type MessengerParticipant = {
+  id: string
+  name?: string
+  email?: string
+}
+
+/** A conversation thread between the Page and one or more participants. */
+export type MessengerConversation = {
+  id: string
+  participants?: { data?: MessengerParticipant[] }
+  /** ISO timestamp of the latest activity in the thread. Used by coexist sync
+   *  resume to filter conversations against the within-run frontier and the
+   *  cross-run ceiling. */
+  updated_time?: string
+}
+
+/**
+ * Single attachment as returned by the Graph `attachments{...}` subfield on
+ * `/conversations/<id>/messages`. Audio/video/file expose `file_url` at the
+ * top level; images expose the URL via the nested `image_data.url`. Mime,
+ * size, dimensions are best-effort — Graph omits them for older messages.
+ */
+export type MessengerHistoryAttachment = {
+  id: string
+  name?: string
+  mime_type?: string
+  size?: number
+  image_data?: {
+    url?: string
+    preview_url?: string
+    width?: number
+    height?: number
+  }
+  video_data?: {
+    url?: string
+    preview_url?: string
+    width?: number
+    height?: number
+  }
+  file_url?: string
+}
+
+/** A single message inside a conversation thread. */
+export type MessengerHistoryMessage = {
+  id: string
+  message?: string
+  from?: MessengerParticipant
+  created_time?: string
+  attachments?: { data?: MessengerHistoryAttachment[] }
+}
+
+type GraphPage<T> = {
+  data?: T[]
+  paging?: { cursors?: { after?: string }; next?: string }
+}
+
+type PaginatedResult<T> = {
+  data: T[]
+  after?: string
+  bucUsage?: BucUsage | null
+}
+
+const PAGE_LIMIT = 499
+
+const nextCursor = (
+  paging: GraphPage<unknown>["paging"],
+): string | undefined => (paging?.next ? paging.cursors?.after : undefined)
+
+/**
+ * Lists conversation threads for a Page, one Graph page at a time. The caller
+ * paginates by passing `after` until it comes back `undefined`.
+ */
+export const listConversations = (props: {
+  pageId: string
+  accessToken: string
+  version?: string
+  after?: string
+}): Promise<PaginatedResult<MessengerConversation>> => {
+  const { pageId, accessToken, version = DEFAULT_API_VERSION, after } = props
+  const endpoint = `${version}/${pageId}/conversations`
+
+  return rescue(endpoint, async () => {
+    const { data: response, headers } =
+      await facebookCoexistGraphClient.getWithHeaders<
+        GraphPage<MessengerConversation>
+      >(endpoint, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        searchParams: {
+          fields: "id,participants,updated_time",
+          platform: "MESSENGER",
+          limit: String(PAGE_LIMIT),
+          ...(after ? { after } : {}),
+        },
+      })
+
+    return {
+      data: response.data ?? [],
+      after: nextCursor(response.paging),
+      bucUsage: parseBucHeader(headers.get("x-business-use-case-usage")),
+    }
+  })
+}
+
+/**
+ * Lists messages inside one conversation thread, one Graph page at a time.
+ */
+export const listMessages = (props: {
+  conversationId: string
+  accessToken: string
+  version?: string
+  after?: string
+}): Promise<PaginatedResult<MessengerHistoryMessage>> => {
+  const {
+    conversationId,
+    accessToken,
+    version = DEFAULT_API_VERSION,
+    after,
+  } = props
+  const endpoint = `${version}/${conversationId}/messages`
+
+  return rescue(endpoint, async () => {
+    const { data: response, headers } =
+      await facebookCoexistGraphClient.getWithHeaders<
+        GraphPage<MessengerHistoryMessage>
+      >(endpoint, {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        searchParams: {
+          fields:
+            "id,message,from,created_time,attachments{id,name,mime_type,size,image_data,video_data,file_url}",
+          limit: String(PAGE_LIMIT),
+          ...(after ? { after } : {}),
+        },
+      })
+
+    return {
+      data: response.data ?? [],
+      after: nextCursor(response.paging),
+      bucUsage: parseBucHeader(headers.get("x-business-use-case-usage")),
+    }
+  })
+}

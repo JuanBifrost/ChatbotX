@@ -95,6 +95,9 @@ export type FlowAnalyticsSessionModel =
 export type FlowNodeStatModel = typeof schema.flowNodeStatModel.$inferSelect
 export type MagicLinkStatModel = typeof schema.magicLinkStatModel.$inferSelect
 export type RefLinkStatModel = typeof schema.refLinkStatModel.$inferSelect
+export type WhatsappCoexistStagingModel =
+  typeof schema.whatsappCoexistStagingModel.$inferSelect
+export type CoexistSyncRunModel = typeof schema.coexistSyncRunModel.$inferSelect
 
 export type InboxWithIntegrations = InboxModel & {
   integrationInstagram?: IntegrationInstagramModel | null

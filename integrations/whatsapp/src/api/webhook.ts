@@ -4,6 +4,13 @@ import { API_URL, DEFAULT_API_VERSION } from "../constants"
 import { rescue, WhatsappException } from "../exception"
 import { logger } from "../lib/logger"
 
+export const WHATSAPP_SUBSCRIBED_FIELDS = [
+  "messages",
+  "history",
+  "smb_app_state_sync",
+  "smb_message_echoes",
+] as const
+
 export function subscribeWebhook({
   auth,
   overrideCallbackUrl = false,
@@ -15,24 +22,32 @@ export function subscribeWebhook({
   const url = `${API_URL}/${version}/${auth.metadata.wabaId}/subscribed_apps`
 
   return rescue(async () => {
-    const requestOptions: Parameters<typeof ky.post>[1] = {
-      headers: {
-        Authorization: `Bearer ${auth.tokens.accessToken}`,
-      },
+    const json: Record<string, unknown> = {
+      subscribed_fields: WHATSAPP_SUBSCRIBED_FIELDS,
     }
 
     if (overrideCallbackUrl && auth.metadata.webhookUrl && auth.verifyToken) {
-      requestOptions.json = {
-        override_callback_uri: auth.metadata.webhookUrl,
-        verify_token: auth.verifyToken,
-      }
+      json.override_callback_uri = auth.metadata.webhookUrl
+      json.verify_token = auth.verifyToken
     }
+
+    const envOverrideUri = process.env.WHATSAPP_OVERRIDE_CALLBACK_URI
+    if (envOverrideUri && auth.verifyToken) {
+      json.override_callback_uri = envOverrideUri
+      json.verify_token = auth.verifyToken
+    }
+    console.log({ json })
 
     try {
       const result = await ky
         .post<{
           success: boolean
-        }>(url, requestOptions)
+        }>(url, {
+          headers: {
+            Authorization: `Bearer ${auth.tokens.accessToken}`,
+          },
+          json,
+        })
         .json()
 
       if (!result.success) {

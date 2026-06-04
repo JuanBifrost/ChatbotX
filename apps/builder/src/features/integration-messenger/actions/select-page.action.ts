@@ -70,6 +70,8 @@ export const selectPageAction = authActionClient
           throw new ChatbotXException("Page is already connected")
         }
 
+        let integrationId = ""
+
         const { createdWorkspace, brandingCtx } = await db.transaction(
           async (tx) => {
             const longLivedToken = await exchangeLongLivedToken(
@@ -153,6 +155,8 @@ export const selectPageAction = authActionClient
                     .then((result) => result[0]),
               })
 
+            integrationId = integrationRow.id
+
             const brandingCtx = await buildContext({
               workspaceId,
               integrationType: "messenger",
@@ -177,8 +181,13 @@ export const selectPageAction = authActionClient
           })
         }
 
+        if (!integrationId) {
+          throw new ChatbotXException("Failed to create integration")
+        }
+
         return {
           workspaceId,
+          integrationId,
         }
       } catch (error) {
         if (isDatabaseError(error) && error.cause.code === "23505") {

@@ -14,6 +14,10 @@ export function useAttachmentUrl(
     return attachment.url
   }
 
+  if (attachment.url === null) {
+    return
+  }
+
   try {
     return new URL(attachment.originPath, storageUrl).toString()
   } catch (error) {

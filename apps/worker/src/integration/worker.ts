@@ -15,7 +15,15 @@ import { ensureBootstrapped } from "../lib/bootstrap"
 import { logger } from "../lib/logger"
 import { processAutomatedResponse } from "./handlers/automated-response"
 import { runChallenge } from "./handlers/challenge"
-import { agentMarkAsRead, contactMarkAsRead } from "./handlers/conversation"
+import { coexistAttachmentDownload } from "./handlers/coexist/attachment-download"
+import { coexistMessengerSync } from "./handlers/coexist/messenger-sync"
+import { coexistWhatsappBuffer } from "./handlers/coexist/whatsapp-buffer"
+import { coexistWhatsappFlush } from "./handlers/coexist/whatsapp-flush"
+import { updateContactAvatar } from "./handlers/contact/update-avatar"
+import {
+  agentMarkAsRead,
+  contactMarkAsRead,
+} from "./handlers/conversation"
 import {
   runFlowNode,
   runFlowPostback,
@@ -141,13 +149,48 @@ async function startIntegrationWorker() {
           await handleMessageStatus(job.data.data)
           return
         }
-        default:
+        case IntegrationJobAction.coexistWhatsappBuffer: {
+          await coexistWhatsappBuffer(job.data.data)
           return
+        }
+        case IntegrationJobAction.coexistWhatsappFlush: {
+          await coexistWhatsappFlush(job.data.data)
+          return
+        }
+        case IntegrationJobAction.coexistMessengerSync: {
+          await coexistMessengerSync(job.data.data)
+          return
+        }
+        case IntegrationJobAction.coexistAttachmentDownload: {
+          await coexistAttachmentDownload(job.data.data)
+          return
+        }
+        case IntegrationJobAction.updateContactAvatar: {
+          await updateContactAvatar(job.data.data)
+          return
+        }
+        case IntegrationJobAction.createMessage: {
+          // No-op — action type exists in the union but has no enqueuer yet.
+          return
+        }
+        default: {
+          // Exhaustiveness guard — adding a new IntegrationJobData variant
+          // without handling it here becomes a compile error.
+          const _exhaustive: never = job.data
+          logger.warn({ data: _exhaustive }, "Unhandled integration job type")
+          return
+        }
       }
     },
     {
       connection: getRedisConnection(),
       ...defaultWorkerOptions,
+      // Coexist historical sync chunks are bounded to ~4 min via self-continuation
+      // (see coexist-messenger-sync / coexist-whatsapp-flush). Lock sized as:
+      // 4 min active + 4 min Graph 5xx retry tail + 2 min bulk INSERT tail.
+      lockDuration: 10 * 60 * 1000,
+      stalledInterval: 10 * 60 * 1000,
+      maxStalledCount: 1,
     },
   )
 

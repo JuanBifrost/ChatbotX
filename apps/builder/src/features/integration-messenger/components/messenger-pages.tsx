@@ -8,7 +8,6 @@ import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
-import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { useWatch } from "react-hook-form"
@@ -16,17 +15,21 @@ import { toast } from "sonner"
 import { selectPageAction } from "../actions/select-page.action"
 import { selectPageRequest } from "../schema/action"
 
+export type CoexistTrigger = {
+  integrationId: string
+  resolvedWorkspaceId: string
+}
+
 export function FacebookPages({
   workspaceId,
   pages,
-  onSuccess,
+  onCoexistRequired,
 }: {
   workspaceId?: string | null
   pages: FacebookPage[]
-  onSuccess?: () => void
+  onCoexistRequired: (trigger: CoexistTrigger) => void
 }) {
   const t = useTranslations()
-  const router = useRouter()
 
   const { form, handleSubmitWithAction } = useHookFormAction(
     selectPageAction,
@@ -43,12 +46,12 @@ export function FacebookPages({
       },
       actionProps: {
         onSuccess: ({ data }) => {
-          onSuccess?.()
-          if (workspaceId) {
-            router.push(`/space/${data.workspaceId}/dashboard`)
-          } else {
-            router.push("/")
-          }
+          // Hand off to parent so it can close this dialog and mount the
+          // CoexistPopup at a level that survives unmount of FacebookPages.
+          onCoexistRequired({
+            integrationId: data.integrationId,
+            resolvedWorkspaceId: data.workspaceId ?? "",
+          })
         },
         onError: ({ error }) => {
           if (error.serverError) {

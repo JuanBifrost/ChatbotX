@@ -30,6 +30,11 @@ export const IntegrationJobAction = {
   assignConversation: "assignConversation",
   createMessage: "createMessage",
   sendEmail: "sendEmail",
+  coexistWhatsappBuffer: "coexistWhatsappBuffer",
+  coexistWhatsappFlush: "coexistWhatsappFlush",
+  coexistMessengerSync: "coexistMessengerSync",
+  coexistAttachmentDownload: "coexistAttachmentDownload",
+  updateContactAvatar: "updateContactAvatar",
 } as const
 
 export type IntegrationJobReceiveMessage = {
@@ -175,6 +180,75 @@ export type IntegrationJobSendSequenceFlow = {
   }
 }
 
+/** Buffers a raw WhatsApp Coexistence history payload into the staging table. */
+export type IntegrationJobCoexistWhatsappBuffer = {
+  type: typeof IntegrationJobAction.coexistWhatsappBuffer
+  data: {
+    phoneNumberId: string
+    payload: unknown
+  }
+}
+
+/**
+ * Flushes buffered WhatsApp staging rows into Contact/Message once enabled.
+ * `runId` is optional: the buffer (webhook-driven) omits it and the flush
+ * handler looks up the live run by phoneNumberId. Scheduler + self-continuation
+ * keep passing the explicit runId so they stay pinned to a specific run.
+ */
+export type IntegrationJobCoexistWhatsappFlush = {
+  type: typeof IntegrationJobAction.coexistWhatsappFlush
+  data: {
+    runId?: string
+    phoneNumberId: string
+  }
+}
+
+/** Pulls historical Messenger conversations/messages via the Graph API. */
+export type IntegrationJobCoexistMessengerSync = {
+  type: typeof IntegrationJobAction.coexistMessengerSync
+  data: {
+    runId: string
+    integrationId: string
+    workspaceId: string
+  }
+}
+
+/**
+ * Downloads a Coexist attachment's bytes from the channel API (Facebook URL
+ * for Messenger; WhatsApp media-id for WhatsApp — both encoded into
+ * `Attachment.originPath` by the historical importer), uploads to object
+ * storage, and UPDATEs the row with the resulting S3 path. Dispatched per
+ * attachment after `bulkImportMessages` inserts the placeholder row.
+ *
+ * Idempotency: jobId `att-${attachmentId}` dedups concurrent enqueues; the
+ * handler additionally checks the originPath prefix to no-op on retries
+ * where a prior worker already finished the upload.
+ */
+export type IntegrationJobCoexistAttachmentDownload = {
+  type: typeof IntegrationJobAction.coexistAttachmentDownload
+  data: {
+    attachmentId: string
+    workspaceId: string
+    channel: "messenger" | "whatsapp"
+    integrationId: string
+  }
+}
+
+/**
+ * Fetches a contact's profile picture from the channel's Graph/API, mirrors
+ * the bytes to our object storage, and persists the storage path on the
+ * Contact row. Dispatched per-contact after Coexist historical sync upserts
+ * contacts (which only carry name/sourceId, not avatar).
+ */
+export type IntegrationJobUpdateContactAvatar = {
+  type: typeof IntegrationJobAction.updateContactAvatar
+  data: {
+    workspaceId: string
+    contactInboxId: string
+    sourceId: string
+  }
+}
+
 export type IntegrationJobData =
   | IntegrationJobReceiveMessage
   | IntegrationJobMessageStatus
@@ -188,6 +262,11 @@ export type IntegrationJobData =
   | IntegrationJobCreateMessage
   | IntegrationJobProcessAutomatedResponse
   | IntegrationJobSendSequenceFlow
+  | IntegrationJobCoexistWhatsappBuffer
+  | IntegrationJobCoexistWhatsappFlush
+  | IntegrationJobCoexistMessengerSync
+  | IntegrationJobCoexistAttachmentDownload
+  | IntegrationJobUpdateContactAvatar
 
 export const integrationQueue =
   process.env.NEXT_PHASE === "phase-production-build"

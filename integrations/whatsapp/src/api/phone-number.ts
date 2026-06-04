@@ -1,22 +1,30 @@
 import type { Context } from "@chatbotx.io/sdk"
 import ky from "ky"
+import { parsePhoneNumberFromString } from "libphonenumber-js"
 import { API_URL, DEFAULT_API_VERSION } from "../constants"
 import { rescue } from "../exception"
 import { logger } from "../lib/logger"
 import type { WhatsappAuthValue, WhatsappPagination } from "../schema"
 
-export const normalizeWhatsappDisplayPhoneNumber = (
-  phone: string,
-  defaultCountryCode = "84",
-): string => {
-  let digits = phone.replace(/\D/g, "")
+const LEADING_PLUS_RE = /^\+/
+const NON_DIGIT_RE = /\D/g
 
-  if (digits.startsWith("0")) {
-    // convert local VN number starting with 0
-    digits = defaultCountryCode + digits.slice(1)
+/**
+ * Normalize a Meta-provided WhatsApp display phone number to canonical
+ * digits-only form (E.164 without the leading "+").
+ *
+ * Meta returns `display_phone_number` in E.164-ish form (e.g. "+84 123 456 789"
+ * or "+1 555-867-5309"), so we parse it with libphonenumber-js — correct for
+ * every country, not just VN. If parsing fails (unexpected/local format) we
+ * fall back to a plain digits-only strip so we never throw on connect.
+ */
+export const normalizeWhatsappDisplayPhoneNumber = (phone: string): string => {
+  const parsed = parsePhoneNumberFromString(phone)
+  if (parsed?.isValid()) {
+    return parsed.number.replace(LEADING_PLUS_RE, "")
   }
 
-  return digits
+  return phone.replace(NON_DIGIT_RE, "")
 }
 
 export type WhatsappPhoneNumber = {
@@ -173,6 +181,43 @@ export function findPhoneNumberDetail(
       )
       .json(),
   )
+}
+
+export type CoexistEligibility = {
+  isOnBizApp: boolean
+  platformType: string
+}
+
+/**
+ * Checks whether a phone number is eligible for Coexistence sync, i.e. it has
+ * been onboarded onto Cloud API via the WhatsApp Business app embedded signup
+ * flow. Returns Meta's truth, not the user's signup intent.
+ *
+ * Reference: https://developers.facebook.com/docs/whatsapp/embedded-signup/onboard-whatsapp-business-app-users/
+ */
+export function getCoexistEligibility(props: {
+  phoneNumberId: string
+  accessToken: string
+  version?: string
+}): Promise<CoexistEligibility> {
+  const { version = DEFAULT_API_VERSION, phoneNumberId, accessToken } = props
+
+  return rescue(async () => {
+    const result = await ky
+      .get<{ is_on_biz_app?: boolean; platform_type?: string }>(
+        `${API_URL}/${version}/${phoneNumberId}`,
+        {
+          searchParams: { fields: "is_on_biz_app,platform_type" },
+          headers: { Authorization: `Bearer ${accessToken}` },
+        },
+      )
+      .json()
+
+    return {
+      isOnBizApp: result.is_on_biz_app === true,
+      platformType: result.platform_type ?? "",
+    }
+  })
 }
 
 export type ConversationalAutomation = {

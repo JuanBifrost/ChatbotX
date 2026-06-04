@@ -1,10 +1,12 @@
 "use server"
 
-import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import { and, db, eq, findOrFail, inArray } from "@chatbotx.io/database/client"
 import { inboxStatuses } from "@chatbotx.io/database/partials"
 import {
+  coexistSyncRunModel,
   inboxModel,
   integrationWhatsappModel,
+  whatsappCoexistStagingModel,
 } from "@chatbotx.io/database/schema"
 import type { WhatsappAuthValue } from "@chatbotx.io/integration-whatsapp"
 import { isRevokedTokenError } from "@chatbotx.io/integration-whatsapp"
@@ -13,9 +15,9 @@ import {
   workspaceIdAndIdRequestParams,
 } from "@/features/common/schemas"
 import { integrations } from "@/integration"
-import { authActionClient } from "@/lib/safe-action"
+import { workspaceActionClient } from "@/lib/safe-action"
 
-export const disconnectWhatsappAction = authActionClient
+export const disconnectWhatsappAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdAndIdRequestParams)
   .action(
     async ({
@@ -43,6 +45,33 @@ export const disconnectWhatsappAction = authActionClient
       }
 
       await db.transaction(async (tx) => {
+        // Preserve sync history (importedCount / lastSyncedAt / etc.) for
+        // audit and so reconnect can resume from prior watermark. Only abandon
+        // ACTIVE runs so the scheduler stops trying to drive them forward
+        // against a now-missing integration.
+        await tx
+          .update(coexistSyncRunModel)
+          .set({
+            status: "failed",
+            finishedAt: new Date(),
+            currentError: "Integration disconnected",
+          })
+          .where(
+            and(
+              eq(coexistSyncRunModel.integrationId, integrationWhatsapp.id),
+              inArray(coexistSyncRunModel.status, ["init", "running"]),
+            ),
+          )
+
+        await tx
+          .delete(whatsappCoexistStagingModel)
+          .where(
+            eq(
+              whatsappCoexistStagingModel.phoneNumberId,
+              integrationWhatsapp.phoneNumberId,
+            ),
+          )
+
         await tx
           .delete(integrationWhatsappModel)
           .where(eq(integrationWhatsappModel.id, integrationWhatsapp.id))

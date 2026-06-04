@@ -22,6 +22,7 @@ import { sessionRelations } from "./auth-session"
 import { automatedResponseRelations } from "./automated-response"
 import { botFieldRelations } from "./bot-field"
 import { broadcastRelations } from "./broadcast"
+import { coexistSyncRunRelations } from "./coexist-sync-run"
 import { contactRelations } from "./contact"
 import { contactCustomFieldRelations } from "./contact-custom-field"
 import { contactInboxRelations } from "./contact-inbox"
@@ -174,4 +175,5 @@ export const relations = {
   ...analyticsSequenceEventRelations,
   ...analyticsFlowNodeEventRelations,
   ...productRelations,
+  ...coexistSyncRunRelations,
 }

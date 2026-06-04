@@ -1,4 +1,10 @@
-import { type DatabaseClient, db } from "@chatbotx.io/database/client"
+import {
+  and,
+  type DatabaseClient,
+  db,
+  eq,
+  isNull,
+} from "@chatbotx.io/database/client"
 import {
   type CredentialByType,
   type CredentialPublicByType,
@@ -11,7 +17,6 @@ import { platformCredentialModel } from "@chatbotx.io/database/schema"
 import type { PlatformCredentialModel } from "@chatbotx.io/database/types"
 import { encryptUtils } from "@chatbotx.io/encryption"
 import { withCache } from "@chatbotx.io/redis"
-import { and, eq, isNull } from "drizzle-orm"
 import type { z } from "zod"
 import { BaseService } from "../base.service"
 import { platformSettingService } from "../enterprise/platform-setting/service"

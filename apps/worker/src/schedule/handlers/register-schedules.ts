@@ -84,6 +84,33 @@ export const registerSchedules = async () => {
       name: ScheduleJobData.maintainMacPartitions,
       data: {
         type: ScheduleJobData.maintainMacPartitions,
+      },
+    },
+  )
+
+  await scheduleQueue.upsertJobScheduler(
+    ScheduleJobData.scanCoexistRuns,
+    {
+      pattern: "* * * * *",
+    },
+    {
+      name: ScheduleJobData.scanCoexistRuns,
+      data: {
+        type: ScheduleJobData.scanCoexistRuns,
+        data: {},
+      },
+    },
+  )
+
+  await scheduleQueue.upsertJobScheduler(
+    ScheduleJobData.purgeCoexistStaging,
+    {
+      pattern: "0 * * * *",
+    },
+    {
+      name: ScheduleJobData.purgeCoexistStaging,
+      data: {
+        type: ScheduleJobData.purgeCoexistStaging,
         data: {},
       },
     },

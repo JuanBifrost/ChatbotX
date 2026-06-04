@@ -1106,6 +1106,9 @@ importers:
       ky:
         specifier: ^2.0.2
         version: 2.0.2
+      libphonenumber-js:
+        specifier: ^1.12.42
+        version: 1.12.42
       remeda:
         specifier: ^2.34.0
         version: 2.37.0
@@ -1494,6 +1497,9 @@ importers:
       drizzle-orm:
         specifier: 1.0.0-beta.22
         version: 1.0.0-beta.22(@cloudflare/workers-types@4.20240718.0)(@opentelemetry/api@1.9.1)(@types/pg@8.20.0)(pg@8.21.0)(zod@4.4.3)
+      libphonenumber-js:
+        specifier: ^1.12.42
+        version: 1.13.5
       zod:
         specifier: ^4.3.6
         version: 4.4.3

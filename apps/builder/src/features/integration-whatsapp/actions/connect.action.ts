@@ -26,12 +26,14 @@ import {
   exchangeAccessToken,
 } from "@chatbotx.io/integration-whatsapp/api/auth"
 import {
+  getCoexistEligibility,
   normalizeWhatsappDisplayPhoneNumber,
   type WhatsappPhoneNumber,
   listPhoneNumbers as whatsappListPhoneNumbers,
 } from "@chatbotx.io/integration-whatsapp/api/phone-number"
 import { subscribeWebhook } from "@chatbotx.io/integration-whatsapp/api/webhook"
-import { AuthType } from "@chatbotx.io/sdk"
+import { invalidateCacheByTags } from "@chatbotx.io/redis"
+import { AuthType, SdkException } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
 import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
 import { getOriginUrlFromHeader } from "@/lib/domain"
@@ -209,6 +211,8 @@ async function persistIntegration(params: {
   wabaId: string
   businessId: string
   auth: WhatsappAuthValue
+  isCoexist: boolean
+  platformType: string
 }): Promise<{
   workspaceId: string
   createdWorkspace: boolean
@@ -224,6 +228,8 @@ async function persistIntegration(params: {
     wabaId,
     businessId,
     auth,
+    isCoexist,
+    platformType,
   } = params
 
   let resolvedWorkspaceId = workspaceId
@@ -272,10 +278,17 @@ async function persistIntegration(params: {
           businessId,
           name: phoneNumber.verified_name,
           displayPhoneNumber,
+          isCoexist,
+          platformType,
         })
         .onConflictDoUpdate({
           target: [integrationWhatsappModel.inboxId],
-          set: { displayPhoneNumber, updatedAt: new Date() },
+          set: {
+            displayPhoneNumber,
+            isCoexist,
+            platformType,
+            updatedAt: new Date(),
+          },
         })
         .returning()
       integrationRow = row
@@ -318,13 +331,20 @@ async function subscribeManualWebhook(
 
 function buildResult(params: {
   isManual: boolean
+  isCoexist: boolean
   workspaceId: string
   integrationId: string
   webhookUrl: string
   verifyToken: string
 }): ConnectWhatsappResult {
-  const { isManual, workspaceId, integrationId, webhookUrl, verifyToken } =
-    params
+  const {
+    isManual,
+    isCoexist,
+    workspaceId,
+    integrationId,
+    webhookUrl,
+    verifyToken,
+  } = params
 
   if (isManual) {
     return {
@@ -336,6 +356,9 @@ function buildResult(params: {
   return {
     type: "redirect",
     redirectUrl: `/space/${workspaceId}/dashboard`,
+    integrationId,
+    workspaceId,
+    isCoexist,
   }
 }
 
@@ -410,8 +433,47 @@ export const connectWhatsappAction = authActionClient
           await setupOAuthResources(auth, whatsappSettings)
         }
 
-        await registerPhoneNumber({ auth })
-        logger.info("registerPhoneNumber")
+        // Resolve Meta-truth eligibility: form field `transferPhoneNumber` is
+        // user intent, but Meta only places the phone in coexist mode when the
+        // app's config_id is registered for the whatsapp_business_app_onboarding
+        // solution AND the number is a WhatsApp Business App number. Calling
+        // /smb_app_data on a non-eligible phone yields error 131000/10.
+        let isCoexist = false
+        let platformType = ""
+        if (parsedInput.transferPhoneNumber === true) {
+          try {
+            const eligibility = await getCoexistEligibility({
+              phoneNumberId: phoneNumber.id,
+              accessToken,
+              version: whatsappSettings.version,
+            })
+
+            if (
+              eligibility.isOnBizApp &&
+              eligibility.platformType === "CLOUD_API"
+            ) {
+              isCoexist = true
+            }
+
+            platformType = eligibility.platformType
+          } catch (err) {
+            logger.warn(
+              { err, phoneNumberId: phoneNumber.id },
+              "[wa-connect] coexist eligibility check failed",
+            )
+          }
+        }
+
+        // Register the phone number on Cloud API via /register.
+        // NOTE: we intentionally call this for coexist numbers too. Skipping it
+        // leaves the number "not verified" on Cloud API and outbound sends fail
+        // (verified empirically: phone-not-verified error disappears after /register).
+        // RISK: Meta docs warn /register may push a fresh 2FA PIN for numbers still
+        // active on the WhatsApp Business App. Validate on a real coexist number that
+        // this does not lock the user out before wide rollout.
+        if (!isCoexist) {
+          await registerPhoneNumber({ auth })
+        }
 
         const { workspaceId, createdWorkspace, integrationRow } =
           await db.transaction((tx) =>
@@ -425,6 +487,8 @@ export const connectWhatsappAction = authActionClient
               wabaId: parsedInput.wabaId,
               businessId,
               auth,
+              isCoexist,
+              platformType,
             }),
           )
 
@@ -447,8 +511,11 @@ export const connectWhatsappAction = authActionClient
           await subscribeManualWebhook(auth, integrationId)
         }
 
+        await invalidateCacheByTags([`users:${ctx.user.id}:workspace-members`])
+
         return buildResult({
           isManual,
+          isCoexist,
           workspaceId,
           integrationId,
           webhookUrl,
@@ -458,6 +525,10 @@ export const connectWhatsappAction = authActionClient
         logger.error({ err }, "Unable to verify whatsapp token")
 
         if (err instanceof ChatbotXException) {
+          throw err
+        }
+
+        if (err instanceof SdkException) {
           throw err
         }
 

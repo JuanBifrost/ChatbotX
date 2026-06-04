@@ -17,6 +17,7 @@ export const env = createEnv({
       .string()
       .min(32, "BETTER_AUTH_SECRET must be at least 32 characters"),
     BETTER_AUTH_URL: z.url(),
+    WHATSAPP_OVERRIDE_CALLBACK_URI: z.url().optional(),
   },
   client: {
     NEXT_PUBLIC_BUILDER_URL: z.url(),

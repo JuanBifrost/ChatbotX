@@ -8,7 +8,13 @@ export type ManualOnboardingResult = {
 }
 
 export type ConnectWhatsappResult =
-  | { type: "redirect"; redirectUrl: string }
+  | {
+      type: "redirect"
+      redirectUrl: string
+      integrationId: string
+      workspaceId: string
+      isCoexist: boolean
+    }
   | { type: "manualResult"; data: ManualOnboardingResult }
 
 export const connectWhatsappSchema = z

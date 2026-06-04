@@ -23,6 +23,7 @@ export const SequenceStepStats = memo(function SequenceStepStats({
   const { workspaceId } = useParams<{ workspaceId: string }>()
   const [stats, setStats] = useState<GetSequenceStepStatsResponse | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedEventType, setSelectedEventType] =
     useState<SequenceStepEventType>("message:sent")
@@ -46,9 +47,17 @@ export const SequenceStepStats = memo(function SequenceStepStats({
 
         if (isMounted) {
           setStats(result)
+          setError(null)
         }
-      } catch (error) {
-        console.error("Failed to fetch sequence step stats:", error)
+      } catch (fetchError) {
+        console.error("Failed to fetch sequence step stats:", fetchError)
+        if (isMounted) {
+          setError(
+            fetchError instanceof Error
+              ? fetchError.message
+              : "Failed to load stats",
+          )
+        }
       } finally {
         if (isMounted) {
           setIsLoading(false)
@@ -64,7 +73,7 @@ export const SequenceStepStats = memo(function SequenceStepStats({
   }, [workspaceId, sequenceId, stepId])
 
   const formatValue = (value: number) =>
-    value ? value.toLocaleString() : "----"
+    stats === null ? "----" : value.toLocaleString()
 
   const handleStatClick = (eventType: SequenceStepEventType, total: number) => {
     if (total > 0 && stepId) {
@@ -101,7 +110,10 @@ export const SequenceStepStats = memo(function SequenceStepStats({
 
   return (
     <>
-      <div className="flex w-[400px] items-center justify-between gap-4 text-xs">
+      <div
+        className="flex w-[400px] items-center justify-between gap-4 text-xs"
+        title={error ?? undefined}
+      >
         <button
           className={
             sent === 0

@@ -30,6 +30,7 @@ import { useCallback, useEffect, useRef, useState, useTransition } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { InboxIcon } from "@/features/inboxes/components/inbox-icon"
+import { CoexistPopup } from "@/features/shared/coexist-popup"
 import { clientErrorHandler } from "@/lib/errors/client-handler"
 import { connectWhatsappAction } from "../actions/connect.action"
 import { connectWhatsappSchema, type ManualOnboardingResult } from "../schemas"
@@ -116,6 +117,11 @@ export default function WhatsappCreate({
   const router = useRouter()
   const [manualResult, setManualResult] =
     useState<ManualOnboardingResult | null>(null)
+  const [showCoexist, setShowCoexist] = useState<{
+    integrationId: string
+    workspaceId: string
+    redirectUrl: string
+  } | null>(null)
 
   // Form setup
   const { form, handleSubmitWithAction } = useHookFormAction(
@@ -134,7 +140,15 @@ export default function WhatsappCreate({
             setManualResult(data.data)
             return
           }
-          router.push(data.redirectUrl)
+          if (data.isCoexist) {
+            setShowCoexist({
+              integrationId: data.integrationId,
+              workspaceId: data.workspaceId,
+              redirectUrl: data.redirectUrl,
+            })
+          } else {
+            router.push(data.redirectUrl)
+          }
         },
       },
       formProps: {
@@ -203,7 +217,7 @@ export default function WhatsappCreate({
           }
         }
       } catch {
-        console.log("handle message event error: ", event)
+        // Ignore malformed postMessage payloads from Facebook SDK
       }
     }
 
@@ -245,6 +259,17 @@ export default function WhatsappCreate({
       })
     }
   }, [watchTransferPhoneNumber, setValue, updateVisibility])
+
+  if (showCoexist) {
+    return (
+      <CoexistPopup
+        channel="whatsapp"
+        integrationId={showCoexist.integrationId}
+        onDone={() => router.push(showCoexist.redirectUrl)}
+        workspaceId={showCoexist.workspaceId}
+      />
+    )
+  }
 
   return (
     <Card className={`${CARD_MARGIN} ${MAX_CARD_WIDTH}`}>
@@ -341,6 +366,7 @@ function SdkConnectSection({
             initParams={{
               version: (settings.version as InitParams["version"]) ?? "v21.0",
             }}
+            key={embeddedSignupFeatureType ?? "default"}
             loginOptions={
               {
                 config_id: settings.configId,
@@ -358,17 +384,16 @@ function SdkConnectSection({
                 // biome-ignore lint/suspicious/noExplicitAny: some types are not supported
               } as any
             }
-            onFail={(error) => {
-              console.log("error", error)
+            onFail={() => {
               toast.error(t("messages.connectFailed", { feature: "Whatsapp" }))
             }}
             // biome-ignore lint/suspicious/noExplicitAny: this library does not support code returned
             onSuccess={async (res: any) => {
               if (res.code) {
                 setValue(FORM_FIELDS.CODE, res.code)
-                await trigger()
+                const valid = await trigger()
 
-                if (formState.isValid) {
+                if (valid) {
                   finalSubmitRef.current?.click()
                 }
               }
@@ -434,7 +459,7 @@ function ManualConnectSection({
   // Event handlers
   const handleListPhoneNumbers = useCallback(() => {
     if (!(getValues().wabaId && getValues().accessToken)) {
-      toast.error("Please fill in all required fields")
+      toast.error(t("whatsapp.fillRequiredFields"))
       return
     }
 
@@ -524,7 +549,7 @@ function ManualConnectSection({
                   {formState.isSubmitting && (
                     <Loader2Icon className="animate-spin" />
                   )}
-                  {t("actions.continue")} manual connect
+                  {t("whatsapp.continueManualConnect")}
                 </Button>
               </div>
             </>

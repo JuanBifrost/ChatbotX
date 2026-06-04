@@ -32,7 +32,14 @@ export const contactModel = pgTable(
     emailOptIn: boolean().default(true).notNull(),
     firstName: text(),
     lastName: text(),
-    fullName: text().generatedAlwaysAs(sql`"firstName" || ' ' || "lastName"`),
+    fullName: text().generatedAlwaysAs(
+      sql`CASE
+        WHEN "firstName" IS NULL AND "lastName" IS NULL THEN NULL
+        WHEN "firstName" IS NULL THEN "lastName"
+        WHEN "lastName" IS NULL THEN "firstName"
+        ELSE "firstName" || ' ' || "lastName"
+      END`,
+    ),
     gender: gender(),
     lastReadAt: timestamp(timestampConfig),
     ref: text(),

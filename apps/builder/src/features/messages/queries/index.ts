@@ -7,6 +7,7 @@ import {
   createMessageRepository,
   getSafeSinceTime,
 } from "@chatbotx.io/database/repositories"
+import { uploader } from "@chatbotx.io/filesystem"
 import { endOfHour } from "date-fns"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import { decodeCursor, encodeCursor } from "@/lib/pagination/cursor-pagination"
@@ -16,6 +17,38 @@ import type {
   ListMessagesResponse,
 } from "../schema/query"
 import type { MessageResourceWithRelations } from "../schema/resource"
+
+/**
+ * Coexist historical attachments stash a Graph URL or `wa-media:` sentinel in
+ * `originPath` until the follow-up `coexistAttachmentDownload` job mirrors the
+ * bytes to S3. Treat those as not-yet-downloaded and return `url=null` so the
+ * UI shows a loading placeholder instead of a broken concatenated URL.
+ */
+const isPendingOriginPath = (originPath: string): boolean =>
+  originPath.startsWith("http://") ||
+  originPath.startsWith("https://") ||
+  originPath.startsWith("wa-media:")
+
+const resolveAttachmentUrl = (
+  originPath: string,
+  storageUrl: string,
+): string | null =>
+  isPendingOriginPath(originPath)
+    ? null
+    : getPublicFileUrl(originPath, storageUrl)
+
+const presignAttachments = async <T extends { originPath: string }>(
+  attachments: T[],
+  storageUrl: string,
+): Promise<Array<T & { url: string | null }>> =>
+  Promise.all(
+    attachments.map(async (attachment) => ({
+      ...attachment,
+      url: resolveAttachmentUrl(attachment.originPath, storageUrl)
+        ? await uploader.getPresignedDownload(attachment.originPath)
+        : attachment.originPath,
+    })),
+  )
 
 export const listMessages = async (
   input: ListMessagesRequest,
@@ -63,13 +96,15 @@ export const listMessages = async (
     return { data: [], nextCursor: null, prevCursor: null }
   }
 
-  const messagesWithUrls = result.data.map((message) => ({
-    ...message,
-    attachments: message.attachments.map((attachment) => ({
-      ...attachment,
-      url: getPublicFileUrl(attachment.originPath, storageUrl),
+  const messagesWithUrls = await Promise.all(
+    result.data.map(async (message) => ({
+      ...message,
+      attachments:
+        message.attachments.length > 0
+          ? await presignAttachments(message.attachments, storageUrl)
+          : message.attachments,
     })),
-  }))
+  )
 
   let nextCursor: string | null = null
   const prevCursor: string | null = null
@@ -107,9 +142,6 @@ export const findMessage = async (
 
   return {
     ...message,
-    attachments: message.attachments.map((attachment) => ({
-      ...attachment,
-      url: getPublicFileUrl(attachment.originPath, storageUrl),
-    })),
+    attachments: await presignAttachments(message.attachments, storageUrl),
   } as MessageResourceWithRelations
 }
