@@ -1108,7 +1108,7 @@ importers:
         version: 2.0.2
       libphonenumber-js:
         specifier: ^1.12.42
-        version: 1.12.42
+        version: 1.13.5
       remeda:
         specifier: ^2.34.0
         version: 2.37.0

@@ -1,4 +1,3 @@
-import { randomUUID } from "node:crypto"
 import type { DatabaseClient } from "@chatbotx.io/database/client"
 import { and, db, eq, isNull, sql } from "@chatbotx.io/database/client"
 import {
@@ -30,7 +29,7 @@ export class EmailTopicStatsRepository {
   async createRecipient(
     input: CreateEmailRecipientInput,
   ): Promise<{ token: string }> {
-    const token = randomUUID()
+    const token = crypto.randomUUID()
     await db.transaction(async (tx) => {
       await tx.insert(analyticsEmailTopicModel).values({
         id: createId(),

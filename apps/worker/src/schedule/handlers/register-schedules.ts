@@ -84,6 +84,7 @@ export const registerSchedules = async () => {
       name: ScheduleJobData.maintainMacPartitions,
       data: {
         type: ScheduleJobData.maintainMacPartitions,
+        data: {},
       },
     },
   )
