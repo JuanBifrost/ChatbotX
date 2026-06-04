@@ -5,6 +5,7 @@ import { PlatformCredentialsStoreProvider } from "@/features/platform-credential
 import { AIAgentStoreProvider } from "../ai-agents/provider/ai-agent-store-context"
 import { AIToolsStoreProvider } from "../ai-tools/provider/ai-tools-store-context"
 import { CustomFieldStoreProvider } from "../custom-fields/provider/custom-field-store-context"
+import { EmailTopicStoreProvider } from "../email-topics/provider/email-topic-store-context"
 import type { FlowVersionResource } from "../flow-versions/schema/resource"
 import { InboxStoreProvider } from "../inboxes/provider/inbox-store-context"
 import { TagStoreProvider } from "../tags/provider/tag-store-context"
@@ -34,20 +35,24 @@ export function FlowDetail({ flow, flowVersion }: FlowDetailProps) {
             <InboxStoreProvider workspaceId={flow.workspaceId}>
               <FlowStoreProvider workspaceId={flow.workspaceId}>
                 <TagStoreProvider workspaceId={flow.workspaceId}>
-                  <UserStoreProvider workspaceId={flow.workspaceId}>
-                    <CustomFieldStoreProvider workspaceId={flow.workspaceId}>
-                      <AIToolsStoreProvider workspaceId={flow.workspaceId}>
-                        <PlatformCredentialsStoreProvider>
-                          <AIAgentStoreProvider workspaceId={flow.workspaceId}>
-                            <ReactFlowFrame
-                              flow={flow}
-                              flowVersion={flowVersion}
-                            />
-                          </AIAgentStoreProvider>
-                        </PlatformCredentialsStoreProvider>
-                      </AIToolsStoreProvider>
-                    </CustomFieldStoreProvider>
-                  </UserStoreProvider>
+                  <EmailTopicStoreProvider workspaceId={flow.workspaceId}>
+                    <UserStoreProvider workspaceId={flow.workspaceId}>
+                      <CustomFieldStoreProvider workspaceId={flow.workspaceId}>
+                        <AIToolsStoreProvider workspaceId={flow.workspaceId}>
+                          <PlatformCredentialsStoreProvider>
+                            <AIAgentStoreProvider
+                              workspaceId={flow.workspaceId}
+                            >
+                              <ReactFlowFrame
+                                flow={flow}
+                                flowVersion={flowVersion}
+                              />
+                            </AIAgentStoreProvider>
+                          </PlatformCredentialsStoreProvider>
+                        </AIToolsStoreProvider>
+                      </CustomFieldStoreProvider>
+                    </UserStoreProvider>
+                  </EmailTopicStoreProvider>
                 </TagStoreProvider>
               </FlowStoreProvider>
             </InboxStoreProvider>

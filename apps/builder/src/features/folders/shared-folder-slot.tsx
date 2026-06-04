@@ -53,6 +53,9 @@ export default async function SharedFolderSlot(props: {
     case "webhooks":
       folderType = folderTypes.enum.webhook
       break
+    case "email-topics":
+      folderType = folderTypes.enum.emailTopic
+      break
     default:
       break
   }

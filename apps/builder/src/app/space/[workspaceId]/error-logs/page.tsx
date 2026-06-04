@@ -49,6 +49,11 @@ export default async function ErrorLogsPage(props: {
             isActive: false,
           },
           {
+            label: t("emailTopics.title"),
+            href: `/space/${workspaceId}/email-topics`,
+            isActive: false,
+          },
+          {
             label: t("errorLogs.title"),
             href: `/space/${workspaceId}/error-logs`,
             isActive: true,

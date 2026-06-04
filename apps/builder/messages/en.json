@@ -954,6 +954,24 @@
     "tag": {
       "label": "Tag"
     },
+    "emailTopic": {
+      "label": "Email Topic"
+    },
+    "emailTopics": {
+      "label": "Email Topics"
+    },
+    "emailTopicSent": {
+      "label": "Sent"
+    },
+    "emailTopicDelivered": {
+      "label": "Delivered(%)"
+    },
+    "emailTopicSeen": {
+      "label": "Seen(%)"
+    },
+    "emailTopicClicked": {
+      "label": "Clicked(%)"
+    },
     "targetCountry": {
       "description": "The country where most of your contacts live.",
       "label": "Target Country"
@@ -1287,9 +1305,6 @@
     },
     "to": {
       "label": "To"
-    },
-    "topicId": {
-      "label": "Topic ID"
     },
     "smtpChannel": {
       "label": "SMTP Channel"
@@ -1711,6 +1726,9 @@
     "resetPasswordTitle": "Reset your password",
     "resetPasswordDescription": "Enter your new password below.",
     "signUpTitle": "Sign up to {name}"
+  },
+  "emailTopics": {
+    "title": "Email Topics"
   },
   "tags": {
     "title": "Tags"

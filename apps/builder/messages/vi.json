@@ -943,6 +943,24 @@
     "tag": {
       "label": "Thẻ"
     },
+    "emailTopic": {
+      "label": "Chủ đề Email"
+    },
+    "emailTopics": {
+      "label": "Chủ đề Email"
+    },
+    "emailTopicSent": {
+      "label": "Đã gửi"
+    },
+    "emailTopicDelivered": {
+      "label": "Đã nhận(%)"
+    },
+    "emailTopicSeen": {
+      "label": "Đã xem(%)"
+    },
+    "emailTopicClicked": {
+      "label": "Đã click(%)"
+    },
     "targetCountry": {
       "description": "Quốc gia nơi hầu hết liên hệ của bạn sinh sống.",
       "label": "Quốc gia mục tiêu"
@@ -1299,9 +1317,6 @@
     },
     "to": {
       "label": "To"
-    },
-    "topicId": {
-      "label": "Topic ID"
     },
     "smtpChannel": {
       "label": "Kênh SMTP"
@@ -1725,6 +1740,9 @@
     "resetPasswordTitle": "Đặt lại mật khẩu",
     "resetPasswordDescription": "Nhập mật khẩu mới của bạn bên dưới.",
     "signUpTitle": "Đăng ký vào {name}"
+  },
+  "emailTopics": {
+    "title": "Chủ đề Email"
   },
   "tags": {
     "title": "Thẻ"

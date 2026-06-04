@@ -19,6 +19,7 @@ const publicRoutes = [
   "/storage",
   "/checkout",
   "/unsubscribe",
+  "/email-topic",
 ]
 const signinPath = "/auth/sign-in"
 

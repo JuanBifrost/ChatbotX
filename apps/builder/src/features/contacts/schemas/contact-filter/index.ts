@@ -29,17 +29,21 @@ export const mappingConditions: Record<FormFieldType, OperatorType[]> = {
   [formFieldTypes.enum.number]: numberOperators,
 }
 
+export type ContactFilterCondition = z.infer<
+  (typeof contactFilterConditionSchemas)[number]
+>
+
 /** One validated condition row (matches `conditions` elements in {@link contactFilterCriteriaSchema}). */
+// The trailing cast keeps `z.infer` aligned with the value the resolver derives —
+// without it, Zod v4 widens the dynamic-array discriminated union output to
+// `unknown`, diverging from react-hook-form's inferred field type. The runtime
+// object is the real discriminated union; only the static output type is pinned.
 export const singleContactFilterConditionSchema = z.discriminatedUnion(
   "field",
   // Zod v4 narrows discriminatedUnion options tighter than inferred schema tuples.
   // @ts-expect-error Expected readonly [$ZodTypeDiscriminable, ...]; runtime union is correct.
   contactFilterConditionSchemas,
-)
-
-export type ContactFilterCondition = z.infer<
-  (typeof contactFilterConditionSchemas)[number]
->
+) as unknown as z.ZodType<ContactFilterCondition>
 
 export const contactFilterCriteriaSchema = z.object({
   operator: z.enum(["and", "or"]),

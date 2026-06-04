@@ -17,10 +17,13 @@ import {
   SortableItemHandle,
 } from "@chatbotx.io/ui/components/ui/sortable"
 import { MoveVerticalIcon, PlusIcon, XIcon } from "lucide-react"
+import Link from "next/link"
+import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useCallback, useEffect, useRef } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
 import { TiptapEditorField } from "@/components/tiptap/tiptap-editor-field"
+import { useEmailTopicSelectOptions } from "@/features/email-topics/provider/email-topic-hook"
 import {
   useSmtpInboxFromAddressMap,
   useSmtpInboxOptions,
@@ -35,11 +38,13 @@ type EmailStepEditorProps = {
 export default function EmailStepEditor(props: EmailStepEditorProps) {
   const { parentName } = props
   const t = useTranslations()
+  const params = useParams<{ workspaceId: string; flowId: string }>()
   const smtpInboxOptions = useSmtpInboxOptions()
   const smtpFromAddressMap = useSmtpInboxFromAddressMap()
   const smtpFromAddressMapRef = useRef(smtpFromAddressMap)
   smtpFromAddressMapRef.current = smtpFromAddressMap
   const { control, setValue } = useFormContext()
+  const emailTopicOptions = useEmailTopicSelectOptions()
 
   const integrationSmtpId = useWatch({
     name: `${parentName}.integrationSmtpId`,
@@ -72,6 +77,20 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
         name={`${parentName}.integrationSmtpId`}
         options={smtpInboxOptions}
       />
+
+      <div className="relative">
+        <SelectField
+          label={t("fields.emailTopic.label")}
+          name={`${parentName}.topicId`}
+          options={emailTopicOptions}
+        />
+        <Link
+          className="absolute top-[-2px] right-0 text-primary text-sm hover:underline"
+          href={`/space/${params.workspaceId}/email-topics`}
+        >
+          {t("actions.addNew")}
+        </Link>
+      </div>
 
       <TiptapEditorField
         key={`from-${integrationSmtpId}`}

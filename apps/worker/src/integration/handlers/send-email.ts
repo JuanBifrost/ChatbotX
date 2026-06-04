@@ -1,3 +1,4 @@
+import { emailTopicAnalyticsService } from "@chatbotx.io/analytics"
 import {
   buildContext,
   buildUnsubscribeUrl,
@@ -5,6 +6,7 @@ import {
   inboxService,
   integrationSmtpService,
   resolvePlatformSettings,
+  signEmailClickUrl,
   workspaceService,
 } from "@chatbotx.io/business"
 import type { InboxWithIntegrations } from "@chatbotx.io/database/types"
@@ -34,6 +36,7 @@ async function resolveElements({
   inbox,
   flowId,
   unsubscribeUrl,
+  token,
 }: {
   appUrl: string
   rawElements: PageElementSchema[]
@@ -41,6 +44,7 @@ async function resolveElements({
   inbox: InboxWithIntegrations | undefined
   flowId: string | undefined
   unsubscribeUrl: string
+  token?: string
 }): Promise<MailElementSchema[]> {
   const resolved: MailElementSchema[] = []
 
@@ -73,7 +77,7 @@ async function resolveElements({
         resolved.push({ type: el.type })
         break
       case "button": {
-        const url = el.buttonType
+        let url = el.buttonType
           ? resolveButtonUrl({
               appUrl,
               button: el,
@@ -82,12 +86,27 @@ async function resolveElements({
             })
           : undefined
 
+        if (url && token) {
+          // Seal the destination into an authenticated token so the click
+          // route cannot be abused as an open redirect (the raw URL is never
+          // trusted from the query string). base64url is URL-safe.
+          const signedUrl = await signEmailClickUrl(url)
+          url = `${appUrl}/email-topic/click?r=${token}&u=${signedUrl}`
+        }
+
         resolved.push({ type: "button", url, label: el.label })
         break
       }
       default:
         break
     }
+  }
+
+  if (token) {
+    resolved.push({
+      type: "image",
+      url: `${appUrl}/email-topic/open?r=${token}`,
+    })
   }
 
   return resolved
@@ -157,6 +176,20 @@ export async function sendEmail({
     conversation.workspaceId,
   )
 
+  // Create per-recipient tracking row before building URLs so the token is available.
+  let token: string | undefined
+  if (step.topicId) {
+    const result = await emailTopicAnalyticsService.createRecipient({
+      topicId: step.topicId,
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      conversationId: conversation.id,
+      contactInboxId: contactInbox.id,
+      email: to,
+    })
+    token = result.token
+  }
+
   const elements = await resolveElements({
     appUrl,
     rawElements: step.elements,
@@ -164,6 +197,7 @@ export async function sendEmail({
     inbox,
     flowId: flowVersion.flowId,
     unsubscribeUrl,
+    token,
   })
 
   const props: DynamicEmailProps = {
@@ -187,6 +221,10 @@ export async function sendEmail({
       subject,
       html: await renderDynamicEmailHtml(props),
     })
+
+    if (token) {
+      await emailTopicAnalyticsService.markDelivered(token)
+    }
   } catch {
     logger.error(
       {
@@ -195,6 +233,9 @@ export async function sendEmail({
       },
       "handleSendEmail: SMTP send failed",
     )
+    if (token) {
+      await emailTopicAnalyticsService.markFailed(token)
+    }
     return
   }
 }

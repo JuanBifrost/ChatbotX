@@ -15,6 +15,7 @@ import {
 import {
   automatedResponseModel,
   customFieldModel,
+  emailTopicModel,
   flowModel,
   folderModel,
   sequenceModel,
@@ -247,6 +248,8 @@ class FolderService extends BaseService {
         return triggerModel
       case folderTypes.enum.webhook:
         return webhookModel
+      case folderTypes.enum.emailTopic:
+        return emailTopicModel
       default:
         throw new ChatbotXException("Invalid folder type")
     }

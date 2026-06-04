@@ -23,6 +23,8 @@ export function getFolderTypeFromFeature(
       return folderTypes.enum.trigger
     case "webhooks":
       return folderTypes.enum.webhook
+    case "email-topics":
+      return folderTypes.enum.emailTopic
     default:
       return null
   }
