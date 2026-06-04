@@ -1,15 +1,24 @@
-import { createAnthropic } from "@ai-sdk/anthropic"
-import { createDeepSeek } from "@ai-sdk/deepseek"
-import { createGoogleGenerativeAI } from "@ai-sdk/google"
-import { createOpenAI } from "@ai-sdk/openai"
 import { db } from "@chatbotx.io/database/client"
 import type {
+  IntegrationClaudeModel,
+  IntegrationDeepseekModel,
   IntegrationGeminiModel,
   IntegrationOpenAIModel,
 } from "@chatbotx.io/database/types"
 import { secretTextAuthSchema } from "@chatbotx.io/sdk"
 import type { ImageModel } from "ai"
-import { aiProviders } from "../schemas"
+import { providerSdkFactories } from "../core/factory"
+import { type AIProvider, aiProviders } from "../schemas"
+
+/**
+ * Any AI integration row that carries a `secretText` auth + model config.
+ * All provider integrations share this shape, so the factory accepts the union.
+ */
+export type AIIntegrationModel =
+  | IntegrationOpenAIModel
+  | IntegrationGeminiModel
+  | IntegrationClaudeModel
+  | IntegrationDeepseekModel
 
 export async function getAIIntegrationInDB(props: {
   workspaceId: string
@@ -32,67 +41,60 @@ export async function getAIIntegrationInDB(props: {
       return await db.query.integrationGeminiModel.findFirst({
         where,
       })
+    case aiProviders.enum.claude:
+      return await db.query.integrationClaudeModel.findFirst({
+        where,
+      })
+    case aiProviders.enum.deepseek:
+      return await db.query.integrationDeepseekModel.findFirst({
+        where,
+      })
     default:
       return null
   }
 }
 
-export function getAIModel(
-  model: IntegrationOpenAIModel | IntegrationGeminiModel,
-  provider: string,
-  _options?: { abortSignal?: AbortSignal },
-) {
+function resolveProviderFactory(provider: string) {
+  const parsed = aiProviders.safeParse(provider)
+  if (!parsed.success) {
+    throw new Error(`Unsupported provider: ${provider}`)
+  }
+  return providerSdkFactories[parsed.data as AIProvider]
+}
+
+export function getAIModel(model: AIIntegrationModel, provider: string) {
   const authParsed = secretTextAuthSchema.safeParse(model.auth)
   if (!authParsed.success) {
     throw new Error("Invalid AI integration auth configuration")
   }
 
-  const commonSettings = {
-    apiKey: authParsed.data.secretText,
-    maxRetries: 3,
-  }
+  // NOTE: retries and cancellation are call-level concerns. They must be passed
+  // to `generateText`/`streamText`/`generateImage` (`maxRetries`, `abortSignal`),
+  // not to the provider factory, which silently ignores them.
+  const createProvider = resolveProviderFactory(provider)
 
-  switch (provider) {
-    case aiProviders.enum.openai: {
-      return createOpenAI(commonSettings)
-    }
-    case aiProviders.enum.gemini: {
-      return createGoogleGenerativeAI(commonSettings)
-    }
-    case aiProviders.enum.claude: {
-      return createAnthropic(commonSettings)
-    }
-    case aiProviders.enum.deepseek: {
-      return createDeepSeek(commonSettings)
-    }
-    default:
-      throw new Error(`Unsupported provider: ${provider}`)
-  }
+  return createProvider({ apiKey: authParsed.data.secretText })
 }
 
 export function createAIModelInstance(props: {
-  model: IntegrationOpenAIModel | IntegrationGeminiModel
+  model: AIIntegrationModel
   provider: string
   modelId: string
-  abortSignal?: AbortSignal
   traceId?: string
 }) {
-  const { model, provider, modelId, abortSignal } = props
-  const providerInstance = getAIModel(model, provider, { abortSignal })
+  const { model, provider, modelId } = props
+  const providerInstance = getAIModel(model, provider)
 
   return providerInstance(modelId)
 }
 
 export function createAIImageModelInstance(props: {
-  model: IntegrationOpenAIModel | IntegrationGeminiModel
+  model: AIIntegrationModel
   provider: string
   modelId: string
-  abortSignal?: AbortSignal
 }) {
-  const { model, provider, modelId, abortSignal } = props
-  const providerInstance = getAIModel(model, provider, {
-    abortSignal,
-  })
+  const { model, provider, modelId } = props
+  const providerInstance = getAIModel(model, provider)
 
   if ("image" in providerInstance) {
     return providerInstance.image(modelId) as ImageModel
