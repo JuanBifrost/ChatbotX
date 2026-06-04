@@ -33,6 +33,10 @@ export const inboxRelations = defineRelationsPart(schema, (r) => ({
       from: r.inboxModel.id,
       to: r.integrationSmtpModel.inboxId,
     }),
+    integrationTiktok: r.one.integrationTiktokModel({
+      from: r.inboxModel.id,
+      to: r.integrationTiktokModel.inboxId,
+    }),
     contactInboxes: r.many.contactInboxModel({
       from: r.inboxModel.id,
       to: r.contactInboxModel.inboxId,

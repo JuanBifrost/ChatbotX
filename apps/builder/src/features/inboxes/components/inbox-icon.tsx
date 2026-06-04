@@ -7,6 +7,8 @@ import {
   SiMessengerHex,
   SiTelegram,
   SiTelegramHex,
+  SiTiktok,
+  SiTiktokHex,
   SiWhatsapp,
   SiWhatsappHex,
   SiZalo,
@@ -69,6 +71,13 @@ export const INBOX_ICON_CONFIG: Record<ChannelType, InboxIconConfig> = {
     Icon: SiTelegram,
     fill: SiTelegramHex,
     defaultLabel: "Telegram",
+  },
+  tiktok: {
+    Icon: SiTiktok,
+    fill: SiTiktokHex,
+    defaultLabel: "TikTok",
+    iconClassName:
+      "[paint-order:stroke_fill] stroke-2 stroke-white dark:fill-zinc-100 dark:stroke-zinc-900",
   },
   webchat: {
     Icon: AppWindowIcon,

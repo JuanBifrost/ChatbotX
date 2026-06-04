@@ -9,6 +9,7 @@ export const credentialTypes = z.enum([
   "giphy",
   "stripe",
   "paddle",
+  "tiktok",
 ])
 export type CredentialType = z.infer<typeof credentialTypes>
 
@@ -145,6 +146,19 @@ export type PaddleCredentialPublic = z.infer<
   typeof paddleCredentialPublicSchema
 >
 
+export const tiktokCredentialSchema = z.object({
+  clientId: z.string(),
+  clientSecret: z.string(),
+})
+export type TiktokCredential = z.infer<typeof tiktokCredentialSchema>
+
+export const tiktokCredentialPublicSchema = tiktokCredentialSchema.pick({
+  clientId: true,
+})
+export type TiktokCredentialPublic = z.infer<
+  typeof tiktokCredentialPublicSchema
+>
+
 export const credentialSchemas = {
   whatsapp: whatsappCredentialSchema,
   messenger: messengerCredentialSchema,
@@ -154,6 +168,7 @@ export const credentialSchemas = {
   giphy: giphyCredentialSchema,
   stripe: stripeCredentialSchema,
   paddle: paddleCredentialSchema,
+  tiktok: tiktokCredentialSchema,
 } as const
 
 export const credentialPublicSchemas = {
@@ -165,6 +180,7 @@ export const credentialPublicSchemas = {
   giphy: giphyCredentialPublicSchema,
   stripe: stripeCredentialPublicSchema,
   paddle: paddleCredentialPublicSchema,
+  tiktok: tiktokCredentialPublicSchema,
 } as const
 
 export type CredentialByType = {
@@ -176,6 +192,7 @@ export type CredentialByType = {
   giphy: GiphyCredential
   stripe: StripeCredential
   paddle: PaddleCredential
+  tiktok: TiktokCredential
 }
 
 export type CredentialPublicByType = {
@@ -187,6 +204,7 @@ export type CredentialPublicByType = {
   giphy: GiphyCredentialPublic
   stripe: StripeCredentialPublic
   paddle: PaddleCredentialPublic
+  tiktok: TiktokCredentialPublic
 }
 
 // ─── Update schemas (secrets optional — empty means "keep current") ─────────
@@ -255,6 +273,14 @@ export const stripeCredentialUpdateSchema = z.object({
 })
 export type StripeCredentialUpdate = z.infer<
   typeof stripeCredentialUpdateSchema
+>
+
+export const tiktokCredentialUpdateSchema = z.object({
+  clientId: z.string().trim(),
+  clientSecret: z.string().trim().optional(),
+})
+export type TiktokCredentialUpdate = z.infer<
+  typeof tiktokCredentialUpdateSchema
 >
 
 // ─── Encrypted blob shape stored in Credential.value ─────────────────────────

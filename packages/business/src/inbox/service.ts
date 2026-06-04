@@ -27,6 +27,7 @@ class InboxService extends BaseService {
     integrationZalo: true,
     integrationTelegram: true,
     integrationSmtp: true,
+    integrationTiktok: true,
   }
 
   async list(input: ListInboxesRequest): Promise<ListInboxesResponse> {

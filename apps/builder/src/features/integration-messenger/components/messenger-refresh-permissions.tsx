@@ -25,7 +25,11 @@ export function MessengerRefreshPermissions({
     ),
     {
       onSuccess: () => {
-        toast.success(t("messenger.refreshPermissions"))
+        toast.success(
+          t("messages.refreshPermissionsSuccessfully", {
+            feature: t("fields.messenger.label"),
+          }),
+        )
       },
       onError: ({ error }) => {
         if (error.serverError) {

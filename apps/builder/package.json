@@ -35,6 +35,7 @@
     "@chatbotx.io/integration-messenger": "workspace:*",
     "@chatbotx.io/integration-smtp": "workspace:*",
     "@chatbotx.io/integration-telegram": "workspace:*",
+    "@chatbotx.io/integration-tiktok": "workspace:*",
     "@chatbotx.io/integration-webchat": "workspace:*",
     "@chatbotx.io/integration-whatsapp": "workspace:*",
     "@chatbotx.io/integration-zalo": "workspace:*",

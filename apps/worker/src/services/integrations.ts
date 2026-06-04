@@ -17,6 +17,7 @@ import { integration as integrationInstagram } from "@chatbotx.io/integration-in
 import { integration as integrationMessenger } from "@chatbotx.io/integration-messenger"
 import { integration as integrationSmtp } from "@chatbotx.io/integration-smtp"
 import { integration as integrationTelegram } from "@chatbotx.io/integration-telegram"
+import { integration as integrationTiktok } from "@chatbotx.io/integration-tiktok"
 import { integration as integrationWebchat } from "@chatbotx.io/integration-webchat"
 import { integration as integrationWhatsapp } from "@chatbotx.io/integration-whatsapp"
 import { integration as integrationZalo } from "@chatbotx.io/integration-zalo"
@@ -39,6 +40,7 @@ export const allIntegrations: Record<
   webchat: integrationWebchat,
   whatsapp: integrationWhatsapp,
   telegram: integrationTelegram,
+  tiktok: integrationTiktok,
   zalo: integrationZalo,
   chatbotx: integrationChatbotx,
   smtp: integrationSmtp,
@@ -86,6 +88,11 @@ export const integrationService = {
       case "instagram": {
         modelName = "IntegrationInstagram"
         columnName = "pageId"
+        break
+      }
+      case "tiktok": {
+        modelName = "IntegrationTiktok"
+        columnName = "openId"
         break
       }
       case "webchat": {

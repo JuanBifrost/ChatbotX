@@ -4,6 +4,7 @@ import { integration as integrationInstagram } from "@chatbotx.io/integration-in
 import { integration as integrationMessenger } from "@chatbotx.io/integration-messenger"
 import { integration as integrationSmtp } from "@chatbotx.io/integration-smtp"
 import { integration as integrationTelegram } from "@chatbotx.io/integration-telegram"
+import { integration as integrationTiktok } from "@chatbotx.io/integration-tiktok"
 import { integration as integrationWebchat } from "@chatbotx.io/integration-webchat"
 import { integration as integrationWhatsapp } from "@chatbotx.io/integration-whatsapp"
 import { integration as integrationZalo } from "@chatbotx.io/integration-zalo"
@@ -15,6 +16,7 @@ export const integrations = {
   googleSheets: integrationGoogleSheets,
   zalo: integrationZalo,
   telegram: integrationTelegram,
+  tiktok: integrationTiktok,
   webchat: integrationWebchat,
   chatbotx: integrationChatbotx,
   smtp: integrationSmtp,

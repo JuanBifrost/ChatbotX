@@ -3,10 +3,18 @@ import {
   platformCredentialService,
   platformSettingService,
 } from "@chatbotx.io/business"
+import { db, eq } from "@chatbotx.io/database/client"
+import { inboxStatuses } from "@chatbotx.io/database/partials"
+import { inboxModel } from "@chatbotx.io/database/schema"
+import type {
+  TiktokAuthValue,
+  TiktokConfig,
+} from "@chatbotx.io/integration-tiktok"
 import { integrationQueue } from "@chatbotx.io/worker-config"
 import type { NextRequest } from "next/server"
 import { env, isCloud } from "@/env"
 import { findIntegrationTelegramByBotId } from "@/features/integration-telegram/queries"
+import { findIntegrationTiktokByOpenId } from "@/features/integration-tiktok/queries"
 import { type IntegrationKey, integrations } from "@/integration"
 import { logger } from "@/lib/log"
 
@@ -21,6 +29,11 @@ export const handleWebhook = async (
   // Telegram uses per-bot config (not org-level settings)
   if (integrationType === "telegram") {
     return handleTelegramWebhook(req)
+  }
+
+  // TikTok uses per-account config (not org-level settings)
+  if (integrationType === "tiktok") {
+    return handleTiktokWebhook(req)
   }
 
   const type = integrationType as CredentialType
@@ -187,6 +200,100 @@ const handleTelegramWebhook = async (req: NextRequest) => {
     logger.error(
       { err: e, integrationType: "telegram" },
       "Telegram handleRequest failed",
+    )
+    return new Response(JSON.stringify({ message }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+}
+
+const handleTiktokWebhook = async (req: NextRequest) => {
+  const integration = integrations.tiktok
+  if (!integration?.handleRequest) {
+    return new Response(
+      JSON.stringify({ message: "Method is not implemented" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    )
+  }
+
+  const bodyText = await req.text()
+  if (!bodyText) {
+    return new Response(JSON.stringify({ message: "Empty webhook payload" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    })
+  }
+
+  let userOpenId: string | undefined
+  let eventType: string | undefined
+  try {
+    const parsed = JSON.parse(bodyText) as Record<string, unknown>
+    userOpenId =
+      typeof parsed.user_openid === "string" ? parsed.user_openid : undefined
+    eventType = typeof parsed.event === "string" ? parsed.event : undefined
+  } catch {
+    // invalid JSON — integration handler will return the error
+  }
+
+  if (!userOpenId) {
+    return new Response(
+      JSON.stringify({ message: "Missing user_openid in payload" }),
+      { status: 400, headers: { "Content-Type": "application/json" } },
+    )
+  }
+
+  const integrationTiktok = await findIntegrationTiktokByOpenId({
+    openId: userOpenId,
+  })
+  if (!integrationTiktok) {
+    return new Response(
+      JSON.stringify({ message: "TikTok account not found" }),
+      { status: 404, headers: { "Content-Type": "application/json" } },
+    )
+  }
+
+  if (eventType === "authorization.removed") {
+    await db
+      .update(inboxModel)
+      .set({ status: inboxStatuses.enum.disconnected })
+      .where(eq(inboxModel.id, integrationTiktok.inboxId))
+    logger.info(
+      { openId: userOpenId },
+      "TikTok authorization removed — inbox marked disconnected",
+    )
+    return new Response("ok")
+  }
+
+  const auth = integrationTiktok.auth as TiktokAuthValue
+
+  // Reconstruct request because req.text() already consumed the body
+  const reqWithBody = new Request(req.url, {
+    method: req.method,
+    headers: req.headers,
+    body: bodyText,
+  })
+
+  const tiktokConfig: TiktokConfig = {
+    clientId: auth.clientId,
+    clientSecret: auth.clientSecret,
+    redirectUrl: auth.redirectUrl,
+    openId: integrationTiktok.openId,
+  }
+
+  try {
+    const result = await integration.handleRequest({
+      config: tiktokConfig,
+      req: reqWithBody,
+      queue: integrationQueue,
+    })
+
+    return new Response(result as BodyInit)
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : String(e)
+    logger.error(
+      { err: e, integrationType: "tiktok" },
+      "TikTok handleRequest failed",
     )
     return new Response(JSON.stringify({ message }), {
       status: 400,

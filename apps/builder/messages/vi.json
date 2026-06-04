@@ -1353,6 +1353,19 @@
     },
     "webhookUrl": {
       "label": "URL webhook"
+    },
+    "tiktok": {
+      "label": "TikTok",
+      "accessToken": "Access Token",
+      "openId": "Open ID",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "displayName": "Tên hiển thị",
+      "connectInstructions": {
+        "step1": "Tạo ứng dụng TikTok tại <link>developers.tiktok.com</link>.",
+        "step2": "Cấp quyền tài khoản và sao chép <strong>access token</strong>, <strong>open ID</strong> và <strong>client secret</strong>.",
+        "step3": "Dán thông tin xác thực bên dưới để kết nối."
+      }
     }
   },
   "flows": {
@@ -1566,7 +1579,8 @@
       "zaloAppSecretRequired": "App Secret là bắt buộc để cấu hình Zalo.",
       "stripeSecretKeyRequired": "Secret Key là bắt buộc để cấu hình Stripe.",
       "whatsappAppSecretRequired": "App Secret là bắt buộc để cấu hình WhatsApp.",
-      "whatsappSystemUserTokenRequired": "System User Token là bắt buộc để cấu hình WhatsApp."
+      "whatsappSystemUserTokenRequired": "System User Token là bắt buộc để cấu hình WhatsApp.",
+      "tiktokAppSecretRequired": "App Secret là bắt buộc để cấu hình TikTok."
     }
   },
   "messages": {
@@ -1576,6 +1590,7 @@
     "connectedSuccess": "{feature} đã được kết nối thành công",
     "connectFailed": "Không thể kết nối {feature}",
     "connectSuccess": "Đã kết nối {feature} thành công",
+    "refreshTokenSuccessfully": "Đã làm mới token {feature} thành công",
     "success": "Thành công",
     "failed": "Thất bại",
     "copiedToClipboard": "Đã sao chép vào bộ nhớ tạm",
@@ -2402,5 +2417,10 @@
       "dont_track": "Không theo dõi kho hàng",
       "track": "Theo dõi kho hàng"
     }
+  },
+  "tiktok": {
+    "title": "TikTok",
+    "description": "Kết nối tài khoản TikTok để trả lời tin nhắn trực tiếp.",
+    "refreshToken": "Làm mới Token"
   }
 }

@@ -9,5 +9,6 @@ export const channelTypes = z.enum([
   "smtp",
   "telegram",
   "instagram",
+  "tiktok",
 ])
 export type ChannelType = z.infer<typeof channelTypes>

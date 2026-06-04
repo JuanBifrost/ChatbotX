@@ -30,6 +30,7 @@ export function GetInboxUrlDialog({
 }: GetInboxUrlDialogProps) {
   const { inboxes } = useInboxStore((state) => state)
   const { appUrl } = usePlatformSettings()
+  const skipChannels: ChannelType[] = ["smtp", "tiktok"]
 
   return (
     <Dialog onOpenChange={onOpenChange} open={open}>
@@ -41,7 +42,9 @@ export function GetInboxUrlDialog({
 
         <div className="flex max-h-[60vh] flex-col overflow-y-auto">
           {inboxes
-            .filter((inbox) => inbox.channel !== "smtp")
+            .filter(
+              (inbox) => !skipChannels.includes(inbox.channel as ChannelType),
+            )
             .map((inbox) => (
               <GetInboxUrlItem
                 appUrl={appUrl}

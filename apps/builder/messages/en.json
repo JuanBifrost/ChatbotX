@@ -1338,6 +1338,19 @@
     },
     "webhookUrl": {
       "label": "Webhook URL"
+    },
+    "tiktok": {
+      "label": "TikTok",
+      "accessToken": "Access Token",
+      "openId": "Open ID",
+      "clientId": "Client ID",
+      "clientSecret": "Client Secret",
+      "displayName": "Display Name",
+      "connectInstructions": {
+        "step1": "Create a TikTok app at <link>developers.tiktok.com</link>.",
+        "step2": "Authorize your account and copy the <strong>access token</strong>, <strong>open ID</strong>, and <strong>client secret</strong>.",
+        "step3": "Paste the credentials below to connect."
+      }
     }
   },
   "flows": {
@@ -1552,7 +1565,8 @@
       "zaloAppSecretRequired": "App Secret is required to configure Zalo.",
       "stripeSecretKeyRequired": "Secret Key is required to configure Stripe.",
       "whatsappAppSecretRequired": "App Secret is required to configure WhatsApp.",
-      "whatsappSystemUserTokenRequired": "System User Token is required to configure WhatsApp."
+      "whatsappSystemUserTokenRequired": "System User Token is required to configure WhatsApp.",
+      "tiktokAppSecretRequired": "App Secret is required to configure TikTok."
     }
   },
   "messages": {
@@ -1562,6 +1576,7 @@
     "connectedSuccess": "{feature} connected successfully",
     "connectFailed": "Failed to connect {feature}",
     "connectSuccess": "Connected {feature} successfully",
+    "refreshTokenSuccessfully": "{feature} token refreshed successfully",
     "success": "Success",
     "failed": "Failed",
     "copiedToClipboard": "Copied to clipboard",
@@ -2389,5 +2404,10 @@
       "dont_track": "Don't track inventory",
       "track": "Track inventory"
     }
+  },
+  "tiktok": {
+    "title": "TikTok",
+    "description": "Connect your TikTok account to reply to direct messages.",
+    "refreshToken": "Refresh Token"
   }
 }

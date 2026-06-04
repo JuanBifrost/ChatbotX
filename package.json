@@ -41,7 +41,8 @@
   "pnpm": {
     "overrides": {
       "typescript": "^5",
-      "@types/node": "24.x"
+      "@types/node": "24.x",
+      "kysely": "0.28.17"
     },
     "updateConfig": {
       "ignoreDependencies": [

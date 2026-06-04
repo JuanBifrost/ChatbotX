@@ -18,6 +18,7 @@ import { notFound, redirect } from "next/navigation"
 import type { NextRequest } from "next/server"
 import { z } from "zod"
 import { env } from "@/env"
+import { connectTiktokHandler } from "@/features/integration-tiktok/actions/connect.action"
 import { connectZaloHandler } from "@/features/integration-zalo/actions/connect-zalo.action"
 import { type IntegrationKey, integrations } from "@/integration"
 import { getCurrentUserId } from "@/lib/auth/utils"
@@ -103,6 +104,30 @@ export const handleCallback = async (
   let authResult: AuthValue
   let googleSheetsAuth: Oauth2AuthValue | null = null
   switch (integrationType) {
+    case "tiktok": {
+      const tiktokCredential = await platformCredentialService.resolveForOwner({
+        ownerId: workspace.ownerId,
+        type: "tiktok",
+      })
+      if (!tiktokCredential) {
+        return notFound()
+      }
+
+      const tiktokCallbackUrl = new URL(
+        "/integrations/tiktok/callback",
+        url,
+      ).toString()
+
+      await connectTiktokHandler({
+        tiktokSettings: tiktokCredential.config,
+        workspaceId: workspace.id,
+        req,
+        redirectUrl: tiktokCallbackUrl,
+      })
+
+      return redirect(safeReferer)
+    }
+
     case "zalo": {
       const zaloCredential = await platformCredentialService.resolveForOwner({
         ownerId: workspace.ownerId,

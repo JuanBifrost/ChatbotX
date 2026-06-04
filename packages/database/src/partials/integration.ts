@@ -9,6 +9,7 @@ export const integrationTypes = z.enum([
   "openai",
   "smtp",
   "telegram",
+  "tiktok",
   "webchat",
   "whatsapp",
   "zalo",

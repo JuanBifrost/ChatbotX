@@ -17,6 +17,7 @@ type SettingsChannelsPageProps = {
   readonly instagram: ReactNode
   readonly zalo: ReactNode
   readonly telegram: ReactNode
+  readonly tiktok: ReactNode
   readonly webchat: ReactNode
   readonly smtp: ReactNode
 }
@@ -32,6 +33,7 @@ export default function SettingsChannelsPage({
   instagram,
   zalo,
   telegram,
+  tiktok,
   webchat,
   smtp,
 }: SettingsChannelsPageProps) {
@@ -58,6 +60,10 @@ export default function SettingsChannelsPage({
     {
       value: "telegram",
       content: telegram,
+    },
+    {
+      value: "tiktok",
+      content: tiktok,
     },
     {
       value: "webchat",

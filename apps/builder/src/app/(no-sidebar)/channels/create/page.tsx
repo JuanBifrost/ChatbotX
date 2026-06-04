@@ -7,6 +7,7 @@ import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound, redirect } from "next/navigation"
 import InboxSelectCard from "@/features/inboxes/components/inbox-select-card"
 import { TelegramConnect } from "@/features/integration-telegram/components/telegram-connect"
+import { generateTiktokRedirectUri } from "@/features/integration-tiktok/libs/tiktok"
 import { SimpleCreateWebchat } from "@/features/integration-webchat/simple-create-webchat"
 import WhatsappCreate from "@/features/integration-whatsapp/components/whatsapp-create"
 import { generateZaloRedirectUri } from "@/features/integration-zalo/libs/zalo"
@@ -44,7 +45,7 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
       userId)
     : userId
 
-  const [whatsapp, messenger, instagram, zalo] = await Promise.all([
+  const [whatsapp, messenger, instagram, zalo, tiktok] = await Promise.all([
     platformCredentialService.resolveForOwner({
       ownerId: platformOwnerId,
       type: "whatsapp",
@@ -61,6 +62,10 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
       ownerId: platformOwnerId,
       type: "zalo",
     }),
+    platformCredentialService.resolveForOwner({
+      ownerId: platformOwnerId,
+      type: "tiktok",
+    }),
   ])
 
   if (selectedChannel === "whatsapp" && whatsapp) {
@@ -75,6 +80,14 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
   if (selectedChannel === "zalo" && zalo) {
     const redirectUri = await generateZaloRedirectUri(
       zalo.publicConfig,
+      workspaceId,
+    )
+    redirect(redirectUri)
+  }
+
+  if (selectedChannel === "tiktok" && tiktok) {
+    const redirectUri = await generateTiktokRedirectUri(
+      tiktok.publicConfig,
       workspaceId,
     )
     redirect(redirectUri)

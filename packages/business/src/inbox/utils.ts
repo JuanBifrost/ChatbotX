@@ -45,6 +45,11 @@ export function buildInboxLink(
       refKey: "ref",
       refValue,
     },
+    tiktok: {
+      url: `https://tiktok.me/${inbox.sourceId}`,
+      refKey: "ref",
+      refValue,
+    },
     smtp: undefined,
     omnichannel: undefined,
   }

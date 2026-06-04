@@ -58,6 +58,7 @@ import { integrationMessengerRelations } from "./integration-messenger"
 import { integrationOpenaiRelations } from "./integration-openai"
 import { integrationSmtpRelations } from "./integration-smtp"
 import { integrationTelegramRelations } from "./integration-telegram"
+import { integrationTiktokRelations } from "./integration-tiktok"
 import { integrationWebchatRelations } from "./integration-webchat"
 import { integrationWhatsappRelations } from "./integration-whatsapp"
 import { integrationZaloRelations } from "./integration-zalo"
@@ -157,6 +158,7 @@ export const relations = {
   ...savedReplyRelations,
   ...userRelations,
   ...integrationTelegramRelations,
+  ...integrationTiktokRelations,
   ...integrationInstagramRelations,
   ...flowAnalyticsSessionRelations,
   ...flowNodeStatRelations,
