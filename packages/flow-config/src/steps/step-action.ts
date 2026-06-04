@@ -104,6 +104,8 @@ export const stepTypes = z.enum([
   "sendWaTemplateMessage",
   "whatsappOptionList",
   "whatsappFlow",
+
+  "sendMessengerTemplateMessage",
 ])
 
 export type StepType = z.infer<typeof stepTypes>

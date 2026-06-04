@@ -110,7 +110,9 @@
     "deactivate": "Deactivate",
     "onFailure": "On failure",
     "onSkip": "On skip",
-    "onSuccess": "On success"
+    "onSuccess": "On success",
+    "clone": "Clone",
+    "remove": "Remove"
   },
   "states": {
     "success": "Success",
@@ -263,6 +265,10 @@
     "whatsappTemplateMessage": {
       "title": "Template Message",
       "description": "Send WhatsApp template message to your contacts"
+    },
+    "messengerTemplateMessage": {
+      "title": "Template Message",
+      "description": "Send Messenger template message to your contacts"
     },
     "whatsappWithin24Hours": {
       "title": "Active contacts within 24 hours",
@@ -1210,8 +1216,14 @@
     "templateId": {
       "label": "WhatsApp Template"
     },
+    "messengerTemplateId": {
+      "label": "Messenger Template"
+    },
     "whatsappChannel": {
       "label": "WhatsApp Channel"
+    },
+    "messengerChannel": {
+      "label": "Messenger Channel"
     },
     "messages": {
       "label": "Messages"
@@ -1379,6 +1391,9 @@
     "aiEditImage": {
       "label": "{name}: AI Edit Image"
     },
+    "aiAnalyzeImage": {
+      "label": "{name}: AI Analyze Image"
+    },
     "aiExtractData": {
       "label": "{name}: AI Extract Data"
     },
@@ -1425,7 +1440,7 @@
       "sendNode": "Start Another Node",
       "sendText": "Send Text",
       "sendVideo": "Send Video",
-      "sendWaTemplateMessage": "Template Message",
+      "sendTemplateMessage": "Template Message",
       "whatsappOptionList": "Option List",
       "noTemplatesAvailable": "No templates available",
       "noFlowsAvailable": "No flows available",
@@ -1502,6 +1517,7 @@
     },
     "fields": {
       "selectTemplatePlaceholder": "Choose a WhatsApp template",
+      "selectMessengerTemplatePlaceholder": "Choose a Messenger template",
       "preview": "Preview"
     },
     "operators": {
@@ -1708,7 +1724,31 @@
     "reconnect": "Reconnect",
     "reconnectDescription": "Always reconnect your bot if your Messenger bot is not responding, or if you are seem any permission error on the error log.",
     "selectFacebookPage": "Select Facebook Page",
-    "title": "Facebook Messenger"
+    "title": "Facebook Messenger",
+    "tabs": {
+      "generalSettings": "General Settings",
+      "messageTemplates": "Message Templates"
+    },
+    "messageTemplate": {
+      "params": {
+        "postbackPayload": "Button Payload",
+        "postbackPayloadPlaceholder": "Enter payload (optional)"
+      },
+      "clone": {
+        "title": "Clone Message Template",
+        "titleWithName": "Clone Message Template: {name}",
+        "channelsLabel": "Target Channels",
+        "channelsPlaceholder": "Select channels",
+        "succeededCount": "{count} channel(s) cloned successfully",
+        "failedCount": "{count} channel(s) failed to clone",
+        "partialSuccess": "Cloned to {succeeded} channel(s); {failed} channel(s) failed",
+        "result": {
+          "title": "Clone Results",
+          "succeededTitle": "Succeeded",
+          "close": "Close"
+        }
+      }
+    }
   },
   "omnichannel": {
     "title": "Omnichannel"

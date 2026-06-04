@@ -3,6 +3,7 @@ import {
   type SendCarouselStepSchema,
   type SendFileStepSchema,
   type SendImageStepSchema,
+  type SendMessengerTemplateMessageStepSchema,
   type SendQuickReplyStepSchema,
   type SendTextStepSchema,
   type SendVideoStepSchema,
@@ -31,6 +32,7 @@ import { convertFlowStepCarousel } from "./send-carousel"
 import { convertFlowStepFile } from "./send-file"
 import { convertFlowStepGif } from "./send-gif"
 import { convertFlowStepMedia } from "./send-media"
+import { buildMessengerTemplateSendRequest } from "./send-messenger-template"
 import { convertFlowStepQuickReply } from "./send-quick-reply"
 import { convertFlowStepText } from "./send-text"
 
@@ -69,6 +71,21 @@ export const sendFlowStep: MessageHandlers<MessengerAuthValue>["sendFlowStep"] =
       data: { contact, step },
     } = props
     try {
+      // Messenger utility templates must be sent as a complete Send API request
+      // using message.template (name/language/components) — they cannot go through
+      // the generic buildMessagePayload spread, which is for plain messages.
+      if (step.stepType === stepTypes.enum.sendMessengerTemplateMessage) {
+        const payload = buildMessengerTemplateSendRequest(
+          props as SendFlowStepProps<
+            MessengerAuthValue,
+            SendMessengerTemplateMessageStepSchema
+          >,
+        )
+        await sendPageMessage(ctx.auth, payload)
+        logger.info(`Messenger template sent for PSID: ${contact.sourceId}`)
+        return { messageIds: [] }
+      }
+
       for await (const facebookMessage of convertFlowStepToFacebookMessage(
         props,
       )) {

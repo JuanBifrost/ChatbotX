@@ -20,6 +20,10 @@ export const integrationMessengerRelations = defineRelationsPart(
         to: r.inboxModel.id,
         optional: false,
       }),
+      messengerMessageTemplates: r.many.messengerMessageTemplateModel({
+        from: r.integrationMessengerModel.id,
+        to: r.messengerMessageTemplateModel.integrationMessengerId,
+      }),
     },
   }),
 )

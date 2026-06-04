@@ -52,6 +52,7 @@ import type {
 } from "@chatbotx.io/worker-config"
 import { logger } from "../../lib/logger"
 import { sendFlowStepToChannel, sendMessageToChannel } from "./send-message"
+import { processMessengerTemplate } from "./send-messenger-template"
 import { processWhatsappTemplate } from "./send-whatsapp-template"
 
 export const convertButtonsToTemplate = (props: {
@@ -177,6 +178,40 @@ export async function sendFlowStep({
       logger.error(
         error,
         `sendFlowStep WhatsApp template error for conversationId: ${conversationId}`,
+      )
+    }
+
+    return
+  }
+
+  if (step.stepType === stepTypes.enum.sendMessengerTemplateMessage) {
+    if (targetContactInbox.channel !== channelTypes.enum.messenger) {
+      return
+    }
+
+    try {
+      await processMessengerTemplate({
+        conversation,
+        contactInbox: targetContactInbox,
+        template: {
+          id: step.template.id,
+          name: step.template.name,
+          language: step.template.language,
+          parameterFormat: step.template.parameterFormat,
+          params: step.template.params,
+        },
+        flow: {
+          id: flowId,
+          versionId: flowVersionId,
+        },
+        step,
+        trackingContext,
+        metadata,
+      })
+    } catch (error) {
+      logger.error(
+        error,
+        `sendFlowStep Messenger template error for conversationId: ${conversationId}`,
       )
     }
 

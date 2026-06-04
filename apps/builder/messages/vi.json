@@ -110,7 +110,9 @@
     "deactivate": "Tắt",
     "onFailure": "Khi thất bại",
     "onSkip": "Khi bỏ qua",
-    "onSuccess": "Khi thành công"
+    "onSuccess": "Khi thành công",
+    "clone": "Nhân bản",
+    "remove": "Xóa"
   },
   "states": {
     "success": "Thành công",
@@ -263,6 +265,10 @@
     "whatsappTemplateMessage": {
       "title": "Tin nhắn mẫu WhatsApp",
       "description": "Gửi tin nhắn mẫu WhatsApp đến các liên hệ của bạn"
+    },
+    "messengerTemplateMessage": {
+      "title": "Tin nhắn mẫu Messenger",
+      "description": "Gửi tin nhắn mẫu Messenger đến các liên hệ của bạn"
     },
     "whatsappWithin24Hours": {
       "title": "Liên hệ hoạt động trong 24 giờ",
@@ -1232,6 +1238,9 @@
     "whatsappChannel": {
       "label": "Kênh WhatsApp"
     },
+    "messengerChannel": {
+      "label": "Kênh Messenger"
+    },
     "messages": {
       "label": "Tin nhắn"
     },
@@ -1394,6 +1403,9 @@
     "aiEditImage": {
       "label": "{name}: AI Chỉnh sửa hình ảnh"
     },
+    "aiAnalyzeImage": {
+      "label": "{name}: AI Phân tích hình ảnh"
+    },
     "aiExtractData": {
       "label": "{name}: AI Trích xuất dữ liệu"
     },
@@ -1439,7 +1451,7 @@
       "sendNode": "Bắt đầu nút khác",
       "sendText": "Gửi văn bản",
       "sendVideo": "Gửi video",
-      "sendWaTemplateMessage": "Tin nhắn mẫu",
+      "sendTemplateMessage": "Tin nhắn mẫu",
       "whatsappOptionList": "Danh sách tùy chọn",
       "setCustomField": "Thiết lập trường tùy chỉnh",
       "startAnotherNode": "Bắt đầu nút khác",
@@ -1516,6 +1528,7 @@
     },
     "fields": {
       "selectTemplatePlaceholder": "Chọn mẫu WhatsApp",
+      "selectMessengerTemplatePlaceholder": "Chọn mẫu Messenger",
       "preview": "Xem trước"
     },
     "operators": {
@@ -1722,7 +1735,32 @@
     "reconnect": "Kết nối lại",
     "reconnectDescription": "Luôn kết nối lại bot của bạn nếu bot Messenger không phản hồi, hoặc nếu bạn thấy bất kỳ lỗi quyền nào trong nhật ký lỗi.",
     "selectFacebookPage": "Chọn trang Facebook",
-    "title": "Facebook Messenger"
+    "title": "Facebook Messenger",
+    "tabs": {
+      "generalSettings": "Cài đặt chung",
+      "messageTemplates": "Mẫu tin nhắn"
+    },
+    "messageTemplate": {
+      "params": {
+        "postbackPayload": "Payload nút",
+        "postbackPayloadPlaceholder": "Nhập payload (tùy chọn)"
+      },
+      "clone": {
+        "title": "Nhân bản mẫu tin nhắn",
+        "titleWithName": "Nhân bản mẫu tin nhắn: {name}",
+        "description": "Chọn các kênh Messenger bạn muốn nhân bản mẫu này đến. Chỉ các mẫu APPROVED mới có thể được nhân bản.",
+        "channelsLabel": "Kênh đích",
+        "channelsPlaceholder": "Chọn kênh",
+        "succeededCount": "Đã nhân bản thành công {count} kênh",
+        "failedCount": "{count} kênh thất bại",
+        "partialSuccess": "Đã nhân bản đến {succeeded} kênh; {failed} kênh thất bại",
+        "result": {
+          "title": "Kết quả nhân bản",
+          "succeededTitle": "Thành công",
+          "close": "Đóng"
+        }
+      }
+    }
   },
   "omnichannel": {
     "title": "Đa kênh"

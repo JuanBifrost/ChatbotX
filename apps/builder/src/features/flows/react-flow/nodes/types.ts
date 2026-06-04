@@ -5,6 +5,7 @@ import type {
 } from "@chatbotx.io/flow-config"
 import type { LucideIcon } from "lucide-react"
 import type { useTranslations } from "next-intl"
+import type { FlowMessengerTemplateResource } from "@/features/integration-messenger/message-templates/schema/resource"
 import type { WhatsappFlowResource } from "@/features/integration-whatsapp/flows/schema/resource"
 import type { FlowTemplateResource } from "@/features/integration-whatsapp/message-templates/schema/resource"
 
@@ -21,6 +22,7 @@ export type TranslationFn = ReturnType<typeof useTranslations>
 
 export type FlowTemplateMenuData = {
   waTemplates?: FlowTemplateResource[]
+  messengerTemplates?: FlowMessengerTemplateResource[]
 }
 
 export type FlowMenuData = {

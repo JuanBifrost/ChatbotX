@@ -1,6 +1,10 @@
-import { whatsappTemplateStatusSchema } from "@chatbotx.io/database/partials"
+import {
+  messengerTemplateStatusSchema,
+  whatsappTemplateStatusSchema,
+} from "@chatbotx.io/database/partials"
 import ky, { HTTPError } from "ky"
 import { createStore } from "zustand/vanilla"
+import type { ListMessengerMessageTemplatesResponse } from "@/features/integration-messenger/message-templates/schema/query"
 import type { ListWhatsappMessageTemplatesResponse } from "@/features/integration-whatsapp/message-templates/schema/query"
 
 export type FlowTemplateState = {
@@ -8,83 +12,154 @@ export type FlowTemplateState = {
   initialized: boolean
 
   workspaceId: string
+  integrationWhatsappId?: string
 
   loadingWhatsappTemplates: boolean
   whatsappTemplates: ListWhatsappMessageTemplatesResponse
+
+  loadingMessengerTemplates: boolean
+  messengerTemplates: ListMessengerMessageTemplatesResponse
 }
 
 export type FlowTemplateActions = {
   initialize: () => Promise<void>
   fetchWhatsappTemplates: () => Promise<void>
+  fetchMessengerTemplates: () => Promise<void>
+  setIntegrationWhatsappId: (id?: string) => void
 }
 
 export type FlowTemplateStore = FlowTemplateState & FlowTemplateActions
 
-export const createFlowTemplateStore = (props: Partial<FlowTemplateState>) =>
-  createStore<FlowTemplateStore>((set, get) => ({
+export const createFlowTemplateStore = (props: Partial<FlowTemplateState>) => {
+  // Per-instance AbortController so rapid setIntegrationWhatsappId calls
+  // cancel the previous in-flight WA fetch instead of queuing retries.
+  let waFetchController: AbortController | null = null
+  // Closure-level flag to deduplicate concurrent Messenger fetches.
+  let messengerFetching = false
+
+  return createStore<FlowTemplateStore>((set, get) => ({
     error: null,
     initialized: false,
 
     workspaceId: "",
+    integrationWhatsappId: undefined,
 
     loadingWhatsappTemplates: false,
     whatsappTemplates: [],
 
+    loadingMessengerTemplates: false,
+    messengerTemplates: [],
+
     ...props,
 
     initialize: async () => {
-      const { initialized, workspaceId, fetchWhatsappTemplates } = get()
+      const {
+        initialized,
+        workspaceId,
+        fetchWhatsappTemplates,
+        fetchMessengerTemplates,
+      } = get()
 
       if (initialized || !workspaceId) {
         return
       }
 
+      // Individual fetch methods manage their own error state via set({ error }).
+      // No outer catch needed — always mark initialized so the provider does not retry.
+      await Promise.all([fetchWhatsappTemplates(), fetchMessengerTemplates()])
+      set({ initialized: true })
+    },
+
+    fetchWhatsappTemplates: async () => {
+      const { workspaceId, integrationWhatsappId } = get()
+
+      if (!workspaceId) {
+        return
+      }
+
+      // Cancel any prior in-flight WA fetch; the new request supersedes it.
+      waFetchController?.abort()
+      const controller = new AbortController()
+      waFetchController = controller
+      const { signal } = controller
+
+      set({ loadingWhatsappTemplates: true, error: null })
       try {
-        await fetchWhatsappTemplates()
+        const searchParams: Record<string, string> = {
+          status: whatsappTemplateStatusSchema.enum.APPROVED,
+        }
+        if (integrationWhatsappId) {
+          searchParams.integrationWhatsappId = integrationWhatsappId
+        }
+
+        const templates = await ky
+          .get<ListWhatsappMessageTemplatesResponse>(
+            `/api/workspaces/${workspaceId}/whatsapp-message-templates`,
+            { searchParams, signal },
+          )
+          .json()
+
+        set({ whatsappTemplates: templates, loadingWhatsappTemplates: false })
       } catch (error: unknown) {
+        if (error instanceof Error && error.name === "AbortError") {
+          // A newer fetch superseded this one. Only clear loading if no newer
+          // fetch has since taken over (e.g. store abandoned on unmount).
+          if (waFetchController === controller) {
+            set({ loadingWhatsappTemplates: false })
+          }
+          return
+        }
         set({
           error:
             error instanceof HTTPError
               ? error.message
               : "Failed to fetch WA templates",
+          whatsappTemplates: [],
+          loadingWhatsappTemplates: false,
         })
-      } finally {
-        set({ initialized: true })
       }
     },
 
-    fetchWhatsappTemplates: async () => {
-      const { workspaceId, loadingWhatsappTemplates } = get()
+    fetchMessengerTemplates: async () => {
+      const { workspaceId } = get()
 
-      if (loadingWhatsappTemplates) {
+      if (!workspaceId || messengerFetching) {
         return
       }
 
-      set({ loadingWhatsappTemplates: true, error: null })
+      messengerFetching = true
+      set({ loadingMessengerTemplates: true, error: null })
       try {
         const templates = await ky
-          .get<ListWhatsappMessageTemplatesResponse>(
-            `/api/workspaces/${workspaceId}/whatsapp-message-templates`,
+          .get<ListMessengerMessageTemplatesResponse>(
+            `/api/workspaces/${workspaceId}/messenger-message-templates`,
             {
               searchParams: {
-                status: whatsappTemplateStatusSchema.enum.APPROVED,
+                status: messengerTemplateStatusSchema.enum.APPROVED,
               },
             },
           )
           .json()
 
         set({
-          whatsappTemplates: templates,
+          messengerTemplates: templates,
         })
       } catch (error: unknown) {
         set({
           error:
             error instanceof HTTPError
               ? error.message
-              : "Failed to fetch WA templates",
+              : "Failed to fetch Messenger templates",
         })
       } finally {
-        set({ loadingWhatsappTemplates: false })
+        messengerFetching = false
+        set({ loadingMessengerTemplates: false })
       }
     },
+
+    setIntegrationWhatsappId: (id?: string) => {
+      set({ integrationWhatsappId: id, whatsappTemplates: [] })
+      get().fetchWhatsappTemplates()
+    },
   }))
+}

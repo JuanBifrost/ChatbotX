@@ -38,3 +38,20 @@ export const messengerConversationStarterSchema = z.object({
 export type MessengerConversationStarter = z.infer<
   typeof messengerConversationStarterSchema
 >
+
+export const messengerTemplateStatusSchema = z.enum([
+  "APPROVED",
+  "PENDING",
+  "REJECTED",
+])
+export type MessengerTemplateStatus = z.infer<
+  typeof messengerTemplateStatusSchema
+>
+
+export const messengerTemplateParameterFormatSchema = z.enum([
+  "POSITIONAL",
+  "NAMED",
+])
+export type MessengerTemplateParameterFormat = z.infer<
+  typeof messengerTemplateParameterFormatSchema
+>

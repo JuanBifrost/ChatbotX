@@ -103,7 +103,7 @@ const handleWebhookEvent = async (
       webhookData.entry[0].messaging[0].message?.metadata ===
         MESSENGER_MESSAGE_METADATA
     ) {
-      // Skip if this messsage is from our own bot
+      // Skip other echoes that passed schema validation
       return
     }
 

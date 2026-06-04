@@ -12,7 +12,11 @@ import { type Job, Worker } from "bullmq"
 import { ensureBootstrapped } from "../lib/bootstrap"
 import { logger } from "../lib/logger"
 import { sendChatMessage, sendFlowStep } from "./handlers/send-flow-step"
-import { sendMessageToChannel } from "./handlers/send-message"
+import {
+  sendMessageToChannel,
+  sendTypingToChannel,
+} from "./handlers/send-message"
+import { sendMessengerTemplateMessage } from "./handlers/send-messenger-template"
 import { sendWhatsappTemplateMessage } from "./handlers/send-whatsapp-template"
 
 async function startChatWorker() {
@@ -39,6 +43,18 @@ async function startChatWorker() {
           return
         case ChatJobAction.sendWhatsappTemplateMessage:
           await sendWhatsappTemplateMessage(job.data.data)
+          return
+        case ChatJobAction.sendMessengerTemplateMessage:
+          await sendMessengerTemplateMessage(job.data.data)
+          return
+        case ChatJobAction.sendTyping:
+          await sendTypingToChannel(job.data.data)
+          return
+        case ChatJobAction.notifyExportResult:
+          logger.warn(
+            { jobId: job.id },
+            "notifyExportResult job received but no handler is implemented",
+          )
           return
         case ChatJobAction.broadcastEvent:
           await broadcastToWorkspaceParty(

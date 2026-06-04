@@ -138,6 +138,7 @@ const NodeEditorMenu = memo(
     const inboxes = useInboxStore((s) => s.inboxes)
     const whatsappTemplates = useFlowTemplate((s) => s.whatsappTemplates)
     const whatsappFlows = useWhatsappFlow((s) => s.whatsappFlows)
+    const messengerTemplates = useFlowTemplate((s) => s.messengerTemplates)
     const beforeStep = useWatch({ name: "beforeStep" })
 
     const [nodeMenus, setNodeMenus] = useState<MenuItem[]>([])
@@ -148,7 +149,7 @@ const NodeEditorMenu = memo(
         setNodeMenus(
           nodeConfig.menus(t, {
             inboxes,
-            templates: { waTemplates: whatsappTemplates },
+            templates: { waTemplates: whatsappTemplates, messengerTemplates },
             flows: { waFlows: whatsappFlows },
             beforeStep,
           }),
@@ -156,7 +157,15 @@ const NodeEditorMenu = memo(
       } else {
         setNodeMenus([])
       }
-    }, [nodeType, t, inboxes, whatsappTemplates, whatsappFlows, beforeStep])
+    }, [
+      nodeType,
+      t,
+      inboxes,
+      whatsappTemplates,
+      whatsappFlows,
+      messengerTemplates,
+      beforeStep,
+    ])
 
     return (
       nodeMenus.length > 0 && (

@@ -98,6 +98,21 @@ export const useWhatsappInboxOptions = (): SelectOption[] => {
   )
 }
 
+export const useMessengerInboxOptions = (): SelectOption[] => {
+  const inboxes = useInboxStore((state) => state.inboxes)
+
+  return useMemo(
+    () =>
+      inboxes
+        .filter((inbox) => inbox.channel === channelTypes.enum.messenger)
+        .map((inbox) => ({
+          label: inbox.name,
+          value: inbox.id,
+        })),
+    [inboxes],
+  )
+}
+
 export const useSmtpInboxOptions = (): SelectOption[] => {
   const inboxes = useInboxStore((state) => state.inboxes)
 

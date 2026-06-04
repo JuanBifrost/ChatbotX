@@ -8,6 +8,7 @@ import {
   type MessagePayload,
 } from "@chatbotx.io/flow-config"
 import { startOfSecond } from "date-fns"
+import { toDate } from "../lib/date"
 import { magicLinkStatsRepository } from "../repositories/postgres/magic-link-stats.repository"
 import type {
   FlowNodeContactData,
@@ -56,7 +57,7 @@ export class MagicLinkAnalyticsService {
       linkId: p.action.magicLinkId ?? "",
       contactId: p.context.contactId,
       contactInboxId: p.context.contactInboxId ?? "",
-      occurredAt: startOfSecond(new Date(p.occurredAt)),
+      occurredAt: startOfSecond(toDate(p.occurredAt)),
       createdAt: new Date(),
     }))
 

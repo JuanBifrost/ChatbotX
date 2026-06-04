@@ -14,6 +14,7 @@ export const integrationMessengerResource = createSelectSchema(
 ).pick({
   id: true,
   name: true,
+  inboxId: true,
 })
 
 export type IntegrationMessengerResource = z.infer<

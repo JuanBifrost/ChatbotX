@@ -1,4 +1,4 @@
-import { channelTypes } from "@chatbotx.io/database/partials"
+import { type ChannelType, channelTypes } from "@chatbotx.io/database/partials"
 import { stepTypes } from "@chatbotx.io/flow-config"
 import {
   CreditCardIcon,
@@ -18,7 +18,10 @@ import {
 } from "lucide-react"
 import { performActionMenus } from "../perform-action/menu"
 import type { MenuData, MenuItem, TranslationFn } from "../types"
-import { integrationMenus } from "./menus/integration-menu"
+import {
+  integrationMenus,
+  waFlowIntegrationMenus,
+} from "./menus/integration-menu"
 
 const ALL_MENU_ITEMS = (
   t: TranslationFn,
@@ -59,27 +62,21 @@ const ALL_MENU_ITEMS = (
     icon: ImagePlayIcon,
     stepType: stepTypes.enum.sendGif,
   },
-  sendWaTemplateMessage: {
-    label: t("flows.actions.sendWaTemplateMessage"),
+  sendTemplateMessage: {
+    label: t("flows.actions.sendTemplateMessage"),
     icon: MessageSquareIcon,
-    stepType: stepTypes.enum.sendWaTemplateMessage,
+    stepType: null,
     children: integrationMenus(
       t,
-      stepTypes.enum.sendWaTemplateMessage,
       menuData,
-      channelTypes.enum.whatsapp,
+      menuData?.beforeStep?.channel as ChannelType | undefined,
     ),
   },
   whatsappFlow: {
     label: t("flows.actions.whatsappFlow"),
     icon: WorkflowIcon,
     stepType: stepTypes.enum.whatsappFlow,
-    children: integrationMenus(
-      t,
-      stepTypes.enum.whatsappFlow,
-      menuData,
-      channelTypes.enum.whatsapp,
-    ),
+    children: waFlowIntegrationMenus(t, menuData),
   },
   whatsappOptionList: {
     label: t("flows.actions.whatsappOptionList"),
@@ -137,7 +134,7 @@ const WHATSAPP_MENU_ORDER = [
   "sendVideo",
   "getUserData",
   "sendGif",
-  "sendWaTemplateMessage",
+  "sendTemplateMessage",
   "whatsappFlow",
   "whatsappOptionList",
   "typing",
@@ -145,8 +142,23 @@ const WHATSAPP_MENU_ORDER = [
   "actions",
 ] as const
 
+const MESSENGER_MENU_ORDER = [
+  "sendText",
+  "sendImage",
+  "sendCard",
+  "sendCarousel",
+  "sendVideo",
+  "getUserData",
+  "sendGif",
+  "sendTemplateMessage",
+  "typing",
+  "sendFile",
+  "actions",
+] as const
+
 const MENU_ORDER_BY_CHANNEL: Record<string, readonly string[]> = {
   [channelTypes.enum.whatsapp]: WHATSAPP_MENU_ORDER,
+  [channelTypes.enum.messenger]: MESSENGER_MENU_ORDER,
 }
 
 export const sendMessageEditorMenus = (

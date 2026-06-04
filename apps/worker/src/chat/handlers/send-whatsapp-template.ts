@@ -66,77 +66,6 @@ export async function processWhatsappTemplate(
     metadata,
   } = params
 
-  const isValid = await validateWhatsappTemplate(template, contactInbox.inboxId)
-
-  if (!isValid) {
-    logger.error(
-      { templateId: template.id, inboxId: contactInbox.inboxId },
-      "Template validation failed - not approved or not found",
-    )
-    throw new Error(`Template validation failed: ${template.id}`)
-  }
-
-  const variables = await contactVariableService.getAll(conversation.contactId)
-  const replacedParams = await replaceWhatsappTemplateVariables({
-    templateParams: template.params,
-    variables,
-  })
-
-  const contentAttributes = {
-    type: "whatsapp_template",
-    template: {
-      name: template.name,
-      language: template.language,
-      id: template.id,
-      params: replacedParams,
-    },
-    stepId: step?.id,
-    nodeId: step?.nodeId,
-    ...(broadcastId && { broadcastId }),
-    ...(flow && { flowId: flow.id }),
-    ...(flow && { flowVersionId: flow.versionId }),
-    ...(trackingContext && { trackingContext }),
-    payload: {} as MessageTemplateEntity["payload"],
-    metadata,
-  }
-
-  if (flow?.buttons && flow.buttons.length > 0) {
-    contentAttributes.payload = {
-      templateType: "button",
-      buttons: convertButtonsToTemplate({
-        flowId: flow.id,
-        flowVersionId: flow.versionId,
-        buttons: flow.buttons,
-        contactInboxId: contactInbox.id,
-      }),
-    }
-  }
-
-  const repository = await createMessageRepository()
-
-  const newMessage = await repository.create({
-    contactInboxId: contactInbox.id,
-    workspaceId: conversation.workspaceId,
-    conversationId: conversation.id,
-    messageType: "outgoing",
-    contentType: "text",
-    senderType: "bot",
-    sourceId: null,
-    text: `Template: ${template.name}`,
-    contentAttributes,
-    createdAt: new Date(),
-  })
-
-  await db
-    .update(contactInboxModel)
-    .set({ lastMessageAt: newMessage.createdAt })
-    .where(eq(contactInboxModel.id, contactInbox.id))
-
-  broadcastToWorkspaceParty(conversation.workspaceId, {
-    eventType: RealtimeEventType.messageCreated,
-    data: newMessage,
-  })
-
   const eventLogData = {
     context: {
       workspaceId: conversation.workspaceId,
@@ -155,7 +84,87 @@ export async function processWhatsappTemplate(
     metadata,
   }
 
+  let newMessage: typeof messageModel.$inferSelect | null = null
+
   try {
+    const validated = await validateWhatsappTemplate(
+      template.id,
+      contactInbox.inboxId,
+    )
+    if (!validated) {
+      logger.error(
+        { templateId: template.id, inboxId: contactInbox.inboxId },
+        "Template validation failed - not approved or not found",
+      )
+      throw new Error(`Template validation failed: ${template.id}`)
+    }
+
+    const variables = await contactVariableService.getAll(
+      conversation.contactId,
+    )
+    const replacedParams = await replaceWhatsappTemplateVariables({
+      templateParams: template.params,
+      variables,
+    })
+
+    const contentAttributes = {
+      type: "whatsapp_template",
+      template: {
+        name: template.name,
+        language: template.language,
+        id: template.id,
+        params: replacedParams,
+      },
+      stepId: step?.id,
+      nodeId: step?.nodeId,
+      ...(broadcastId && { broadcastId }),
+      ...(flow && { flowId: flow.id }),
+      ...(flow && { flowVersionId: flow.versionId }),
+      ...(trackingContext && { trackingContext }),
+      payload: {} as MessageTemplateEntity["payload"],
+      metadata,
+    }
+
+    if (flow?.buttons && flow.buttons.length > 0) {
+      contentAttributes.payload = {
+        templateType: "button",
+        buttons: convertButtonsToTemplate({
+          flowId: flow.id,
+          flowVersionId: flow.versionId,
+          buttons: flow.buttons,
+          contactInboxId: contactInbox.id,
+        }),
+      }
+    }
+
+    const repository = await createMessageRepository()
+    newMessage = await repository.create({
+      contactInboxId: contactInbox.id,
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+      messageType: "outgoing",
+      contentType: "text",
+      senderType: "bot",
+      sourceId: null,
+      text: `Template: ${template.name}`,
+      contentAttributes,
+      createdAt: new Date(),
+    })
+
+    if (!newMessage) {
+      throw new Error("Failed to insert message record")
+    }
+
+    await db
+      .update(contactInboxModel)
+      .set({ lastMessageAt: newMessage.createdAt })
+      .where(eq(contactInboxModel.id, contactInbox.id))
+
+    broadcastToWorkspaceParty(conversation.workspaceId, {
+      eventType: RealtimeEventType.messageCreated,
+      data: newMessage,
+    })
+
     const result = await sendFlowStepToChannel({
       conversation,
       contactInbox,
@@ -196,7 +205,7 @@ export async function processWhatsappTemplate(
     logger.error(
       {
         error,
-        messageId: newMessage.id,
+        messageId: newMessage?.id,
         conversationId: conversation.id,
         templateId: template.id,
       },
@@ -205,7 +214,7 @@ export async function processWhatsappTemplate(
     await emit(messageEventTypeSchema.enum["message:failed"], {
       ...eventLogData,
       action: {
-        messageId: "",
+        messageId: newMessage?.id || "",
         flowId: flow?.id || "",
       },
       errorData: await parseSdkError(error),
@@ -228,16 +237,42 @@ export async function sendWhatsappTemplateMessage(
     metadata,
   } = data
 
-  try {
-    const template = await db.query.whatsappMessageTemplateModel.findFirst({
-      where: { id: templateId },
-    })
+  const eventLogData = {
+    context: {
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      conversationId: conversation.id,
+      channel: contactInbox.channel,
+      contactInboxId: contactInbox.id,
+    },
+    action: {
+      flowId: "",
+    },
+    stepId: "",
+    nodeId: "",
+    metadata,
+  }
 
-    if (!template) {
-      throw new Error(`WhatsApp template not found: ${templateId}`)
+  try {
+    const validated = await validateWhatsappTemplate(
+      templateId,
+      contactInbox.inboxId,
+    )
+
+    if (!validated) {
+      const error = new Error(
+        `WhatsApp template not found or not approved: ${templateId}`,
+      )
+      await emit(messageEventTypeSchema.enum["message:failed"], {
+        ...eventLogData,
+        action: { messageId: "", flowId: "" },
+        errorData: await parseSdkError(error),
+        occurredAt: new Date(),
+      })
+      throw error
     }
 
-    // Use templateData from job if provided, otherwise extract from template components
+    const { template } = validated
     const templateParams =
       templateData ??
       extractTemplateParams((template.components as TemplateComponent[]) || [])

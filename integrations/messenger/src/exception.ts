@@ -13,12 +13,28 @@ type ErrorBody = {
     code?: number
     type?: string
     message?: string
+    error_user_title?: string
+    error_user_msg?: string
     error_subcode?: number | string
     subcode?: number | string
   }
 }
 type OriginShape = { httpStatus?: number; errorBody?: ErrorBody }
 type ExplicitShape = { response?: { error?: ErrorBody["error"] } }
+
+// Prefer Facebook's human-readable error (error_user_title/error_user_msg) over
+// the terse generic `message` (e.g. "Invalid parameter").
+function pickErrorMessage(err?: ErrorBody["error"]): string | undefined {
+  if (!err) {
+    return
+  }
+  if (err.error_user_msg) {
+    return err.error_user_title
+      ? `${err.error_user_title}: ${err.error_user_msg}`
+      : err.error_user_msg
+  }
+  return err.message
+}
 
 export type ChannelErrorSource = {
   httpStatusCode: number
@@ -37,7 +53,7 @@ export function parseOriginError(originError: unknown): ChannelErrorSource {
       code: err?.code,
       subCode: err?.error_subcode ?? err?.subcode,
       type: err?.type,
-      message: err?.message,
+      message: pickErrorMessage(err),
     }
   }
 
@@ -49,7 +65,7 @@ export function parseOriginError(originError: unknown): ChannelErrorSource {
       code: err?.code,
       subCode: err?.error_subcode ?? err?.subcode,
       type: err?.type,
-      message: err?.message,
+      message: pickErrorMessage(err),
     }
   }
 
@@ -62,7 +78,7 @@ export function parseOriginError(originError: unknown): ChannelErrorSource {
       code: err.code,
       subCode: err.error_subcode ?? err.subcode,
       type: err.type,
-      message: err.message,
+      message: pickErrorMessage(err),
     }
   }
   return {

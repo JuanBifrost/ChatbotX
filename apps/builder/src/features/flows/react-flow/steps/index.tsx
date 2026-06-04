@@ -38,6 +38,7 @@ import { sendCarouselStep } from "./send-carousel"
 import sendFileStep from "./send-file"
 import sendGifStep from "./send-gif"
 import sendImageStep from "./send-image"
+import sendMessengerTemplateMessageStep from "./send-messenger-template-message"
 import sendTextStep from "./send-text"
 import { sendVideoStep } from "./send-video"
 import sendWaTemplateMessageStep from "./send-wa-template-message"
@@ -75,6 +76,8 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.sendGif]: sendGifStep,
   [stepTypes.enum.setDebounce]: undefined,
   [stepTypes.enum.sendMessengerOtn]: undefined,
+  [stepTypes.enum.sendMessengerTemplateMessage]:
+    sendMessengerTemplateMessageStep,
   [stepTypes.enum.sendAudio]: sendAudioStep,
   [stepTypes.enum.sendFile]: sendFileStep,
   [stepTypes.enum.addContactTag]: addContactTagStep,

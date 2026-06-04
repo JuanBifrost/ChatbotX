@@ -2,6 +2,7 @@ import { and, db, inArray, isNull } from "@chatbotx.io/database/client"
 import { contactModel } from "@chatbotx.io/database/schema"
 import type { MessageFailedPayload } from "@chatbotx.io/flow-config"
 import { parsedErrorSchema } from "@chatbotx.io/sdk"
+import { toDate } from "../lib/date"
 import {
   contactStatsRepository,
   type InsertContactEventRow,
@@ -112,7 +113,7 @@ export class ContactAnalyticsService {
       contacts.set(contactId, {
         workspaceId: payload.context.workspaceId,
         contactId,
-        occurredAt: payload.occurredAt,
+        occurredAt: toDate(payload.occurredAt),
         channel: payload.context.channel,
         metadata: {
           triggerContext: {

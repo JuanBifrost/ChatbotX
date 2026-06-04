@@ -1,11 +1,12 @@
 import { and, db, eq } from "@chatbotx.io/database/client"
-import { broadcastStatuses } from "@chatbotx.io/database/partials"
+import { broadcastStatuses, channelTypes } from "@chatbotx.io/database/partials"
 import {
   broadcastModel,
   contactsOnBroadcastsModel,
 } from "@chatbotx.io/database/schema"
 import {
   BROADCAST_PAYLOAD_TYPE,
+  type MessengerTemplateParams,
   type WaTemplateParams,
 } from "@chatbotx.io/flow-config"
 import {
@@ -73,23 +74,56 @@ export const processBroadcastContacts = async () => {
           }
 
           if (broadcast.templateId) {
-            await chatQueue.add(ChatJobAction.sendWhatsappTemplateMessage, {
-              type: ChatJobAction.sendWhatsappTemplateMessage,
-              data: {
-                conversation: contactOnBroadcast.conversation,
-                contactInbox: contactOnBroadcast.contactInbox,
-                templateId: broadcast.templateId,
-                broadcastId: broadcast.id,
-                templateData: broadcast.templateData as
-                  | WaTemplateParams
-                  | undefined,
-                metadata: {
-                  type: BROADCAST_PAYLOAD_TYPE,
+            if (broadcast.channel === channelTypes.enum.messenger) {
+              // create-broadcast.action stores { ...templateParams, buttons: [...] } in templateData.
+              // Separate buttons so the job type receives the correct shape.
+              type RawMessengerData = MessengerTemplateParams & {
+                buttons?: Array<{ id: string; label: string; flowId?: string }>
+              }
+              const rawMessengerData = broadcast.templateData as
+                | RawMessengerData
+                | undefined
+              const { buttons: broadcastButtons, ...cleanMessengerParams } =
+                rawMessengerData ?? ({} as RawMessengerData)
+
+              await chatQueue.add(ChatJobAction.sendMessengerTemplateMessage, {
+                type: ChatJobAction.sendMessengerTemplateMessage,
+                data: {
+                  conversation: contactOnBroadcast.conversation,
+                  contactInbox: contactOnBroadcast.contactInbox,
+                  templateId: broadcast.templateId,
                   broadcastId: broadcast.id,
-                  contactInboxId: contactOnBroadcast.contactInboxId,
+                  templateData:
+                    Object.keys(cleanMessengerParams).length > 0
+                      ? (cleanMessengerParams as MessengerTemplateParams)
+                      : undefined,
+                  buttons: broadcastButtons,
+                  metadata: {
+                    type: BROADCAST_PAYLOAD_TYPE,
+                    broadcastId: broadcast.id,
+                    contactInboxId: contactOnBroadcast.contactInboxId,
+                  },
                 },
-              },
-            })
+              })
+            } else {
+              await chatQueue.add(ChatJobAction.sendWhatsappTemplateMessage, {
+                type: ChatJobAction.sendWhatsappTemplateMessage,
+                data: {
+                  conversation: contactOnBroadcast.conversation,
+                  contactInbox: contactOnBroadcast.contactInbox,
+                  templateId: broadcast.templateId,
+                  broadcastId: broadcast.id,
+                  templateData: broadcast.templateData as
+                    | WaTemplateParams
+                    | undefined,
+                  metadata: {
+                    type: BROADCAST_PAYLOAD_TYPE,
+                    broadcastId: broadcast.id,
+                    contactInboxId: contactOnBroadcast.contactInboxId,
+                  },
+                },
+              })
+            }
           }
 
           await db

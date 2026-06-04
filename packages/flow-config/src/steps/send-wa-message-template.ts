@@ -335,18 +335,22 @@ export type SendWaTemplateMessageStepSchema = z.infer<
 
 export const sendWaTemplateMessageStepDefaultFn = (
   props: Partial<SendWaTemplateMessageStepSchema> = {},
-): SendWaTemplateMessageStepSchema => ({
-  template: {
-    id: "",
-    name: "",
-    language: "",
-    params: {},
-  },
-  buttons: [
-    buttonStepDefaultFn({ label: "Delivered" }),
-    buttonStepDefaultFn({ label: "Failed" }),
-  ],
-  ...props,
-  id: createId(),
-  stepType: stepTypes.enum.sendWaTemplateMessage,
-})
+): SendWaTemplateMessageStepSchema => {
+  const { template: templateProps, ...restProps } = props
+  return {
+    template: {
+      id: "",
+      name: "",
+      language: "",
+      params: {},
+      ...templateProps,
+    },
+    buttons: [
+      buttonStepDefaultFn({ label: "Delivered" }),
+      buttonStepDefaultFn({ label: "Failed" }),
+    ],
+    ...restProps,
+    id: createId(),
+    stepType: stepTypes.enum.sendWaTemplateMessage,
+  }
+}

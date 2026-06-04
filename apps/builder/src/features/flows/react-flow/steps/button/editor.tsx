@@ -8,19 +8,20 @@ import {
 import { GripVerticalIcon, PlusIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useFieldArray, useFormContext } from "react-hook-form"
+import type { ButtonEditorConfig } from "../../stores/step-store"
 import { useStepStore } from "../../stores/step-store-provider"
 
 type ButtonStepEditorProps = {
   parentName: string
+  editorConfig?: ButtonEditorConfig
 }
 
 export const ButtonStepEditor = (props: ButtonStepEditorProps) => {
-  const { parentName, ...rest } = props
+  const { parentName, editorConfig, ...rest } = props
 
   const { getValues } = useFormContext()
-  const { setButtonPath, setOpenButtonEditorDialog } = useStepStore(
-    (state) => state,
-  )
+  const { setButtonPath, setOpenButtonEditorDialog, setButtonEditorConfig } =
+    useStepStore((state) => state)
 
   const buttonData = getValues(`${parentName}`)
 
@@ -29,6 +30,7 @@ export const ButtonStepEditor = (props: ButtonStepEditorProps) => {
       <Button
         className="w-full hover:text-blue-500"
         onClick={() => {
+          setButtonEditorConfig(editorConfig ?? null)
           setButtonPath(`data.details.${parentName}`)
           setOpenButtonEditorDialog(true)
         }}

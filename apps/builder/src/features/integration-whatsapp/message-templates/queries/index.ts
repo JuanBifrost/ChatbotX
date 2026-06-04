@@ -15,7 +15,6 @@ export const whatsappMessageTemplateService = {
     const { tx = db, where } = props
 
     const queryWhere = {
-      status: where.status,
       integrationWhatsappId: where.integrationWhatsappId,
       integrationWhatsapp: {
         workspaceId: where.workspaceId,

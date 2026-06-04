@@ -3,6 +3,11 @@ import {
   Integration,
   type IntegrationDefinition,
 } from "@chatbotx.io/sdk"
+import {
+  type CloneMessengerTemplateProps,
+  clonePageMessageTemplate,
+  listPageMessageTemplates,
+} from "./apis/message-templates"
 import { unsubscribePageFromAppWebhook, updatePersona } from "./apis/page"
 import { MessengerAPIException } from "./exception"
 import { botHandlers } from "./handlers/bot"
@@ -32,6 +37,14 @@ const config: IntegrationDefinition<
   },
   actions: {
     updatePersona,
+    listMessageTemplates: async ({ ctx }) => listPageMessageTemplates(ctx.auth),
+    cloneMessageTemplate: async ({
+      ctx,
+      input,
+    }: {
+      ctx: { auth: MessengerAuthValue }
+      input: CloneMessengerTemplateProps
+    }) => clonePageMessageTemplate(ctx.auth, input),
   },
   handleRequest: async (props) => {
     const segments = new URL(props.req.url).pathname.split("/")

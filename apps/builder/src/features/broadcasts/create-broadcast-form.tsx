@@ -10,7 +10,11 @@ import {
   channelTypes,
 } from "@chatbotx.io/database/partials"
 import {
+  extractMessengerFlowButtons,
+  extractMessengerTemplateParams,
   extractTemplateParams,
+  type MessengerTemplateComponent,
+  type MessengerTemplateParams,
   stepTypes,
   type TemplateComponent,
   type WaTemplateParams,
@@ -42,12 +46,15 @@ import { useWorkspaceId } from "@/hooks/routing"
 import { ContactFilter } from "../contacts/components/contact-filter"
 import { useContactStore } from "../contacts/provider/contact-store-context"
 import { useFlowStore } from "../flows/provider/flow-store-context"
+import { useFlowTemplate } from "../flows/react-flow/stores/flow-template-store-provider"
 import { InboxIcon } from "../inboxes/components/inbox-icon"
+import { MessengerTemplateParamsForm } from "../integration-messenger/message-templates/components/template-params-form"
+import { MessengerTemplatePreview } from "../integration-messenger/message-templates/components/template-preview"
 import { TemplateParamsForm } from "../integration-whatsapp/message-templates/components/template-params-form"
 import { TemplatePreview } from "../integration-whatsapp/message-templates/components/template-preview"
-import { useTemplateStore } from "../integration-whatsapp/message-templates/provider/template-store-context"
 import type { MessageTemplateWithComponents } from "../integration-whatsapp/message-templates/schema/resource"
 import { useIntegrationStore } from "../integration-whatsapp/provider/integration-store-context"
+import { MessengerBroadcastFlowButtons } from "./components/messenger-broadcast-flow-buttons"
 
 type BroadcastConfig = {
   value: ChannelType
@@ -77,6 +84,11 @@ const getConfigs = (t: ReturnType<typeof useTranslations>) =>
       value: "messenger",
       description: "",
       subactions: [
+        {
+          value: broadcastSubactions.enum.messengerTemplateMessage,
+          name: t("broadcasts.messengerTemplateMessage.title"),
+          description: t("broadcasts.messengerTemplateMessage.description"),
+        },
         {
           value: broadcastSubactions.enum.messengerActiveContacts,
           name: t("broadcasts.messengerActiveContacts.title"),
@@ -180,6 +192,13 @@ export function CreateBroadcastForm({ workspaceId }: CreateBroadcastFormProps) {
       appendFilter({
         startType: stepTypes.enum.sendWaTemplateMessage,
         integrationWhatsappId: watchedIntegrationWhatsappId,
+      })
+      getAllActiveFlows()
+    } else if (
+      watchedSubAction === broadcastSubactions.enum.messengerTemplateMessage
+    ) {
+      appendFilter({
+        startType: stepTypes.enum.sendMessengerTemplateMessage,
       })
       getAllActiveFlows()
     } else {
@@ -381,6 +400,7 @@ function BroadcastFlowTypeSelector({
 
       if (type === broadcastFlowTypes.enum.flow) {
         setValue("templateId", undefined)
+        setValue("buttons", [])
       } else {
         setValue("flowId", undefined)
       }
@@ -388,7 +408,10 @@ function BroadcastFlowTypeSelector({
     [setValue],
   )
 
-  if (subaction !== broadcastSubactions.enum.whatsappTemplateMessage) {
+  if (
+    subaction !== broadcastSubactions.enum.whatsappTemplateMessage &&
+    subaction !== broadcastSubactions.enum.messengerTemplateMessage
+  ) {
     return null
   }
 
@@ -480,19 +503,57 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
     control,
     name: "integrationWhatsappId",
   })
+  const watchedIntegrationMessengerId = useWatch({
+    control,
+    name: "integrationMessengerId",
+  })
   const watchedTemplateId = useWatch({ control, name: "templateId" })
   const watchedContactFilter = useWatch({ control, name: "contactFilter" })
   const watchedTemplateData = useWatch({ control, name: "templateData" }) as
     | WaTemplateParams
+    | undefined
+  const watchedMessengerTemplateData = watchedTemplateData as
+    | MessengerTemplateParams
     | undefined
 
   const [selectedTemplate, setSelectedTemplate] =
     useState<MessageTemplateWithComponents | null>(null)
 
   const { integrations } = useIntegrationStore((state) => state)
-  const { templates, setIntegrationWhatsappId } = useTemplateStore(
-    (state) => state,
+  const whatsappTemplates = useFlowTemplate((s) => s.whatsappTemplates)
+  const setIntegrationWhatsappId = useFlowTemplate(
+    (s) => s.setIntegrationWhatsappId,
   )
+
+  const messengerTemplatesData = useFlowTemplate(
+    (state) => state.messengerTemplates,
+  )
+
+  const messengerIntegrationOptions = useMemo(() => {
+    const map = new Map<string, string>()
+    for (const template of messengerTemplatesData) {
+      if (template.integrationMessenger) {
+        map.set(
+          template.integrationMessenger.id,
+          template.integrationMessenger.name,
+        )
+      }
+    }
+    return [...map.entries()].map(([value, label]) => ({ value, label }))
+  }, [messengerTemplatesData])
+
+  const filteredMessengerTemplates = useMemo(
+    () =>
+      messengerTemplatesData.filter(
+        (template) =>
+          template.integrationMessengerId === watchedIntegrationMessengerId,
+      ),
+    [messengerTemplatesData, watchedIntegrationMessengerId],
+  )
+
+  const [selectedMessengerTemplate, setSelectedMessengerTemplate] = useState<
+    (typeof messengerTemplatesData)[number] | null
+  >(null)
 
   const [confirmOpen, setConfirmOpen] = useState(false)
 
@@ -515,6 +576,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   const handleRemoveInbox = useCallback(() => {
     setValue("channel", null)
     setValue("subaction", null)
+    setValue("buttons", [])
   }, [])
 
   useEffect(() => {
@@ -537,8 +599,12 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   useEffect(() => {
     if (watchedIntegrationWhatsappId) {
       setIntegrationWhatsappId(watchedIntegrationWhatsappId)
+      // Clear stale template selection from previous integration
+      setValue("templateId", undefined)
+      setValue("templateData", undefined)
+      setSelectedTemplate(null)
     }
-  }, [watchedIntegrationWhatsappId, setIntegrationWhatsappId])
+  }, [watchedIntegrationWhatsappId, setIntegrationWhatsappId, setValue])
 
   useEffect(() => {
     getContactInboxesCount({
@@ -548,10 +614,10 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
   }, [watchedContactFilter, props.channel, getContactInboxesCount])
 
   useEffect(() => {
-    if (watchedTemplateId && templates.length > 0) {
-      const template = templates.find((t) => t.id === watchedTemplateId) as
-        | MessageTemplateWithComponents
-        | undefined
+    if (watchedTemplateId && whatsappTemplates.length > 0) {
+      const template = whatsappTemplates.find(
+        (t) => t.id === watchedTemplateId,
+      ) as MessageTemplateWithComponents | undefined
       if (template) {
         setSelectedTemplate(template)
         const initialParams = extractTemplateParams(
@@ -563,7 +629,40 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
         setValue("templateData", undefined)
       }
     }
-  }, [watchedTemplateId, templates, setValue])
+  }, [watchedTemplateId, whatsappTemplates, setValue])
+
+  useEffect(() => {
+    if (
+      props.subaction !== broadcastSubactions.enum.messengerTemplateMessage ||
+      !watchedTemplateId ||
+      messengerTemplatesData.length === 0
+    ) {
+      return
+    }
+
+    const template = messengerTemplatesData.find(
+      (t) => t.id === watchedTemplateId,
+    )
+    if (template) {
+      setSelectedMessengerTemplate(template)
+      const initialParams = extractMessengerTemplateParams(
+        template.components as MessengerTemplateComponent[],
+        template.parameterFormat as "POSITIONAL" | "NAMED",
+      )
+      setValue("templateData", initialParams)
+      // seed flow buttons from template
+      setValue(
+        "buttons",
+        extractMessengerFlowButtons(
+          template.components as MessengerTemplateComponent[],
+        ).map((b) => ({ id: b.id, label: b.label, flowId: "" })),
+      )
+    } else {
+      setSelectedMessengerTemplate(null)
+      setValue("templateData", undefined)
+      setValue("buttons", []) // clear buttons
+    }
+  }, [props.subaction, watchedTemplateId, messengerTemplatesData, setValue])
 
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
@@ -614,7 +713,7 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
                     key="templateId"
                     label={t("fields.templateId.label")}
                     name="templateId"
-                    options={templates.map((template) => ({
+                    options={whatsappTemplates.map((template) => ({
                       label: `${template.name} (${template.language})`,
                       value: template.id,
                     }))}
@@ -642,6 +741,68 @@ function CreateBroadcastChooseFlow(props: CreateBroadcastChooseFlowProps) {
                           headerParams={watchedTemplateData?.header || []}
                         />
                       </div>
+                    </div>
+                  )}
+                </>
+              )}
+            </>
+          )}
+
+          {props.subaction ===
+            broadcastSubactions.enum.messengerTemplateMessage && (
+            <>
+              <ComboboxField
+                key="integrationMessengerId"
+                label={t("fields.messengerChannel.label")}
+                name="integrationMessengerId"
+                options={messengerIntegrationOptions}
+                required={true}
+              />
+
+              {watchedTemplateType === broadcastFlowTypes.enum.template && (
+                <>
+                  <ComboboxField
+                    key="messengerTemplateId"
+                    label={t("fields.messengerTemplateId.label")}
+                    name="templateId"
+                    options={filteredMessengerTemplates.map((template) => ({
+                      label: `${template.name} (${template.language})`,
+                      value: template.id,
+                    }))}
+                    required={true}
+                  />
+
+                  {selectedMessengerTemplate && (
+                    <div className="space-y-4">
+                      <MessengerTemplateParamsForm
+                        components={
+                          selectedMessengerTemplate.components as MessengerTemplateComponent[]
+                        }
+                        parameterFormat={
+                          selectedMessengerTemplate.parameterFormat as
+                            | "POSITIONAL"
+                            | "NAMED"
+                        }
+                        parentName="templateData"
+                      />
+                      <div>
+                        <div className="mb-2 font-medium text-xs">
+                          {t("flows.fields.preview")}
+                        </div>
+                        <MessengerTemplatePreview
+                          bodyParams={watchedMessengerTemplateData?.body || []}
+                          buttonParams={
+                            watchedMessengerTemplateData?.button || []
+                          }
+                          components={
+                            selectedMessengerTemplate.components as MessengerTemplateComponent[]
+                          }
+                          headerParams={
+                            watchedMessengerTemplateData?.header || []
+                          }
+                        />
+                      </div>
+                      <MessengerBroadcastFlowButtons />
                     </div>
                   )}
                 </>

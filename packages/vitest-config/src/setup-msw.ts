@@ -1,5 +1,5 @@
+import { server } from "@chatbotx.io/vitest-config/msw"
 import { afterAll, afterEach, beforeAll } from "vitest"
-import { server } from "./msw"
 
 /**
  * Boot the MSW server before any test runs, reset handlers between tests so

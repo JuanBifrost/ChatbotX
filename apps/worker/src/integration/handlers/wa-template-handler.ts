@@ -56,31 +56,37 @@ export async function replaceWhatsappTemplateVariables(props: {
   return replacedParams
 }
 
+export type ValidatedWhatsappTemplate = {
+  inbox: NonNullable<Awaited<ReturnType<typeof db.query.inboxModel.findFirst>>>
+  template: NonNullable<
+    Awaited<ReturnType<typeof db.query.whatsappMessageTemplateModel.findFirst>>
+  >
+}
+
 export async function validateWhatsappTemplate(
-  template: SendWaTemplateMessageStepSchema["template"],
+  templateId: string,
   inboxId: string,
-): Promise<boolean> {
+): Promise<ValidatedWhatsappTemplate | null> {
   const inbox = await db.query.inboxModel.findFirst({
     where: { id: inboxId },
     with: { integrationWhatsapp: true },
   })
 
   if (!inbox?.integrationWhatsapp) {
-    return false
+    return null
   }
 
-  const whatsappTemplate =
-    await db.query.whatsappMessageTemplateModel.findFirst({
-      where: {
-        id: template.id,
-        integrationWhatsappId: inbox.integrationWhatsapp.id,
-        status: "APPROVED",
-      },
-    })
+  const template = await db.query.whatsappMessageTemplateModel.findFirst({
+    where: {
+      id: templateId,
+      integrationWhatsappId: inbox.integrationWhatsapp.id,
+      status: "APPROVED",
+    },
+  })
 
-  if (!whatsappTemplate) {
-    return false
+  if (!template) {
+    return null
   }
 
-  return true
+  return { inbox, template }
 }

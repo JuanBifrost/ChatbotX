@@ -3,7 +3,10 @@ import {
   broadcastSubactions,
   channelTypes,
 } from "@chatbotx.io/database/partials"
-import { waTemplateParamsSchema } from "@chatbotx.io/flow-config"
+import {
+  messengerTemplateParamsSchema,
+  waTemplateParamsSchema,
+} from "@chatbotx.io/flow-config"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 import { contactFilterRequest } from "@/features/contacts/schemas/contact-filter"
@@ -14,7 +17,19 @@ export const createBroadcastRequest = z
     flowId: zodBigintAsString().optional(),
     templateId: zodBigintAsString().optional(),
     integrationWhatsappId: zodBigintAsString().optional(),
-    templateData: waTemplateParamsSchema.optional(),
+    integrationMessengerId: zodBigintAsString().optional(),
+    templateData: z
+      .union([waTemplateParamsSchema, messengerTemplateParamsSchema])
+      .optional(),
+    buttons: z
+      .array(
+        z.object({
+          id: z.string(),
+          label: z.string(),
+          flowId: z.string().optional(),
+        }),
+      )
+      .optional(),
     subaction: broadcastSubactions,
     schedulesType: broadcastScheduleTypes,
     schedulesAt: z

@@ -58,11 +58,21 @@ import { useStepStore } from "./stores/step-store-provider"
 
 function AllButtonOptions({
   onChooseButton,
+  hiddenButtonTypes,
 }: {
   onChooseButton: (buttonType: ButtonType | null) => void
+  hiddenButtonTypes?: ButtonType[]
 }) {
   const t = useTranslations()
-  const allButtons = useMemo(() => allButtonsConfig(t), [t])
+  const allButtons = useMemo(() => {
+    const configs = allButtonsConfig(t)
+    if (!hiddenButtonTypes || hiddenButtonTypes.length === 0) {
+      return configs
+    }
+    return configs.filter(
+      (buttonConfig) => !hiddenButtonTypes.includes(buttonConfig.buttonType),
+    )
+  }, [t, hiddenButtonTypes])
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -229,6 +239,7 @@ export function ButtonEditorDialog() {
     (state) => state.setOpenButtonEditorDialog,
   )
   const onChangeButtonData = useStepStore((state) => state.onChangeButtonData)
+  const buttonEditorConfig = useStepStore((state) => state.buttonEditorConfig)
 
   const form = useForm<ButtonStepInput, object, ButtonStepProps>({
     resolver: zodResolver(buttonStepSchema),
@@ -451,7 +462,12 @@ export function ButtonEditorDialog() {
               onSave()
             }}
           >
-            <InputField label={t("fields.name.label")} name="label" required />
+            <InputField
+              disabled={!!buttonEditorConfig?.lockLabel}
+              label={t("fields.name.label")}
+              name="label"
+              required
+            />
 
             <div className="mt-2 font-medium">
               {t("fields.button.whenPressed")}
@@ -466,21 +482,28 @@ export function ButtonEditorDialog() {
                 <ButtonSteps />
               </div>
             ) : (
-              <AllButtonOptions onChooseButton={onChooseButton} />
+              <AllButtonOptions
+                hiddenButtonTypes={
+                  buttonEditorConfig?.hiddenButtonTypes ?? undefined
+                }
+                onChooseButton={onChooseButton}
+              />
             )}
           </form>
         </Form>
 
         <DialogFooter>
           <div className="flex-1">
-            <Button
-              onClick={onDelete}
-              size="sm"
-              type="button"
-              variant="destructive"
-            >
-              {t("actions.delete")}
-            </Button>
+            {!buttonEditorConfig?.hideDelete && (
+              <Button
+                onClick={onDelete}
+                size="sm"
+                type="button"
+                variant="destructive"
+              >
+                {t("actions.delete")}
+              </Button>
+            )}
           </div>
           <DialogClose asChild>
             <Button size="sm" type="button" variant="ghost">

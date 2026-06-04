@@ -1,43 +1,37 @@
 import type { ListInboxesResponse } from "@chatbotx.io/business"
 import type { ChannelType } from "@chatbotx.io/database/partials"
-import { type StepType, stepTypes } from "@chatbotx.io/flow-config"
+import { channelTypes } from "@chatbotx.io/database/partials"
 import { GlobeIcon, type LucideIcon } from "lucide-react"
 import { INBOX_ICON_CONFIG } from "@/features/inboxes/components/inbox-icon"
 import type { MenuData, MenuItem, TranslationFn } from "../../types"
+import { messengerTemplateMenus } from "./messenger-template-menus"
 import { waFlowMenus } from "./wa-flow-menu"
 import { waTemplateMenus } from "./wa-template-menus"
 
-export const subMenus: Partial<
-  Record<
-    StepType,
-    (
-      t: TranslationFn,
-      menuData?: MenuData,
-      inbox?: ListInboxesResponse["data"][number],
-    ) => MenuItem[]
-  >
-> = {
-  [stepTypes.enum.sendWaTemplateMessage]: waTemplateMenus,
-  [stepTypes.enum.whatsappFlow]: waFlowMenus,
-}
+// Channels that support template messages. Omnichannel shows all of them.
+const TEMPLATE_CHANNELS: ChannelType[] = [
+  channelTypes.enum.whatsapp,
+  channelTypes.enum.messenger,
+]
 
 export const integrationMenus = (
   t: TranslationFn,
-  stepType: StepType,
   menuData?: MenuData,
   inboxChannel?: ChannelType,
 ): MenuItem[] => {
-  let inboxes = menuData?.inboxes || []
+  // A concrete channel filters to that channel; omnichannel (or no channel)
+  // shows every template-supporting inbox so both WhatsApp and Messenger appear.
+  const isSpecificChannel =
+    inboxChannel != null && inboxChannel !== channelTypes.enum.omnichannel
 
-  if (inboxChannel) {
-    inboxes = inboxes.filter((inbox) => inbox.channel === inboxChannel)
-  }
+  const inboxes = (menuData?.inboxes ?? []).filter((inbox) => {
+    const channel = inbox.channel as ChannelType
+    return isSpecificChannel
+      ? channel === inboxChannel
+      : TEMPLATE_CHANNELS.includes(channel)
+  })
 
-  const { Icon } = inboxChannel
-    ? (INBOX_ICON_CONFIG[inboxChannel] ?? INBOX_ICON_CONFIG.omnichannel)
-    : INBOX_ICON_CONFIG.omnichannel
-
-  if (!inboxes || inboxes.length === 0) {
+  if (inboxes.length === 0) {
     return [
       {
         label: t("flows.actions.noTemplatesAvailable"),
@@ -47,12 +41,19 @@ export const integrationMenus = (
     ]
   }
 
-  return inboxes.map((inbox: ListInboxesResponse["data"][number]) => {
+  // Resolve children + icon per inbox.channel so a single (omnichannel) call can
+  // mix WhatsApp and Messenger inboxes in one list.
+  return inboxes.map((inbox) => {
+    const channel = inbox.channel as ChannelType
     let children: MenuItem[] | null = null
 
-    if (subMenus[stepType]) {
-      children = subMenus[stepType](t, menuData, inbox)
+    if (channel === channelTypes.enum.whatsapp) {
+      children = waTemplateMenus(t, menuData, inbox)
+    } else if (channel === channelTypes.enum.messenger) {
+      children = messengerTemplateMenus(t, menuData, inbox)
     }
+
+    const { Icon } = INBOX_ICON_CONFIG[channel] ?? INBOX_ICON_CONFIG.omnichannel
 
     return {
       label: inbox.name,
@@ -61,4 +62,32 @@ export const integrationMenus = (
       children: children ?? undefined,
     }
   })
+}
+
+export const waFlowIntegrationMenus = (
+  t: TranslationFn,
+  menuData?: MenuData,
+): MenuItem[] => {
+  const inboxes = (menuData?.inboxes ?? []).filter(
+    (inbox) => inbox.channel === channelTypes.enum.whatsapp,
+  )
+
+  if (inboxes.length === 0) {
+    return [
+      {
+        label: t("flows.actions.noTemplatesAvailable"),
+        icon: GlobeIcon,
+        stepType: null,
+      },
+    ]
+  }
+
+  const { Icon } = INBOX_ICON_CONFIG[channelTypes.enum.whatsapp]
+
+  return inboxes.map((inbox: ListInboxesResponse["data"][number]) => ({
+    label: inbox.name,
+    icon: Icon as LucideIcon,
+    stepType: null,
+    children: waFlowMenus(t, menuData, inbox),
+  }))
 }

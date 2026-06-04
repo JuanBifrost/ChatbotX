@@ -1,9 +1,15 @@
-import type { ButtonStepProps } from "@chatbotx.io/flow-config"
+import type { ButtonStepProps, ButtonType } from "@chatbotx.io/flow-config"
 import { createStore } from "zustand"
 
 type UpdatedButtonData = {
   path: string
   data: ButtonStepProps | null
+}
+
+export type ButtonEditorConfig = {
+  lockLabel?: boolean
+  hiddenButtonTypes?: ButtonType[]
+  hideDelete?: boolean
 }
 
 export type StepState = {
@@ -14,6 +20,8 @@ export type StepState = {
   openButtonEditorDialog: boolean
 
   openNodeDetailSheet: boolean
+
+  buttonEditorConfig: ButtonEditorConfig | null
 }
 
 export type StepStore = StepState & {
@@ -23,6 +31,7 @@ export type StepStore = StepState & {
   setButtonPath: (buttonPath: string | null) => void
   setOpenNodeDetailSheet: (openNodeDetailSheet: boolean) => void
   onChangeButtonData: (updatedButtonData: UpdatedButtonData | null) => void
+  setButtonEditorConfig: (config: ButtonEditorConfig | null) => void
 }
 
 export const createStepStore = (initState?: Partial<StepState>) => {
@@ -33,6 +42,8 @@ export const createStepStore = (initState?: Partial<StepState>) => {
 
     openNodeDetailSheet: false,
     activeFlowId: null,
+
+    buttonEditorConfig: null,
   }
 
   return createStore<StepStore>()((set) => ({
@@ -47,5 +58,6 @@ export const createStepStore = (initState?: Partial<StepState>) => {
       set({ updatedButtonData })
     },
     setActiveFlowId: (activeFlowId) => set({ activeFlowId }),
+    setButtonEditorConfig: (buttonEditorConfig) => set({ buttonEditorConfig }),
   }))
 }

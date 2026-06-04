@@ -67,6 +67,7 @@ import { integrationWhatsappRelations } from "./integration-whatsapp"
 import { integrationZaloRelations } from "./integration-zalo"
 import { magicLinkRelations } from "./magic-link"
 import { messageRelations } from "./message"
+import { messengerMessageTemplateRelations } from "./messenger-message-template"
 import { productRelations } from "./product"
 import { reflinkRelations } from "./reflink"
 import { savedReplyRelations } from "./save-reply"
@@ -123,6 +124,7 @@ export const relations = {
   ...inboxTeamMemberRelations,
   ...integrationRelations,
   ...integrationMessengerRelations,
+  ...messengerMessageTemplateRelations,
   ...integrationWebchatRelations,
   ...integrationZaloRelations,
   ...invitationRelations,
@@ -135,7 +137,6 @@ export const relations = {
   ...whatsappFlowRelations,
   ...integrationWhatsappRelations,
   ...whatsappMessageTemplateRelations,
-  ...contactCustomFieldRelations,
   ...workspaceMemberRelations,
   ...contactNoteRelations,
   ...aiEmbeddingRelations,
@@ -161,7 +162,6 @@ export const relations = {
   ...aiFunctionRelations,
   ...botFieldRelations,
   ...savedReplyRelations,
-  ...userRelations,
   ...integrationTelegramRelations,
   ...integrationTiktokRelations,
   ...integrationInstagramRelations,

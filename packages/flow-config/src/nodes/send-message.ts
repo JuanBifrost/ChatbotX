@@ -11,6 +11,7 @@ import { sendCarouselStepSchema } from "../steps/send-carousel"
 import { sendFileStepSchema } from "../steps/send-file"
 import { sendGifStepSchema } from "../steps/send-gif"
 import { sendImageStepSchema } from "../steps/send-image"
+import { sendMessengerTemplateMessageStepSchema } from "../steps/send-messenger-message-template"
 import { MAX_QUICK_REPLIES } from "../steps/send-quick-reply"
 import { sendTextStepSchema } from "../steps/send-text"
 import { sendVideoStepSchema } from "../steps/send-video"
@@ -44,6 +45,7 @@ export const sendMessageNodeSchema = baseNodeSchema.extend({
           sendGifStepSchema,
           typingStepSchema,
           sendWaTemplateMessageStepSchema,
+          sendMessengerTemplateMessageStepSchema,
           whatsappOptionListStepSchema,
           whatsappFlowStepSchema,
           ...actionSteps,

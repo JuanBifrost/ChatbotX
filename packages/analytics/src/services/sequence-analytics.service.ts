@@ -7,6 +7,7 @@ import {
   type MessageSentPayload,
   SEQUENCE_SCHEDULE_PAYLOAD_TYPE,
 } from "@chatbotx.io/flow-config"
+import { toDate } from "../lib/date"
 import { logger } from "../lib/logger"
 import { sequenceStatsRepository } from "../repositories/postgres"
 import type { ContactEventData } from "../schemas/common"
@@ -122,7 +123,7 @@ export class SequenceAnalyticsService {
       sequenceId: (p.metadata as { sequenceId: string }).sequenceId,
       stepId: (p.metadata as { sequenceStepId: string }).sequenceStepId,
       contactInboxId: (p.metadata as { contactInboxId: string }).contactInboxId,
-      occurredAt: new Date(p.occurredAt),
+      occurredAt: toDate(p.occurredAt),
     }))
 
     await processSequenceEvents(updateItems, "deliveredAt")
@@ -140,7 +141,7 @@ export class SequenceAnalyticsService {
       sequenceId: (p.metadata as { sequenceId: string }).sequenceId,
       stepId: (p.metadata as { sequenceStepId: string }).sequenceStepId,
       contactInboxId: (p.metadata as { contactInboxId: string }).contactInboxId,
-      occurredAt: new Date(p.occurredAt),
+      occurredAt: toDate(p.occurredAt),
       errorContent: JSON.stringify(p.errorData),
     }))
 
@@ -160,7 +161,7 @@ export class SequenceAnalyticsService {
       sequenceId: (p.metadata as { sequenceId: string }).sequenceId,
       stepId: (p.metadata as { sequenceStepId: string }).sequenceStepId,
       contactInboxId: (p.metadata as { contactInboxId: string }).contactInboxId,
-      occurredAt: new Date(p.occurredAt),
+      occurredAt: toDate(p.occurredAt),
     }))
 
     await processSequenceEvents(updateItems, "deliveredAt")
@@ -212,7 +213,7 @@ export class SequenceAnalyticsService {
             sequenceId: s.sequenceId,
             stepId: s.stepId,
             contactInboxId: s.contactInboxId,
-            occurredAt: new Date(payload.occurredAt),
+            occurredAt: toDate(payload.occurredAt),
           }
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
@@ -249,7 +250,7 @@ export class SequenceAnalyticsService {
         sequenceId: sequenceStepsMap.get(p.action.sequenceStepId ?? "") ?? "",
         stepId: p.action.sequenceStepId || "",
         contactInboxId: p.context.contactInboxId ?? "",
-        occurredAt: new Date(p.occurredAt),
+        occurredAt: toDate(p.occurredAt),
       }))
 
       await processSequenceEvents(updateItems, "clickedAt")

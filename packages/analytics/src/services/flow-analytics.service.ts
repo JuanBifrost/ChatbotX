@@ -10,6 +10,7 @@ import {
   type MessageSentPayload,
   messageEventTypeSchema,
 } from "@chatbotx.io/flow-config"
+import { toDate } from "../lib/date"
 import { flowStatsRepository } from "../repositories"
 import type {
   FlowContactStatsRequest,
@@ -106,7 +107,7 @@ export class FlowAnalyticsService {
           contactId: p.context.contactId,
           contactInboxId: p.context.contactInboxId ?? "",
           eventType: messageEventTypeSchema.enum["message:delivered"],
-          occurredAt: p.occurredAt,
+          occurredAt: toDate(p.occurredAt),
         }
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
@@ -134,7 +135,7 @@ export class FlowAnalyticsService {
           contactId: p.context.contactId,
           contactInboxId: p.context.contactInboxId ?? "",
           eventType: messageEventTypeSchema.enum["message:delivered"],
-          occurredAt: new Date(p.occurredAt),
+          occurredAt: toDate(p.occurredAt),
         }
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
@@ -163,7 +164,7 @@ export class FlowAnalyticsService {
           contactInboxId: p.context.contactInboxId ?? "",
           errorContent: (p.errorData ?? "") as string,
           eventType: messageEventTypeSchema.enum["message:failed"],
-          occurredAt: p.occurredAt,
+          occurredAt: toDate(p.occurredAt),
         }
       })
       .filter((item): item is NonNullable<typeof item> => item !== null)
@@ -193,7 +194,7 @@ export class FlowAnalyticsService {
           contactId: p.context.contactId,
           contactInboxId: p.context.contactInboxId ?? "",
           buttonId: p.action.buttonId ?? "",
-          occurredAt: p.occurredAt,
+          occurredAt: toDate(p.occurredAt),
           eventType: flowEventTypeSchema.enum["flow:clicked"],
         }
       })

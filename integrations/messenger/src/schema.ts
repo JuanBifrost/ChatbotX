@@ -1,5 +1,15 @@
-import type { Context, Oauth2AuthValue, Oauth2Config } from "@chatbotx.io/sdk"
+import type {
+  Context,
+  Handler,
+  Oauth2AuthValue,
+  Oauth2Config,
+} from "@chatbotx.io/sdk"
 import { z } from "zod"
+import type {
+  CloneMessengerTemplateProps,
+  ListMessengerMessageTemplatesResponse,
+  MessengerMessageTemplateEntity,
+} from "./apis/message-templates"
 
 export const MESSENGER_MESSAGE_METADATA = "SENT_FROM_CHATBOTX"
 
@@ -30,14 +40,28 @@ export type MessengerActions<
     ctx: Context<IAuth>
     persona: PersonaRequest
   }) => Promise<{ personaId?: string }>
+  listMessageTemplates: Handler<
+    { ctx: Context<IAuth> },
+    ListMessengerMessageTemplatesResponse
+  >
+  cloneMessageTemplate: Handler<
+    { ctx: Context<IAuth>; input: CloneMessengerTemplateProps },
+    MessengerMessageTemplateEntity
+  >
 }
 
 // Common attachment types
-const attachmentTypeSchema = z.enum(["image", "video", "audio", "file"])
+const attachmentTypeSchema = z.enum([
+  "image",
+  "video",
+  "audio",
+  "file",
+  "template",
+])
 
-// Base attachment payload
+// Base attachment payload — url optional because template attachments have no url
 const baseAttachmentPayloadSchema = z.object({
-  url: z.url(),
+  url: z.url().optional(),
 })
 
 // Common ID schemas
@@ -164,6 +188,8 @@ export const facebookMessageAttachmentPayloadSchema = z.object({
   buttons: z.array(facebookButtonSchema).optional(),
   elements: z.array(facebookElementSchema).optional(),
   attachment_id: z.string().optional(),
+  name_placeholder: z.string().optional(),
+  params: z.array(z.object({ key: z.string(), value: z.string() })).optional(),
 })
 export type FacebookMessageAttachmentPayload = z.infer<
   typeof facebookMessageAttachmentPayloadSchema
@@ -177,9 +203,17 @@ export type FacebookMessageAttachment = z.infer<
   typeof facebookMessageAttachmentSchema
 >
 
+// Utility message template structure (message.template, not message.attachment)
+const facebookMessageTemplateSchema = z.object({
+  name: z.string(),
+  language: z.object({ code: z.string() }),
+  components: z.array(z.unknown()).optional(),
+})
+
 export const facebookMessageSchema = z.object({
   text: z.string().optional(),
   attachment: facebookMessageAttachmentSchema.optional(),
+  template: facebookMessageTemplateSchema.optional(),
   quick_replies: z.array(facebookQuickReplySchema).max(13).optional(),
   metadata: z.string().optional(),
 })
@@ -202,7 +236,7 @@ export const facebookSendMessageRequestSchema = z.object({
   message: facebookMessageSchema.optional(),
   sender_action: z.enum(["typing_on", "typing_off", "mark_seen"]).optional(),
   messaging_type: z
-    .enum(["RESPONSE", "UPDATE", "MESSAGE_TAG"])
+    .enum(["RESPONSE", "UPDATE", "MESSAGE_TAG", "UTILITY"])
     .default("RESPONSE")
     .optional(),
   tag: z

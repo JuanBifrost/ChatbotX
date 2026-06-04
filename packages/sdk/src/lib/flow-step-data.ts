@@ -4,6 +4,7 @@ import type {
   SendFileStepSchema,
   SendGifStepSchema,
   SendImageStepSchema,
+  SendMessengerTemplateMessageStepSchema,
   SendQuickReplyStepSchema,
   SendTextStepSchema,
   SendVideoStepSchema,
@@ -24,3 +25,4 @@ export type SendFlowStepData =
   | SendWaTemplateMessageStepSchema
   | WhatsappOptionListStepSchema
   | WhatsappFlowStepSchema
+  | SendMessengerTemplateMessageStepSchema
