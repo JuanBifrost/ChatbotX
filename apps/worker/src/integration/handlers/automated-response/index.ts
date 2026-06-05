@@ -1,11 +1,9 @@
 import { systemFunctionNames } from "@chatbotx.io/ai"
+import { aiContextService } from "@chatbotx.io/ai/server"
 import { automatedResponseService } from "@chatbotx.io/automated-response"
-import { db } from "@chatbotx.io/database/client"
+import { and, asc, db, eq, gt } from "@chatbotx.io/database/client"
 import { aiMessageRoles } from "@chatbotx.io/database/partials"
-import {
-  createMessageRepository,
-  getSafeSinceTime,
-} from "@chatbotx.io/database/repositories"
+import { messageModel } from "@chatbotx.io/database/schema"
 import { emit } from "@chatbotx.io/event-bus"
 import {
   DOCX_MIME_TYPES,
@@ -125,35 +123,82 @@ export async function processAutomatedResponse(
       return
     }
 
-    const messageRepository = await createMessageRepository()
-    const last100Messages = await messageRepository.findManyByConversation(
-      conversation.id,
-      {
-        limit: 100,
-        sinceTime: getSafeSinceTime(
-          contactInbox.lastMessageAt,
-          365 * 24 * 60 * 60 * 1000,
-        ),
-      },
-    )
-    const messages: ModelMessage[] = []
-    for (const message of last100Messages) {
-      if (!message.text) {
-        continue
-      }
-      if (message.senderType === "contact") {
-        messages.push({
-          role: aiMessageRoles.enum.user,
-          content: message.text,
+    const aiContext = await aiContextService.getOrInitContext({
+      workspaceId: conversation.workspaceId,
+      conversationId: conversation.id,
+    })
+
+    let messages: ModelMessage[] = []
+    let summary = ""
+
+    if (aiContext) {
+      const latestInContext = aiContext.history.at(-1)
+      const sinceTime = latestInContext?.createdAt ?? 0
+
+      const newDbMessages = await db
+        .select({
+          id: messageModel.id,
+          text: messageModel.text,
+          senderType: messageModel.senderType,
+          createdAt: messageModel.createdAt,
         })
-      } else if (
-        message.senderType === "user" ||
-        message.senderType === "bot"
-      ) {
-        messages.push({ role: "assistant", content: message.text })
+        .from(messageModel)
+        .where(
+          and(
+            eq(messageModel.conversationId, conversation.id),
+            gt(messageModel.createdAt, new Date(sinceTime)),
+          ),
+        )
+        .orderBy(asc(messageModel.createdAt), asc(messageModel.id))
+
+      const newMessages = newDbMessages.flatMap((msg) => {
+        if (!msg.text) {
+          return []
+        }
+        let role: "user" | "assistant" | null = null
+        if (msg.senderType === "contact") {
+          role = "user"
+        } else if (msg.senderType === "user" || msg.senderType === "bot") {
+          role = "assistant"
+        }
+        if (!role) {
+          return []
+        }
+        return [
+          {
+            message: { role, content: msg.text } as ModelMessage,
+            messageId: msg.id,
+            createdAt: msg.createdAt.getTime(),
+          },
+        ]
+      })
+
+      const refreshedContext =
+        newMessages.length > 0
+          ? await aiContextService.appendHistory({
+              conversationId: conversation.id,
+              newMessages,
+            })
+          : aiContext
+
+      if (refreshedContext) {
+        messages = aiContextService.mapContextToModelMessages(
+          refreshedContext.history,
+        )
+        summary = refreshedContext.summary
       }
     }
-    messages.reverse()
+
+    if (messages.length === 0) {
+      const last100Messages = await db.query.messageModel.findMany({
+        where: { conversationId: conversation.id },
+        orderBy: (table, { desc }) => [desc(table.createdAt), desc(table.id)],
+        limit: 100,
+      })
+      const dbMessages = [...last100Messages].reverse()
+      const aiHistory = aiContextService.mapDbMessagesToContext(dbMessages)
+      messages = aiContextService.mapContextToModelMessages(aiHistory)
+    }
 
     if (isFileOnlyTrigger) {
       messages.push({
@@ -178,6 +223,7 @@ export async function processAutomatedResponse(
             hasImage: hasTriggerImage,
           })
         : undefined,
+      summary,
     })
 
     if (aiResult && !aiResult.usedFallbackText) {

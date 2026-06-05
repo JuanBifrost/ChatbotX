@@ -1,5 +1,6 @@
 import {
   boolean,
+  index,
   jsonb,
   pgTable,
   timestamp,
@@ -27,6 +28,7 @@ export const conversationModel = pgTable(
     }>(),
     contactLastReadAt: timestamp(timestampConfig),
     agentLastReadAt: timestamp(timestampConfig),
+    aiContextLastMessageId: bigintAsString(),
     lastActivityAt: timestamp(timestampConfig).defaultNow().notNull(),
     followed: boolean().default(false).notNull(),
     assignedUserId: bigintAsString().references(() => userModel.id, {
@@ -56,6 +58,9 @@ export const conversationModel = pgTable(
     uniqueIndex("Conversation_contactId_key").using(
       "btree",
       table.contactId.asc().nullsLast(),
+    ),
+    index("Conversation_aiContextLastMessageId_idx").on(
+      table.aiContextLastMessageId,
     ),
   ],
 )

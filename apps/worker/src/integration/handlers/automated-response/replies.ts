@@ -7,6 +7,7 @@ import {
   toolPrefixes,
 } from "@chatbotx.io/ai"
 import {
+  aiContextService,
   createAIModelInstance,
   getAIIntegrationInDB,
   getAIToolset,
@@ -45,6 +46,7 @@ type ReplyByAIProps = {
   triggerMessageId?: string
   fileOnlyTrigger: boolean
   allowedSystemFunctionIds?: string[]
+  summary?: string
 }
 
 export type ReplyByAIExecutionResult = {
@@ -230,12 +232,16 @@ async function runAIReply(
     const variables = await contactVariableService.getAll(
       conversation.contactId,
     )
-    const completePrompt = aiAgent.prompt
+    const promptBase = aiAgent.prompt
       ? await contactVariableService.replaceAll({
           text: aiAgent.prompt,
           variables,
         })
       : ""
+    const completePrompt = props.summary
+      ? `Conversation Context: ${props.summary}\n\n${promptBase}`
+      : promptBase
+
     const systemPrompt = appendHandoffPolicy(
       appendToolOutputGuard(completePrompt),
       tools,
@@ -325,7 +331,7 @@ async function runAIReply(
       abortSignal,
     })
 
-    const { messageCount } = await processStreamingText(
+    const { messageCount, fullText } = await processStreamingText(
       result.textStream,
       async (_segment, parts) => {
         for (const part of parts) {
@@ -344,10 +350,23 @@ async function runAIReply(
         },
         "[automated-response] processStreamingText threw error",
       )
-      return { messageCount: 0 }
+      return { messageCount: 0, fullText: "" }
     })
 
-    if (messageCount > 0) {
+    if (messageCount > 0 && fullText) {
+      await aiContextService.appendHistory({
+        conversationId: conversation.id,
+        newMessages: [
+          {
+            message: {
+              role: "assistant",
+              content: fullText,
+            },
+            createdAt: Date.now(),
+          },
+        ],
+      })
+
       return {
         responded: true,
         provider: provider as AIAgentProvider,

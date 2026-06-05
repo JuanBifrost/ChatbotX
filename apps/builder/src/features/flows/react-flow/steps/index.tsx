@@ -4,6 +4,7 @@ import { addContactNotesStep } from "./add-contact-notes"
 import { addContactTagStep } from "./add-contact-tag"
 import { addNotesStep } from "./add-notes"
 import { aiAnalyzeImageStep } from "./ai-analyze-image"
+import { aiDeleteMessageHistoryStep } from "./ai-delete-message-history"
 import { aiEditImageStep } from "./ai-edit-image/index"
 import { aiExtractDataStep } from "./ai-extract-data/index"
 import { aiGenerateImageStep } from "./ai-generate-image/index"
@@ -130,7 +131,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.aiAnalyzeImage]: aiAnalyzeImageStep,
   [stepTypes.enum.aiSpeechToText]: aiSpeechToTextStep,
   [stepTypes.enum.aiTextToSpeech]: aiTextToSpeechStep,
-  [stepTypes.enum.aiDeleteMessageHistory]: undefined,
+  [stepTypes.enum.aiDeleteMessageHistory]: aiDeleteMessageHistoryStep,
   [stepTypes.enum.spreadsheetGetRow]: spreadsheetGetRowStep,
   [stepTypes.enum.spreadsheetGetRandomRow]: spreadsheetGetRandomRowStep,
   [stepTypes.enum.spreadsheetUpdateRow]: spreadsheetUpdateRowStep,

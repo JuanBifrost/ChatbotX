@@ -129,6 +129,10 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
         stepType: stepTypes.enum.aiTextToSpeech,
         getLabel: stepWithAiName("fields.flows.aiTextToSpeech"),
       },
+      {
+        stepType: stepTypes.enum.aiDeleteMessageHistory,
+        getLabel: stepNoParam("flows.actions.aiDeleteMessageHistory"),
+      },
     ],
   },
   {
@@ -151,6 +155,10 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       {
         stepType: stepTypes.enum.aiExtractData,
         getLabel: stepWithName("flows.aiExtractData.label"),
+      },
+      {
+        stepType: stepTypes.enum.aiDeleteMessageHistory,
+        getLabel: stepNoParam("flows.actions.aiDeleteMessageHistory"),
       },
     ],
   },
@@ -197,6 +205,10 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       {
         stepType: stepTypes.enum.aiGenerateTextAgent,
         getLabel: stepNoParam("flows.actions.aiGenerateTextAgent"),
+      },
+      {
+        stepType: stepTypes.enum.aiDeleteMessageHistory,
+        getLabel: stepNoParam("flows.actions.aiDeleteMessageHistory"),
       },
     ],
   },

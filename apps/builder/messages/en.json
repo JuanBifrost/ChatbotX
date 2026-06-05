@@ -1409,6 +1409,7 @@
     "actions": {
       "addContactNotes": "Add Contact Notes",
       "addContactTag": "Add Contact Tag",
+      "aiDeleteMessageHistory": "Delete Message History",
       "aiExtractData": "AI Extract Data",
       "aiAnalyzeImage": "AI Analyze Image",
       "aiSpeechToText": "AI Speech to Text",

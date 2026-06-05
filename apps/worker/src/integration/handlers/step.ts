@@ -42,6 +42,7 @@ import {
   subscribeBroadcast,
   unsubscribeBroadcast,
 } from "./contact"
+import { handleAIDeleteMessageHistory } from "./delete-message-history"
 import { handleAIEditImage } from "./edit-image"
 import { handleAIExtractData } from "./extract-data/index"
 import { type ExecuteStepProps, seekConnectedNode } from "./flow-utils"
@@ -333,7 +334,7 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.notifyAgent]: undefined,
   [stepTypes.enum.openWebsite]: undefined,
   [stepTypes.enum.aiAnalyzeImage]: handleAIAnalyzeImage,
-  [stepTypes.enum.aiDeleteMessageHistory]: undefined,
+  [stepTypes.enum.aiDeleteMessageHistory]: handleAIDeleteMessageHistory,
   [stepTypes.enum.aiEditImage]: handleAIEditImage,
   [stepTypes.enum.aiGenerateImage]: handleAIGenerateImage,
   [stepTypes.enum.aiGenerateTextAgent]: handleAIGenerateTextAgent,

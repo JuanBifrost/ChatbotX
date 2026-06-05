@@ -1421,6 +1421,7 @@
     "actions": {
       "addContactNotes": "Thêm ghi chú liên hệ",
       "addContactTag": "Thêm thẻ liên hệ",
+      "aiDeleteMessageHistory": "Xóa lịch sử tin nhắn",
       "aiAnalyzeImage": "AI phân tích hình ảnh",
       "aiSpeechToText": "AI chuyển giọng nói thành văn bản",
       "aiGenerateImage": "AI tạo hình ảnh",
