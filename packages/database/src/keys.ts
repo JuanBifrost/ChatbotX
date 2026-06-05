@@ -5,10 +5,10 @@ export const keys = () =>
   createEnv({
     server: {
       DATABASE_URL: z.url(),
-      DATABASE_DEBUG: z.coerce.boolean().optional().default(false),
-      ENABLE_MESSAGE_SHARDING: z.coerce.boolean().optional().default(false),
+      DATABASE_DEBUG: z.stringbool().optional().default(false),
+      ENABLE_MESSAGE_SHARDING: z.stringbool().optional().default(false),
       MESSAGE_SHARDS_PASSWORD: z.string().optional(),
-      MESSAGE_SHARDS_SSL: z.coerce.boolean().optional().default(false),
+      MESSAGE_SHARDS_SSL: z.stringbool().optional().default(false),
     },
     runtimeEnv: process.env,
     skipValidation: process.env.SKIP_ENV_CHECK === "true",

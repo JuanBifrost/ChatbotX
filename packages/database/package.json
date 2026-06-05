@@ -26,6 +26,7 @@
     "db:check": "dotenv -e ../../.env -- drizzle-kit check",
     "db:fix-chain": "node ./scripts/fix-migration-chain.mjs",
     "db:migrate": "dotenv -e ../../.env -- node ./scripts/run-migrations.mjs",
+    "db:bootstrap-message-shard": "dotenv -e ../../.env -- tsx scripts/bootstrap-message-shard.ts",
     "db:seed": "dotenv -e ../../.env -- tsx src/seed/index.ts",
     "db:setup": "pnpm db:migrate && pnpm db:seed",
     "db:studio": "dotenv -e ../../.env -- drizzle-kit studio",
