@@ -20,7 +20,7 @@ import { MoveVerticalIcon, PlusIcon, XIcon } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useCallback, useEffect, useRef } from "react"
+import { useCallback, useRef } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
 import { TiptapEditorField } from "@/components/tiptap/tiptap-editor-field"
 import { useEmailTopicSelectOptions } from "@/features/email-topics/provider/email-topic-hook"
@@ -49,14 +49,6 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
   const integrationSmtpId = useWatch({
     name: `${parentName}.integrationSmtpId`,
   })
-  // Always sync `from` when the inbox changes so the form value stays consistent
-  // with the editor remount triggered by the `key` prop above.
-  useEffect(() => {
-    setValue(
-      `${parentName}.from`,
-      smtpFromAddressMapRef.current[integrationSmtpId] ?? "",
-    )
-  }, [integrationSmtpId, setValue, parentName])
 
   const { fields, append, move, remove } = useFieldArray({
     control,
@@ -76,6 +68,12 @@ export default function EmailStepEditor(props: EmailStepEditorProps) {
         label={t("fields.smtpChannel.label")}
         name={`${parentName}.integrationSmtpId`}
         options={smtpInboxOptions}
+        triggerValueChange={(value) => {
+          setValue(
+            `${parentName}.from`,
+            smtpFromAddressMapRef.current[value ?? ""] ?? "",
+          )
+        }}
       />
 
       <div className="relative">
