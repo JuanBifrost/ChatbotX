@@ -19,6 +19,7 @@ import {
 } from "@chatbotx.io/integration-messenger/apis/page"
 import { AuthType } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
+import { redirect } from "next/navigation"
 import {
   BRANDING_TITLE,
   getBrandingUrl,
@@ -59,16 +60,6 @@ export const selectPageAction = authActionClient
           throw new ChatbotXException("Messenger App settings not found")
         }
         const messengerSettings = messengerCredential.config
-
-        // make sure the page is unique
-        const existedPage = await db.query.integrationMessengerModel.findFirst({
-          where: {
-            pageId: parsedInput.pageId,
-          },
-        })
-        if (existedPage) {
-          throw new ChatbotXException("Page is already connected")
-        }
 
         let integrationId = ""
 
@@ -190,6 +181,14 @@ export const selectPageAction = authActionClient
           integrationId,
         }
       } catch (error) {
+        if (error instanceof ChatbotXException) {
+          if (error.code === "channelDuplicated" && parsedInput.workspaceId) {
+            redirect(
+              `/space/${parsedInput.workspaceId}/settings/channels?channel=messenger&error=duplicated`,
+            )
+          }
+          throw error
+        }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Page already connected")
         }

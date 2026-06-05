@@ -13,6 +13,7 @@ import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { use } from "react"
+import { useChannelDuplicatedError } from "@/hooks/use-channel-duplicated-error"
 import { TiktokDisconnect } from "./components/tiktok-disconnect"
 import { TiktokRefreshToken } from "./components/tiktok-refresh-token"
 import type { listIntegrationTiktoks } from "./queries"
@@ -30,6 +31,8 @@ export function TiktokManage({
 }: TiktokManageProps) {
   const [{ data: integrationTiktoks }] = use(promises)
   const t = useTranslations()
+
+  useChannelDuplicatedError("tiktok")
 
   if (!isEnabled) {
     return (

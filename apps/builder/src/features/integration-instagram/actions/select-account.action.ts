@@ -19,6 +19,7 @@ import {
 } from "@chatbotx.io/integration-instagram"
 import { AuthType } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils/id"
+import { redirect } from "next/navigation"
 import {
   BRANDING_TITLE,
   getBrandingUrl,
@@ -177,6 +178,14 @@ export const selectAccountAction = authActionClient
           workspaceId,
         }
       } catch (error) {
+        if (error instanceof ChatbotXException) {
+          if (error.code === "channelDuplicated" && parsedInput.workspaceId) {
+            redirect(
+              `/space/${parsedInput.workspaceId}/settings/channels?channel=instagram&error=duplicated`,
+            )
+          }
+          throw error
+        }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Instagram account already connected")
         }

@@ -11,11 +11,9 @@ import {
 } from "@chatbotx.io/ui/components/ui/table"
 import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
-import { useSearchParams } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { use } from "react"
-import { toast } from "sonner"
-import { useTimeout } from "usehooks-ts"
+import { useChannelDuplicatedError } from "@/hooks/use-channel-duplicated-error"
 import { ZaloDisconnect } from "./components/zalo-disconnect"
 import { ZaloRefreshPermissions } from "./components/zalo-refresh-permissions"
 import type { listIntegrationZalo } from "./queries"
@@ -33,14 +31,8 @@ export function ZaloManage({
 }: ZaloManageProps) {
   const [{ data: integrationZalos }] = use(promises)
   const t = useTranslations()
-  const searchParams = useSearchParams()
 
-  useTimeout(() => {
-    if (searchParams.get("error") !== "duplicated") {
-      return
-    }
-    toast.error(t("zalo.duplicated"))
-  }, 0)
+  useChannelDuplicatedError("zalo")
 
   if (!isEnabled) {
     return (

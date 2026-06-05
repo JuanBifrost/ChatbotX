@@ -1,7 +1,9 @@
 import {
+  and,
   type DatabaseClient,
   db,
   eq,
+  ne,
   relationsFilterToSQL,
 } from "@chatbotx.io/database/client"
 import { inboxStatuses } from "@chatbotx.io/database/partials"
@@ -102,7 +104,7 @@ class InboxService extends BaseService {
           .set({ status: inboxStatuses.enum.connected })
           .where(eq(inboxModel.id, existing.id))
           .returning()
-        return { inbox: updated, wasCreated: false }
+        return { inbox: updated, wasCreated: true }
       }
       return { inbox: existing, wasCreated: false }
     }
@@ -118,6 +120,27 @@ class InboxService extends BaseService {
       .returning()
 
     return { inbox, wasCreated: true }
+  }
+  async isConnected(props: {
+    channel: string
+    sourceId: string
+    workspaceId: string
+    tx?: DatabaseClient
+  }): Promise<boolean> {
+    const client = props.tx ?? db
+    const [row] = await client
+      .select({ id: inboxModel.id })
+      .from(inboxModel)
+      .where(
+        and(
+          eq(inboxModel.channel, props.channel),
+          eq(inboxModel.sourceId, props.sourceId),
+          ne(inboxModel.workspaceId, props.workspaceId),
+          eq(inboxModel.status, inboxStatuses.enum.connected),
+        ),
+      )
+      .limit(1)
+    return !!row
   }
 }
 export const inboxService = new InboxService()

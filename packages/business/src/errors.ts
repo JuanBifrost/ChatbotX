@@ -7,7 +7,7 @@ export class ChatbotXException extends Error {
 
     this.name = this.constructor.name
     if (code) {
-      this.code = "systemError"
+      this.code = code
     }
     if (httpStatusCode) {
       this.httpStatusCode = httpStatusCode
@@ -21,3 +21,9 @@ export class ChatbotXException extends Error {
 
 export const notFoundException = (message: string) =>
   new ChatbotXException(message, "notFound", 404)
+
+export const channelDuplicatedException = () =>
+  new ChatbotXException(
+    "This account is already connected to another workspace.",
+    "channelDuplicated",
+  )

@@ -319,7 +319,16 @@
     }
   },
   "channels": {
-    "title": "Channels"
+    "title": "Channels",
+    "duplicated": {
+      "generic": "This account is already connected to another workspace.",
+      "instagram": "This Instagram account is already connected to another workspace.",
+      "messenger": "This Facebook Page is already connected to another workspace.",
+      "telegram": "This Telegram bot is already connected to another workspace.",
+      "tiktok": "This TikTok account is already connected to another workspace.",
+      "whatsapp": "This WhatsApp number is already connected to another workspace.",
+      "zalo": "This Zalo OA is already connected to another workspace."
+    }
   },
   "workspaces": {
     "list": {
@@ -2088,8 +2097,7 @@
   },
   "zalo": {
     "title": "Zalo OA",
-    "refreshPermissions": "Refresh permissions",
-    "duplicated": "This Zalo OA account has already been connected to another workspace."
+    "refreshPermissions": "Refresh permissions"
   },
   "telegram": {
     "description": "This integration lets you create Telegram bots.",

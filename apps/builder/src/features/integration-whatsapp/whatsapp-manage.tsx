@@ -13,6 +13,7 @@ import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { use } from "react"
+import { useChannelDuplicatedError } from "@/hooks/use-channel-duplicated-error"
 import type { listIntegrationWhatsapps } from "./queries"
 import { WhatsappDisconnectDialog } from "./whatsapp-disconnect-dialog"
 
@@ -29,6 +30,8 @@ export function WhatsappManage({
 }: WhatsappManageProps) {
   const [{ data: integrationWhatsapps }] = use(promises)
   const t = useTranslations()
+
+  useChannelDuplicatedError("whatsapp")
 
   if (!isEnabled) {
     return (

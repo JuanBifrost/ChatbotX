@@ -5,16 +5,13 @@ import {
   workspaceService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
-import {
-  db,
-  isDatabaseError,
-  throwIfExists,
-} from "@chatbotx.io/database/client"
+import { db, isDatabaseError } from "@chatbotx.io/database/client"
 import { integrationTypes } from "@chatbotx.io/database/partials"
 import { integrationTelegramModel } from "@chatbotx.io/database/schema"
 import type { UserModel } from "@chatbotx.io/database/types"
 import type { TelegramAuthValue } from "@chatbotx.io/integration-telegram"
 import { createId } from "@chatbotx.io/utils"
+import { redirect } from "next/navigation"
 import { integrations } from "@/integration"
 import { getOriginUrlFromHeader } from "@/lib/domain"
 import { logger } from "@/lib/log"
@@ -38,13 +35,6 @@ export const connectTelegramAction = authActionClient
         // Validate bot token and fetch bot info from Telegram
         const botData = await integrations.telegram.runAction("connect", {
           botToken,
-        })
-
-        // Make sure the bot is not already connected
-        await throwIfExists({
-          table: integrationTelegramModel,
-          where: { botId: botData.id },
-          message: "Bot is already connected",
         })
 
         // Resolve ownerId before the transaction to avoid an extra read inside it
@@ -111,6 +101,14 @@ export const connectTelegramAction = authActionClient
           return { workspaceId }
         })
       } catch (error) {
+        if (error instanceof ChatbotXException) {
+          if (error.code === "channelDuplicated" && workspaceId) {
+            redirect(
+              `/space/${workspaceId}/settings/channels?channel=telegram&error=duplicated`,
+            )
+          }
+          throw error
+        }
         if (isDatabaseError(error) && error.cause.code === "23505") {
           throw new ChatbotXException("Bot already connected")
         }

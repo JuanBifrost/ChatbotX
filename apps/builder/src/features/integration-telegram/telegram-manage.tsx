@@ -12,6 +12,7 @@ import {
 import { PlusCircleIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { use } from "react"
+import { useChannelDuplicatedError } from "@/hooks/use-channel-duplicated-error"
 import { TelegramConnect } from "./components/telegram-connect"
 import { TelegramDisconnect } from "./components/telegram-disconnect"
 import type { listIntegrationTelegrams } from "./queries"
@@ -24,6 +25,8 @@ type TelegramManageProps = {
 export function TelegramManage({ workspaceId, promises }: TelegramManageProps) {
   const [{ data: integrationTelegrams }] = use(promises)
   const t = useTranslations()
+
+  useChannelDuplicatedError("telegram")
 
   return (
     <div className="flex flex-col gap-2">

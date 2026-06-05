@@ -14,6 +14,7 @@ import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { use } from "react"
+import { useChannelDuplicatedError } from "@/hooks/use-channel-duplicated-error"
 import { MessengerConnect } from "./components/messenger-connect"
 import { MessengerDisconnect } from "./components/messenger-disconnect"
 import { MessengerRefreshPermissions } from "./components/messenger-refresh-permissions"
@@ -32,6 +33,8 @@ export function MessengerManage({
 }: MessengerManageProps) {
   const [{ data: integrationMessengers }] = use(promises)
   const t = useTranslations()
+
+  useChannelDuplicatedError("messenger")
   if (!publicConfig?.clientId) {
     return (
       <div className="flex flex-col gap-2">

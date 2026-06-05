@@ -14,6 +14,7 @@ import { PlusCircleIcon } from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { use } from "react"
+import { useChannelDuplicatedError } from "@/hooks/use-channel-duplicated-error"
 import type { listIntegrationInstagrams } from "../queries"
 import { InstagramConnect } from "./instagram-connect"
 import { InstagramDisconnect } from "./instagram-disconnect"
@@ -32,6 +33,8 @@ export function InstagramManage({
 }: InstagramManageProps) {
   const [{ data: integrationInstagrams }] = use(promises)
   const t = useTranslations()
+
+  useChannelDuplicatedError("instagram")
 
   if (!publicConfig?.clientId) {
     return (
