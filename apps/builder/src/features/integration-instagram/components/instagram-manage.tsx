@@ -16,7 +16,6 @@ import { useTranslations } from "next-intl"
 import { use } from "react"
 import { useChannelDuplicatedError } from "@/hooks/use-channel-duplicated-error"
 import type { listIntegrationInstagrams } from "../queries"
-import { InstagramConnect } from "./instagram-connect"
 import { InstagramDisconnect } from "./instagram-disconnect"
 import { InstagramRefreshPermissions } from "./instagram-refresh-permissions"
 
@@ -49,18 +48,16 @@ export function InstagramManage({
   return (
     <div className="flex flex-col gap-2">
       <div className="flex justify-end gap-2">
-        <InstagramConnect
-          publicConfig={publicConfig}
-          trigger={
-            <div className="flex items-center gap-2">
-              <PlusCircleIcon className="h-4 w-4" />
-              {t("actions.addFeature", {
-                feature: t("fields.instagram.label"),
-              })}
-            </div>
-          }
-          workspaceId={workspaceId}
-        />
+        <Button asChild variant="secondary">
+          <Link
+            href={`/channels/create?workspaceId=${workspaceId}&channel=instagram`}
+          >
+            <PlusCircleIcon className="h-4 w-4" />
+            {t("actions.addFeature", {
+              feature: t("fields.instagram.label"),
+            })}
+          </Link>
+        </Button>
       </div>
 
       <div className="overflow-hidden rounded-md border">

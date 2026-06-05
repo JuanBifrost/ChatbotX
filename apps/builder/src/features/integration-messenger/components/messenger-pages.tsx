@@ -8,6 +8,7 @@ import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
+import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { useWatch } from "react-hook-form"
@@ -92,15 +93,24 @@ export function FacebookPages({
           />
         </div>
 
-        <Button
-          disabled={!form.formState.isValid || form.formState.isSubmitting}
-          type="submit"
-        >
-          {form.formState.isSubmitting && (
-            <Loader2Icon className="animate-spin" />
-          )}
-          {t("actions.continue")}
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button asChild size="sm" variant="ghost">
+            <Link
+              href={`/space/${workspaceId}/settings/channels?channel=messenger`}
+            >
+              {t("actions.cancel")}
+            </Link>
+          </Button>
+          <Button
+            disabled={!form.formState.isValid || form.formState.isSubmitting}
+            type="submit"
+          >
+            {form.formState.isSubmitting && (
+              <Loader2Icon className="animate-spin" />
+            )}
+            {t("actions.continue")}
+          </Button>
+        </div>
       </form>
     </Form>
   )

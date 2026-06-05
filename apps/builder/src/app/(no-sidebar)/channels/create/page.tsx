@@ -6,6 +6,8 @@ import type { ChannelType } from "@chatbotx.io/database/partials"
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound, redirect } from "next/navigation"
 import InboxSelectCard from "@/features/inboxes/components/inbox-select-card"
+import { generateInstagramRedirectUri } from "@/features/integration-instagram/libs/oauth"
+import { generateMessengerRedirectUri } from "@/features/integration-messenger/libs/oauth"
 import { TelegramConnect } from "@/features/integration-telegram/components/telegram-connect"
 import { generateTiktokRedirectUri } from "@/features/integration-tiktok/libs/tiktok"
 import { SimpleCreateWebchat } from "@/features/integration-webchat/simple-create-webchat"
@@ -77,6 +79,22 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
     )
   }
 
+  if (selectedChannel === "messenger" && messenger) {
+    const redirectUri = await generateMessengerRedirectUri(
+      messenger.publicConfig,
+      workspaceId,
+    )
+    redirect(redirectUri)
+  }
+
+  if (selectedChannel === "instagram" && instagram) {
+    const redirectUri = await generateInstagramRedirectUri(
+      instagram.publicConfig,
+      workspaceId,
+    )
+    redirect(redirectUri)
+  }
+
   if (selectedChannel === "zalo" && zalo) {
     const redirectUri = await generateZaloRedirectUri(
       zalo.publicConfig,
@@ -107,12 +125,5 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
     configuredChannels.push("zalo")
   }
 
-  return (
-    <InboxSelectCard
-      configuredChannels={configuredChannels}
-      instagramPublicConfig={instagram?.publicConfig ?? null}
-      messengerPublicConfig={messenger?.publicConfig ?? null}
-      workspaceId={workspaceId}
-    />
-  )
+  return <InboxSelectCard configuredChannels={configuredChannels} />
 }

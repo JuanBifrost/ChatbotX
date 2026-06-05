@@ -1,5 +1,6 @@
 "use client"
 
+import type { InstagramAccount } from "@chatbotx.io/integration-instagram"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
 import { RadioGroupField } from "@chatbotx.io/ui/components/form/radio-group-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
@@ -7,13 +8,13 @@ import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
+import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useEffect } from "react"
 import { useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { selectAccountAction } from "../actions/select-account.action"
-import type { InstagramAccount } from "../libs/facebook"
 import { selectAccountRequest } from "../schemas/action"
 
 export function InstagramAccounts({
@@ -99,15 +100,24 @@ export function InstagramAccounts({
           />
         </div>
 
-        <Button
-          disabled={!form.formState.isValid || form.formState.isSubmitting}
-          type="submit"
-        >
-          {form.formState.isSubmitting && (
-            <Loader2Icon className="animate-spin" />
-          )}
-          {t("actions.continue")}
-        </Button>
+        <div className="flex justify-end gap-2">
+          <Button asChild size="sm" variant="ghost">
+            <Link
+              href={`/space/${workspaceId}/settings/channels?channel=instagram`}
+            >
+              {t("actions.cancel")}
+            </Link>
+          </Button>
+          <Button
+            disabled={!form.formState.isValid || form.formState.isSubmitting}
+            type="submit"
+          >
+            {form.formState.isSubmitting && (
+              <Loader2Icon className="animate-spin" />
+            )}
+            {t("actions.continue")}
+          </Button>
+        </div>
       </form>
     </Form>
   )

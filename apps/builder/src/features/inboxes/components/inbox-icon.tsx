@@ -86,7 +86,6 @@ export const INBOX_ICON_CONFIG: Record<ChannelType, InboxIconConfig> = {
   },
   smtp: {
     Icon: MailIcon,
-    iconClassName: "fill-zinc-100 dark:stroke-zinc-800",
     defaultLabel: "Email",
   },
   omnichannel: {
@@ -136,7 +135,7 @@ export const InboxIcon = memo(
             configIconClassName,
             iconClassName,
           )}
-          fill={fill}
+          {...(fill !== undefined && { fill })}
         />
         {showLabel && (
           <span className={cn(LABEL_SIZE_CLASSES[size], labelClassName)}>
