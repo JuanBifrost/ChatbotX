@@ -103,8 +103,16 @@ export const uploadAttachmentResponse = z.object({
 })
 export type UploadAttachmentResponse = z.infer<typeof uploadAttachmentResponse>
 
+export const TAG_EVENT_NAMES = [
+  "add_user_to_tag",
+  "remove_user_from_tag",
+  "remove_tag",
+] as const
+
 export const zaloWebhookEventSchema = z.object({
   app_id: z.string(),
+  // OA id — present on tag events; absent on message events.
+  oa_id: z.string().optional(),
   event_name: z.enum([
     "user_send_text",
     "user_send_image",
@@ -124,20 +132,35 @@ export const zaloWebhookEventSchema = z.object({
     "oa_send_carousel",
     "oa_send_list",
     "oa_send_action",
+    ...TAG_EVENT_NAMES,
   ]),
-  timestamp: z.string(),
-  sender: z.object({
-    id: z.string(),
-  }),
-  recipient: z.object({
-    id: z.string(),
-  }),
-  message: z.object({
-    msg_id: z.string().optional(),
-    msg_ids: z.array(z.string()).optional(),
-    text: z.string().optional(),
-    attachments: z.array(messageAttachmentSchema).optional(),
-  }),
+  timestamp: z.string().optional(),
+  // Present on message events; absent on tag events.
+  sender: z
+    .object({
+      id: z.string(),
+    })
+    .optional(),
+  recipient: z
+    .object({
+      id: z.string(),
+    })
+    .optional(),
+  message: z
+    .object({
+      msg_id: z.string().optional(),
+      msg_ids: z.array(z.string()).optional(),
+      text: z.string().optional(),
+      attachments: z.array(messageAttachmentSchema).optional(),
+    })
+    .optional(),
+  // Present on tag events only.
+  tag: z
+    .object({
+      name: z.string(),
+      user_ids: z.array(z.string()).optional(),
+    })
+    .optional(),
 })
 export type ZaloWebhookEvent = z.infer<typeof zaloWebhookEventSchema>
 

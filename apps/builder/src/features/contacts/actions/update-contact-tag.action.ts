@@ -1,15 +1,17 @@
 "use server"
 
-import { contactService } from "@chatbotx.io/business"
+import { contactService, tagSyncService } from "@chatbotx.io/business"
 import { and, db, eq, notInArray } from "@chatbotx.io/database/client"
 import { contactsToTagsModel, tagModel } from "@chatbotx.io/database/schema"
 import { emitTagApplied, emitTagRemoved } from "@chatbotx.io/events"
+import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import type { TagResource } from "@/features/tags/schema/resource"
+import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
 import {
   type UpdateContactTagRequest,
@@ -52,68 +54,108 @@ export const updateContactTags = async ({
   })
   const oldTagIds = new Set(oldTags.map((t) => t.tagId))
 
-  const returnedTags = await db.transaction(async (tx) => {
-    if (parsedInput.tags.length > 0) {
-      await tx
-        .insert(tagModel)
-        .values(
-          parsedInput.tags.map((name) => ({
-            id: createId(),
-            name,
-            workspaceId,
-          })),
-        )
-        .onConflictDoNothing({
-          target: [tagModel.workspaceId, tagModel.name],
-        })
-    }
+  const { returnedTags, newlyAppliedTags, removedTagIds } =
+    await db.transaction(async (tx) => {
+      if (parsedInput.tags.length > 0) {
+        await tx
+          .insert(tagModel)
+          .values(
+            parsedInput.tags.map((name) => ({
+              id: createId(),
+              name,
+              workspaceId,
+            })),
+          )
+          .onConflictDoNothing({
+            target: [tagModel.workspaceId, tagModel.name],
+          })
+      }
 
-    const tags = await tx.query.tagModel.findMany({
-      where: {
-        workspaceId,
-        name: { in: parsedInput.tags },
-      },
+      const tags = await tx.query.tagModel.findMany({
+        where: {
+          workspaceId,
+          deletedAt: { isNull: true as const },
+          name: { in: parsedInput.tags },
+        },
+      })
+
+      if (tags.length > 0) {
+        await tx
+          .insert(contactsToTagsModel)
+          .values(
+            tags.map((selectedTag) => ({
+              contactId: contact.id,
+              tagId: selectedTag.id,
+            })),
+          )
+          .onConflictDoNothing({
+            target: [contactsToTagsModel.contactId, contactsToTagsModel.tagId],
+          })
+      }
+
+      // Remove tags no longer selected (local ContactToTag only).
+      const newTagIdSet = new Set(tags.map((t) => t.id))
+      const removedTagIds = Array.from(oldTagIds).filter(
+        (id) => !newTagIdSet.has(id),
+      )
+      if (removedTagIds.length > 0) {
+        await tx.delete(contactsToTagsModel).where(
+          tags.length > 0
+            ? and(
+                eq(contactsToTagsModel.contactId, contact.id),
+                notInArray(
+                  contactsToTagsModel.tagId,
+                  tags.map((t) => t.id),
+                ),
+              )
+            : eq(contactsToTagsModel.contactId, contact.id),
+        )
+      }
+
+      const newlyAppliedTags = tags.filter((tag) => !oldTagIds.has(tag.id))
+
+      return {
+        returnedTags: tags,
+        newlyAppliedTags,
+        removedTagIds,
+      }
     })
 
-    if (tags.length > 0) {
-      await tx
-        .insert(contactsToTagsModel)
-        .values(
-          tags.map((selectedTag) => ({
-            contactId: contact.id,
-            tagId: selectedTag.id,
-          })),
-        )
-        .onConflictDoNothing({
-          target: [contactsToTagsModel.contactId, contactsToTagsModel.tagId],
-        })
-
-      await tx.delete(contactsToTagsModel).where(
-        and(
-          eq(contactsToTagsModel.contactId, contact.id),
-          notInArray(
-            contactsToTagsModel.tagId,
-            tags.map((t) => t.id),
-          ),
-        ),
-      )
+  // Emit tagApplied for newly added tags + enqueue sync
+  for (const tag of newlyAppliedTags) {
+    try {
+      await emitTagApplied(workspaceId, contact.id, tag.id)
+    } catch (error) {
+      logger.error({ err: error }, "Failed to emit tagApplied event:")
     }
 
-    return tags
-  })
-
-  // Emit tag events based on changes
-  const newTagIds = new Set(returnedTags.map((t) => t.id))
-  const newlyAppliedTags = returnedTags.filter((tag) => !oldTagIds.has(tag.id))
-  const removedTagIds = Array.from(oldTagIds).filter((id) => !newTagIds.has(id))
-
-  for (const tag of newlyAppliedTags) {
-    await emitTagApplied(workspaceId, contact.id, tag.id)
+    await tagSyncService.enqueueAttach({
+      workspaceId,
+      contactId: contact.id,
+      tagId: tag.id,
+    })
   }
 
+  // Emit tagRemoved + enqueue channel cleanup for removed tags.
   for (const tagId of removedTagIds) {
-    await emitTagRemoved(workspaceId, contact.id, tagId)
+    try {
+      await emitTagRemoved(workspaceId, contact.id, tagId)
+    } catch (error) {
+      logger.error({ err: error }, "Failed to emit tagRemoved event:")
+    }
+
+    await tagSyncService.enqueueDetach({
+      workspaceId,
+      contactId: contact.id,
+      tagId,
+    })
   }
+
+  await invalidateCacheByTags([
+    `workspaces:${workspaceId}#contacts`,
+    `workspaces:${workspaceId}#conversations`,
+    `workspaces:${workspaceId}#tags`,
+  ])
 
   return returnedTags
 }

@@ -19,6 +19,7 @@
     "@chatbotx.io/redis": "workspace:*",
     "@chatbotx.io/sdk": "workspace:*",
     "@chatbotx.io/utils": "workspace:*",
+    "@chatbotx.io/worker-config": "workspace:*",
     "@t3-oss/env-core": "^0.13.11",
     "drizzle-orm": "1.0.0-beta.22",
     "libphonenumber-js": "^1.12.42",

@@ -142,6 +142,12 @@ export type ConversationHandlers<IAuth extends AuthValue> = {
   >
 }
 
+/** Channel-agnostic label/tag descriptor (e.g. a Facebook Custom Label). */
+export type ChannelLabel = {
+  id: string
+  name: string
+}
+
 export type ContactHandlers<IAuth extends AuthValue> = {
   getProfile: Handler<
     { ctx: Context<IAuth>; data: { sourceId: string } },
@@ -160,6 +166,15 @@ export type ContactHandlers<IAuth extends AuthValue> = {
     { ctx: Context<IAuth>; data: { contact: OutgoingContact } },
     void
   >
+  // Per-user label operations (optional; channels that support labels).
+  assignLabel?: Handler<
+    { ctx: Context<IAuth>; data: { labelId: string; sourceId: string } },
+    void
+  >
+  removeLabel?: Handler<
+    { ctx: Context<IAuth>; data: { labelId: string; sourceId: string } },
+    void
+  >
 }
 
 export type BotHandlers<IAuth extends AuthValue> = {
@@ -171,6 +186,20 @@ export type BotHandlers<IAuth extends AuthValue> = {
   >
   deleteProfileFields: Handler<{ ctx: Context<IAuth>; fields: string[] }, void>
   getProfilePictureUrl: Handler<{ ctx: Context<IAuth> }, string | undefined>
+  // Label operations (optional; channels that support labels).
+  createLabel?: Handler<
+    { ctx: Context<IAuth>; data: { pageId: string; name: string } },
+    ChannelLabel
+  >
+  // List the labels currently assigned to a specific user.
+  listLabels?: Handler<
+    { ctx: Context<IAuth>; data: { sourceId: string } },
+    ChannelLabel[]
+  >
+  deleteLabel?: Handler<
+    { ctx: Context<IAuth>; data: { labelId: string } },
+    void
+  >
 }
 
 export type IChannel<

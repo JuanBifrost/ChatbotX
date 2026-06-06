@@ -53,6 +53,8 @@ vi.mock("@chatbotx.io/worker-config", () => ({
   integrationQueue: {
     add: mockQueueAdd,
   },
+  // event-bus (imported transitively) builds a Redis connection at module load.
+  getRedisConnection: () => ({}),
 }))
 
 // ---- mock: auth (prevent real Better-Auth init) --------------------------

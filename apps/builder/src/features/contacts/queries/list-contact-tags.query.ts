@@ -10,6 +10,7 @@ export async function listContactTags(
   const data = await db.query.tagModel.findMany({
     where: {
       workspaceId: input.workspaceId,
+      deletedAt: { isNull: true as const },
       contactsToTags: {
         contactId: input.contactId,
       },

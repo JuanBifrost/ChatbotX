@@ -1,5 +1,10 @@
 import type { BotHandlers } from "@chatbotx.io/sdk"
 import {
+  createCustomLabel,
+  deleteCustomLabel,
+  getUserLabels,
+} from "../apis/label"
+import {
   addBranding,
   deleteMessengerProfileFields,
   getPagePictureUrl,
@@ -14,4 +19,22 @@ export const botHandlers: BotHandlers<MessengerAuthValue> = {
   deleteProfileFields: async ({ ctx, fields }) =>
     deleteMessengerProfileFields({ ctx, fields }),
   getProfilePictureUrl: async ({ ctx }) => getPagePictureUrl({ ctx }),
+  createLabel: async ({ ctx, data }) => {
+    const { id } = await createCustomLabel({
+      ctx,
+      pageId: data.pageId,
+      name: data.name,
+    })
+    return { id, name: data.name }
+  },
+  listLabels: async ({ ctx, data }) => {
+    const labels = await getUserLabels({ ctx, psid: data.sourceId })
+    return labels.map((label) => ({
+      id: label.id,
+      name: label.page_label_name,
+    }))
+  },
+  deleteLabel: async ({ ctx, data }) => {
+    await deleteCustomLabel({ ctx, labelId: data.labelId })
+  },
 }

@@ -1,7 +1,9 @@
 "use server"
 
-import { and, db, eq, findOrFail, inArray } from "@chatbotx.io/database/client"
+import { tagSyncService } from "@chatbotx.io/business"
+import { and, db, eq, inArray, isNull } from "@chatbotx.io/database/client"
 import { tagModel } from "@chatbotx.io/database/schema"
+import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import {
   type BulkUpdateIdsRequest,
   bulkUpdateIdsRequest,
@@ -9,6 +11,8 @@ import {
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { workspaceActionClient } from "@/lib/safe-action"
+
+const TAG_CHUNK_SIZE = 200
 
 export const deleteTagAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdrequestParams)
@@ -32,11 +36,26 @@ export const deleteTags = async ({
   workspaceId: string
   ids: string[]
 }) => {
-  await db
-    .delete(tagModel)
-    .where(
-      and(eq(tagModel.workspaceId, workspaceId), inArray(tagModel.id, ids)),
-    )
+  for (let i = 0; i < ids.length; i += TAG_CHUNK_SIZE) {
+    const chunk = ids.slice(i, i + TAG_CHUNK_SIZE)
+    const updated = await db
+      .update(tagModel)
+      .set({ deletedAt: new Date() })
+      .where(
+        and(
+          eq(tagModel.workspaceId, workspaceId),
+          inArray(tagModel.id, chunk),
+          isNull(tagModel.deletedAt),
+        ),
+      )
+      .returning({ id: tagModel.id })
+
+    for (const row of updated) {
+      await tagSyncService.enqueueDelete({ workspaceId, tagId: row.id })
+    }
+  }
+
+  await invalidateCacheByTags([`workspaces:${workspaceId}#tags`])
 }
 
 export const deleteTag = async ({
@@ -46,14 +65,21 @@ export const deleteTag = async ({
   workspaceId: string
   id: string
 }) => {
-  const tag = await findOrFail({
-    table: tagModel,
-    where: {
-      workspaceId,
-      id,
-    },
-    message: "Tag not found",
-  })
+  const updated = await db
+    .update(tagModel)
+    .set({ deletedAt: new Date() })
+    .where(
+      and(
+        eq(tagModel.id, id),
+        eq(tagModel.workspaceId, workspaceId),
+        isNull(tagModel.deletedAt),
+      ),
+    )
+    .returning({ id: tagModel.id })
 
-  await db.delete(tagModel).where(eq(tagModel.id, tag.id))
+  if (updated.length > 0) {
+    await tagSyncService.enqueueDelete({ workspaceId, tagId: updated[0].id })
+  }
+
+  await invalidateCacheByTags([`workspaces:${workspaceId}#tags`])
 }

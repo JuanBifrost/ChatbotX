@@ -1,8 +1,12 @@
 "use server"
 
-import { db, eq, findOrFail } from "@chatbotx.io/database/client"
-import { inboxStatuses } from "@chatbotx.io/database/partials"
-import { inboxModel, integrationZaloModel } from "@chatbotx.io/database/schema"
+import { and, db, eq, findOrFail } from "@chatbotx.io/database/client"
+import { channelTypes, inboxStatuses } from "@chatbotx.io/database/partials"
+import {
+  inboxModel,
+  integrationZaloModel,
+  tagChannelModel,
+} from "@chatbotx.io/database/schema"
 import {
   isRevokedTokenError,
   type ZaloAuthValue,
@@ -41,6 +45,15 @@ export const disconnectZaloAction = workspaceActionClient
     }
 
     await db.transaction(async (tx) => {
+      // Polymorphic FK cleanup — no DB-level cascade for TagChannel.integrationId
+      await tx
+        .delete(tagChannelModel)
+        .where(
+          and(
+            eq(tagChannelModel.channelType, channelTypes.enum.zalo),
+            eq(tagChannelModel.integrationId, integrationZalo.id),
+          ),
+        )
       await tx
         .delete(integrationZaloModel)
         .where(eq(integrationZaloModel.id, integrationZalo.id))

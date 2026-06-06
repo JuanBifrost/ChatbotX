@@ -26,17 +26,18 @@ export function subscribeWebhook({
       subscribed_fields: WHATSAPP_SUBSCRIBED_FIELDS,
     }
 
+    // Explicit per-integration callback (metadata.webhookUrl) wins; the env
+    // var is only a global fallback when no explicit override is requested.
     if (overrideCallbackUrl && auth.metadata.webhookUrl && auth.verifyToken) {
       json.override_callback_uri = auth.metadata.webhookUrl
       json.verify_token = auth.verifyToken
+    } else {
+      const envOverrideUri = process.env.WHATSAPP_OVERRIDE_CALLBACK_URI
+      if (envOverrideUri && auth.verifyToken) {
+        json.override_callback_uri = envOverrideUri
+        json.verify_token = auth.verifyToken
+      }
     }
-
-    const envOverrideUri = process.env.WHATSAPP_OVERRIDE_CALLBACK_URI
-    if (envOverrideUri && auth.verifyToken) {
-      json.override_callback_uri = envOverrideUri
-      json.verify_token = auth.verifyToken
-    }
-    console.log({ json })
 
     try {
       const result = await ky

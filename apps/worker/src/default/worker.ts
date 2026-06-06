@@ -12,30 +12,37 @@ import { loopableExportContacts } from "./handlers/export-contacts"
 import { runImport } from "./handlers/run-import"
 import { sendAuditLog } from "./handlers/send-audit-log"
 import { sendErrorLog } from "./handlers/send-error-log"
-
-type Handlers = {
-  [K in DefaultJobData["type"]]: (
-    data: Extract<DefaultJobData, { type: K }>["data"],
-  ) => Promise<void>
-}
-
-const handlers: Handlers = {
-  [DefaultJobAction.exportContacts]: loopableExportContacts,
-  [DefaultJobAction.runImport]: runImport,
-  [DefaultJobAction.sendErrorLog]: sendErrorLog,
-  [DefaultJobAction.sendAuditLog]: sendAuditLog,
-}
+import { handleSyncChannelLabels } from "./handlers/sync-channel-labels"
+import { handleSyncTag } from "./handlers/sync-tag"
 
 const worker = new Worker(
   queueNames.enum.default,
   async (job: Job<DefaultJobData>) => {
     logger.info(job.data, `Worker received job: ${job.id}`)
-    const handler = handlers[job.data.type] as (data: unknown) => Promise<void>
-    if (!handler) {
-      logger.warn(`Unknown job name: ${job.name}`)
-      return
+
+    switch (job.data.type) {
+      case DefaultJobAction.sendAuditLog:
+        await sendAuditLog(job.data.data)
+        return
+      case DefaultJobAction.sendErrorLog:
+        await sendErrorLog(job.data.data)
+        return
+      case DefaultJobAction.exportContacts:
+        await loopableExportContacts(job.data.data)
+        return
+      case DefaultJobAction.runImport:
+        await runImport(job.data.data)
+        return
+      case DefaultJobAction.syncTag:
+        await handleSyncTag(job.data.data)
+        return
+      case DefaultJobAction.syncChannelLabels:
+        await handleSyncChannelLabels(job.data.data)
+        return
+      default:
+        logger.warn(`Unknown job name: ${job.name}`)
+        return
     }
-    await handler(job.data.data)
   },
   {
     connection: getRedisConnection(),

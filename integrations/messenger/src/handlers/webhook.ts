@@ -66,13 +66,32 @@ const handleWebhookEvent = async (
       )
     }
 
-    if (webhookData.entry[0].messaging[0]?.read) {
+    const entry = webhookData.entry[0]
+
+    const labelChange = entry.changes?.find((c) => c.field === "inbox_labels")
+    if (labelChange) {
+      await queue?.add("channelLabelChange", {
+        type: "channelLabelChange",
+        data: {
+          integrationType: "messenger",
+          integrationIdentifier: entry.id,
+          payload: webhookData,
+        },
+      })
+      return
+    }
+
+    if (!entry.messaging || entry.messaging.length === 0) {
+      return
+    }
+
+    if (entry.messaging[0]?.read) {
       await queue?.add("contactMarkAsRead", {
         type: "contactMarkAsRead",
         data: {
           integrationType: "messenger",
-          integrationIdentifier: webhookData.entry[0].id,
-          sourceConversationId: webhookData.entry[0].messaging[0].sender.id,
+          integrationIdentifier: entry.id,
+          sourceConversationId: entry.messaging[0].sender.id,
           payload: webhookData,
         },
       })
@@ -80,28 +99,26 @@ const handleWebhookEvent = async (
     }
 
     // Calculate integration identifier
-    const integrationIdentifier = webhookData.entry[0].messaging[0].message
-      ?.is_echo
-      ? webhookData.entry[0].messaging[0].sender.id
-      : webhookData.entry[0].messaging[0].recipient.id
+    const integrationIdentifier = entry.messaging[0].message?.is_echo
+      ? entry.messaging[0].sender.id
+      : entry.messaging[0].recipient.id
 
-    if (webhookData.entry[0].messaging[0].postback) {
+    if (entry.messaging[0].postback) {
       await queue?.add("incomingMessage", {
         type: "incomingMessage",
         data: {
           integrationType: "messenger",
           integrationIdentifier,
           payload: webhookData,
-          action: webhookData.entry[0].messaging[0].postback.payload,
+          action: entry.messaging[0].postback.payload,
         },
       })
       return
     }
 
     if (
-      webhookData.entry[0].messaging[0].message?.is_echo === true &&
-      webhookData.entry[0].messaging[0].message?.metadata ===
-        MESSENGER_MESSAGE_METADATA
+      entry.messaging[0].message?.is_echo === true &&
+      entry.messaging[0].message?.metadata === MESSENGER_MESSAGE_METADATA
     ) {
       // Skip other echoes that passed schema validation
       return

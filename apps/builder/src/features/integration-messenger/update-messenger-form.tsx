@@ -50,6 +50,7 @@ import { DirectUploadOrInsertLink } from "@/components/direct-upload"
 import { useFlowSelectOptions } from "@/features/flows/provider/flow-hook"
 import PersistentMenuField from "../integration-webchat/components/persistent-menu-field"
 import { updateMessengerAction } from "./actions/update-messenger-action"
+import { TagSyncCard } from "./components/tag-sync-card"
 import { updateMessengerRequest } from "./schema/action"
 
 type UpdateMessengerFormProps = {
@@ -337,6 +338,13 @@ export function UpdateMessengerForm({
             </div>
           </CardContent>
         </Card>
+
+        <TagSyncCard
+          integrationId={integrationMessenger.id}
+          pageId={integrationMessenger.pageId}
+          syncTagEnabledAt={integrationMessenger.syncTagEnabledAt}
+          workspaceId={workspaceId}
+        />
 
         <PersistentMenuField channel={channelTypes.enum.messenger} />
 

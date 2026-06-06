@@ -16,7 +16,7 @@ export type UpdateContactTagRequest = z.infer<typeof updateContactTagRequest>
 
 export const removeContactTagsRequest = z.object({
   ids: z.array(zodBigintAsString()),
-  tags: z.array(zodBigintAsString()),
+  tags: z.array(z.string().trim().min(1)).min(1),
 })
 export type RemoveContactTagsRequest = z.infer<typeof removeContactTagsRequest>
 

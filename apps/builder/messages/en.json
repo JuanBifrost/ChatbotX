@@ -1763,6 +1763,17 @@
           "close": "Close"
         }
       }
+    },
+    "tagSync": {
+      "title": "Tag Sync",
+      "description": "Two-way sync of tags between this workspace and the connected channel.",
+      "toggleSuccess": "Tag sync setting updated.",
+      "enabledSince": "Enabled since {date}",
+      "disabled": "Disabled",
+      "labelSync": "Sync tags",
+      "on": "On",
+      "off": "Off",
+      "termsRequired": "Page admin must accept the Facebook Page Contact Terms:"
     }
   },
   "omnichannel": {
@@ -2103,7 +2114,15 @@
   },
   "zalo": {
     "title": "Zalo OA",
-    "refreshPermissions": "Refresh permissions"
+    "refreshPermissions": "Refresh permissions",
+    "duplicated": "This Zalo OA account has already been connected to another workspace.",
+    "tagSync": {
+      "title": "Tag Sync",
+      "description": "Mirror local tag assignments to this Zalo OA.",
+      "toggleSuccess": "Tag sync setting updated.",
+      "enabledSince": "Enabled since {date}",
+      "disabled": "Disabled"
+    }
   },
   "telegram": {
     "description": "This integration lets you create Telegram bots.",

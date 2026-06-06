@@ -68,7 +68,10 @@ export class WebhookExecutor {
       eventData.eventType === triggerEventTypes.enum.tagRemoved
     ) {
       const tag = await db.query.tagModel.findFirst({
-        where: { id: data.tagId as string },
+        where: {
+          id: data.tagId as string,
+          deletedAt: { isNull: true as const },
+        },
         columns: { name: true },
       })
 

@@ -125,10 +125,28 @@ export type MessengerMessagingEvent = z.infer<
   typeof messengerMessagingEventSchema
 >
 
+export const messengerInboxLabelsChangeSchema = z.object({
+  field: z.literal("inbox_labels"),
+  value: z.object({
+    user: z.object({ id: z.string() }).optional(),
+    action: z.string(),
+    label: z.object({
+      id: z.string(),
+      // Omitted by FB on some actions (e.g. user label add/remove) — only
+      // present when the label name is relevant (create/delete label).
+      page_label_name: z.string().optional(),
+    }),
+  }),
+})
+export type MessengerInboxLabelsChange = z.infer<
+  typeof messengerInboxLabelsChangeSchema
+>
+
 export const messengerPageEntrySchema = z.object({
   id: z.string(),
   time: z.number(),
-  messaging: z.array(messengerMessagingEventSchema),
+  messaging: z.array(messengerMessagingEventSchema).optional(),
+  changes: z.array(messengerInboxLabelsChangeSchema).optional(),
 })
 export type MessengerPageEntry = z.infer<typeof messengerPageEntrySchema>
 

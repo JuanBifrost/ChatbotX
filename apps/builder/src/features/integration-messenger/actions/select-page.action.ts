@@ -5,10 +5,12 @@ import {
   connectChannelIntegration,
   platformCredentialService,
   resolvePlatformSettings,
+  tagSyncService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, isDatabaseError } from "@chatbotx.io/database/client"
+import { channelTypes } from "@chatbotx.io/database/partials"
 import { integrationMessengerModel } from "@chatbotx.io/database/schema"
 import type { UserModel } from "@chatbotx.io/database/types"
 import type { MessengerAuthValue } from "@chatbotx.io/integration-messenger"
@@ -41,6 +43,7 @@ export const selectPageAction = authActionClient
     }) => {
       try {
         let workspaceId = parsedInput.workspaceId
+        let connectedIntegrationId: string | undefined
 
         const platformOwnerId = parsedInput.workspaceId
           ? ((
@@ -147,6 +150,7 @@ export const selectPageAction = authActionClient
               })
 
             integrationId = integrationRow.id
+            connectedIntegrationId = integrationRow?.id
 
             const brandingCtx = await buildContext({
               workspaceId,
@@ -174,6 +178,15 @@ export const selectPageAction = authActionClient
 
         if (!integrationId) {
           throw new ChatbotXException("Failed to create integration")
+        }
+
+        // Import any labels already on the page into local tags + mappings.
+        if (connectedIntegrationId) {
+          await tagSyncService.enqueueChannelScan({
+            workspaceId: workspaceId as string,
+            channelType: channelTypes.enum.messenger,
+            integrationId: connectedIntegrationId,
+          })
         }
 
         return {

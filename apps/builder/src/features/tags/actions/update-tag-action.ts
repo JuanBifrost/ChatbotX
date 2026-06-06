@@ -41,6 +41,7 @@ export const updateTag = async ({
     where: {
       name: parsedInput.name,
       workspaceId,
+      deletedAt: { isNull: true as const },
       id: {
         ne: id,
       },
@@ -56,7 +57,7 @@ export const updateTag = async ({
 
   const tag = await findOrFail({
     table: tagModel,
-    where: { id, workspaceId },
+    where: { id, workspaceId, deletedAt: { isNull: true as const } },
     message: "Tag not found",
   })
 

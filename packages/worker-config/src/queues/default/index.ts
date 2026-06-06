@@ -1,3 +1,4 @@
+import type { ChannelType } from "@chatbotx.io/database/partials"
 import type { ContactFilterCriteriaInput } from "@chatbotx.io/database/queries"
 import { Queue } from "bullmq"
 import {
@@ -20,6 +21,8 @@ export const DefaultJobAction = {
   runImport: "runImport",
   sendErrorLog: "sendErrorLog",
   sendAuditLog: "sendAuditLog",
+  syncTag: "syncTag",
+  syncChannelLabels: "syncChannelLabels",
 } as const
 
 export type ExportContactsFilter = {
@@ -71,8 +74,43 @@ export type JobSendAuditLog = {
   }
 }
 
+/**
+ * Single tag-sync job. The `action` discriminator selects the operation the
+ * worker runs (create label / attach to contact / detach from contact / delete
+ * tag) so all four share one queue + one handler.
+ */
+export type JobSyncTag = {
+  type: typeof DefaultJobAction.syncTag
+  data:
+    | { action: "create"; workspaceId: string; tagId: string }
+    | {
+        action: "attach"
+        workspaceId: string
+        contactId: string
+        tagId: string
+      }
+    | {
+        action: "detach"
+        workspaceId: string
+        contactId: string
+        tagId: string
+      }
+    | { action: "delete"; workspaceId: string; tagId: string }
+}
+
+export type JobSyncChannelLabels = {
+  type: typeof DefaultJobAction.syncChannelLabels
+  data: {
+    workspaceId: string
+    channelType: ChannelType
+    integrationId: string
+  }
+}
+
 export type DefaultJobData =
   | JobExportContacts
   | JobRunImport
   | JobSendErrorLog
   | JobSendAuditLog
+  | JobSyncTag
+  | JobSyncChannelLabels

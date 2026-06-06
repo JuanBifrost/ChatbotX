@@ -189,7 +189,13 @@ export const buildSelectedFields = async (
 
   const [tagNameById, customFieldNameById] = await Promise.all([
     loadNameMap(idsOfType("tag"), (ids) =>
-      db.query.tagModel.findMany({ where: { id: { in: ids }, workspaceId } }),
+      db.query.tagModel.findMany({
+        where: {
+          id: { in: ids },
+          workspaceId,
+          deletedAt: { isNull: true as const },
+        },
+      }),
     ),
     loadNameMap(idsOfType("custom"), (ids) =>
       db.query.customFieldModel.findMany({

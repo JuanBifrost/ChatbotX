@@ -12805,6 +12805,19 @@
       "table": "Tag"
     },
     {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "deletedAt",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "Tag"
+    },
+    {
       "type": "bigint",
       "typeSchema": null,
       "notNull": false,
@@ -17904,7 +17917,7 @@
         }
       ],
       "isUnique": true,
-      "where": null,
+      "where": "\"deletedAt\" IS NULL",
       "with": "",
       "method": "btree",
       "concurrently": false,

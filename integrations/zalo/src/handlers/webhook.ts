@@ -6,9 +6,12 @@ import {
 import crypto from "crypto"
 import type { ZaloConfig } from "../schema/definition"
 import {
+  TAG_EVENT_NAMES,
   type ZaloWebhookEvent,
   zaloWebhookEventSchema,
 } from "../schema/webhook"
+
+const TAG_EVENT_NAME_SET = new Set<string>(TAG_EVENT_NAMES)
 
 const _verifyWebhookSignature = (
   payload: ZaloWebhookEvent,
@@ -51,6 +54,20 @@ const handleWebhookEvent = async (
 
     const webhookData = zaloWebhookEventSchema.parse(body)
 
+    // Tag events carry oa_id + tag (no sender/recipient). Route them before
+    // the message-event handling below.
+    if (TAG_EVENT_NAME_SET.has(webhookData.event_name) && webhookData.oa_id) {
+      await queue.add("channelLabelChange", {
+        type: "channelLabelChange",
+        data: {
+          integrationType: "zalo",
+          integrationIdentifier: webhookData.oa_id,
+          payload: webhookData,
+        },
+      })
+      return
+    }
+
     // const signature = req.headers.get("X-ZEvent-Signature") ?? ""
     // if (!signature) {
     //   throw new SdkException("Missing webhook signature")
@@ -66,6 +83,11 @@ const handleWebhookEvent = async (
 
     if (webhookData.app_id !== config.clientId) {
       throw new SdkException("Invalid app_id in webhook payload")
+    }
+
+    // Message events always carry sender/recipient.
+    if (!(webhookData.sender && webhookData.recipient)) {
+      throw new SdkException("Missing sender/recipient in message event")
     }
 
     if (webhookData.event_name === "user_seen_message") {

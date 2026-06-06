@@ -1,5 +1,16 @@
-import { index, jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
-import { bigintAsString, sharedColumns } from "../partials/shared"
+import {
+  index,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core"
+import {
+  bigintAsString,
+  sharedColumns,
+  timestampConfig,
+} from "../partials/shared"
 import { flowModel } from "./flow"
 import { inboxModel } from "./inbox"
 import { workspaceModel } from "./workspace"
@@ -27,6 +38,7 @@ export const integrationZaloModel = pgTable(
       onDelete: "set null",
       onUpdate: "cascade",
     }),
+    syncTagEnabledAt: timestamp(timestampConfig),
   },
   (table) => [
     index("IntegrationZalo_workspaceId_idx").using(

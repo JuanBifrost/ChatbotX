@@ -31,6 +31,7 @@ import { contactsOnBroadcastsRelations } from "./contact-on-broadcast"
 import { contactsOnSequenceRelations } from "./contact-on-sequence"
 import { contactOnSmartDelayRelations } from "./contact-on-smart-delay"
 import { contactsToTagsRelations } from "./contact-to-tag"
+import { contactToTagChannelRelations } from "./contact-to-tag-channel"
 import { conversationRelations } from "./conversation"
 import { conversationParticipantRelations } from "./conversation-participant"
 import { platformCredentialRelations } from "./credential"
@@ -78,6 +79,7 @@ import { sequenceDispatchRelations } from "./sequence-dispatch"
 import { sequenceStepRelations } from "./sequence-step"
 import { spreadsheetRelations } from "./spreadsheet"
 import { tagRelations } from "./tag"
+import { tagChannelRelations } from "./tag-channel"
 import { triggerRelations } from "./trigger"
 import { conditionRelations } from "./trigger-condition"
 import { triggerContactHistoryRelations } from "./trigger-contact-history"
@@ -149,6 +151,8 @@ export const relations = {
   ...integrationGeminiRelations,
   ...contactsOnBroadcastsRelations,
   ...contactsToTagsRelations,
+  ...tagChannelRelations,
+  ...contactToTagChannelRelations,
   ...reflinkRelations,
   ...magicLinkRelations,
   ...sequenceRelations,

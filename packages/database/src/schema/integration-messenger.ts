@@ -5,6 +5,7 @@ import {
   jsonb,
   pgTable,
   text,
+  timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
 import type {
@@ -12,7 +13,11 @@ import type {
   MessengerPersistentMenu,
   MessengerPersona,
 } from "../partials/integration-messenger"
-import { bigintAsString, sharedColumns } from "../partials/shared"
+import {
+  bigintAsString,
+  sharedColumns,
+  timestampConfig,
+} from "../partials/shared"
 import { flowModel } from "./flow"
 import { inboxModel } from "./inbox"
 import { workspaceModel } from "./workspace"
@@ -51,6 +56,7 @@ export const integrationMessengerModel = pgTable(
       onDelete: "set null",
       onUpdate: "cascade",
     }),
+    syncTagEnabledAt: timestamp(timestampConfig),
   },
   (table) => [
     index("IntegrationMessenger_workspaceId_idx").using(

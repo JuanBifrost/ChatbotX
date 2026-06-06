@@ -50,6 +50,9 @@ vi.mock("@chatbotx.io/sequence-scheduler", () => ({
   cancelPendingDispatches: vi.fn(),
   enrollContactInSequence: vi.fn(),
 }))
+vi.mock("@chatbotx.io/business", () => ({
+  tagSyncService: { enqueueAttach: vi.fn(), enqueueDetach: vi.fn() },
+}))
 vi.mock("@chatbotx.io/utils", () => ({ createId: () => "test-id" }))
 
 const buildProps = () =>

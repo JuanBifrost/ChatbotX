@@ -1,3 +1,4 @@
+import { tagSyncService } from "@chatbotx.io/business"
 import { and, db, eq, inArray, isNull } from "@chatbotx.io/database/client"
 import {
   contactCustomFieldModel,
@@ -166,7 +167,7 @@ export async function addContactTag({
   conversation,
   step,
 }: ExecuteStepProps<AddContactTagStepSchema>) {
-  const insertedTags: { id: string }[] = []
+  const newlyLinkedTagIds: string[] = []
 
   await db.transaction(async (tx) => {
     await tx
@@ -192,7 +193,9 @@ export async function addContactTag({
       )
 
     if (existingTags.length > 0) {
-      await tx
+      // Capture only the pairs that were actually inserted so we mirror /
+      // emit exactly once per newly-applied tag (not for pre-existing links).
+      const linked = await tx
         .insert(contactsToTagsModel)
         .values(
           existingTags.map((t) => ({
@@ -201,14 +204,24 @@ export async function addContactTag({
           })),
         )
         .onConflictDoNothing()
+        .returning({ tagId: contactsToTagsModel.tagId })
 
-      insertedTags.push(...existingTags.map((t) => ({ id: t.id })))
+      newlyLinkedTagIds.push(...linked.map((l) => l.tagId))
     }
   })
 
+  // Enqueue tag-sync + emit events outside the transaction (pure Redis push).
+  for (const tagId of newlyLinkedTagIds) {
+    await tagSyncService.enqueueAttach({
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      tagId,
+    })
+  }
+
   await Promise.all(
-    insertedTags.map((tag) =>
-      emitTagApplied(conversation.workspaceId, conversation.contactId, tag.id),
+    newlyLinkedTagIds.map((tagId) =>
+      emitTagApplied(conversation.workspaceId, conversation.contactId, tagId),
     ),
   )
 }
@@ -241,6 +254,16 @@ export async function removeContactTag({
       ),
     ),
   )
+
+  // Enqueue channel detach (unassign + ContactToTagChannel cleanup runs in the
+  // queue). Detach is idempotent, so it is safe to enqueue per resolved tag.
+  for (const tag of tags) {
+    await tagSyncService.enqueueDetach({
+      workspaceId: conversation.workspaceId,
+      contactId: conversation.contactId,
+      tagId: tag.id,
+    })
+  }
 
   await Promise.all(
     tags.map((tag) =>

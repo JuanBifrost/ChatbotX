@@ -56,7 +56,7 @@ export const receiveMessage: MessageHandlers<MessengerAuthValue>["receiveMessage
 
     const entry = validatedData.entry[0]
 
-    if (!entry.messaging[0]) {
+    if (!entry.messaging?.[0]) {
       throw new MessengerException("No messaging found")
     }
 

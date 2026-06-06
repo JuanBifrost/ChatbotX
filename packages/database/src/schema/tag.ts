@@ -1,5 +1,16 @@
-import { boolean, index, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
-import { bigintAsString, sharedColumns } from "../partials/shared"
+import { isNull } from "drizzle-orm"
+import {
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core"
+import {
+  bigintAsString,
+  sharedColumns,
+  timestampConfig,
+} from "../partials/shared"
 import { folderModel } from "./folder"
 import { workspaceModel } from "./workspace"
 
@@ -8,11 +19,11 @@ export const tagModel = pgTable(
   {
     ...sharedColumns,
     name: text().notNull(),
+    deletedAt: timestamp(timestampConfig),
     folderId: bigintAsString().references(() => folderModel.id, {
       onDelete: "set null",
       onUpdate: "cascade",
     }),
-    syncToMessenger: boolean().default(false).notNull(),
     workspaceId: bigintAsString()
       .notNull()
       .references(() => workspaceModel.id, {
@@ -21,11 +32,13 @@ export const tagModel = pgTable(
       }),
   },
   (table) => [
-    uniqueIndex("Tag_workspaceId_name_key").using(
-      "btree",
-      table.workspaceId.asc().nullsLast(),
-      table.name.asc().nullsLast(),
-    ),
+    uniqueIndex("Tag_workspaceId_name_key")
+      .using(
+        "btree",
+        table.workspaceId.asc().nullsLast(),
+        table.name.asc().nullsLast(),
+      )
+      .where(isNull(table.deletedAt)),
     index("Tag_folderId_idx").using("btree", table.folderId.asc().nullsLast()),
   ],
 )

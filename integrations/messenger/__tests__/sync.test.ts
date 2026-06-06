@@ -10,6 +10,14 @@ vi.mock("../src/exception", async (importOriginal) => {
 vi.mock("../src/lib/http-client", () => ({
   facebookGraphClient: { get: mockGet },
   facebookAttachmentClient: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
+  // sync.ts uses getWithHeaders ({ data, headers }); adapt through mockGet so
+  // the per-test setups/assertions keep working on (url, options) → body.
+  facebookCoexistGraphClient: {
+    getWithHeaders: vi.fn(async (url: string, options?: unknown) => ({
+      data: await mockGet(url, options),
+      headers: new Headers(),
+    })),
+  },
 }))
 
 import { listConversations, listMessages } from "../src/apis/sync"
@@ -32,8 +40,8 @@ describe("listConversations", () => {
     expect(mockGet).toHaveBeenCalledOnce()
     const [, options] = mockGet.mock.calls[0]
     expect(options.searchParams.platform).toBe("MESSENGER")
-    expect(options.searchParams.fields).toBe("id,participants")
-    expect(options.searchParams.limit).toBe("100")
+    expect(options.searchParams.fields).toBe("id,participants,updated_time")
+    expect(options.searchParams.limit).toBe("499")
   })
 
   test("returns after from paging.cursors.after when paging.next is truthy", async () => {
@@ -134,8 +142,10 @@ describe("listMessages", () => {
     expect(mockGet).toHaveBeenCalledOnce()
     const [endpoint, options] = mockGet.mock.calls[0]
     expect(endpoint).toBe(`${VERSION}/${CONVERSATION_ID}/messages`)
-    expect(options.searchParams.fields).toBe("id,message,from,created_time")
-    expect(options.searchParams.limit).toBe("100")
+    expect(options.searchParams.fields).toBe(
+      "id,message,from,created_time,attachments{id,name,mime_type,size,image_data,video_data,file_url,generic_template}",
+    )
+    expect(options.searchParams.limit).toBe("499")
   })
 
   test("passing after forwards it as searchParams.after", async () => {

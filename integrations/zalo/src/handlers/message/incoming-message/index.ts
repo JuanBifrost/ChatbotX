@@ -55,7 +55,7 @@ export const receiveMessage: MessageHandlers<ZaloAuthValue>["receiveMessage"] =
 
     const data = payload as ZaloWebhookEvent
 
-    if (!data.message) {
+    if (!(data.message && data.sender && data.recipient)) {
       return null
     }
 
@@ -83,7 +83,7 @@ const getMessageEntity = async (
   ctx: Context<ZaloAuthValue>,
   event: ZaloWebhookEvent,
 ): Promise<{ message: IncomingMessage; postbackAction: string | null }> => {
-  if (!event.message.msg_id) {
+  if (!event.message?.msg_id) {
     throw new ZaloException("Missing msg_id in message event")
   }
   let message: IncomingMessage = {

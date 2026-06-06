@@ -5,7 +5,6 @@ import { tagResource } from "./resource"
 export const createTagRequest = z.object({
   name: z.string().trim().min(1).max(255),
   folderId: zodBigintAsString().nullish(),
-  syncToMessenger: z.boolean().nullish(),
 })
 export type CreateTagRequest = z.input<typeof createTagRequest>
 

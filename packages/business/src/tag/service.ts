@@ -28,7 +28,10 @@ class TagService extends BaseService {
       key,
       async () =>
         await tx.query.tagModel.findMany({
-          where: { contactsToTags: { contactId } },
+          where: {
+            deletedAt: { isNull: true as const },
+            contactsToTags: { contactId },
+          },
           orderBy: { name: "asc" },
         }),
       {
@@ -52,7 +55,12 @@ class TagService extends BaseService {
 
         if (isNumericId(key)) {
           const byId = await tx.query.tagModel.findFirst({
-            where: { id: key, workspaceId, folderId: folderWhere },
+            where: {
+              id: key,
+              workspaceId,
+              deletedAt: { isNull: true as const },
+              folderId: folderWhere,
+            },
           })
           if (byId) {
             return byId
@@ -60,7 +68,12 @@ class TagService extends BaseService {
         }
 
         return await tx.query.tagModel.findFirst({
-          where: { name: key, workspaceId, folderId: folderWhere },
+          where: {
+            name: key,
+            workspaceId,
+            deletedAt: { isNull: true as const },
+            folderId: folderWhere,
+          },
         })
       },
       {
@@ -103,7 +116,11 @@ class TagService extends BaseService {
     })
 
     const tags = await tx.query.tagModel.findMany({
-      where: { workspaceId, id: { in: tagIds } },
+      where: {
+        workspaceId,
+        id: { in: tagIds },
+        deletedAt: { isNull: true as const },
+      },
       columns: { id: true },
     })
 

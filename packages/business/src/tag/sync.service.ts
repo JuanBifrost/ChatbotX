@@ -1,0 +1,93 @@
+import type { ChannelType } from "@chatbotx.io/database/partials"
+import { DefaultJobAction, defaultQueue } from "@chatbotx.io/worker-config"
+import { BaseService } from "../base.service"
+
+class TagSyncService extends BaseService {
+  /**
+   * Enqueue outbound sync of a newly created tag — creates the label on every
+   * channel integration in the workspace that has tag sync enabled.
+   * Pure Redis enqueue. Caller must call AFTER the Tag row is committed.
+   */
+  async enqueueCreate(props: {
+    workspaceId: string
+    tagId: string
+  }): Promise<void> {
+    const { workspaceId, tagId } = props
+    await defaultQueue.add(DefaultJobAction.syncTag, {
+      type: DefaultJobAction.syncTag,
+      data: { action: "create", workspaceId, tagId },
+    })
+  }
+
+  /**
+   * Enqueue outbound sync of a contact-tag attach.
+   * Pure Redis enqueue — safe to call any time.
+   * Caller must call AFTER inserting ContactToTag row (and AFTER tx commit if any).
+   */
+  async enqueueAttach(props: {
+    workspaceId: string
+    contactId: string
+    tagId: string
+  }): Promise<void> {
+    const { workspaceId, contactId, tagId } = props
+    await defaultQueue.add(DefaultJobAction.syncTag, {
+      type: DefaultJobAction.syncTag,
+      data: { action: "attach", workspaceId, contactId, tagId },
+    })
+  }
+
+  /**
+   * Enqueue outbound detach (a tag removed from a contact). The worker handles
+   * everything sync-related: unassigns the label on each sync-enabled channel
+   * and deletes the matching ContactToTagChannel rows.
+   * Pure Redis enqueue. Caller must call AFTER the local ContactToTag delete
+   * commits (and outside any open transaction).
+   */
+  async enqueueDetach(props: {
+    workspaceId: string
+    contactId: string
+    tagId: string
+  }): Promise<void> {
+    const { workspaceId, contactId, tagId } = props
+    await defaultQueue.add(DefaultJobAction.syncTag, {
+      type: DefaultJobAction.syncTag,
+      data: { action: "detach", workspaceId, contactId, tagId },
+    })
+  }
+
+  /**
+   * Enqueue outbound delete of a tag. The worker deletes the label on each
+   * sync-enabled channel and then deletes the Tag row (cascading TagChannel /
+   * ContactToTagChannel / ContactToTag). Pure Redis enqueue.
+   */
+  async enqueueDelete(props: {
+    workspaceId: string
+    tagId: string
+  }): Promise<void> {
+    const { workspaceId, tagId } = props
+    await defaultQueue.add(DefaultJobAction.syncTag, {
+      type: DefaultJobAction.syncTag,
+      data: { action: "delete", workspaceId, tagId },
+    })
+  }
+
+  /**
+   * Enqueue a full scan of an integration's existing channel labels into local
+   * tags + mappings. Call after a channel is connected so labels already on the
+   * channel are imported. Pure Redis enqueue — call AFTER the integration row
+   * commits.
+   */
+  async enqueueChannelScan(props: {
+    workspaceId: string
+    channelType: ChannelType
+    integrationId: string
+  }): Promise<void> {
+    const { workspaceId, channelType, integrationId } = props
+    await defaultQueue.add(DefaultJobAction.syncChannelLabels, {
+      type: DefaultJobAction.syncChannelLabels,
+      data: { workspaceId, channelType, integrationId },
+    })
+  }
+}
+
+export const tagSyncService = new TagSyncService()

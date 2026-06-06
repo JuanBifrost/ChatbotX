@@ -30,6 +30,7 @@ vi.mock("@chatbotx.io/database/client", () => ({
   },
   and: (...args: unknown[]) => ({ and: args }),
   eq: (a: unknown, b: unknown) => ({ eq: [a, b] }),
+  isNull: (column: unknown) => ({ isNull: column }),
 }))
 
 vi.mock("@chatbotx.io/database/partials", async () =>

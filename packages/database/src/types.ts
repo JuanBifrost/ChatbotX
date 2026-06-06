@@ -16,6 +16,9 @@ export type TagModel = typeof schema.tagModel.$inferSelect
 export type EmailTopicModel = typeof schema.emailTopicModel.$inferSelect
 export type AnalyticsEmailTopicModel =
   typeof schema.analyticsEmailTopicModel.$inferSelect
+export type TagChannelModel = typeof schema.tagChannelModel.$inferSelect
+export type ContactToTagChannelModel =
+  typeof schema.contactToTagChannelModel.$inferSelect
 export type FlowVersionModel = typeof schema.flowVersionModel.$inferSelect
 export type InvitationModel = typeof schema.invitationModel.$inferSelect
 export type BroadcastModel = typeof schema.broadcastModel.$inferSelect

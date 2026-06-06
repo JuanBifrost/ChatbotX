@@ -6,14 +6,25 @@ import {
   SdkException,
 } from "@chatbotx.io/sdk"
 import { refreshAccessToken } from "./api/auth"
+import {
+  getUserDetail,
+  listOaTags,
+  removeFollowerFromTag,
+  removeTag,
+  tagFollower,
+} from "./api/tag"
 import { callbackHandler } from "./handlers/callback"
 import { contactHandlers } from "./handlers/handler"
 import { messageHandlers } from "./handlers/message"
 import { webhookHandler } from "./handlers/webhook"
-import type { ZaloAuthValue, ZaloConfig } from "./schema/definition"
+import type {
+  ZaloActions,
+  ZaloAuthValue,
+  ZaloConfig,
+} from "./schema/definition"
 import { calculateExpiresAt } from "./utils"
 
-const config: IntegrationDefinition<ZaloConfig, ZaloAuthValue> = {
+const config: IntegrationDefinition<ZaloConfig, ZaloAuthValue, ZaloActions> = {
   name: "zalo",
   channels: {
     channel: {
@@ -21,7 +32,13 @@ const config: IntegrationDefinition<ZaloConfig, ZaloAuthValue> = {
       contact: contactHandlers,
     },
   },
-  actions: {},
+  actions: {
+    tagFollower,
+    removeFollowerFromTag,
+    listOaTags,
+    removeTag,
+    getUserDetail,
+  },
   handleRequest: async (props) => {
     const segments = new URL(props.req.url).pathname.split("/")
     const method = segments.pop()
@@ -56,5 +73,5 @@ const config: IntegrationDefinition<ZaloConfig, ZaloAuthValue> = {
 }
 
 export const integration = new Integration<
-  IntegrationDefinition<ZaloConfig, ZaloAuthValue>
+  IntegrationDefinition<ZaloConfig, ZaloAuthValue, ZaloActions>
 >(config)

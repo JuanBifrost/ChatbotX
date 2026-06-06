@@ -1,4 +1,4 @@
-import { conversationService } from "@chatbotx.io/business"
+import { conversationService, tagSyncService } from "@chatbotx.io/business"
 import { and, db, eq, inArray } from "@chatbotx.io/database/client"
 import { triggerActions } from "@chatbotx.io/database/partials"
 import {
@@ -75,11 +75,12 @@ export class ActionExecutor {
           where: {
             id: { in: tagIds },
             workspaceId,
+            deletedAt: { isNull: true as const },
           },
         })
 
         if (existingTags.length > 0) {
-          await db
+          const newlyLinked = await db
             .insert(contactsToTagsModel)
             .values(
               existingTags.map((t) => ({
@@ -88,6 +89,15 @@ export class ActionExecutor {
               })),
             )
             .onConflictDoNothing()
+            .returning({ tagId: contactsToTagsModel.tagId })
+
+          for (const link of newlyLinked) {
+            await tagSyncService.enqueueAttach({
+              workspaceId,
+              contactId: conversation.contactId,
+              tagId: link.tagId,
+            })
+          }
         }
         break
       }
@@ -103,6 +113,14 @@ export class ActionExecutor {
                 inArray(contactsToTagsModel.tagId, tagIds),
               ),
             )
+          // Channel cleanup (unassign + delete ContactToTagChannel) runs in the queue.
+          for (const tagId of tagIds) {
+            await tagSyncService.enqueueDetach({
+              workspaceId,
+              contactId: conversation.contactId,
+              tagId,
+            })
+          }
         }
         break
       }

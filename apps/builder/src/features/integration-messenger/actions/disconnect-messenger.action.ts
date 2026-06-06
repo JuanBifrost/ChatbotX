@@ -1,11 +1,12 @@
 "use server"
 
 import { and, db, eq, findOrFail, inArray } from "@chatbotx.io/database/client"
-import { inboxStatuses } from "@chatbotx.io/database/partials"
+import { channelTypes, inboxStatuses } from "@chatbotx.io/database/partials"
 import {
   coexistSyncRunModel,
   inboxModel,
   integrationMessengerModel,
+  tagChannelModel,
 } from "@chatbotx.io/database/schema"
 import {
   isRevokedTokenError,
@@ -64,6 +65,16 @@ const disconnectMessenger = async (ctx: {
         and(
           eq(coexistSyncRunModel.integrationId, integrationMessenger.id),
           inArray(coexistSyncRunModel.status, ["init", "running"]),
+        ),
+      )
+
+    // Polymorphic FK cleanup — no DB-level cascade for TagChannel.integrationId
+    await tx
+      .delete(tagChannelModel)
+      .where(
+        and(
+          eq(tagChannelModel.channelType, channelTypes.enum.messenger),
+          eq(tagChannelModel.integrationId, integrationMessenger.id),
         ),
       )
 

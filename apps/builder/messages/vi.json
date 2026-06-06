@@ -1775,6 +1775,17 @@
           "close": "Đóng"
         }
       }
+    },
+    "tagSync": {
+      "title": "Đồng bộ nhãn",
+      "description": "Đồng bộ hai chiều giữa nhãn ở workspace và kênh đã kết nối.",
+      "toggleSuccess": "Đã cập nhật cài đặt đồng bộ nhãn.",
+      "enabledSince": "Đã bật từ {date}",
+      "disabled": "Tắt",
+      "labelSync": "Đồng bộ nhãn",
+      "on": "Bật",
+      "off": "Tắt",
+      "termsRequired": "Cần đồng ý điều khoản Facebook Page Contact Terms"
     }
   },
   "omnichannel": {

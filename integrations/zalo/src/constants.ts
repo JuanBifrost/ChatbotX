@@ -19,5 +19,9 @@ export const ZALO_API_ENDPOINTS = {
     UPLOAD_IMAGE: "v2.0/oa/upload/image",
     UPLOAD_FILE: "v2.0/oa/upload/file",
     UPLOAD_GIF: "v2.0/oa/upload/gif",
+    TAG_FOLLOWER: "v2.0/oa/tag/tagfollower",
+    RM_FOLLOWER_FROM_TAG: "v2.0/oa/tag/rmfollowerfromtag",
+    LIST_TAGS: "v2.0/oa/tag/gettagsofoa",
+    RM_TAG: "v2.0/oa/tag/rmtag",
   },
 } as const

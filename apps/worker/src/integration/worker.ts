@@ -27,9 +27,11 @@ import {
   runFlowQuickReply,
 } from "./handlers/flow"
 import { handleMessageStatus } from "./handlers/message-status"
+import { handleMessengerLabelWebhook } from "./handlers/messenger-label-webhook"
 import { receiveMessage } from "./handlers/received-message"
 import { runRef } from "./handlers/ref"
 import { handleSendSequenceFlow } from "./handlers/sequence-flow"
+import { handleZaloLabelWebhook } from "./handlers/zalo-label-webhook"
 
 async function startIntegrationWorker() {
   try {
@@ -148,6 +150,14 @@ async function startIntegrationWorker() {
         }
         case IntegrationJobAction.coexistWhatsappBuffer: {
           await coexistWhatsappBuffer(job.data.data)
+          return
+        }
+        case IntegrationJobAction.channelLabelChange: {
+          if (job.data.data.integrationType === "messenger") {
+            await handleMessengerLabelWebhook(job.data.data)
+          } else if (job.data.data.integrationType === "zalo") {
+            await handleZaloLabelWebhook(job.data.data)
+          }
           return
         }
         case IntegrationJobAction.coexistWhatsappFlush: {

@@ -1,3 +1,4 @@
+import { db } from "@chatbotx.io/database/client"
 import z from "zod"
 import { withWorkspaceIdSchema } from "@/features/workspaces/schema/resource"
 import { workspaceAuthorizedMidddleware } from "@/middlewares/auth"
@@ -169,11 +170,19 @@ export const contactsAuthenticatedAPI = {
     .use(workspaceAuthorizedMidddleware, (input) => input.workspaceId)
     .handler(async ({ input }) => {
       const { workspaceId, contactId, tagId } = input
+      // removeContactTags resolves tags by name; this endpoint takes a tag id.
+      const tag = await db.query.tagModel.findFirst({
+        where: { workspaceId, id: tagId, deletedAt: { isNull: true as const } },
+        columns: { name: true },
+      })
+      if (!tag) {
+        return
+      }
       await removeContactTags({
         workspaceId,
         parsedInput: {
           ids: [contactId],
-          tags: [tagId],
+          tags: [tag.name],
         },
       })
     }),

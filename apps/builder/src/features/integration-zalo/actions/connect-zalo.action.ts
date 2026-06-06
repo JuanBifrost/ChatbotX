@@ -1,12 +1,17 @@
 import {
   connectChannelIntegration,
+  tagSyncService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db } from "@chatbotx.io/database/client"
-import type { ZaloCredential } from "@chatbotx.io/database/partials"
+import {
+  channelTypes,
+  type ZaloCredential,
+} from "@chatbotx.io/database/partials"
 import { integrationZaloModel } from "@chatbotx.io/database/schema"
 import type { ZaloAuthValue } from "@chatbotx.io/integration-zalo"
+import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import { redirect } from "next/navigation"
 import { integrations } from "@/integration"
 
@@ -30,6 +35,7 @@ export async function connectZaloHandler({
 
   const { ownerId } = await workspaceService.findById({ id: workspaceId })
 
+  let connectedIntegrationId: string | undefined
   try {
     await db.transaction(async (tx) => {
       await connectChannelIntegration({
@@ -47,13 +53,17 @@ export async function connectZaloHandler({
               `/space/${workspaceId}/settings/channels?channel=zalo&error=duplicated`,
             )
           }
-          await tx.insert(integrationZaloModel).values({
-            inboxId,
-            workspaceId,
-            oaId: authValue.oaId,
-            auth: authValue,
-            name: authValue.metadata.oaName,
-          })
+          const [row] = await tx
+            .insert(integrationZaloModel)
+            .values({
+              inboxId,
+              workspaceId,
+              oaId: authValue.oaId,
+              auth: authValue,
+              name: authValue.metadata.oaName,
+            })
+            .returning({ id: integrationZaloModel.id })
+          connectedIntegrationId = row?.id
         },
       })
     })
@@ -67,5 +77,16 @@ export async function connectZaloHandler({
       )
     }
     throw error
+  }
+
+  await invalidateCacheByTags([`workspaces:${workspaceId}#zalos`])
+
+  // Import any tags already on the OA into local tags + mappings.
+  if (connectedIntegrationId) {
+    await tagSyncService.enqueueChannelScan({
+      workspaceId,
+      channelType: channelTypes.enum.zalo,
+      integrationId: connectedIntegrationId,
+    })
   }
 }

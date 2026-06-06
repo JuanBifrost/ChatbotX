@@ -2,7 +2,6 @@
 
 import { rootFolderId } from "@chatbotx.io/database/partials"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
-import { SwitchField } from "@chatbotx.io/ui/components/form/switch-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import {
   Dialog,
@@ -63,7 +62,6 @@ export const CreateTagDialog = ({
           defaultValues: {
             name: "",
             folderId: null,
-            syncToMessenger: false,
           },
         },
         errorMapProps: {},
@@ -106,12 +104,6 @@ export const CreateTagDialog = ({
         <Form {...form}>
           <form className="space-y-6" onSubmit={handleSubmitWithAction}>
             <InputField label={t("fields.name.label")} name="name" required />
-
-            <SwitchField
-              label={t("fields.syncToMessenger.label")}
-              name="syncToMessenger"
-              required
-            />
 
             <DialogFooter>
               <DialogClose asChild>

@@ -1503,6 +1503,9 @@ importers:
       '@chatbotx.io/utils':
         specifier: workspace:*
         version: link:../utils
+      '@chatbotx.io/worker-config':
+        specifier: workspace:*
+        version: link:../worker-config
       '@t3-oss/env-core':
         specifier: ^0.13.11
         version: 0.13.11(typescript@5.9.3)(zod@4.4.3)

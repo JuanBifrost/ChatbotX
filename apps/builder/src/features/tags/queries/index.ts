@@ -26,6 +26,7 @@ export async function listTags(
 ): Promise<ListTagsResponse> {
   const where = {
     workspaceId: input.workspaceId,
+    deletedAt: { isNull: true as const },
     name: input.name ? { ilike: `%${input.name.toLowerCase()}%` } : undefined,
     folderId: input.folderId
       ? // biome-ignore lint/style/noNestedTernary: allow nested ternary
@@ -69,7 +70,12 @@ export const findTag = async (input: FindTagRequest) => {
 
   if (isNumericId(input.key)) {
     const byId = await db.query.tagModel.findFirst({
-      where: { id: input.key, folderId: folderWhere, workspaceId },
+      where: {
+        id: input.key,
+        folderId: folderWhere,
+        workspaceId,
+        deletedAt: { isNull: true as const },
+      },
     })
     if (byId) {
       return byId
@@ -77,6 +83,11 @@ export const findTag = async (input: FindTagRequest) => {
   }
 
   return await db.query.tagModel.findFirst({
-    where: { name: input.key, folderId: folderWhere, workspaceId },
+    where: {
+      name: input.key,
+      folderId: folderWhere,
+      workspaceId,
+      deletedAt: { isNull: true as const },
+    },
   })
 }

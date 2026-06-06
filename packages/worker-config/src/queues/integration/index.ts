@@ -35,6 +35,7 @@ export const IntegrationJobAction = {
   coexistMessengerSync: "coexistMessengerSync",
   coexistAttachmentDownload: "coexistAttachmentDownload",
   updateContactAvatar: "updateContactAvatar",
+  channelLabelChange: "channelLabelChange",
 } as const
 
 export type IntegrationJobReceiveMessage = {
@@ -189,6 +190,21 @@ export type IntegrationJobCoexistWhatsappBuffer = {
   }
 }
 
+export type IntegrationJobChannelLabelChange = {
+  type: typeof IntegrationJobAction.channelLabelChange
+  data:
+    | {
+        integrationType: "messenger"
+        integrationIdentifier: string
+        payload: unknown
+      }
+    | {
+        integrationType: "zalo"
+        integrationIdentifier: string
+        payload: unknown
+      }
+}
+
 /**
  * Flushes buffered WhatsApp staging rows into Contact/Message once enabled.
  * `runId` is optional: the buffer (webhook-driven) omits it and the flush
@@ -267,6 +283,7 @@ export type IntegrationJobData =
   | IntegrationJobCoexistMessengerSync
   | IntegrationJobCoexistAttachmentDownload
   | IntegrationJobUpdateContactAvatar
+  | IntegrationJobChannelLabelChange
 
 export const integrationQueue =
   process.env.NEXT_PHASE === "phase-production-build"

@@ -11,7 +11,7 @@ export const waFlowMenus = (
   menuData?: MenuData,
   inbox?: ListInboxesResponse["data"][number],
 ): MenuItem[] => {
-  let flows = (menuData?.flows.waFlows ?? []).filter(
+  let flows = (menuData?.flows?.waFlows ?? []).filter(
     (flow: WhatsappFlowResource) =>
       flow.status === WHATSAPP_FLOW_PUBLISHED_STATUS,
   )

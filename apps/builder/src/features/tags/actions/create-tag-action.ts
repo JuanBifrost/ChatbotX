@@ -1,5 +1,6 @@
 "use server"
 
+import { tagSyncService } from "@chatbotx.io/business"
 import { db } from "@chatbotx.io/database/client"
 import { tagModel } from "@chatbotx.io/database/schema"
 import { createId } from "@chatbotx.io/utils"
@@ -35,6 +36,7 @@ export const createTag = async (
     where: {
       name: parsedInput.name,
       workspaceId: parsedInput.workspaceId,
+      deletedAt: { isNull: true as const },
     },
   })
   if (existingTag) {
@@ -58,11 +60,17 @@ export const createTag = async (
     .values({
       ...parsedInput,
       folderId: parsedInput.folderId ?? null,
-      syncToMessenger: parsedInput.syncToMessenger ?? true,
       id: createId(),
     })
     .returning()
     .then((result) => result[0])
+
+  if (newTag) {
+    await tagSyncService.enqueueCreate({
+      workspaceId: parsedInput.workspaceId,
+      tagId: newTag.id,
+    })
+  }
 
   return {
     data: newTag,
