@@ -17,6 +17,7 @@ const MESSENGER_SCOPES = [
   "pages_messaging",
   "pages_show_list",
   "business_management",
+  "pages_utility_messaging",
 ]
 
 export function generateAuthUrl({
