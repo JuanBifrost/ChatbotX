@@ -22,8 +22,15 @@ vi.mock("@chatbotx.io/database/client", () => ({
   eq: vi.fn(),
 }))
 
-vi.mock("@chatbotx.io/database/schema", () => ({}))
-vi.mock("../../lib/logger", () => ({
+// Passthrough the real schema: a transitive dependency imports `createSelectSchema`
+// from this barrel at module load, so an empty mock breaks the import graph. The
+// schema is pure table/zod definitions (no DB connection), safe to load for real.
+vi.mock("@chatbotx.io/database/schema", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@chatbotx.io/database/schema")>()
+  return { ...actual }
+})
+vi.mock("../src/lib/logger", () => ({
   logger: { debug: vi.fn(), error: vi.fn(), warn: vi.fn() },
 }))
 vi.mock("@chatbotx.io/event-bus", () => ({
@@ -41,7 +48,7 @@ vi.mock("@chatbotx.io/sdk", async (importOriginal) => {
 // --- imports after mocks ---
 
 const { executeMultipleSteps, seekConnectedNode, runStepsAndQuickReplies } =
-  await import("./flow")
+  await import("../src/integration/handlers/flow")
 
 // --- helpers ---
 
@@ -184,7 +191,9 @@ describe("executeMultipleSteps — explicit status routing", () => {
       ],
     )
 
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     mockSpy(flowStepHandlers, "autoAssignConversation").mockResolvedValue({
       status: "success",
       result: null,
@@ -228,7 +237,9 @@ describe("executeMultipleSteps — explicit status routing", () => {
       ],
     )
 
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     mockSpy(flowStepHandlers, "autoAssignConversation").mockResolvedValue({
       status: "error",
       result: null,
@@ -253,7 +264,9 @@ describe("executeMultipleSteps — loop control statuses", () => {
     const step1 = makeStep("wait", [])
     const step2 = makeStep("sendText", [])
 
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     const waitSpy = mockSpy(flowStepHandlers, "wait").mockResolvedValue({
       status: "wait",
       result: null,
@@ -275,7 +288,9 @@ describe("executeMultipleSteps — loop control statuses", () => {
     const step1 = makeStep("getUserData", [])
     const step2 = makeStep("sendText", [])
 
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     mockSpy(flowStepHandlers, "getUserData").mockResolvedValue({
       status: "retry",
       result: null,
@@ -360,7 +375,9 @@ describe("runStepsAndQuickReplies — per-step re-dispatch", () => {
   })
 
   test("runs beforeStep on initial entry (startFromStepId undefined)", async () => {
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     const assignSpy = mockSpy(
       flowStepHandlers,
       "autoAssignConversation",
@@ -385,7 +402,9 @@ describe("runStepsAndQuickReplies — per-step re-dispatch", () => {
   })
 
   test("skips beforeStep and resumes at the step whose id matches startFromStepId", async () => {
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     const assignSpy = mockSpy(
       flowStepHandlers,
       "autoAssignConversation",
@@ -420,7 +439,9 @@ describe("runStepsAndQuickReplies — per-step re-dispatch", () => {
   })
 
   test("does not enqueue a next-step job when the current step returns wait", async () => {
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     mockSpy(flowStepHandlers, "wait").mockResolvedValue({
       status: "wait",
       result: null,
@@ -439,7 +460,9 @@ describe("runStepsAndQuickReplies — per-step re-dispatch", () => {
   })
 
   test("does not enqueue a next-step job when the current step returns retry", async () => {
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     mockSpy(flowStepHandlers, "getUserData").mockResolvedValue({
       status: "retry",
       result: null,
@@ -513,7 +536,9 @@ describe("runStepsAndQuickReplies — per-step re-dispatch", () => {
       ],
     )
 
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     mockSpy(flowStepHandlers, "autoAssignConversation").mockResolvedValue({
       status: "success",
       result: null,
@@ -589,7 +614,7 @@ describe("runStepsAndQuickReplies — per-step re-dispatch", () => {
   })
 
   test("logs a warning and returns early when startFromStepId is set but no matching step exists", async () => {
-    const { logger } = await import("../../lib/logger")
+    const { logger } = await import("../src/lib/logger")
     const step1 = { ...makeStep("sendText"), id: "step-1" }
     const props = {
       ...makeBaseProps(),
@@ -604,7 +629,9 @@ describe("runStepsAndQuickReplies — per-step re-dispatch", () => {
   })
 
   test("node with beforeStep only (no steps) still runs beforeStep and dispatches next node", async () => {
-    const { flowStepHandlers } = await import("./step")
+    const { flowStepHandlers } = await import(
+      "../src/integration/handlers/step"
+    )
     const assignSpy = mockSpy(
       flowStepHandlers,
       "autoAssignConversation",

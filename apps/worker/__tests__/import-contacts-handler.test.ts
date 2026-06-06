@@ -71,10 +71,22 @@ vi.mock("@chatbotx.io/business", () => ({
   },
 }))
 
+// The contacts handler wraps quota reservation in distributedLock.runExclusive;
+// without a mock it opens a real Redis connection (ECONNREFUSED). Run the body
+// inline.
+vi.mock("@chatbotx.io/redis", () => ({
+  distributedLock: {
+    runExclusive: ({ fn }: { fn: () => Promise<unknown> }) => fn(),
+  },
+}))
+
 const getObjectStream = vi.fn()
+const headObject = vi.fn()
 vi.mock("@chatbotx.io/filesystem", () => ({
   uploader: {
     getObjectStream: (path: string) => getObjectStream(path),
+    // M-4: size check reads HeadObject's ContentLength before streaming.
+    headObject: (path: string) => headObject(path),
   },
 }))
 
@@ -155,6 +167,9 @@ beforeEach(() => {
   insertValues.mockReset()
   transactionFn.mockReset()
   getObjectStream.mockReset()
+  headObject.mockReset()
+  // Default: small file, passes the size check.
+  headObject.mockResolvedValue({ ContentLength: 1024 })
   workspaceFind.mockReset()
   workspaceFind.mockResolvedValue({ id: "ws-1", ownerId: "owner-1" })
   getRemainingSlots.mockReset()
@@ -388,10 +403,10 @@ describe("contacts import pipeline", () => {
 
   test("fails the row when the file exceeds the size limit", async () => {
     findFirstInbox.mockResolvedValue({ id: "inbox-1", channel: "messenger" })
+    // Size check uses HeadObject's ContentLength (M-4): 21 MB > 20 MB cap.
+    headObject.mockResolvedValue({ ContentLength: 21 * 1024 * 1024 })
     getObjectStream.mockResolvedValue({
       stream: Readable.from("external_id,phone\next-1,+15551234567"),
-      // 21 MB — over the 20 MB contacts import cap.
-      contentLength: 21 * 1024 * 1024,
     })
 
     await runContactsImport(buildRow())

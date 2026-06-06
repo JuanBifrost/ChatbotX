@@ -1,4 +1,5 @@
 export {
+  type BulkCreateAttachmentInput,
   type CreateAttachmentInput,
   type CreateMessageInput,
   type CreateMessageResult,

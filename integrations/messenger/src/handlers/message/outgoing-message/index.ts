@@ -94,10 +94,7 @@ export const sendFlowStep: MessageHandlers<MessengerAuthValue>["sendFlowStep"] =
           buildMessagePayload({
             contact,
             message: facebookMessage,
-            messagingType:
-              step.stepType === stepTypes.enum.sendQuickReply
-                ? "RESPONSE"
-                : "MESSAGE_TAG",
+            messagingType: "RESPONSE",
             personaId: (ctx.integrationDetail as MessengerIntegrationDetail)
               .personaId,
           }),

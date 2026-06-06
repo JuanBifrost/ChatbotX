@@ -64,6 +64,13 @@ vi.mock("@chatbotx.io/filesystem", () => ({
   },
 }))
 
+// The handler imports createUpload from the node-upload subpath, not the
+// filesystem barrel — mock that exact specifier or it hits real S3.
+vi.mock("@chatbotx.io/filesystem/node-upload", () => ({
+  createUpload: (path: string, options?: unknown) =>
+    createUpload(path, options),
+}))
+
 const { loopableExportContacts } = await import(
   "../src/default/handlers/export-contacts"
 )

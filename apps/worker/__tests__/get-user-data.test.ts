@@ -49,6 +49,18 @@ vi.mock("@chatbotx.io/database/client", () => ({
   findOrFail: vi.fn(async () => findOrFailResult.current),
 }))
 
+// validateUserData reads the last message via the shard-aware repository, not
+// db.query. Return the test-configured `lastMessage.current` as a 1-element
+// array (findLastByConversation's contract).
+vi.mock("@chatbotx.io/database/repositories", () => ({
+  createMessageRepository: vi.fn(async () => ({
+    findLastByConversation: vi.fn(async () =>
+      lastMessage.current ? [lastMessage.current] : [],
+    ),
+  })),
+  getSafeSinceTime: vi.fn(() => new Date(0)),
+}))
+
 vi.mock("@chatbotx.io/database/schema", () => ({
   contactCustomFieldModel: {},
   conversationModel: {},
@@ -71,13 +83,15 @@ vi.mock("@chatbotx.io/utils", async (importOriginal) => {
   }
 })
 
-vi.mock("../../lib/logger", () => ({
+vi.mock("../src/lib/logger", () => ({
   logger: { error: vi.fn(), debug: vi.fn(), warn: vi.fn() },
 }))
 
 // --- helpers ---
 
-const { getUserData } = await import("./get-user-data")
+const { getUserData } = await import(
+  "../src/integration/handlers/get-user-data"
+)
 
 type StepOverride = Partial<GetUserDataStepSchema>
 

@@ -4,10 +4,7 @@ import { conversationService } from "@chatbotx.io/business"
 import { notFoundException } from "@chatbotx.io/business/errors"
 import { sql } from "@chatbotx.io/database/client"
 import { applyContactFilter } from "@chatbotx.io/database/queries"
-import {
-  createMessageRepository,
-  getSafeSinceTime,
-} from "@chatbotx.io/database/repositories"
+import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import { parseBigIntId, zodBigintAsString } from "@chatbotx.io/utils"
 import { endOfHour } from "date-fns"
 import { groupBy } from "remeda"
@@ -20,6 +17,7 @@ import type {
   FindConversationResponse,
   ListConversationsResponse,
 } from "../schema/resource"
+import { resolveLastMessageSinceTime } from "./last-message-window"
 
 const DEFAULT_PER_PAGE = 20
 
@@ -70,12 +68,12 @@ export const listConversations = async (
   const lastMessagesResults = await Promise.all(
     page.map((c) => {
       const contactInbox = contactInboxesByContactId[c.contactId]?.[0]
-      if (!contactInbox?.lastMessageAt) {
-        return Promise.resolve([])
-      }
+      // Don't bail when lastMessageAt is missing: historical imports populate
+      // messages but never set it, so bailing hid the last-message preview.
+      // resolveLastMessageSinceTime falls back to a full-history scan instead.
       return messageRepository.findLastByConversation(c.id, {
         limit: 1,
-        sinceTime: getSafeSinceTime(contactInbox.lastMessageAt),
+        sinceTime: resolveLastMessageSinceTime(contactInbox?.lastMessageAt),
       })
     }),
   )
@@ -267,8 +265,11 @@ export const findConversation = async (
     {
       messageTypes: ["incoming", "outgoing"],
       limit: 1,
-      sinceTime: getSafeSinceTime(
-        endOfHour(contactInbox?.lastMessageAt ?? new Date()),
+      // Falls back to a full-history scan when lastMessageAt is unset (historical
+      // imports), so opening an imported conversation still shows its messages.
+      sinceTime: resolveLastMessageSinceTime(
+        contactInbox?.lastMessageAt,
+        endOfHour,
       ),
     },
   )

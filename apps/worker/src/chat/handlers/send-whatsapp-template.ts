@@ -1,7 +1,10 @@
 import { broadcastToWorkspaceParty } from "@chatbotx.io/business"
 import { db, eq } from "@chatbotx.io/database/client"
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
-import { contactInboxModel, messageModel } from "@chatbotx.io/database/schema"
+import {
+  contactInboxModel,
+  type messageModel,
+} from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
   ConversationModel,
@@ -190,10 +193,11 @@ export async function processWhatsappTemplate(
     const providerMessageId = result?.messageIds?.[0]
 
     if (providerMessageId) {
-      await db
-        .update(messageModel)
-        .set({ sourceId: providerMessageId })
-        .where(eq(messageModel.id, newMessage.id))
+      await repository.updateSourceId(
+        newMessage.id,
+        providerMessageId,
+        conversation.workspaceId,
+      )
     }
 
     return {

@@ -6,6 +6,7 @@ import {
 import { and, desc, eq, gte, inArray, isNotNull, lt, or } from "drizzle-orm"
 import { logger } from "../../../logger"
 import type {
+  BulkCreateAttachmentInput,
   CreateAttachmentInput,
   CreateMessageInput,
   CreateMessageResult,
@@ -78,6 +79,33 @@ export class ShardedMessageRepository implements IMessageRepository {
     )
 
     return rehydrateTimeRangeDates(cached)
+  }
+
+  /**
+   * Union the workspace's write shard into a time-range shard set.
+   *
+   * Writes route by workspace hash and preserve each message's original
+   * createdAt, so back-dated (historical-import) rows live in the active write
+   * shard even though its registered time-range starts at activation. A purely
+   * time-based read can exclude that shard when the query window predates
+   * activation, hiding rows that physically exist. Appending the write shard
+   * (deduped by shard id) guarantees it is always queried. It is appended last
+   * so it sorts as the newest shard once the caller reverses to descending.
+   */
+  private mergeWriteShard(
+    timeRangeShards: MessageShardTimeRangeInfo[],
+    writeShard: MessageShardTimeRangeInfo | null,
+  ): MessageShardTimeRangeInfo[] {
+    if (!writeShard) {
+      return timeRangeShards
+    }
+    const alreadyIncluded = timeRangeShards.some(
+      (s) => s.shard.id === writeShard.shard.id,
+    )
+    if (alreadyIncluded) {
+      return timeRangeShards
+    }
+    return [...timeRangeShards, writeShard]
   }
 
   private executeWithLock<T>(
@@ -173,6 +201,99 @@ export class ShardedMessageRepository implements IMessageRepository {
         .values(message as typeof messageModel.$inferInsert)
         .returning()
       return result as MessageModel
+    })
+  }
+
+  async bulkCreate(
+    messages: CreateMessageInput[],
+  ): Promise<{ id: string; sourceId: string | null }[]> {
+    if (messages.length === 0) {
+      return []
+    }
+
+    const workspaceId = messages[0].workspaceId
+    if (messages.some((m) => m.workspaceId !== workspaceId)) {
+      throw new Error(
+        "bulkCreate: all messages must belong to the same workspace",
+      )
+    }
+
+    return await withShardRetry(async () => {
+      const shardDb = await this.shardManager.getShardForWrite(workspaceId)
+
+      const CHUNK_SIZE = 1000
+      const inserted: { id: string; sourceId: string | null }[] = []
+
+      for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
+        const chunk = messages.slice(i, i + CHUNK_SIZE)
+        const rows = await shardDb
+          .insert(messageModel)
+          .values(chunk as (typeof messageModel.$inferInsert)[])
+          .onConflictDoNothing({
+            target: [
+              messageModel.contactInboxId,
+              messageModel.sourceId,
+              messageModel.createdAt,
+            ],
+          })
+          .returning({
+            id: messageModel.id,
+            sourceId: messageModel.sourceId,
+          })
+        for (const row of rows) {
+          inserted.push({ id: row.id, sourceId: row.sourceId })
+        }
+      }
+
+      return inserted
+    })
+  }
+
+  async updateSourceId(
+    id: string,
+    sourceId: string,
+    workspaceId: string,
+  ): Promise<void> {
+    return await withShardRetry(async () => {
+      const db = await this.shardManager.getShardForWrite(workspaceId)
+      await db
+        .update(messageModel)
+        .set({ sourceId })
+        .where(eq(messageModel.id, id))
+    })
+  }
+
+  async bulkCreateAttachments(
+    attachments: BulkCreateAttachmentInput[],
+  ): Promise<{ id: string }[]> {
+    if (attachments.length === 0) {
+      return []
+    }
+    const workspaceId = attachments[0].workspaceId
+    return await withShardRetry(async () => {
+      const shardDb = await this.shardManager.getShardForWrite(workspaceId)
+      return await shardDb
+        .insert(attachmentModel)
+        .values(
+          attachments.map((a) => ({
+            id: a.id,
+            workspaceId: a.workspaceId,
+            conversationId: a.conversationId,
+            fileType:
+              a.fileType as (typeof attachmentModel.$inferInsert)["fileType"],
+            messageId: a.messageId,
+            messageCreatedAt: a.messageCreatedAt,
+            sourceId: a.sourceId,
+            mimeType: a.mimeType,
+            width: a.width,
+            height: a.height,
+            size: a.size,
+            thumbnailPath: a.thumbnailPath,
+            originPath: a.originPath,
+            name: a.name,
+          })),
+        )
+        .returning({ id: attachmentModel.id })
     })
   }
 
@@ -608,7 +729,14 @@ export class ShardedMessageRepository implements IMessageRepository {
 
     const endTime = cursor?.createdAt ?? new Date()
     const startTime = sinceTime ?? new Date(0)
-    const allShards = await this.getShardsForRange(startTime, endTime)
+    const timeRangeShards = await this.getShardsForRange(startTime, endTime)
+    // Always include the workspace's write shard: historical-import rows are
+    // back-dated into it and would otherwise fall outside the time window when
+    // the conversation's newest message predates the shard's activation.
+    const writeShard = await this.shardManager.getWriteShardInfo(
+      query.workspaceId,
+    )
+    const allShards = this.mergeWriteShard(timeRangeShards, writeShard)
 
     if (allShards.length === 0) {
       return { data: [], nextCursor: null }

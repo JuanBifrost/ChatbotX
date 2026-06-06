@@ -1,12 +1,16 @@
 // biome-ignore-all lint/suspicious/noBitwiseOperators: bit-packing 63-bit snowflake IDs
 
 import { db, eq, inArray, sql } from "@chatbotx.io/database/client"
+import type {
+  BulkCreateAttachmentInput,
+  CreateMessageInput,
+  IMessageRepository,
+} from "@chatbotx.io/database/repositories"
+import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import {
-  attachmentModel,
   contactInboxModel,
   contactModel,
   conversationModel,
-  messageModel,
   userQuotaModel,
   workspaceModel,
 } from "@chatbotx.io/database/schema"
@@ -21,75 +25,109 @@ import { logger } from "../../../lib/logger"
 // ---------- Coexist time-derived Message IDs ----------
 // Layout mirrors `@chatbotx.io/utils` `createId()` shift so coexist IDs share
 // the same numeric magnitude/length as live snowflakes:
-//   high → low: [ 53 bits ms since epoch ][ 10 bits run partition ][ 4 bits seq ]
+//   high → low: [ 53 bits ms since epoch ][ 14 bits disambiguator ]
 //   ts_shift = 14   (identical to uuniq layout)
-// Epoch `2026-03-31` matches `createId()`. The high 53 bits being a pure
-// function of `createdAt` guarantees `ORDER BY id` ≡ `ORDER BY createdAt` for
-// historically-imported rows.
+// The high 53 bits are a pure function of `createdAt`, so `ORDER BY id` ≡
+// `ORDER BY createdAt` for historically-imported rows.
+//
+// The low 14 bits disambiguate messages that share the same createdAt-second.
+// They are derived from a stable hash of the message `sourceId` — NOT from the
+// run — so the id is a pure function of (createdAt, sourceId). This is the key
+// difference from the old [run-partition][per-run-seq] scheme, which re-minted
+// ids every run: two DISTINCT messages at the same second in two runs sharing
+// `runId mod 1024` produced the SAME id (different sourceId → bypassed the
+// (contactInboxId, sourceId, createdAt) arbiter → hit the PK). Hashing sourceId
+// makes ids idempotent and collision-free across runs; two distinct messages
+// only clash on a rare 14-bit hash collision, resolved by the per-import probe
+// below and the bulkCreate PK retry.
 
 const COEXIST_EPOCH_MS = new Date("2004-02-01").getTime()
 const COEXIST_TS_BITS = 53n
-const COEXIST_PARTITION_BITS = 10n
-const COEXIST_SEQ_BITS = 4n
-const COEXIST_PARTITION_SHIFT = COEXIST_SEQ_BITS
-const COEXIST_TS_SHIFT = COEXIST_PARTITION_BITS + COEXIST_SEQ_BITS
-const COEXIST_PARTITION_MASK = (1n << COEXIST_PARTITION_BITS) - 1n
-const COEXIST_SEQ_MASK = (1n << COEXIST_SEQ_BITS) - 1n
+const COEXIST_DISAMBIG_BITS = 14n
+const COEXIST_TS_SHIFT = COEXIST_DISAMBIG_BITS
+const COEXIST_DISAMBIG_MASK = (1n << COEXIST_DISAMBIG_BITS) - 1n
 const COEXIST_MAX_TS = 1n << COEXIST_TS_BITS
+const COEXIST_DISAMBIG_SPACE = 1n << COEXIST_DISAMBIG_BITS
 
-export type HistoricalIdFactory = (date: Date) => string
+export type HistoricalIdFactory = (date: Date, sourceId: string) => string
 
-const COEXIST_SEQ_SPACE = 1n << COEXIST_SEQ_BITS
+// FNV-1a over `sourceId`, folded into the 14-bit disambiguator space. Pure and
+// deterministic: the same message always maps to the same starting slot.
+const hashSourceId = (sourceId: string): bigint => {
+  let hash = 2_166_136_261
+  for (let i = 0; i < sourceId.length; i++) {
+    hash ^= sourceId.charCodeAt(i)
+    hash = Math.imul(hash, 16_777_619)
+  }
+  return BigInt(hash >>> 0) & COEXIST_DISAMBIG_MASK
+}
 
-export const createHistoricalIdFactory = (
-  runId: string,
-): HistoricalIdFactory => {
-  const partition = BigInt(runId) & COEXIST_PARTITION_MASK
-  const seqByTs = new Map<bigint, bigint>()
+export const createHistoricalIdFactory = (): HistoricalIdFactory => {
+  // Ids minted in THIS import. Lets distinct messages that hash to the same
+  // disambiguator at the same second probe forward to a free slot instead of
+  // emitting a duplicate (id, createdAt) within one batch. Also lets a retry
+  // (re-calling for the same message) advance past the colliding slot.
+  const used = new Set<bigint>()
 
-  return (date: Date): string => {
+  return (date: Date, sourceId: string): string => {
     const baseTs = BigInt(date.getTime() - COEXIST_EPOCH_MS)
     if (baseTs < 0n || baseTs >= COEXIST_MAX_TS) {
       throw new Error(
         `createHistoricalIdFactory: ${date.toISOString()} out of range`,
       )
     }
+    const start = hashSourceId(sourceId)
     let ts = baseTs
     while (ts < COEXIST_MAX_TS) {
-      const next = seqByTs.get(ts) ?? 0n
-      if (next < COEXIST_SEQ_SPACE) {
-        seqByTs.set(ts, next + 1n)
-        return (
-          (ts << COEXIST_TS_SHIFT) |
-          (partition << COEXIST_PARTITION_SHIFT) |
-          next
-        ).toString()
+      for (let offset = 0n; offset < COEXIST_DISAMBIG_SPACE; offset++) {
+        const disambiguator = (start + offset) & COEXIST_DISAMBIG_MASK
+        const id = (ts << COEXIST_TS_SHIFT) | disambiguator
+        if (!used.has(id)) {
+          used.add(id)
+          return id.toString()
+        }
       }
       ts += 1n
     }
     throw new Error(
-      `createHistoricalIdFactory: exhausted sequence space at ${date.toISOString()}`,
+      `createHistoricalIdFactory: exhausted disambiguator space at ${date.toISOString()}`,
     )
   }
 }
 
 export const decodeHistoricalId = (
   id: string,
-): { timestampMs: number; partition: number; seq: number } => {
+): { timestampMs: number; disambiguator: number } => {
   const v = BigInt(id)
   return {
     timestampMs: Number(v >> COEXIST_TS_SHIFT) + COEXIST_EPOCH_MS,
-    partition: Number((v >> COEXIST_PARTITION_SHIFT) & COEXIST_PARTITION_MASK),
-    seq: Number(v & COEXIST_SEQ_MASK),
+    disambiguator: Number(v & COEXIST_DISAMBIG_MASK),
   }
 }
 
 const isUniqueMessagePkViolation = (err: unknown): boolean => {
-  if (typeof err !== "object" || err === null) {
-    return false
+  // Drizzle wraps the pg error, so code/constraint live on `.cause` (sometimes
+  // nested). Walk the cause chain. pg exposes the constraint as `constraint`
+  // (older shims used `constraint_name`). TimescaleDB reports the chunk-prefixed
+  // name like "17_17_Message_pkey", so match by suffix rather than equality.
+  let current: unknown = err
+  for (let depth = 0; depth < 5 && current; depth++) {
+    if (typeof current !== "object") {
+      return false
+    }
+    const e = current as {
+      code?: string
+      constraint?: string
+      constraint_name?: string
+      cause?: unknown
+    }
+    const constraint = e.constraint ?? e.constraint_name
+    if (e.code === "23505" && constraint?.endsWith("Message_pkey")) {
+      return true
+    }
+    current = e.cause
   }
-  const e = err as { code?: string; constraint_name?: string }
-  return e.code === "23505" && e.constraint_name === "Message_pkey"
+  return false
 }
 
 export type HistoricalMessage = IncomingMessage & { createdAt?: Date }
@@ -541,8 +579,8 @@ export const bulkImportContacts = async (props: {
  * (contactInboxId, sourceId) unique constraint — retries never duplicate rows.
  *
  * Chunks INSERTs at 1000 rows to stay under the Postgres 65535-param limit.
- * On a cross-run PK collision (partition+ms+seq clash), regenerates IDs from
- * the factory and retries the chunk once.
+ * On a Message PK collision (rare sourceId-hash clash at the same second),
+ * regenerates IDs from the factory (which probes to a free slot) and retries.
  *
  * When `contactEnrichment` is provided (phone/email discovered while scanning
  * message bodies), COALESCE-fills the parent Contact row in the same tx so
@@ -590,13 +628,99 @@ export const bulkImportMessages = async (props: {
     return empty
   }
 
-  const makeMessageId = idFactory ?? createHistoricalIdFactory(runId)
-  let importedMessages = 0
-  let skippedMessages = 0
+  const makeMessageId = idFactory ?? createHistoricalIdFactory()
   const insertedAttachmentIds: string[] = []
 
-  await db.transaction(async (tx) => {
-    if (hasEnrichment && contactEnrichment) {
+  // Map message.sourceId → its attachments[] so post-insert we can resolve
+  // each inserted Message row to the right Attachment payload.
+  const attachmentsBySourceId = new Map<
+    string,
+    NonNullable<IncomingMessage["attachments"]>
+  >()
+  for (const msg of messages) {
+    if (msg.attachments && msg.attachments.length > 0) {
+      attachmentsBySourceId.set(msg.sourceId, msg.attachments)
+    }
+  }
+
+  // Build message inputs with deterministic snowflake IDs.
+  const messageInputs: CreateMessageInput[] = messages.map((msg) => {
+    const isOutgoing = msg.messageType === "outgoing"
+    const createdAt = msg.createdAt ?? new Date()
+    return {
+      id: makeMessageId(createdAt, msg.sourceId),
+      conversationId,
+      contactInboxId,
+      senderType: isOutgoing ? "user" : "contact",
+      workspaceId,
+      sourceId: msg.sourceId,
+      senderId: isOutgoing ? null : contactId,
+      messageType: msg.messageType,
+      text: msg.text,
+      contentType: msg.contentType,
+      contentAttributes: msg.contentAttributes,
+      createdAt,
+    }
+  })
+
+  // Insert messages via repository — shard-aware when ENABLE_MESSAGE_SHARDING=true.
+  // PK collision (snowflake id clash across runs) triggers a one-time retry with
+  // fresh IDs; the onConflictDoNothing inside bulkCreate handles sourceId dupes.
+  //
+  // Atomicity trade-off: bulkCreate runs outside any transaction wrapping the
+  // surrounding conversation/contactInbox updates. A crash mid-batch leaves
+  // partial rows in the message table; re-running the import is safe because
+  // onConflictDoNothing deduplicates by (contactInboxId, sourceId[, createdAt]).
+  // Full transactional atomicity would require cross-shard coordination and is
+  // explicitly not supported here.
+  let insertedRows: { id: string; sourceId: string | null }[] = []
+  let repository: IMessageRepository | null = null
+  if (messageInputs.length > 0) {
+    repository = await createMessageRepository()
+    try {
+      insertedRows = await repository.bulkCreate(messageInputs)
+    } catch (err) {
+      if (!isUniqueMessagePkViolation(err)) {
+        throw err
+      }
+      logger.warn(
+        { runId, total: messageInputs.length },
+        "[coexist] Message PK collision — regenerating IDs and retrying",
+      )
+      const retried = messageInputs.map((input) => ({
+        ...input,
+        // Re-call advances past the colliding slot via the factory's used-set.
+        id: makeMessageId(input.createdAt as Date, input.sourceId ?? ""),
+      }))
+      insertedRows = await repository.bulkCreate(retried)
+    }
+  }
+
+  const importedMessages = insertedRows.length
+  const skippedMessages = messages.length - importedMessages
+
+  const insertedMessageBySourceId = new Map<string, string>()
+  for (const row of insertedRows) {
+    if (row.sourceId) {
+      insertedMessageBySourceId.set(row.sourceId, row.id)
+    }
+  }
+
+  // Build messageCreatedAt lookup so attachments can be routed to the correct
+  // DB (shard requires messageCreatedAt as partition key; main DB ignores it).
+  const messageCreatedAtBySourceId = new Map<string, Date>()
+  for (const input of messageInputs) {
+    if (input.sourceId) {
+      messageCreatedAtBySourceId.set(
+        input.sourceId,
+        input.createdAt ?? new Date(),
+      )
+    }
+  }
+
+  // Contact enrichment in its own main-DB transaction.
+  if (hasEnrichment && contactEnrichment) {
+    await db.transaction(async (tx) => {
       await tx.execute(sql`
         UPDATE "Contact" SET
           "phoneNumber" = COALESCE("phoneNumber", ${contactEnrichment.phoneNumber ?? null}::text),
@@ -607,137 +731,47 @@ export const bulkImportMessages = async (props: {
             OR (${contactEnrichment.email ?? null}::text IS NOT NULL AND "email" IS NULL)
           )
       `)
-    }
+    })
+  }
 
-    if (messages.length === 0) {
-      return
-    }
-
-    const messageRows: (typeof messageModel.$inferInsert)[] = messages.map(
-      (msg) => {
-        const isOutgoing = msg.messageType === "outgoing"
-        const createdAt = msg.createdAt ?? new Date()
-        return {
-          id: makeMessageId(createdAt),
-          conversationId,
-          contactInboxId,
-          senderType: isOutgoing ? "user" : "contact",
+  // Insert Attachment rows for newly-inserted messages only via repository so
+  // they land in the same DB as the messages (shard or main). Previously these
+  // were inserted via a main-DB tx.insert(), causing a FK violation when
+  // ENABLE_MESSAGE_SHARDING=true because the Message rows live in the shard.
+  if (attachmentsBySourceId.size > 0 && repository) {
+    const attachmentRows: BulkCreateAttachmentInput[] = []
+    for (const [sourceId, atts] of attachmentsBySourceId) {
+      const messageId = insertedMessageBySourceId.get(sourceId)
+      if (!messageId) {
+        continue
+      }
+      const messageCreatedAt =
+        messageCreatedAtBySourceId.get(sourceId) ?? new Date()
+      for (const att of atts) {
+        attachmentRows.push({
+          id: createId(),
           workspaceId,
-          sourceId: msg.sourceId,
-          senderId: isOutgoing ? null : contactId,
-          messageType: msg.messageType,
-          text: msg.text,
-          contentType: msg.contentType,
-          contentAttributes: msg.contentAttributes,
-          createdAt,
-          updatedAt: createdAt,
-        }
-      },
-    )
-
-    // Map message.sourceId → its attachments[] so post-insert we can resolve
-    // each inserted Message row to the right Attachment payload. Skip messages
-    // without attachments to avoid empty lookups.
-    const attachmentsBySourceId = new Map<
-      string,
-      NonNullable<IncomingMessage["attachments"]>
-    >()
-    for (const msg of messages) {
-      if (msg.attachments && msg.attachments.length > 0) {
-        attachmentsBySourceId.set(msg.sourceId, msg.attachments)
+          conversationId,
+          messageId,
+          messageCreatedAt,
+          sourceId: att.sourceId,
+          fileType: att.fileType,
+          mimeType: att.mimeType,
+          originPath: att.originPath,
+          size: att.size,
+          width: att.width ?? undefined,
+          height: att.height ?? undefined,
+          name: att.name,
+        })
       }
     }
-
-    const CHUNK_SIZE = 1000
-    let insertedTotal = 0
-    const insertedMessageBySourceId = new Map<string, string>()
-    for (let i = 0; i < messageRows.length; i += CHUNK_SIZE) {
-      const chunk = messageRows.slice(i, i + CHUNK_SIZE)
-      let inserted: { id: string; sourceId: string | null }[]
-      try {
-        inserted = await tx
-          .insert(messageModel)
-          .values(chunk)
-          .onConflictDoNothing({
-            target: [messageModel.contactInboxId, messageModel.sourceId],
-          })
-          .returning({
-            id: messageModel.id,
-            sourceId: messageModel.sourceId,
-          })
-      } catch (err) {
-        if (!isUniqueMessagePkViolation(err)) {
-          throw err
-        }
-        logger.warn(
-          { runId, chunkStart: i, chunkSize: chunk.length },
-          "[coexist] Message PK collision — regenerating IDs and retrying",
-        )
-        const retried = chunk.map((row) => ({
-          ...row,
-          id: makeMessageId(row.createdAt as Date),
-        }))
-        inserted = await tx
-          .insert(messageModel)
-          .values(retried)
-          .onConflictDoNothing({
-            target: [messageModel.contactInboxId, messageModel.sourceId],
-          })
-          .returning({
-            id: messageModel.id,
-            sourceId: messageModel.sourceId,
-          })
-      }
-      insertedTotal += inserted.length
-      for (const row of inserted) {
-        if (row.sourceId) {
-          insertedMessageBySourceId.set(row.sourceId, row.id)
-        }
+    if (attachmentRows.length > 0) {
+      const insertedAtt = await repository.bulkCreateAttachments(attachmentRows)
+      for (const r of insertedAtt) {
+        insertedAttachmentIds.push(r.id)
       }
     }
-    importedMessages = insertedTotal
-    skippedMessages = messages.length - insertedTotal
-
-    // Insert Attachment rows for newly-inserted messages only. Messages that
-    // hit the (contactInboxId, sourceId) conflict are skipped — their
-    // attachments were inserted on the original successful run, so re-inserting
-    // here would duplicate. No unique constraint on (messageId, sourceId)
-    // means correctness depends on the message-level conflict guard above.
-    if (attachmentsBySourceId.size > 0) {
-      const attachmentRows: (typeof attachmentModel.$inferInsert)[] = []
-      for (const [sourceId, atts] of attachmentsBySourceId) {
-        const messageId = insertedMessageBySourceId.get(sourceId)
-        if (!messageId) {
-          continue
-        }
-        for (const att of atts) {
-          attachmentRows.push({
-            id: createId(),
-            workspaceId,
-            conversationId,
-            messageId,
-            sourceId: att.sourceId,
-            fileType: att.fileType,
-            mimeType: att.mimeType,
-            originPath: att.originPath,
-            size: att.size,
-            width: att.width ?? undefined,
-            height: att.height ?? undefined,
-            name: att.name,
-          })
-        }
-      }
-      if (attachmentRows.length > 0) {
-        const insertedAtt = await tx
-          .insert(attachmentModel)
-          .values(attachmentRows)
-          .returning({ id: attachmentModel.id })
-        for (const r of insertedAtt) {
-          insertedAttachmentIds.push(r.id)
-        }
-      }
-    }
-  })
+  }
 
   // Touch parent contact lastActivityAt so list ordering reflects sync. Best
   // effort — failure here doesn't roll back the message insert.
@@ -751,6 +785,33 @@ export const bulkImportMessages = async (props: {
       logger.warn(
         { error, contactId },
         "[coexist] failed to bump lastActivityAt",
+      )
+    }
+  }
+
+  // Set contactInbox.lastMessageAt to the newest imported message time. This is
+  // the anchor the conversation list uses to derive the sharded last-message
+  // read window — without it imported conversations show no last-message
+  // preview. Only advance it (never regress past a newer live message).
+  const newestMessageAt = messageInputs.reduce<Date | null>((max, m) => {
+    const created = m.createdAt ?? null
+    if (!created) {
+      return max
+    }
+    return !max || created > max ? created : max
+  }, null)
+  if (newestMessageAt) {
+    try {
+      await db
+        .update(contactInboxModel)
+        .set({ lastMessageAt: newestMessageAt })
+        .where(
+          sql`${contactInboxModel.id} = ${contactInboxId} AND (${contactInboxModel.lastMessageAt} IS NULL OR ${contactInboxModel.lastMessageAt} < ${newestMessageAt})`,
+        )
+    } catch (error) {
+      logger.warn(
+        { error, contactInboxId },
+        "[coexist] failed to set lastMessageAt",
       )
     }
   }

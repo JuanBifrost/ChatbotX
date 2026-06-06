@@ -44,6 +44,21 @@ export type MessengerHistoryAttachment = {
     height?: number
   }
   file_url?: string
+  /**
+   * Page-sent structured message (button template): text title plus a list of
+   * call-to-action buttons. Present on outgoing Page messages that were sent as
+   * a generic/button template rather than plain text. No media URL — rendered
+   * as text + buttons, not as a downloadable attachment.
+   */
+  generic_template?: {
+    title?: string
+    subtitle?: string
+    cta?: Array<{
+      title?: string
+      type?: string
+      url?: string
+    }>
+  }
 }
 
 /** A single message inside a conversation thread. */
@@ -132,7 +147,7 @@ export const listMessages = (props: {
         headers: { Authorization: `Bearer ${accessToken}` },
         searchParams: {
           fields:
-            "id,message,from,created_time,attachments{id,name,mime_type,size,image_data,video_data,file_url}",
+            "id,message,from,created_time,attachments{id,name,mime_type,size,image_data,video_data,file_url,generic_template}",
           limit: String(PAGE_LIMIT),
           ...(after ? { after } : {}),
         },

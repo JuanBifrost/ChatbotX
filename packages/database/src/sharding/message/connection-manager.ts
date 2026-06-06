@@ -121,6 +121,33 @@ export class MessageShardConnectionManager {
     return this.registry.findShardsForTimeRange(startTime, endTime)
   }
 
+  /**
+   * The shard a workspace's writes land in, expressed as a time-range info that
+   * spans ALL time. Writes route by workspace hash (getShardForWrite) and keep
+   * the message's original createdAt, so historical/back-dated messages live in
+   * this shard even though its registered time-range starts at activation. Reads
+   * that select shards purely by time would miss them — callers union this shard
+   * into the read set to guarantee the workspace's data is always reachable.
+   */
+  async getWriteShardInfo(
+    workspaceId: string,
+  ): Promise<MessageShardTimeRangeInfo | null> {
+    if (!(await this.isShardingEnabled())) {
+      return null
+    }
+    const record = await this.registry.findShardForWrite(workspaceId)
+    if (!record) {
+      return null
+    }
+    return {
+      id: `write:${record.id}`,
+      shardId: record.id,
+      startTime: new Date(0),
+      endTime: null,
+      shard: record,
+    }
+  }
+
   async getShardClient(
     shard: ShardConfig,
   ): Promise<MessageShardDatabaseClient> {

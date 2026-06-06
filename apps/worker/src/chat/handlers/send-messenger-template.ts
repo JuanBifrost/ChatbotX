@@ -1,6 +1,7 @@
 import { broadcastToWorkspaceParty } from "@chatbotx.io/business"
-import { db, eq } from "@chatbotx.io/database/client"
-import { messageModel } from "@chatbotx.io/database/schema"
+import { db } from "@chatbotx.io/database/client"
+import { createMessageRepository } from "@chatbotx.io/database/repositories"
+import type { messageModel } from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
   ConversationModel,
@@ -127,7 +128,8 @@ export async function processMessengerTemplate(
       metadata,
     }
 
-    const messageData: typeof messageModel.$inferInsert = {
+    const messageRepository = await createMessageRepository()
+    newMessage = await messageRepository.create({
       id: createId(),
       contactInboxId: contactInbox.id,
       workspaceId: conversation.workspaceId,
@@ -138,17 +140,7 @@ export async function processMessengerTemplate(
       sourceId: null,
       text: `Template: ${template.name}`,
       contentAttributes,
-    }
-
-    newMessage = await db
-      .insert(messageModel)
-      .values(messageData)
-      .returning()
-      .then((result) => result[0])
-
-    if (!newMessage) {
-      throw new Error("Failed to insert message record")
-    }
+    })
 
     broadcastToWorkspaceParty(conversation.workspaceId, {
       eventType: RealtimeEventType.messageCreated,
@@ -180,10 +172,11 @@ export async function processMessengerTemplate(
     const providerMessageId = result?.messageIds?.[0]
 
     if (providerMessageId) {
-      await db
-        .update(messageModel)
-        .set({ sourceId: providerMessageId })
-        .where(eq(messageModel.id, newMessage.id))
+      await messageRepository.updateSourceId(
+        newMessage.id,
+        providerMessageId,
+        conversation.workspaceId,
+      )
     }
 
     return {

@@ -43,7 +43,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   },
 }))
 
-vi.mock("../../lib/logger", () => ({
+vi.mock("../src/lib/logger", () => ({
   logger: { warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
@@ -63,7 +63,7 @@ vi.mock("@chatbotx.io/utils", async (importOriginal) => {
 // --- imports after mocks ---
 
 const { findWhatsappFlowStepByButtonId, applyWhatsappFlowResponseSideEffects } =
-  await import("./whatsapp-flow-response")
+  await import("../src/integration/handlers/whatsapp-flow-response")
 
 // --- helpers ---
 
@@ -192,7 +192,7 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
   })
 
   test("returns early and logs warning when sourceId is empty", async () => {
-    const { logger } = await import("../../lib/logger")
+    const { logger } = await import("../src/lib/logger")
     const step = makeWhatsappFlowStep("btn-1")
     step.flow.sourceId = ""
 
@@ -304,7 +304,7 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
 
   test("logs warning when integrationWhatsapp not found for completedCount increment", async () => {
     dbQueryIntegrationFindFirst.mockResolvedValue(null)
-    const { logger } = await import("../../lib/logger")
+    const { logger } = await import("../src/lib/logger")
     const step = makeWhatsappFlowStep("btn-1")
 
     await applyWhatsappFlowResponseSideEffects({

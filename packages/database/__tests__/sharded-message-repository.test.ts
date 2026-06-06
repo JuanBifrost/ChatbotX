@@ -1,0 +1,402 @@
+import { beforeEach, describe, expect, test, vi } from "vitest"
+import type {
+  BulkCreateAttachmentInput,
+  CreateMessageInput,
+} from "../src/repositories/message"
+import { attachmentModel, messageModel } from "../src/sharding/message"
+import { ShardedMessageRepository } from "../src/sharding/message/repository/sharded-message-repository"
+
+// getShardsForRange wraps shard lookups in withCache(); the read path also needs
+// distributedLock from the constructor default. Stub the redis module so cache
+// reads call straight through to the factory and no real Redis is touched.
+vi.mock("@chatbotx.io/redis", () => ({
+  withCache: vi.fn((_key: string, factory: () => unknown) => factory()),
+  invalidateCacheByTags: vi.fn().mockResolvedValue(undefined),
+  distributedLock: { runExclusive: vi.fn() },
+}))
+
+// ---------------------------------------------------------------------------
+// Inline mock — ShardedMessageRepository.bulkCreate calls shardManager.getShardForWrite
+// then uses the returned db client for inserts.
+// ---------------------------------------------------------------------------
+
+function makeShardDbMock() {
+  const chain = {
+    values: vi.fn(),
+    onConflictDoNothing: vi.fn(),
+    returning: vi.fn().mockResolvedValue([]),
+  }
+  chain.values.mockReturnValue(chain)
+  chain.onConflictDoNothing.mockReturnValue(chain)
+  const insert = vi.fn().mockReturnValue(chain)
+
+  const updateChain = {
+    set: vi.fn(),
+    where: vi.fn().mockResolvedValue(undefined),
+  }
+  updateChain.set.mockReturnValue(updateChain)
+  const update = vi.fn().mockReturnValue(updateChain)
+
+  return { insert, chain, update, updateChain }
+}
+
+function makeShardManagerMock(shardDb: { insert: ReturnType<typeof vi.fn> }) {
+  return {
+    getShardForWrite: vi.fn().mockResolvedValue(shardDb),
+  }
+}
+
+function makeMessage(
+  overrides: Partial<CreateMessageInput> = {},
+): CreateMessageInput {
+  return {
+    id: "msg-1",
+    contactInboxId: "ci-1",
+    workspaceId: "ws-1",
+    conversationId: "conv-1",
+    messageType: "incoming",
+    contentType: "text",
+    senderType: "contact",
+    sourceId: "src-1",
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    ...overrides,
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Tests
+// ---------------------------------------------------------------------------
+
+describe("ShardedMessageRepository.bulkCreate", () => {
+  let repo: ShardedMessageRepository
+  let insert: ReturnType<typeof vi.fn>
+  let chain: ReturnType<typeof makeShardDbMock>["chain"]
+  let update: ReturnType<typeof vi.fn>
+  let updateChain: ReturnType<typeof makeShardDbMock>["updateChain"]
+  let shardManager: ReturnType<typeof makeShardManagerMock>
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    const mock = makeShardDbMock()
+    insert = mock.insert
+    chain = mock.chain
+    update = mock.update
+    updateChain = mock.updateChain
+    shardManager = makeShardManagerMock({ insert, update } as never)
+    repo = new ShardedMessageRepository(shardManager as never)
+  })
+
+  test("conflict target is (contactInboxId, sourceId, createdAt) — TimescaleDB 3-column constraint", async () => {
+    await repo.bulkCreate([makeMessage()])
+
+    const [callArg] = chain.onConflictDoNothing.mock.calls[0]
+    expect(callArg.target).toHaveLength(3)
+    expect(callArg.target).toContain(messageModel.contactInboxId)
+    expect(callArg.target).toContain(messageModel.sourceId)
+    expect(callArg.target).toContain(messageModel.createdAt)
+  })
+
+  test("returns empty array when no messages provided", async () => {
+    const result = await repo.bulkCreate([])
+
+    expect(result).toEqual([])
+    expect(insert).not.toHaveBeenCalled()
+  })
+
+  test("inserts messages and returns { id, sourceId }[]", async () => {
+    chain.returning.mockResolvedValue([{ id: "msg-1", sourceId: "src-1" }])
+
+    const result = await repo.bulkCreate([makeMessage()])
+
+    expect(result).toEqual([{ id: "msg-1", sourceId: "src-1" }])
+    expect(insert).toHaveBeenCalledTimes(1)
+  })
+
+  test("chunks correctly — 2001 messages triggers 3 db.insert calls with correct slice sizes", async () => {
+    chain.returning.mockResolvedValue([])
+    const messages = Array.from({ length: 2001 }, (_, i) =>
+      makeMessage({ id: `msg-${i}`, sourceId: `src-${i}` }),
+    )
+
+    await repo.bulkCreate(messages)
+
+    expect(insert).toHaveBeenCalledTimes(3)
+    expect(chain.values.mock.calls[0][0]).toHaveLength(1000)
+    expect(chain.values.mock.calls[1][0]).toHaveLength(1000)
+    expect(chain.values.mock.calls[2][0]).toHaveLength(1)
+    expect(chain.values.mock.calls[0][0][0].sourceId).toBe("src-0")
+    expect(chain.values.mock.calls[1][0][0].sourceId).toBe("src-1000")
+    expect(chain.values.mock.calls[2][0][0].sourceId).toBe("src-2000")
+  })
+
+  test("aggregates results from multiple chunks", async () => {
+    chain.returning
+      .mockResolvedValueOnce([{ id: "msg-0", sourceId: "src-0" }])
+      .mockResolvedValueOnce([{ id: "msg-1000", sourceId: "src-1000" }])
+      .mockResolvedValueOnce([{ id: "msg-2000", sourceId: "src-2000" }])
+
+    const messages = Array.from({ length: 2001 }, (_, i) =>
+      makeMessage({ id: `msg-${i}`, sourceId: `src-${i}` }),
+    )
+
+    const result = await repo.bulkCreate(messages)
+
+    expect(result).toHaveLength(3)
+    expect(result[0]).toEqual({ id: "msg-0", sourceId: "src-0" })
+    expect(result[1]).toEqual({ id: "msg-1000", sourceId: "src-1000" })
+    expect(result[2]).toEqual({ id: "msg-2000", sourceId: "src-2000" })
+  })
+
+  test("getShardForWrite called with workspaceId from messages", async () => {
+    chain.returning.mockResolvedValue([])
+    const mock = makeShardDbMock()
+    const shardManager = makeShardManagerMock({ insert: mock.insert } as never)
+    const localRepo = new ShardedMessageRepository(shardManager as never)
+
+    await localRepo.bulkCreate([makeMessage({ workspaceId: "ws-shard-42" })])
+
+    expect(shardManager.getShardForWrite).toHaveBeenCalledWith("ws-shard-42")
+  })
+
+  test("retries when getShardForWrite throws ECONNRESET on first call", async () => {
+    vi.useFakeTimers()
+
+    const retryError = Object.assign(new Error("ECONNRESET"), {
+      code: "ECONNRESET",
+    })
+    const retryMock = makeShardDbMock()
+    retryMock.chain.returning.mockResolvedValue([
+      { id: "msg-1", sourceId: "src-1" },
+    ])
+
+    const shardManager = {
+      getShardForWrite: vi
+        .fn()
+        .mockRejectedValueOnce(retryError)
+        .mockResolvedValueOnce({ insert: retryMock.insert }),
+    }
+    const localRepo = new ShardedMessageRepository(shardManager as never)
+
+    const resultPromise = localRepo.bulkCreate([makeMessage()])
+    await vi.runAllTimersAsync()
+    const result = await resultPromise
+
+    vi.useRealTimers()
+
+    expect(shardManager.getShardForWrite).toHaveBeenCalledTimes(2)
+    expect(result).toEqual([{ id: "msg-1", sourceId: "src-1" }])
+  })
+
+  test("throws when messages span multiple workspaceIds", async () => {
+    await expect(
+      repo.bulkCreate([
+        makeMessage({ workspaceId: "ws-A" }),
+        makeMessage({ workspaceId: "ws-B" }),
+      ]),
+    ).rejects.toThrow(
+      "bulkCreate: all messages must belong to the same workspace",
+    )
+  })
+
+  test("updateSourceId calls shard db.update with correct id and sourceId", async () => {
+    await repo.updateSourceId("msg-1", "prov-abc", "ws-1")
+
+    expect(shardManager.getShardForWrite).toHaveBeenCalledWith("ws-1")
+    expect(update).toHaveBeenCalledWith(messageModel)
+    expect(updateChain.set).toHaveBeenCalledWith({ sourceId: "prov-abc" })
+    expect(updateChain.where).toHaveBeenCalled()
+  })
+
+  test("bulkCreateAttachments routes to shard db and passes messageCreatedAt", async () => {
+    const msgCreatedAt = new Date("2026-01-01")
+    chain.returning.mockResolvedValue([{ id: "att-1" }])
+
+    const input: BulkCreateAttachmentInput = {
+      id: "att-1",
+      workspaceId: "ws-1",
+      conversationId: "conv-1",
+      messageId: "msg-1",
+      messageCreatedAt: msgCreatedAt,
+      fileType: "image",
+      mimeType: "image/png",
+      originPath: "/uploads/img.png",
+    }
+
+    const result = await repo.bulkCreateAttachments([input])
+
+    expect(shardManager.getShardForWrite).toHaveBeenCalledWith("ws-1")
+    expect(insert).toHaveBeenCalledWith(attachmentModel)
+    const insertedValues: Record<string, unknown>[] =
+      chain.values.mock.calls[0][0]
+    expect(insertedValues[0].messageCreatedAt).toEqual(msgCreatedAt)
+    expect(result).toEqual([{ id: "att-1" }])
+  })
+
+  test("bulkCreateAttachments returns empty array for empty input without calling insert", async () => {
+    const result = await repo.bulkCreateAttachments([])
+
+    expect(result).toEqual([])
+    expect(insert).toHaveBeenCalledTimes(0)
+  })
+})
+
+// ---------------------------------------------------------------------------
+// listByConversation — write-shard union (historical-import regression)
+//
+// Writes route by workspace hash and keep each message's original createdAt, so
+// back-dated imports land in the active write shard even though its registered
+// time-range starts at activation. A purely time-based read excludes that shard
+// when the query window predates activation — hiding rows that exist. The repo
+// must always union the workspace write shard into the read set.
+// ---------------------------------------------------------------------------
+
+type ReadMessage = {
+  id: string
+  conversationId: string
+  workspaceId: string
+  createdAt: Date
+  text: string
+}
+
+/**
+ * Mock shard client for the read path. queryShardForMessages calls select()
+ * twice: first the message query (.from().where().limit().orderBy() resolves),
+ * then the attachment query (.from().where() resolves).
+ */
+function makeReadShardClient(messages: ReadMessage[]) {
+  let selectCall = 0
+  const select = vi.fn(() => {
+    selectCall++
+    if (selectCall === 1) {
+      const chain = {
+        from: vi.fn().mockReturnThis(),
+        where: vi.fn().mockReturnThis(),
+        limit: vi.fn().mockReturnThis(),
+        orderBy: vi.fn().mockResolvedValue(messages),
+      }
+      return chain
+    }
+    const chain = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockResolvedValue([]),
+    }
+    return chain
+  })
+  return { select }
+}
+
+function makeShardInfo(timeRangeId: string, shardId: string) {
+  return {
+    id: timeRangeId,
+    shardId,
+    startTime: new Date(0),
+    endTime: null,
+    shard: {
+      id: shardId,
+      name: shardId,
+      host: "localhost",
+      port: 5432,
+      database: "shard_db",
+      user: "shard_user",
+    },
+  }
+}
+
+describe("ShardedMessageRepository.listByConversation — write-shard union", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
+  test("returns back-dated message from the write shard even when time-range selection is empty", async () => {
+    const historicalCreatedAt = new Date("2026-03-10T00:00:00Z")
+    const message: ReadMessage = {
+      id: "msg-hist-1",
+      conversationId: "conv-1",
+      workspaceId: "ws-1",
+      createdAt: historicalCreatedAt,
+      text: "old imported message",
+    }
+    const shardClient = makeReadShardClient([message])
+    const writeShard = makeShardInfo("write:s1", "s1")
+
+    const shardManager = {
+      // Time-range registry excludes the shard: query window predates activation.
+      getShardsForTimeRange: vi.fn().mockResolvedValue([]),
+      getWriteShardInfo: vi.fn().mockResolvedValue(writeShard),
+      getShardClientForRead: vi.fn().mockResolvedValue(shardClient),
+    }
+    const localRepo = new ShardedMessageRepository(shardManager as never)
+
+    const result = await localRepo.listByConversation({
+      workspaceId: "ws-1",
+      conversationId: "conv-1",
+      sinceTime: new Date("2026-03-01T00:00:00Z"),
+      pagination: {
+        limit: 20,
+        cursor: { createdAt: new Date("2026-03-10T01:00:00Z"), id: "" },
+      },
+    })
+
+    expect(shardManager.getWriteShardInfo).toHaveBeenCalledWith("ws-1")
+    expect(shardManager.getShardClientForRead).toHaveBeenCalledTimes(1)
+    expect(result.data).toHaveLength(1)
+    expect(result.data[0].id).toBe("msg-hist-1")
+  })
+
+  test("does not double-query when the write shard is already in the time-range set", async () => {
+    const message: ReadMessage = {
+      id: "msg-1",
+      conversationId: "conv-1",
+      workspaceId: "ws-1",
+      createdAt: new Date("2026-06-05T00:00:00Z"),
+      text: "recent",
+    }
+    const shardClient = makeReadShardClient([message])
+    // Same underlying shard id "s1" in both the time-range row and the write shard.
+    const timeRangeShard = makeShardInfo("tr:s1", "s1")
+    const writeShard = makeShardInfo("write:s1", "s1")
+
+    const shardManager = {
+      getShardsForTimeRange: vi.fn().mockResolvedValue([timeRangeShard]),
+      getWriteShardInfo: vi.fn().mockResolvedValue(writeShard),
+      getShardClientForRead: vi.fn().mockResolvedValue(shardClient),
+    }
+    const localRepo = new ShardedMessageRepository(shardManager as never)
+
+    const result = await localRepo.listByConversation({
+      workspaceId: "ws-1",
+      conversationId: "conv-1",
+      sinceTime: new Date("2026-06-01T00:00:00Z"),
+      pagination: {
+        limit: 20,
+        cursor: { createdAt: new Date("2026-06-05T01:00:00Z"), id: "" },
+      },
+    })
+
+    // Deduped by shard id → the single shard is queried exactly once.
+    expect(shardManager.getShardClientForRead).toHaveBeenCalledTimes(1)
+    expect(result.data).toHaveLength(1)
+  })
+
+  test("returns empty when neither time-range nor write shard yields a shard", async () => {
+    const shardManager = {
+      getShardsForTimeRange: vi.fn().mockResolvedValue([]),
+      getWriteShardInfo: vi.fn().mockResolvedValue(null),
+      getShardClientForRead: vi.fn(),
+    }
+    const localRepo = new ShardedMessageRepository(shardManager as never)
+
+    const result = await localRepo.listByConversation({
+      workspaceId: "ws-1",
+      conversationId: "conv-1",
+      sinceTime: new Date("2026-03-01T00:00:00Z"),
+      pagination: {
+        limit: 20,
+        cursor: { createdAt: new Date("2026-03-10T01:00:00Z"), id: "" },
+      },
+    })
+
+    expect(result).toEqual({ data: [], nextCursor: null })
+    expect(shardManager.getShardClientForRead).not.toHaveBeenCalled()
+  })
+})

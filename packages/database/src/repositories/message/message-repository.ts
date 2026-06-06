@@ -41,6 +41,8 @@ export interface CreateAttachmentInput {
   workspaceId: string
 }
 
+export type BulkCreateAttachmentInput = CreateAttachmentInput & { id: string }
+
 export interface MessageWithAttachments extends MessageModel {
   attachments: AttachmentModel[]
 }
@@ -92,6 +94,14 @@ export interface DistributedLock {
 }
 
 export interface IMessageRepository {
+  bulkCreate(
+    messages: CreateMessageInput[],
+  ): Promise<{ id: string; sourceId: string | null }[]>
+
+  bulkCreateAttachments(
+    attachments: BulkCreateAttachmentInput[],
+  ): Promise<{ id: string }[]>
+
   create(message: CreateMessageInput): Promise<MessageModel>
 
   createOrUpdate(message: CreateMessageInput): Promise<CreateMessageResult>
@@ -138,6 +148,12 @@ export interface IMessageRepository {
   ): Promise<Pick<MessageModel, "id" | "text">[]>
 
   listByConversation(query: ListMessagesQuery): Promise<PaginatedMessages>
+
+  updateSourceId(
+    id: string,
+    sourceId: string,
+    workspaceId: string,
+  ): Promise<void>
 }
 
 export class MessageRepository implements IMessageRepository {
@@ -486,6 +502,65 @@ export class MessageRepository implements IMessageRepository {
     }
   }
 
+  async bulkCreate(
+    messages: CreateMessageInput[],
+  ): Promise<{ id: string; sourceId: string | null }[]> {
+    if (messages.length === 0) {
+      return []
+    }
+
+    const CHUNK_SIZE = 1000
+    const inserted: { id: string; sourceId: string | null }[] = []
+
+    for (let i = 0; i < messages.length; i += CHUNK_SIZE) {
+      const chunk = messages.slice(i, i + CHUNK_SIZE)
+      const rows = await this.db
+        .insert(messageModel)
+        .values(chunk as (typeof messageModel.$inferInsert)[])
+        .onConflictDoNothing({
+          target: [messageModel.contactInboxId, messageModel.sourceId],
+        })
+        .returning({
+          id: messageModel.id,
+          sourceId: messageModel.sourceId,
+        })
+      for (const row of rows) {
+        inserted.push({ id: row.id, sourceId: row.sourceId })
+      }
+    }
+
+    return inserted
+  }
+
+  async bulkCreateAttachments(
+    attachments: BulkCreateAttachmentInput[],
+  ): Promise<{ id: string }[]> {
+    if (attachments.length === 0) {
+      return []
+    }
+    return await this.db
+      .insert(attachmentModel)
+      .values(
+        attachments.map((a) => ({
+          id: a.id,
+          workspaceId: a.workspaceId,
+          conversationId: a.conversationId,
+          fileType:
+            a.fileType as (typeof attachmentModel.$inferInsert)["fileType"],
+          messageId: a.messageId,
+          sourceId: a.sourceId,
+          mimeType: a.mimeType,
+          width: a.width,
+          height: a.height,
+          size: a.size,
+          thumbnailPath: a.thumbnailPath,
+          originPath: a.originPath,
+          name: a.name,
+        })),
+      )
+      .returning({ id: attachmentModel.id })
+  }
+
   private async queryAttachmentsForMessages(
     messageIds: string[],
   ): Promise<AttachmentModel[]> {
@@ -515,5 +590,16 @@ export class MessageRepository implements IMessageRepository {
       },
       {} as Record<string, AttachmentModel[]>,
     )
+  }
+
+  async updateSourceId(
+    id: string,
+    sourceId: string,
+    _workspaceId: string,
+  ): Promise<void> {
+    await this.db
+      .update(messageModel)
+      .set({ sourceId })
+      .where(eq(messageModel.id, id))
   }
 }

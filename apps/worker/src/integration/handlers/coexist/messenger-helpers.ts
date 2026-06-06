@@ -8,6 +8,8 @@ import type { BucUsage } from "@chatbotx.io/integration-messenger/apis/usage"
 import {
   guessFileTypeFromMimeType,
   type IncomingAttachment,
+  type MessageButtonTemplate,
+  type MessageTemplateEntity,
 } from "@chatbotx.io/sdk"
 import { logger } from "../../../lib/logger"
 import type { HistoricalMessage } from "./bulk-historical-import"
@@ -54,6 +56,44 @@ const extractAttachments = (
     }
   }
   return out
+}
+
+/**
+ * A Page button-template message (`generic_template`) carries a text title plus
+ * a list of call-to-action buttons — not a media URL. We persist it as a text
+ * message (`contentType: "text"`, text = title) with the buttons in
+ * `contentAttributes` so the inbox renders text + buttons (the same shape used
+ * by outgoing Messenger templates). Returns null when there is no template.
+ */
+const extractButtonTemplate = (
+  raw: MessengerHistoryMessage,
+): { text: string; contentAttributes: MessageTemplateEntity } | null => {
+  const data = raw.attachments?.data ?? []
+  for (const att of data) {
+    const template = att.generic_template
+    if (!template) {
+      continue
+    }
+    const ctas = template.cta ?? []
+    const buttons: MessageButtonTemplate[] = ctas.map((cta, index) => {
+      const id = `${att.id}-${index}`
+      const label = cta.title ?? ""
+      if (cta.type === "web_url" && cta.url) {
+        return { id, label, buttonType: "url", url: cta.url }
+      }
+      // Graph omits the postback payload for historical templates; the button is
+      // display-only here, so an empty payload is sufficient.
+      return { id, label, buttonType: "postback", postback: "" }
+    })
+    return {
+      text: template.title ?? "",
+      contentAttributes: {
+        type: "template",
+        payload: { templateType: "button", buttons },
+      },
+    }
+  }
+  return null
 }
 
 /** Maximum inline retry attempts on 429 / 5xx before propagating. */
@@ -230,10 +270,11 @@ export const fetchConvMessages = async (props: {
 
     for (const m of page.data as MessengerHistoryMessage[]) {
       const attachments = extractAttachments(m)
-      // Empty placeholder rows (no text + no usable attachment URL) carry no
-      // signal — skip to avoid emitting a row that bulkImportMessages would
-      // then reject for being effectively empty.
-      if (!m.message && attachments.length === 0) {
+      const buttonTemplate = extractButtonTemplate(m)
+      // Empty placeholder rows (no text + no usable attachment URL + no button
+      // template) carry no signal — skip to avoid emitting a row that
+      // bulkImportMessages would then reject for being effectively empty.
+      if (!m.message && attachments.length === 0 && !buttonTemplate) {
         continue
       }
       totalMsg++
@@ -266,9 +307,12 @@ export const fetchConvMessages = async (props: {
           sourceId: m.id,
           messageType: m.from?.id === pageId ? "outgoing" : "incoming",
           contentType: "text",
-          text: m.message ?? "",
+          text: m.message || buttonTemplate?.text || "",
           createdAt,
           ...(attachments.length > 0 ? { attachments } : {}),
+          ...(buttonTemplate
+            ? { contentAttributes: buttonTemplate.contentAttributes }
+            : {}),
         })
       } else {
         hitOlderBoundary = true

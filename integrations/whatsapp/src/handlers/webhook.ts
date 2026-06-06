@@ -97,22 +97,32 @@ export const webhookHandler = async (
 
   if (props.req.method === "POST") {
     try {
-      // Capture coexist payloads from the body BEFORE the middleware consumes
-      // it (body stream is one-shot). We do NOT enqueue yet — staging writes
-      // happen only after handle_post() verifies the HMAC signature, so an
-      // unauthenticated attacker cannot flood the staging table.
+      // Read the body once as raw bytes — HTTP body is a one-shot stream.
+      // Using arrayBuffer() preserves the exact bytes for HMAC verification;
+      // text() would silently re-encode, risking a signature mismatch on
+      // non-ASCII payloads. We decode to string only for JSON parsing.
+      let rawBodyBuffer = new ArrayBuffer(0)
+      let rawBodyText = ""
       let coexistPayloads: CoexistPayload[] = []
       try {
-        const rawBody = await props.req.clone().json()
+        rawBodyBuffer = await props.req.arrayBuffer()
+        rawBodyText = new TextDecoder().decode(rawBodyBuffer)
+        const rawBody = JSON.parse(rawBodyText) as unknown
         coexistPayloads = extractCoexistPayloads(rawBody)
       } catch {
         // Body was not JSON — ignore and continue.
       }
 
+      const reqWithBody = new Request(props.req.url, {
+        method: props.req.method,
+        headers: props.req.headers,
+        body: rawBodyBuffer.byteLength > 0 ? rawBodyBuffer : undefined,
+      })
+
       // Start handle_post immediately; attach a no-op catch so any rejection
       // that arrives after we've already resolved the race is silently absorbed
       // (we re-check the outcome below via the full await).
-      const handlePostPromise = middleware.handle_post(props.req)
+      const handlePostPromise = middleware.handle_post(reqWithBody)
       handlePostPromise.catch(() => {
         /* absorbed — re-checked below */
       })

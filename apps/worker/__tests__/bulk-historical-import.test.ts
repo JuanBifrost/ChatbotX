@@ -17,18 +17,30 @@ const {
   mockEmitContactCreated,
   mockEmit,
   mockCreateId,
-} = vi.hoisted(() => ({
-  mockTransaction: vi.fn(),
-  mockTxSelect: vi.fn(),
-  mockTxInsert: vi.fn(),
-  mockTxUpdate: vi.fn(),
-  mockTxDelete: vi.fn(),
-  mockTxExecute: vi.fn(),
-  mockDbUpdate: vi.fn(),
-  mockEmitContactCreated: vi.fn(() => Promise.resolve()),
-  mockEmit: vi.fn(() => Promise.resolve()),
-  mockCreateId: vi.fn(),
-}))
+  mockBulkCreate,
+  mockCreateMessageRepository,
+} = vi.hoisted(() => {
+  const mockBulkCreate = vi.fn().mockResolvedValue([])
+  const mockBulkCreateAttachments = vi.fn().mockResolvedValue([])
+  const mockCreateMessageRepository = vi.fn().mockResolvedValue({
+    bulkCreate: mockBulkCreate,
+    bulkCreateAttachments: mockBulkCreateAttachments,
+  })
+  return {
+    mockTransaction: vi.fn(),
+    mockTxSelect: vi.fn(),
+    mockTxInsert: vi.fn(),
+    mockTxUpdate: vi.fn(),
+    mockTxDelete: vi.fn(),
+    mockTxExecute: vi.fn(),
+    mockDbUpdate: vi.fn(),
+    mockEmitContactCreated: vi.fn(() => Promise.resolve()),
+    mockEmit: vi.fn(() => Promise.resolve()),
+    mockCreateId: vi.fn(),
+    mockBulkCreate,
+    mockCreateMessageRepository,
+  }
+})
 
 vi.mock("@chatbotx.io/database/client", () => {
   const tx = {
@@ -90,6 +102,10 @@ vi.mock("@chatbotx.io/database/schema", () => ({
     id: "w_id",
     ownerId: "w_ownerId",
   },
+}))
+
+vi.mock("@chatbotx.io/database/repositories", () => ({
+  createMessageRepository: mockCreateMessageRepository,
 }))
 
 vi.mock("@chatbotx.io/event-bus", () => ({ emit: mockEmit }))
@@ -306,6 +322,12 @@ describe("bulkImportHistorical", () => {
       chain.where.mockResolvedValue(undefined)
       return chain
     })
+    // Re-wire repository mock after clearAllMocks.
+    mockBulkCreate.mockResolvedValue([])
+    mockCreateMessageRepository.mockResolvedValue({
+      bulkCreate: mockBulkCreate,
+      bulkCreateAttachments: vi.fn().mockResolvedValue([]),
+    })
   })
 
   it("empty batch returns zero counts without opening a transaction", async () => {
@@ -338,8 +360,8 @@ describe("bulkImportHistorical", () => {
         conversationId: "conv-1",
       },
     ])
-    // bulkImportMessages transaction: INSERT Message .onConflictDoNothing().returning()
-    enqueueInsert({ returningRows: [{ id: "m-1", sourceId: "m-src-1" }] })
+    // bulkImportMessages: repository.bulkCreate() now handles message inserts
+    mockBulkCreate.mockResolvedValueOnce([{ id: "m-1", sourceId: "m-src-1" }])
 
     const result = await bulkImportHistorical({
       inbox,
@@ -365,7 +387,7 @@ describe("bulkImportHistorical", () => {
       },
     ])
     // 3 messages in, only 1 inserted → 2 duplicates
-    enqueueInsert({ returningRows: [{ id: "m-1", sourceId: "m-1" }] })
+    mockBulkCreate.mockResolvedValueOnce([{ id: "m-1", sourceId: "m-1" }])
 
     const result = await bulkImportHistorical({
       inbox,
@@ -397,7 +419,9 @@ describe("bulkImportHistorical", () => {
       },
     ])
     // bulkImportMessages for accepted contact
-    enqueueInsert({ returningRows: [{ id: "m-acc-1", sourceId: "m-acc-1" }] })
+    mockBulkCreate.mockResolvedValueOnce([
+      { id: "m-acc-1", sourceId: "m-acc-1" },
+    ])
     // src-2 is rejected (no stub needed for its messages — failedMessages path)
 
     const result = await bulkImportHistorical({
@@ -451,8 +475,8 @@ describe("bulkImportHistorical", () => {
       rows: [{ id: "conv-existing", contactId: "c-existing" }],
     })
     // No new contacts → skips cap check, contact insert, etc.
-    // Goes straight to message INSERT.
-    enqueueInsert({ returningRows: [] })
+    // Goes straight to repository.bulkCreate() for messages.
+    mockBulkCreate.mockResolvedValueOnce([])
 
     const result = await bulkImportHistorical({
       inbox,
@@ -479,12 +503,10 @@ describe("bulkImportHistorical", () => {
         conversationId: "conv-1",
       },
     ])
-    enqueueInsert({
-      returningRows: [
-        { id: "m-1", sourceId: "m-a" },
-        { id: "m-2", sourceId: "m-b" },
-      ],
-    })
+    mockBulkCreate.mockResolvedValueOnce([
+      { id: "m-1", sourceId: "m-a" },
+      { id: "m-2", sourceId: "m-b" },
+    ])
 
     const result = await bulkImportHistorical({
       inbox,
@@ -551,9 +573,11 @@ describe("bulkImportHistorical", () => {
       })),
     })
 
-    // Each contact needs a bulkImportMessages transaction: message INSERT
+    // Each contact's bulkImportMessages call goes through repository.bulkCreate()
     for (let i = 0; i < N; i++) {
-      enqueueInsert({ returningRows: [{ id: `m-${i}`, sourceId: `msg-${i}` }] })
+      mockBulkCreate.mockResolvedValueOnce([
+        { id: `m-${i}`, sourceId: `msg-${i}` },
+      ])
     }
 
     const batch = contacts.map((c) => ({
@@ -630,53 +654,24 @@ describe("bulkImportHistorical", () => {
       })),
     })
 
-    // Track concurrency of db.transaction calls for the message-import phase.
-    // Each bulkImportMessages call opens one db.transaction. We use deferred
-    // promises so all 4 start before any resolves — then we flush them.
+    // Track concurrency of repository.bulkCreate calls for the message-import phase.
+    // Each bulkImportMessages call invokes bulkCreate once (after messages are built).
+    // We defer resolution so p-limit slots stay occupied — then flush them.
     let inFlight = 0
     let maxInFlight = 0
     const resolvers: Array<() => void> = []
 
-    // The first mockTransaction call is for bulkImportContacts — let it
-    // execute synchronously so the setup phase completes before we start
-    // tracking concurrency.
-    let contactsTransactionDone = false
-
-    mockTransaction.mockImplementation((cb: (tx: unknown) => unknown) => {
-      const tx = {
-        select: mockTxSelect,
-        insert: mockTxInsert,
-        update: mockTxUpdate,
-        delete: mockTxDelete,
-        execute: mockTxExecute,
-      }
-      if (!contactsTransactionDone) {
-        // First call = bulkImportContacts → run inline
-        contactsTransactionDone = true
-        return cb(tx)
-      }
-      // Subsequent calls = bulkImportMessages → defer
+    mockBulkCreate.mockImplementation(() => {
       inFlight++
       maxInFlight = Math.max(maxInFlight, inFlight)
-      return new Promise<void>((resolve) => {
-        resolvers.push(async () => {
-          // Consume the message INSERT stub
-          const chain = {
-            values: vi.fn(),
-            onConflictDoNothing: vi.fn(),
-            returning: vi.fn(),
-          }
-          chain.values.mockReturnValue(chain)
-          chain.onConflictDoNothing.mockReturnValue(chain)
-          chain.returning.mockResolvedValue([
-            { id: "m-inserted", sourceId: "msg-x" },
-          ])
-          mockTxInsert.mockReturnValueOnce(chain)
-          await cb(tx)
-          inFlight--
-          resolve()
-        })
-      })
+      return new Promise<{ id: string; sourceId: string | null }[]>(
+        (resolve) => {
+          resolvers.push(() => {
+            inFlight--
+            resolve([])
+          })
+        },
+      )
     })
 
     const batch = contacts.map((c) => ({
@@ -695,14 +690,22 @@ describe("bulkImportHistorical", () => {
     await new Promise((resolve) => setTimeout(resolve, 0))
     await new Promise((resolve) => setTimeout(resolve, 0))
 
-    // With p-limit(≥2), at least 2 message transactions should be in-flight.
-    // With the old sequential loop, maxInFlight would be 0 at this point (none started
-    // yet because the first hasn't resolved). After our fix it should be ≥ 2.
+    // With p-limit(≥2), at least 2 bulkCreate calls should be in-flight.
+    // With a sequential loop, maxInFlight would be 0 here (none started yet
+    // because the first hasn't resolved). With p-limit it should be ≥ 2.
     expect(maxInFlight).toBeGreaterThanOrEqual(2)
 
-    // Flush all deferred transactions
-    for (const res of resolvers) {
-      await res()
+    // Drain resolvers one at a time. The 4th task is queued by p-limit (limit=3)
+    // and only calls bulkCreate after a slot frees, so we wait for each resolver
+    // to appear before resolving the previous one.
+    for (let flushed = 0; flushed < 4; flushed++) {
+      await vi.waitFor(
+        () => expect(resolvers.length).toBeGreaterThan(flushed),
+        {
+          timeout: 2000,
+        },
+      )
+      await resolvers[flushed]()
     }
     await importPromise
 
