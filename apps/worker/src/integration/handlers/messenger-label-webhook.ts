@@ -6,6 +6,7 @@ import {
   tagChannelModel,
   tagModel,
 } from "@chatbotx.io/database/schema"
+import type { IntegrationMessengerModel } from "@chatbotx.io/database/types"
 import { messengerWebhookEventSchema } from "@chatbotx.io/integration-messenger/schema"
 import { createId } from "@chatbotx.io/utils"
 import { logger } from "../../lib/logger"
@@ -34,7 +35,10 @@ export async function handleMessengerLabelWebhook(
   if (!labelChange) {
     return
   }
-  const { action, user, label } = labelChange.value
+  const { action: rawAction, user, label } = labelChange.value
+  // Facebook sends short action names (add/remove/create/delete) on some API
+  // versions and the *_label long forms on others. Normalize to long forms.
+  const action = normalizeLabelAction(rawAction)
 
   const integration = await db.query.integrationMessengerModel.findFirst({
     where: { pageId },
@@ -44,55 +48,37 @@ export async function handleMessengerLabelWebhook(
   }
 
   switch (action) {
-    case "create_label":
-      if (!label.page_label_name) {
-        return
-      }
-      await upsertTagAndChannel({
-        workspaceId: integration.workspaceId,
-        integrationId: integration.id,
-        externalLabelId: label.id,
-        name: label.page_label_name,
-      })
-      return
-
-    case "delete_label":
-      await db
-        .delete(tagChannelModel)
-        .where(
-          and(
-            eq(tagChannelModel.workspaceId, integration.workspaceId),
-            eq(tagChannelModel.channelType, channelTypes.enum.messenger),
-            eq(tagChannelModel.integrationId, integration.id),
-            eq(tagChannelModel.externalLabelId, label.id),
-          ),
-        )
-      return
-
     case "add_label": {
       if (!user) {
         return
       }
-      const result = await resolveContactAndTagChannel({
-        workspaceId: integration.workspaceId,
-        inboxId: integration.inboxId,
-        sourceId: user.id,
-        integrationId: integration.id,
-        externalLabelId: label.id,
+      const contactInbox = await db.query.contactInboxModel.findFirst({
+        where: { inboxId: integration.inboxId, sourceId: user.id },
+        columns: { id: true, contactId: true },
       })
-      if (!result) {
+      if (!contactInbox) {
+        return
+      }
+      // Get-or-create the tag + channel mapping: the label may exist on
+      // Facebook but not locally yet (created on the FB side, never synced).
+      const mapping = await getOrCreateTagChannel({
+        integration,
+        externalLabelId: label.id,
+        name: label.page_label_name,
+      })
+      if (!mapping) {
         return
       }
       await db
         .insert(contactsToTagsModel)
-        .values({ contactId: result.contactId, tagId: result.tagId })
+        .values({ contactId: contactInbox.contactId, tagId: mapping.tagId })
         .onConflictDoNothing()
       await db
         .insert(contactToTagChannelModel)
         .values({
-          tagId: result.tagId,
-          tagChannelId: result.tagChannelId,
-          contactInboxId: result.contactInboxId,
+          tagId: mapping.tagId,
+          tagChannelId: mapping.tagChannelId,
+          contactInboxId: contactInbox.id,
         })
         .onConflictDoNothing()
       return
@@ -126,6 +112,55 @@ export async function handleMessengerLabelWebhook(
     default:
       logger.warn({ action }, "messenger inbox_labels: unknown action")
   }
+}
+
+function normalizeLabelAction(action: string): string {
+  switch (action) {
+    case "add":
+      return "add_label"
+    case "remove":
+      return "remove_label"
+    default:
+      return action
+  }
+}
+
+/**
+ * Resolve the local tag + channel mapping for an external label, creating it
+ * when the label exists on Facebook but hasn't been synced locally yet. The
+ * label name comes from the webhook payload (Facebook includes
+ * `page_label_name` on add/remove events).
+ */
+async function getOrCreateTagChannel(props: {
+  integration: IntegrationMessengerModel
+  externalLabelId: string
+  name?: string
+}): Promise<{ tagId: string; tagChannelId: string } | undefined> {
+  const { integration, externalLabelId, name } = props
+
+  const existing = await db.query.tagChannelModel.findFirst({
+    where: {
+      workspaceId: integration.workspaceId,
+      channelType: channelTypes.enum.messenger,
+      integrationId: integration.id,
+      externalLabelId,
+    },
+    columns: { id: true, tagId: true },
+  })
+  if (existing) {
+    return { tagId: existing.tagId, tagChannelId: existing.id }
+  }
+
+  if (!name) {
+    return
+  }
+
+  return upsertTagAndChannel({
+    workspaceId: integration.workspaceId,
+    integrationId: integration.id,
+    externalLabelId,
+    name,
+  })
 }
 
 async function upsertTagAndChannel(props: {

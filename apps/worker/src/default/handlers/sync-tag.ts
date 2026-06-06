@@ -13,6 +13,7 @@ import type {
   IntegrationMessengerModel,
   IntegrationZaloModel,
 } from "@chatbotx.io/database/types"
+import { chunkById } from "@chatbotx.io/database/utils"
 import { integration as integrationMessenger } from "@chatbotx.io/integration-messenger"
 import type { MessengerAuthValue } from "@chatbotx.io/integration-messenger/schema"
 import { integration as integrationZalo } from "@chatbotx.io/integration-zalo"
@@ -21,6 +22,8 @@ import { distributedLock } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
 import type { JobSyncTag } from "@chatbotx.io/worker-config"
 import { logger } from "../../lib/logger"
+
+const DELETE_CHUNK_SIZE = 500
 
 type TagWithName = { id: string; name: string; workspaceId: string }
 
@@ -465,14 +468,130 @@ async function unassignOnChannel(props: {
 // local Tag row (cascading TagChannel / ContactToTagChannel / ContactToTag).
 // ---------------------------------------------------------------------------
 
-async function syncTagDelete(props: {
+async function syncTagDelete(props: JobSyncTagDelete): Promise<void> {
+  const { workspaceId, tagId, channelType, integrationId } = props
+
+  // Channel-scoped delete (inbound webhook): the tag was deleted on ONE channel.
+  // Clean only that channel's mappings + the contacts tagged via it; keep the
+  // workspace Tag and every other channel intact. The channel already removed
+  // the label, so we do NOT call its API again (callApi: false).
+  if (channelType && integrationId) {
+    const channels = await db.query.tagChannelModel.findMany({
+      where: { tagId, workspaceId, channelType, integrationId },
+      columns: {
+        id: true,
+        channelType: true,
+        integrationId: true,
+        externalLabelId: true,
+      },
+    })
+    for (const channel of channels) {
+      await deleteTagOnChannel({ workspaceId, tagId, channel, callApi: false })
+    }
+    return
+  }
+
+  await deleteTagOnChannels({ workspaceId, tagId })
+}
+
+type JobSyncTagDelete = Extract<JobSyncTag["data"], { action: "delete" }>
+
+type TagChannelRef = {
+  id: string
+  channelType: string
+  integrationId: string
+  externalLabelId: string
+}
+
+/**
+ * Cleanup for a tag on a SINGLE channel (the reusable unit).
+ * Deletes that channel's ContactToTagChannel + the ContactToTag for exactly its
+ * contacts (id-paged via chunkById) + the TagChannel row. Does NOT touch the Tag
+ * row. `callApi: true` also deletes the label on the channel via the SDK
+ * (outbound delete); inbound webhooks pass false since the label is already gone.
+ */
+async function deleteTagOnChannel(props: {
+  workspaceId: string
+  tagId: string
+  channel: TagChannelRef
+  callApi: boolean
+}): Promise<void> {
+  const { workspaceId, tagId, channel, callApi } = props
+
+  if (callApi) {
+    try {
+      await deleteLabelOnChannel({ workspaceId, channel })
+    } catch (error) {
+      logger.warn(
+        { tagId, channel, error },
+        "syncTag(delete): skip per-channel API error",
+      )
+    }
+  }
+
+  // Page this channel's contact assignments by contactInboxId, deleting the
+  // channel rows + the workspace tag for those contacts as we go.
+  await chunkById(
+    (lastId) =>
+      db.query.contactToTagChannelModel
+        .findMany({
+          where: {
+            tagChannelId: { in: [channel.id] },
+            ...(lastId ? { contactInboxId: { gt: lastId } } : {}),
+          },
+          orderBy: { contactInboxId: "asc" },
+          limit: DELETE_CHUNK_SIZE,
+          columns: { contactInboxId: true },
+        })
+        .then((rows) => rows.map((row) => ({ id: row.contactInboxId }))),
+    {
+      chunkSize: DELETE_CHUNK_SIZE,
+      callback: async (batch) => {
+        const contactInboxIds = batch.map((row) => row.id)
+
+        const inboxes = await db.query.contactInboxModel.findMany({
+          where: { id: { in: contactInboxIds } },
+          columns: { contactId: true },
+        })
+        const contactIds = [...new Set(inboxes.map((inbox) => inbox.contactId))]
+
+        await db
+          .delete(contactToTagChannelModel)
+          .where(
+            and(
+              eq(contactToTagChannelModel.tagChannelId, channel.id),
+              inArray(contactToTagChannelModel.contactInboxId, contactInboxIds),
+            ),
+          )
+
+        if (contactIds.length > 0) {
+          await db
+            .delete(contactsToTagsModel)
+            .where(
+              and(
+                eq(contactsToTagsModel.tagId, tagId),
+                inArray(contactsToTagsModel.contactId, contactIds),
+              ),
+            )
+        }
+        return true
+      },
+    },
+  )
+
+  await db.delete(tagChannelModel).where(eq(tagChannelModel.id, channel.id))
+}
+
+/**
+ * Full workspace delete (delete-tag-action): removes the tag from EVERY channel
+ * (via deleteTagOnChannel, calling each channel's API) and deletes the Tag row.
+ */
+async function deleteTagOnChannels(props: {
   workspaceId: string
   tagId: string
 }): Promise<void> {
   const { workspaceId, tagId } = props
 
-  // Read mappings BEFORE the local delete so the external label ids are
-  // available for the API calls.
   const channels = await db.query.tagChannelModel.findMany({
     where: { tagId, workspaceId },
     columns: {
@@ -483,41 +602,52 @@ async function syncTagDelete(props: {
     },
   })
 
+  // Isolate per-channel failures so one bad channel can't block the others or
+  // the final Tag delete.
+  // NOTE: calling the channel API to delete the label is temporarily disabled
+  // (callApi: false). Flip back to true to remove the label on the channel too.
   for (const channel of channels) {
     try {
-      await deleteLabelOnChannel({ workspaceId, channel })
+      await deleteTagOnChannel({ workspaceId, tagId, channel, callApi: false })
     } catch (error) {
       logger.warn(
         { tagId, channel, error },
-        "syncTag(delete): skip per-channel delete error",
+        "syncTag(delete): skip per-channel cleanup error",
       )
     }
   }
 
-  const tagChannelIds = channels.map((c) => c.id)
-
-  // Explicit child cleanup in dependency order (no reliance on FK cascade).
-  // Scope by tagChannelId (workspace-scoped) rather than bare tagId for defense-in-depth.
-  await db
-    .delete(contactToTagChannelModel)
-    .where(
-      tagChannelIds.length > 0
-        ? inArray(contactToTagChannelModel.tagChannelId, tagChannelIds)
-        : eq(contactToTagChannelModel.tagId, tagId),
-    )
-
-  await db
-    .delete(tagChannelModel)
-    .where(
-      and(
-        eq(tagChannelModel.tagId, tagId),
-        eq(tagChannelModel.workspaceId, workspaceId),
-      ),
-    )
-
-  await db
-    .delete(contactsToTagsModel)
-    .where(eq(contactsToTagsModel.tagId, tagId))
+  // Catch-all for ContactToTag applied manually (no channel mapping). ContactToTag
+  // has a composite PK (no `id`), so page by contactId.
+  await chunkById(
+    (lastId) =>
+      db.query.contactsToTagsModel
+        .findMany({
+          where: {
+            tagId,
+            ...(lastId ? { contactId: { gt: lastId } } : {}),
+          },
+          orderBy: { contactId: "asc" },
+          limit: DELETE_CHUNK_SIZE,
+          columns: { contactId: true },
+        })
+        .then((rows) => rows.map((row) => ({ id: row.contactId }))),
+    {
+      chunkSize: DELETE_CHUNK_SIZE,
+      callback: async (batch) => {
+        const contactIds = batch.map((row) => row.id)
+        await db
+          .delete(contactsToTagsModel)
+          .where(
+            and(
+              eq(contactsToTagsModel.tagId, tagId),
+              inArray(contactsToTagsModel.contactId, contactIds),
+            ),
+          )
+        return true
+      },
+    },
+  )
 
   await db
     .delete(tagModel)

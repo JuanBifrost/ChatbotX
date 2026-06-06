@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 
 // ── db spies ──────────────────────────────────────────────────────────────────
 const findManyTagChannel = vi.fn()
+const findManyContactToTagChannel = vi.fn()
+const findManyContactsToTags = vi.fn()
+const findManyContactInbox = vi.fn()
 const findMessengerIntegrationFirst = vi.fn()
 const findZaloIntegrationFirst = vi.fn()
 
@@ -18,6 +21,15 @@ vi.mock("@chatbotx.io/database/client", () => ({
       tagChannelModel: {
         findMany: (...args: unknown[]) => findManyTagChannel(...args),
       },
+      contactToTagChannelModel: {
+        findMany: (...args: unknown[]) => findManyContactToTagChannel(...args),
+      },
+      contactsToTagsModel: {
+        findMany: (...args: unknown[]) => findManyContactsToTags(...args),
+      },
+      contactInboxModel: {
+        findMany: (...args: unknown[]) => findManyContactInbox(...args),
+      },
       integrationMessengerModel: {
         findFirst: (...args: unknown[]) =>
           findMessengerIntegrationFirst(...args),
@@ -25,7 +37,6 @@ vi.mock("@chatbotx.io/database/client", () => ({
       integrationZaloModel: {
         findFirst: (...args: unknown[]) => findZaloIntegrationFirst(...args),
       },
-      contactInboxModel: { findFirst: vi.fn().mockResolvedValue(null) },
     },
     delete: (model: unknown) => ({
       where: (cond: unknown) => {
@@ -46,13 +57,32 @@ vi.mock("@chatbotx.io/database/schema", () => ({
     __name: "ContactToTagChannel",
     tagId: "ContactToTagChannel.tagId",
     tagChannelId: "ContactToTagChannel.tagChannelId",
+    contactInboxId: "ContactToTagChannel.contactInboxId",
   },
-  tagChannelModel: { __name: "TagChannel" },
-  contactsToTagsModel: { __name: "ContactsToTags" },
-  tagModel: { __name: "Tag", deletedAt: "Tag.deletedAt" },
+  tagChannelModel: { __name: "TagChannel", id: "TagChannel.id" },
+  contactsToTagsModel: {
+    __name: "ContactsToTags",
+    tagId: "ContactsToTags.tagId",
+    contactId: "ContactsToTags.contactId",
+  },
+  tagModel: { __name: "Tag", id: "Tag.id", deletedAt: "Tag.deletedAt" },
   contactInboxModel: { __name: "ContactInbox" },
   integrationMessengerModel: { __name: "IntegrationMessenger" },
   integrationZaloModel: { __name: "IntegrationZalo" },
+}))
+
+vi.mock("@chatbotx.io/database/utils", () => ({
+  // Single-pass chunkById: the query builder pages by id; with our small fixed
+  // result sets it returns < chunkSize on the first call and stops.
+  chunkById: async (
+    queryBuilder: (lastId: string | null) => Promise<{ id: string }[]>,
+    options: { callback: (rows: { id: string }[]) => Promise<unknown> },
+  ) => {
+    const rows = await queryBuilder(null)
+    if (rows.length > 0) {
+      await options.callback(rows)
+    }
+  },
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
@@ -132,11 +162,23 @@ const ENABLED_ZALO = {
 const runDelete = () =>
   handleSyncTag({ action: "delete", workspaceId: WS, tagId: TAG_ID })
 
-// Helper: extract __name from a model sentinel
+const runScopedDelete = (channelType: string, integrationId: string) =>
+  handleSyncTag({
+    action: "delete",
+    workspaceId: WS,
+    tagId: TAG_ID,
+    channelType: channelType as "messenger" | "zalo",
+    integrationId,
+  })
+
 const modelName = (m: unknown) => (m as { __name: string }).__name
+const deletedModelNames = () => dbDeleteCalls.map((c) => modelName(c.model))
 
 beforeEach(() => {
   findManyTagChannel.mockReset()
+  findManyContactToTagChannel.mockReset()
+  findManyContactsToTags.mockReset()
+  findManyContactInbox.mockReset()
   findMessengerIntegrationFirst.mockReset()
   findZaloIntegrationFirst.mockReset()
   messengerDeleteLabel.mockReset()
@@ -144,112 +186,75 @@ beforeEach(() => {
   dbDeleteCalls.length = 0
 
   findManyTagChannel.mockResolvedValue([])
+  findManyContactToTagChannel.mockResolvedValue([])
+  findManyContactsToTags.mockResolvedValue([])
+  findManyContactInbox.mockResolvedValue([])
   findMessengerIntegrationFirst.mockResolvedValue(ENABLED_MESSENGER)
   findZaloIntegrationFirst.mockResolvedValue(ENABLED_ZALO)
   messengerDeleteLabel.mockResolvedValue(undefined)
   zaloRemoveTag.mockResolvedValue(undefined)
 })
 
-describe("syncTagDelete — child cleanup order", () => {
-  test("reads TagChannel rows for the tag before any delete", async () => {
-    await runDelete()
-    expect(findManyTagChannel).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.objectContaining({ tagId: TAG_ID }),
-      }),
-    )
-  })
-
-  test("deletes ContactToTagChannel first (step 3)", async () => {
-    await runDelete()
-    expect(modelName(dbDeleteCalls[0]?.model)).toBe("ContactToTagChannel")
-  })
-
-  test("deletes TagChannel second (step 4)", async () => {
-    await runDelete()
-    expect(modelName(dbDeleteCalls[1]?.model)).toBe("TagChannel")
-  })
-
-  test("deletes ContactsToTags third (step 5)", async () => {
-    await runDelete()
-    expect(modelName(dbDeleteCalls[2]?.model)).toBe("ContactsToTags")
-  })
-
-  test("hard-deletes Tag last (step 6)", async () => {
-    await runDelete()
-    expect(modelName(dbDeleteCalls[3]?.model)).toBe("Tag")
-  })
-
-  test("deletion order: ContactToTagChannel → TagChannel → ContactsToTags → Tag", async () => {
-    await runDelete()
-    expect(dbDeleteCalls).toHaveLength(4)
-    expect(dbDeleteCalls.map((c) => modelName(c.model))).toEqual([
-      "ContactToTagChannel",
-      "TagChannel",
-      "ContactsToTags",
-      "Tag",
-    ])
-  })
-
-  test("hard-delete WHERE includes isNotNull(deletedAt) guard", async () => {
-    await runDelete()
-    const condStr = JSON.stringify(dbDeleteCalls[3]?.condition)
-    expect(condStr).toContain("isNotNull")
-  })
-})
-
-describe("syncTagDelete — ContactToTagChannel scoping", () => {
-  test("no channels: deletes ContactToTagChannel by bare tagId (fallback)", async () => {
-    findManyTagChannel.mockResolvedValue([])
-
-    await runDelete()
-
-    const condStr = JSON.stringify(dbDeleteCalls[0]?.condition)
-    // fallback uses eq(tagId) not inArray(tagChannelId)
-    expect(condStr).toContain("ContactToTagChannel.tagId")
-    expect(condStr).not.toContain("inArray")
-  })
-
-  test("with channels: deletes ContactToTagChannel by tagChannelId via inArray", async () => {
+// ============================================================================
+// Full workspace delete (delete-tag-action): callApi=true + Tag row removed
+// ============================================================================
+describe("syncTagDelete — full workspace delete", () => {
+  test("does NOT call any channel label API (temporarily disabled)", async () => {
     findManyTagChannel.mockResolvedValue([MESSENGER_CHANNEL, ZALO_CHANNEL])
 
     await runDelete()
 
-    const condStr = JSON.stringify(dbDeleteCalls[0]?.condition)
-    expect(condStr).toContain("inArray")
-    expect(condStr).toContain("tc-1")
-    expect(condStr).toContain("tc-2")
+    expect(messengerDeleteLabel).not.toHaveBeenCalled()
+    expect(zaloRemoveTag).not.toHaveBeenCalled()
+    // cleanup + Tag delete still happen
+    expect(deletedModelNames().at(-1)).toBe("Tag")
   })
-})
 
-describe("syncTagDelete — channel label deletion", () => {
-  test("messenger channel: calls deleteLabel API with externalLabelId", async () => {
+  test("hard-deletes the Tag row LAST, with the isNotNull(deletedAt) guard", async () => {
     findManyTagChannel.mockResolvedValue([MESSENGER_CHANNEL])
 
     await runDelete()
 
-    expect(messengerDeleteLabel).toHaveBeenCalledTimes(1)
-    expect(messengerDeleteLabel).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          labelId: MESSENGER_CHANNEL.externalLabelId,
-        }),
-      }),
-    )
+    const last = dbDeleteCalls.at(-1)
+    expect(modelName(last?.model)).toBe("Tag")
+    expect(JSON.stringify(last?.condition)).toContain("isNotNull")
   })
 
-  test("zalo channel: calls removeTag API with externalLabelId", async () => {
-    findManyTagChannel.mockResolvedValue([ZALO_CHANNEL])
+  test("per channel: deletes ContactToTagChannel + ContactsToTags + TagChannel, then Tag", async () => {
+    findManyTagChannel.mockResolvedValue([MESSENGER_CHANNEL])
+    findManyContactToTagChannel.mockResolvedValue([{ contactInboxId: "ci-1" }])
+    findManyContactInbox.mockResolvedValue([{ contactId: "c-1" }])
 
     await runDelete()
 
-    expect(zaloRemoveTag).toHaveBeenCalledTimes(1)
-    expect(zaloRemoveTag).toHaveBeenCalledWith(
-      expect.objectContaining({ tagName: ZALO_CHANNEL.externalLabelId }),
-    )
+    const names = deletedModelNames()
+    expect(names).toContain("ContactToTagChannel")
+    expect(names).toContain("ContactsToTags")
+    expect(names).toContain("TagChannel")
+    expect(names.at(-1)).toBe("Tag")
   })
 
-  test("skips messenger label delete when integration sync disabled", async () => {
+  test("catch-all removes manually-applied ContactToTag (no channel mapping)", async () => {
+    findManyTagChannel.mockResolvedValue([]) // tag never synced to a channel
+    findManyContactsToTags.mockResolvedValue([{ contactId: "c-manual" }])
+
+    await runDelete()
+
+    const names = deletedModelNames()
+    expect(names).toContain("ContactsToTags")
+    expect(names.at(-1)).toBe("Tag")
+  })
+
+  test("no channels, no manual links → only the Tag row is deleted", async () => {
+    findManyTagChannel.mockResolvedValue([])
+    findManyContactsToTags.mockResolvedValue([])
+
+    await runDelete()
+
+    expect(deletedModelNames()).toEqual(["Tag"])
+  })
+
+  test("deletes the Tag regardless of integration sync state (API disabled)", async () => {
     findManyTagChannel.mockResolvedValue([MESSENGER_CHANNEL])
     findMessengerIntegrationFirst.mockResolvedValue({
       ...ENABLED_MESSENGER,
@@ -259,26 +264,38 @@ describe("syncTagDelete — channel label deletion", () => {
     await runDelete()
 
     expect(messengerDeleteLabel).not.toHaveBeenCalled()
-    // DB cleanup still proceeds
-    expect(dbDeleteCalls).toHaveLength(4)
+    expect(deletedModelNames().at(-1)).toBe("Tag")
+  })
+})
+
+// ============================================================================
+// Channel-scoped delete (inbound webhook): no API, no Tag row
+// ============================================================================
+describe("syncTagDelete — channel-scoped (webhook)", () => {
+  test("does NOT call the channel API and does NOT delete the Tag row", async () => {
+    findManyTagChannel.mockResolvedValue([ZALO_CHANNEL])
+    findManyContactToTagChannel.mockResolvedValue([{ contactInboxId: "ci-1" }])
+    findManyContactInbox.mockResolvedValue([{ contactId: "c-1" }])
+
+    await runScopedDelete("zalo", "zalo-int-1")
+
+    // The channel already removed the label → no API call.
+    expect(zaloRemoveTag).not.toHaveBeenCalled()
+    expect(messengerDeleteLabel).not.toHaveBeenCalled()
+
+    const names = deletedModelNames()
+    expect(names).toContain("ContactToTagChannel")
+    expect(names).toContain("ContactsToTags")
+    expect(names).toContain("TagChannel")
+    // Tag row is kept.
+    expect(names).not.toContain("Tag")
   })
 
-  test("continues DB cleanup even when channel API throws", async () => {
-    findManyTagChannel.mockResolvedValue([MESSENGER_CHANNEL])
-    messengerDeleteLabel.mockRejectedValue(new Error("Facebook API down"))
+  test("no-op when the tag is not mapped on that channel", async () => {
+    findManyTagChannel.mockResolvedValue([])
 
-    await runDelete()
+    await runScopedDelete("zalo", "zalo-int-1")
 
-    expect(dbDeleteCalls).toHaveLength(4)
-  })
-
-  test("deletes labels on every channel before DB cleanup", async () => {
-    findManyTagChannel.mockResolvedValue([MESSENGER_CHANNEL, ZALO_CHANNEL])
-
-    await runDelete()
-
-    expect(messengerDeleteLabel).toHaveBeenCalledTimes(1)
-    expect(zaloRemoveTag).toHaveBeenCalledTimes(1)
-    expect(dbDeleteCalls).toHaveLength(4)
+    expect(dbDeleteCalls).toHaveLength(0)
   })
 })

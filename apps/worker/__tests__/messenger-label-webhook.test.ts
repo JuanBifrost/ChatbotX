@@ -294,7 +294,8 @@ describe("handleMessengerLabelWebhook — integration guard", () => {
     await handleMessengerLabelWebhook(
       makeData(
         makePayload({
-          action: "create_label",
+          action: "add",
+          user: { id: USER_PSID },
           label: { id: LABEL_ID, page_label_name: LABEL_NAME },
         }),
       ),
@@ -311,289 +312,14 @@ describe("handleMessengerLabelWebhook — integration guard", () => {
     await handleMessengerLabelWebhook(
       makeData(
         makePayload({
-          action: "create_label",
+          action: "add",
+          user: { id: USER_PSID },
           label: { id: LABEL_ID, page_label_name: LABEL_NAME },
         }),
       ),
     )
 
     expect(dbInsert).not.toHaveBeenCalled()
-  })
-})
-
-describe("handleMessengerLabelWebhook — create_label", () => {
-  beforeEach(() => {
-    queryResults.integrationMessengerFindFirst = makeIntegration()
-  })
-
-  test("returns early when page_label_name is missing", async () => {
-    // label with no page_label_name (FB omits it on user add/remove events)
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({ action: "create_label", label: { id: LABEL_ID } }),
-      ),
-    )
-
-    expect(dbInsert).not.toHaveBeenCalled()
-  })
-
-  test("skips tag insert when tag already exists by name", async () => {
-    queryResults.tagModelFindFirst = { id: "existing-tag-id" }
-    insertReturning.current = [{ id: "tc-new-1" }]
-
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "create_label",
-          label: { id: LABEL_ID, page_label_name: LABEL_NAME },
-        }),
-      ),
-    )
-
-    // tagModel insert should NOT be called because tag was found
-    const insertCalls = dbInsert.mock.calls.map((c: unknown[]) => c[0])
-    expect(insertCalls).not.toContain(tagModel)
-    // tagChannelModel insert SHOULD be called
-    expect(insertCalls).toContain(tagChannelModel)
-  })
-
-  test("inserts tag with onConflictDoNothing when tag not found", async () => {
-    queryResults.tagModelFindFirst = null
-    insertReturning.current = [{ id: "new-tag-id" }]
-
-    // tagChannelModel insert also returns an id
-    let insertCallCount = 0
-    dbInsert.mockImplementation((_model: unknown) => {
-      insertCallCount++
-      return insertChain
-    })
-    ;(insertChain.returning as ReturnType<typeof vi.fn>).mockImplementation(
-      () => {
-        // First insert = tagModel → return tag id
-        // Second insert = tagChannelModel → return tagChannel id
-        return Promise.resolve(
-          insertCallCount === 1 ? [{ id: "new-tag-id" }] : [{ id: "tc-new-1" }],
-        )
-      },
-    )
-
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "create_label",
-          label: { id: LABEL_ID, page_label_name: LABEL_NAME },
-        }),
-      ),
-    )
-
-    expect(dbInsert).toHaveBeenCalledWith(tagModel)
-    expect(insertChain.onConflictDoNothing).toHaveBeenCalled()
-  })
-
-  test("falls back to tagModel findFirst when insert returns empty (race)", async () => {
-    queryResults.tagModelFindFirst = null
-    // First insert (tagModel) returns empty → triggers fallback findFirst
-    // Fallback findFirst returns an id
-    let _insertCallCount = 0
-    dbInsert.mockImplementation(() => {
-      _insertCallCount++
-      return insertChain
-    })
-    ;(insertChain.returning as ReturnType<typeof vi.fn>).mockImplementation(
-      async () => [],
-    )
-    // Set up the fallback findFirst to return a tag
-    tagFindFirst
-      .mockResolvedValueOnce(null) // initial check → not found
-      .mockResolvedValueOnce({ id: "race-tag-id" }) // fallback after empty insert
-
-    // tagChannelModel insert returns id
-    insertReturning.current = [{ id: "tc-race-1" }]
-    ;(insertChain.returning as ReturnType<typeof vi.fn>)
-      .mockResolvedValueOnce([]) // tagModel insert → empty
-      .mockResolvedValueOnce([{ id: "tc-race-1" }]) // tagChannel insert → ok
-
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "create_label",
-          label: { id: LABEL_ID, page_label_name: LABEL_NAME },
-        }),
-      ),
-    )
-
-    // findFirst called twice: initial check + fallback
-    expect(tagFindFirst).toHaveBeenCalledTimes(2)
-    // tagChannelModel insert was reached (tag was resolved via fallback)
-    expect(dbInsert).toHaveBeenCalledWith(tagChannelModel)
-  })
-
-  test("returns undefined (no-op) when both tag insert and fallback return nothing", async () => {
-    queryResults.tagModelFindFirst = null
-    tagFindFirst.mockResolvedValue(null) // all findFirst calls → null
-    ;(insertChain.returning as ReturnType<typeof vi.fn>).mockResolvedValue([]) // insert returns empty
-
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "create_label",
-          label: { id: LABEL_ID, page_label_name: LABEL_NAME },
-        }),
-      ),
-    )
-
-    // Should not insert tagChannel since tagId is undefined
-    const insertCalls = dbInsert.mock.calls.map((c: unknown[]) => c[0])
-    expect(insertCalls).not.toContain(tagChannelModel)
-  })
-
-  test("falls back to tagChannelModel findFirst when tagChannel insert returns empty", async () => {
-    queryResults.tagModelFindFirst = { id: "existing-tag-id" }
-    queryResults.tagChannelFindFirst = { id: "existing-tc-id" }
-
-    // tagChannel insert returns empty → triggers findFirst fallback
-    ;(insertChain.returning as ReturnType<typeof vi.fn>).mockResolvedValue([])
-
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "create_label",
-          label: { id: LABEL_ID, page_label_name: LABEL_NAME },
-        }),
-      ),
-    )
-
-    // tagChannelModel findFirst should be called as fallback
-    expect(tagChannelFindFirst).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: expect.anything(),
-        columns: { id: true },
-      }),
-    )
-  })
-
-  test("uses createId for new tag and tagChannel ids", async () => {
-    queryResults.tagModelFindFirst = null
-    createId.mockReturnValueOnce("tag-new-id").mockReturnValueOnce("tc-new-id")
-    let callIdx = 0
-    ;(insertChain.returning as ReturnType<typeof vi.fn>).mockImplementation(
-      () => {
-        callIdx++
-        return Promise.resolve(
-          callIdx === 1 ? [{ id: "tag-new-id" }] : [{ id: "tc-new-id" }],
-        )
-      },
-    )
-
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "create_label",
-          label: { id: LABEL_ID, page_label_name: LABEL_NAME },
-        }),
-      ),
-    )
-
-    expect(createId).toHaveBeenCalled()
-    // Values passed to insert should include the generated ids
-    const valuesCalls = (insertChain.values as ReturnType<typeof vi.fn>).mock
-      .calls
-    expect(
-      valuesCalls.some(
-        (c: unknown[]) =>
-          (c[0] as Record<string, unknown>)?.id === "tag-new-id",
-      ),
-    ).toBe(true)
-  })
-})
-
-describe("handleMessengerLabelWebhook — delete_label (workspace isolation)", () => {
-  beforeEach(() => {
-    queryResults.integrationMessengerFindFirst = makeIntegration()
-  })
-
-  test("calls db.delete(tagChannelModel) with correct where clause", async () => {
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "delete_label",
-          label: { id: LABEL_ID },
-        }),
-      ),
-    )
-
-    expect(dbDelete).toHaveBeenCalledWith(tagChannelModel)
-    expect(deleteChain.where).toHaveBeenCalled()
-  })
-
-  test("where clause includes workspaceId — workspace isolation", async () => {
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "delete_label",
-          label: { id: LABEL_ID },
-        }),
-      ),
-    )
-
-    const whereArgs = (deleteChain.where as ReturnType<typeof vi.fn>).mock
-      .calls[0]
-    // The `and(...)` call returns its args as an array (per our mock)
-    // whereArgs[0] is the result of and(...conditions)
-    const conditions = whereArgs[0] as unknown[]
-    // Conditions should include workspaceId, channelType, integrationId, externalLabelId
-    expect(conditions).toHaveLength(4)
-  })
-
-  test("where clause uses integration.workspaceId (not some other workspace)", async () => {
-    const integration = makeIntegration({ workspaceId: "ws-specific" })
-    queryResults.integrationMessengerFindFirst = integration
-
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "delete_label",
-          label: { id: LABEL_ID },
-        }),
-      ),
-    )
-
-    // eq() mock returns its args — find the eq call with workspaceId field
-    // The and() wrapper returns array of eq results
-    // Each eq() call is captured in the conditions
-    const whereArgs = (deleteChain.where as ReturnType<typeof vi.fn>).mock
-      .calls[0]
-    const conditions = whereArgs[0] as unknown[][]
-    // One condition should be [tagChannelModel.workspaceId, "ws-specific"]
-    const wsCondition = conditions.find(
-      (c) => Array.isArray(c) && c[1] === "ws-specific",
-    )
-    expect(wsCondition).toBeDefined()
-  })
-
-  test("scopes delete by integrationId and externalLabelId", async () => {
-    await handleMessengerLabelWebhook(
-      makeData(
-        makePayload({
-          action: "delete_label",
-          label: { id: "specific-label-ext-id" },
-        }),
-      ),
-    )
-
-    const whereArgs = (deleteChain.where as ReturnType<typeof vi.fn>).mock
-      .calls[0]
-    const conditions = whereArgs[0] as unknown[][]
-    // externalLabelId condition
-    const labelCondition = conditions.find(
-      (c) => Array.isArray(c) && c[1] === "specific-label-ext-id",
-    )
-    expect(labelCondition).toBeDefined()
-    // integrationId condition
-    const integrationCondition = conditions.find(
-      (c) => Array.isArray(c) && c[1] === INTEGRATION_ID,
-    )
-    expect(integrationCondition).toBeDefined()
   })
 })
 
@@ -833,6 +559,95 @@ describe("handleMessengerLabelWebhook — remove_label", () => {
       (c) => Array.isArray(c) && c[1] === "ci-specific",
     )
     expect(ciCondition).toBeDefined()
+  })
+})
+
+describe("handleMessengerLabelWebhook — short action aliases (add/remove)", () => {
+  beforeEach(() => {
+    queryResults.integrationMessengerFindFirst = makeIntegration()
+  })
+
+  test("'remove' behaves like remove_label (unassigns)", async () => {
+    queryResults.contactInboxFindFirst = { id: "ci-1", contactId: "contact-1" }
+    queryResults.tagChannelFindFirst = { id: "tc-1", tagId: "tag-1" }
+
+    await handleMessengerLabelWebhook(
+      makeData(
+        makePayload({
+          action: "remove",
+          user: { id: USER_PSID },
+          label: { id: LABEL_ID },
+        }),
+      ),
+    )
+
+    expect(dbDelete).toHaveBeenCalledWith(contactToTagChannelModel)
+    expect(loggerWarn).not.toHaveBeenCalled()
+  })
+
+  test("'add' assigns when the tag channel already exists", async () => {
+    queryResults.contactInboxFindFirst = { id: "ci-1", contactId: "contact-1" }
+    queryResults.tagChannelFindFirst = { id: "tc-1", tagId: "tag-1" }
+
+    await handleMessengerLabelWebhook(
+      makeData(
+        makePayload({
+          action: "add",
+          user: { id: USER_PSID },
+          label: { id: LABEL_ID },
+        }),
+      ),
+    )
+
+    expect(dbInsert).toHaveBeenCalledWith(contactsToTagsModel)
+    expect(dbInsert).toHaveBeenCalledWith(contactToTagChannelModel)
+    expect(loggerWarn).not.toHaveBeenCalled()
+  })
+})
+
+describe("handleMessengerLabelWebhook — add creates missing tag", () => {
+  beforeEach(() => {
+    queryResults.integrationMessengerFindFirst = makeIntegration()
+    queryResults.contactInboxFindFirst = { id: "ci-1", contactId: "contact-1" }
+    queryResults.tagChannelFindFirst = null // not synced locally yet
+  })
+
+  test("creates tag + channel from page_label_name in payload, then assigns", async () => {
+    queryResults.tagModelFindFirst = null
+    insertReturning.current = [{ id: "new-id" }]
+
+    await handleMessengerLabelWebhook(
+      makeData(
+        makePayload({
+          action: "add",
+          user: { id: USER_PSID },
+          label: { id: LABEL_ID, page_label_name: LABEL_NAME },
+        }),
+      ),
+    )
+
+    // upsert created the tag + channel, then assigned to the contact
+    expect(dbInsert).toHaveBeenCalledWith(tagModel)
+    expect(dbInsert).toHaveBeenCalledWith(tagChannelModel)
+    expect(dbInsert).toHaveBeenCalledWith(contactsToTagsModel)
+    expect(dbInsert).toHaveBeenCalledWith(contactToTagChannelModel)
+    expect(loggerWarn).not.toHaveBeenCalled()
+  })
+
+  test("skips when the tag is missing and the payload carries no name", async () => {
+    queryResults.tagModelFindFirst = null
+
+    await handleMessengerLabelWebhook(
+      makeData(
+        makePayload({
+          action: "add",
+          user: { id: USER_PSID },
+          label: { id: LABEL_ID }, // no page_label_name
+        }),
+      ),
+    )
+
+    expect(dbInsert).not.toHaveBeenCalled()
   })
 })
 

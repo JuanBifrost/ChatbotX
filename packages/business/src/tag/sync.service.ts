@@ -56,18 +56,33 @@ class TagSyncService extends BaseService {
   }
 
   /**
-   * Enqueue outbound delete of a tag. The worker deletes the label on each
-   * sync-enabled channel and then deletes the Tag row (cascading TagChannel /
-   * ContactToTagChannel / ContactToTag). Pure Redis enqueue.
+   * Enqueue a tag delete.
+   *
+   * - Workspace delete (no channel scope): the worker removes the label on every
+   *   sync-enabled channel and deletes the Tag row (cascading TagChannel /
+   *   ContactToTagChannel / ContactToTag) — used by delete-tag-action.
+   * - Channel-scoped delete (channelType + integrationId): the tag was deleted on
+   *   one channel only (inbound webhook). The worker removes just that channel's
+   *   mappings + the contacts tagged via it; the Tag row stays.
+   *
+   * Pure Redis enqueue.
    */
   async enqueueDelete(props: {
     workspaceId: string
     tagId: string
+    channelType?: ChannelType
+    integrationId?: string
   }): Promise<void> {
-    const { workspaceId, tagId } = props
+    const { workspaceId, tagId, channelType, integrationId } = props
     await defaultQueue.add(DefaultJobAction.syncTag, {
       type: DefaultJobAction.syncTag,
-      data: { action: "delete", workspaceId, tagId },
+      data: {
+        action: "delete",
+        workspaceId,
+        tagId,
+        channelType,
+        integrationId,
+      },
     })
   }
 

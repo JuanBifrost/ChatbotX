@@ -95,7 +95,17 @@ export type JobSyncTag = {
         contactId: string
         tagId: string
       }
-    | { action: "delete"; workspaceId: string; tagId: string }
+    | {
+        action: "delete"
+        workspaceId: string
+        tagId: string
+        // Scope the delete to a single channel (inbound webhook): only that
+        // channel's mappings + the contacts tagged via it are removed, the Tag
+        // row stays. When omitted, the tag is deleted everywhere (the Tag row
+        // included) — see delete-tag-action.
+        channelType?: ChannelType
+        integrationId?: string
+      }
 }
 
 export type JobSyncChannelLabels = {

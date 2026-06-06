@@ -18,6 +18,8 @@ const queryResults = {
   integrationMessengerFindFirst: null as unknown,
   integrationZaloFindFirst: null as unknown,
   contactInboxFindMany: [] as unknown[],
+  contactToTagChannelFindMany: [] as unknown[],
+  contactsToTagsFindMany: [] as unknown[],
   selectRows: [] as unknown[],
 }
 
@@ -92,6 +94,12 @@ vi.mock("@chatbotx.io/database/client", () => ({
       },
       contactInboxModel: {
         findMany: vi.fn(async () => queryResults.contactInboxFindMany),
+      },
+      contactToTagChannelModel: {
+        findMany: vi.fn(async () => queryResults.contactToTagChannelFindMany),
+      },
+      contactsToTagsModel: {
+        findMany: vi.fn(async () => queryResults.contactsToTagsFindMany),
       },
     },
     insert: vi.fn(() => insertChain),
@@ -259,6 +267,8 @@ beforeEach(() => {
   queryResults.integrationMessengerFindFirst = null
   queryResults.integrationZaloFindFirst = null
   queryResults.contactInboxFindMany = []
+  queryResults.contactToTagChannelFindMany = []
+  queryResults.contactsToTagsFindMany = []
   queryResults.selectRows = []
   insertReturning.current = []
   updateReturning.current = []
@@ -847,7 +857,7 @@ describe("syncTagDetach", () => {
 // ===========================================================================
 
 describe("syncTagDelete", () => {
-  test("messenger channel → deleteLabel called with correct labelId", async () => {
+  test("messenger channel → label API NOT called (temporarily disabled), tag deleted", async () => {
     const channel = {
       channelType: "messenger",
       integrationId: "intg-msg-1",
@@ -862,19 +872,12 @@ describe("syncTagDelete", () => {
       tagId: "tag-1",
     })
 
-    expect(messengerRunChannelHandler).toHaveBeenCalledWith(
-      "bot",
-      "deleteLabel",
-      expect.objectContaining({
-        ctx: fakeCtx,
-        data: { labelId: channel.externalLabelId },
-      }),
-    )
+    expect(messengerRunChannelHandler).not.toHaveBeenCalled()
     // tag row deleted
     expect(db.delete).toHaveBeenCalled()
   })
 
-  test("zalo channel → removeTag called with correct tagName", async () => {
+  test("zalo channel → label API NOT called (temporarily disabled), tag deleted", async () => {
     const channel = {
       channelType: "zalo",
       integrationId: "intg-zalo-1",
@@ -889,17 +892,11 @@ describe("syncTagDelete", () => {
       tagId: "tag-1",
     })
 
-    expect(zaloRunAction).toHaveBeenCalledWith(
-      "removeTag",
-      expect.objectContaining({
-        ctx: fakeCtx,
-        tagName: channel.externalLabelId,
-      }),
-    )
+    expect(zaloRunAction).not.toHaveBeenCalled()
     expect(db.delete).toHaveBeenCalled()
   })
 
-  test("error isolation — first channel delete failure does not abort second channel or tag delete", async () => {
+  test("processes every channel then deletes the tag row", async () => {
     const ch1 = {
       channelType: "messenger",
       integrationId: "intg-msg-1",
@@ -911,13 +908,7 @@ describe("syncTagDelete", () => {
       externalLabelId: "label-2",
     }
     queryResults.tagChannelFindMany = [ch1, ch2]
-    // First integration has sync enabled, second also
     queryResults.integrationMessengerFindFirst = makeMessengerIntegration()
-
-    // First deleteLabel throws
-    messengerRunChannelHandler
-      .mockRejectedValueOnce(new Error("FB error"))
-      .mockResolvedValueOnce(undefined)
 
     await expect(
       handleSyncTag({
@@ -927,11 +918,8 @@ describe("syncTagDelete", () => {
       }),
     ).resolves.toBeUndefined()
 
-    // Both channels attempted
-    expect(messengerRunChannelHandler).toHaveBeenCalledTimes(2)
     // Tag row delete still called
     expect(db.delete).toHaveBeenCalled()
-    expect(logger.warn).toHaveBeenCalled()
   })
 
   test("sync-disabled context (syncTagEnabledAt=null) → skip API but still delete tag row", async () => {
@@ -970,7 +958,7 @@ describe("syncTagDelete", () => {
     expect(db.delete).toHaveBeenCalled()
   })
 
-  test("multiple channels (messenger + zalo) — both API calls made then tag deleted", async () => {
+  test("multiple channels (messenger + zalo) → no API calls, tag deleted", async () => {
     const messengerChannel = {
       channelType: "messenger",
       integrationId: "intg-msg-1",
@@ -991,12 +979,49 @@ describe("syncTagDelete", () => {
       tagId: "tag-1",
     })
 
-    expect(messengerRunChannelHandler).toHaveBeenCalledWith(
-      "bot",
-      "deleteLabel",
-      expect.anything(),
-    )
-    expect(zaloRunAction).toHaveBeenCalledWith("removeTag", expect.anything())
+    expect(messengerRunChannelHandler).not.toHaveBeenCalled()
+    expect(zaloRunAction).not.toHaveBeenCalled()
     expect(db.delete).toHaveBeenCalled()
+  })
+
+  // ── channel-scoped delete (inbound webhook) ──────────────────────────────
+
+  test("channel-scoped → deletes only this channel's rows + contacts, keeps Tag, no channel API", async () => {
+    queryResults.tagChannelFindMany = [makeTagChannel()] // id tc-1, messenger
+    queryResults.contactToTagChannelFindMany = [{ contactInboxId: "ci-1" }]
+    queryResults.contactInboxFindMany = [{ contactId: "contact-1" }]
+
+    await handleSyncTag({
+      action: "delete",
+      workspaceId: "ws-1",
+      tagId: "tag-1",
+      channelType: "messenger",
+      integrationId: "intg-msg-1",
+    })
+
+    // Inbound webhook: the channel already removed the label → no API call.
+    expect(messengerRunChannelHandler).not.toHaveBeenCalled()
+    // chunkById paged the channel's contact assignments
+    expect(
+      db.query.contactToTagChannelModel.findMany as ReturnType<typeof vi.fn>,
+    ).toHaveBeenCalled()
+    // exactly 3 deletes: contactToTagChannel + contactsToTags + tagChannel.
+    // The Tag row is NOT deleted (workspace delete = 4).
+    expect(db.delete).toHaveBeenCalledTimes(3)
+  })
+
+  test("channel-scoped → no-op when the tag is not mapped on that channel", async () => {
+    queryResults.tagChannelFindMany = []
+
+    await handleSyncTag({
+      action: "delete",
+      workspaceId: "ws-1",
+      tagId: "tag-1",
+      channelType: "messenger",
+      integrationId: "intg-msg-1",
+    })
+
+    expect(messengerRunChannelHandler).not.toHaveBeenCalled()
+    expect(db.delete).not.toHaveBeenCalled()
   })
 })
