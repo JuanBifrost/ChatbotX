@@ -3,9 +3,7 @@ import type {
   SystemToolExecutors,
   UrlContextInput,
 } from "@chatbotx.io/ai/server"
-import { Readability } from "@mozilla/readability"
 import { htmlToText } from "html-to-text"
-import { JSDOM } from "jsdom"
 import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../../../../lib/logger"
 import { assertPublicUrl } from "../../../../lib/ssrf-guard"
@@ -22,13 +20,14 @@ const FALLBACK_FETCH_TIMEOUT_MS = 10_000
 const FALLBACK_MAX_RESPONSE_BYTES = 500_000
 const FALLBACK_MAX_REDIRECTS = 3
 
-function extractReadableText(html: string, url: string): string {
+function extractReadableText(html: string, _url: string): string {
   try {
-    const dom = new JSDOM(html, { url })
-    const article = new Readability(dom.window.document).parse()
-    if (article?.textContent && article.textContent.trim().length > 200) {
-      return article.textContent.trim()
-    }
+    return ""
+    // const dom = new JSDOM(html, { url })
+    // const article = new Readability(dom.window.document).parse()
+    // if (article?.textContent && article.textContent.trim().length > 200) {
+    //   return article.textContent.trim()
+    // }
   } catch {
     // Readability parse failure — fall back to htmlToText
   }
