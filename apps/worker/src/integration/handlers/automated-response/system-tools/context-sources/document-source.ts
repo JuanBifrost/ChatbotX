@@ -1,13 +1,11 @@
-import { and, db, desc, eq, inArray, sql } from "@chatbotx.io/database/client"
 import {
   aiConversationSourceStatuses,
   aiConversationSourceTypes,
-  aiEmbeddingStatuses,
 } from "@chatbotx.io/database/partials"
 import {
-  aiConversationSourceModel,
-  attachmentModel,
-} from "@chatbotx.io/database/schema"
+  createConversationEmbeddingRepository,
+  createConversationSourceRepository,
+} from "@chatbotx.io/database/repositories"
 import type { AttachmentModel } from "@chatbotx.io/database/types"
 import { DOCX_MIME_TYPES, PDF_MIME_TYPES } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
@@ -18,7 +16,6 @@ import {
 } from "@chatbotx.io/worker-config"
 import { embed } from "ai"
 import { normalizeError } from "universal-error-normalizer"
-import { z } from "zod"
 import { resolveEmbeddingModel } from "../../../../../ai-agent/lib/embedding-model"
 import { logger } from "../../../../../lib/logger"
 import type {
@@ -37,40 +34,12 @@ const SUPPORTED_DOCUMENT_MIME_TYPES_LIST = [
   ...DOCX_MIME_TYPES,
 ] as string[]
 const DEFAULT_TOP_K = 5
+const DOCUMENT_ATTACHMENT_LOOKUP_LIMIT = 50
 const STALE_PROCESSING_THRESHOLD_MS = 5 * 60 * 1000
 const PROCESS_SOURCE_JOB_ID_PREFIX = AIJobAction.processConversationSource
 
-const nullableFiniteNumberFromDbSchema = z.preprocess((value) => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-
-  return null
-}, z.number().finite().nullable())
-
-const nullableChunkIndexFromDbSchema = z.preprocess((value) => {
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? value : null
-  }
-
-  if (typeof value === "string") {
-    const parsed = Number(value)
-    return Number.isInteger(parsed) ? parsed : null
-  }
-
-  return null
-}, z.number().int().nullable())
-
-const embeddingSearchRowSchema = z.object({
-  chunkIndex: nullableChunkIndexFromDbSchema,
-  content: z.string(),
-  similarity: nullableFiniteNumberFromDbSchema,
-})
+const sourceRepo = createConversationSourceRepository()
+const embeddingRepo = createConversationEmbeddingRepository()
 
 function normalizeHint(value?: string): null | string {
   const normalized = value?.trim().toLowerCase()
@@ -80,11 +49,11 @@ function normalizeHint(value?: string): null | string {
   return normalized
 }
 
-function matchesHint(source: AttachmentModel, hint: string) {
+function matchesHint(attachment: AttachmentModel, hint: string) {
   const haystack = [
-    source.name ?? "",
-    source.originPath ?? "",
-    source.sourceId ?? "",
+    attachment.name ?? "",
+    attachment.originPath ?? "",
+    attachment.sourceId ?? "",
   ]
     .join(" ")
     .toLowerCase()
@@ -110,72 +79,15 @@ async function enqueueConversationSource(
   })
 }
 
-function findDocumentConversationSource(input: {
-  sourceKey: string
-  workspaceId: string
-}) {
-  return db.query.aiConversationSourceModel.findFirst({
-    where: {
-      workspaceId: input.workspaceId,
-      sourceType: DOCUMENT_SOURCE_TYPE,
-      sourceKey: input.sourceKey,
-    },
-  })
-}
-
-async function createDocumentConversationSource(input: {
-  attachment: AttachmentModel
-  conversationId: string
-  sourceKey: string
-  workspaceId: string
-}) {
-  const source = await db
-    .insert(aiConversationSourceModel)
-    .values({
-      id: createId(),
-      workspaceId: input.workspaceId,
-      conversationId: input.conversationId,
-      messageId: input.attachment.messageId,
-      attachmentId: input.attachment.id,
-      sourceType: DOCUMENT_SOURCE_TYPE,
-      status: aiConversationSourceStatuses.enum.pending,
-      sourceKey: input.sourceKey,
-      mimeType: input.attachment.mimeType,
-      title: input.attachment.name,
-    })
-    .onConflictDoNothing({
-      target: [
-        aiConversationSourceModel.workspaceId,
-        aiConversationSourceModel.sourceType,
-        aiConversationSourceModel.sourceKey,
-      ],
-    })
-    .returning()
-    .then((rows) => rows[0])
-
-  return (
-    source ??
-    findDocumentConversationSource({
-      workspaceId: input.workspaceId,
-      sourceKey: input.sourceKey,
-    })
-  )
-}
-
 async function resolveDocumentSource(
   input: ResolveConversationSourceInput,
 ): Promise<null | ResolvedConversationSource> {
-  const attachments = await db
-    .select()
-    .from(attachmentModel)
-    .where(
-      and(
-        eq(attachmentModel.workspaceId, input.workspaceId),
-        eq(attachmentModel.conversationId, input.conversationId),
-        inArray(attachmentModel.mimeType, SUPPORTED_DOCUMENT_MIME_TYPES_LIST),
-      ),
-    )
-    .orderBy(desc(attachmentModel.createdAt))
+  const attachments = await sourceRepo.findDocumentAttachments({
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    supportedMimeTypes: SUPPORTED_DOCUMENT_MIME_TYPES_LIST,
+    limit: DOCUMENT_ATTACHMENT_LOOKUP_LIMIT,
+  })
 
   if (attachments.length === 0) {
     return null
@@ -183,12 +95,10 @@ async function resolveDocumentSource(
 
   const hint = normalizeHint(input.sourceHint)
   const triggerMessageAttachment = input.messageId
-    ? attachments.find((attachment) => attachment.messageId === input.messageId)
+    ? attachments.find((a) => a.messageId === input.messageId)
     : null
   const selectedAttachment =
-    (hint
-      ? attachments.find((attachment) => matchesHint(attachment, hint))
-      : null) ??
+    (hint ? attachments.find((a) => matchesHint(a, hint)) : null) ??
     triggerMessageAttachment ??
     attachments[0]
 
@@ -197,32 +107,56 @@ async function resolveDocumentSource(
   }
 
   const sourceKey = `attachment:${selectedAttachment.id}`
-  let source = await findDocumentConversationSource({
+  let source = await sourceRepo.findByKey({
     workspaceId: input.workspaceId,
+    sourceType: DOCUMENT_SOURCE_TYPE,
     sourceKey,
   })
 
   if (!source) {
-    source = await createDocumentConversationSource({
-      attachment: selectedAttachment,
-      conversationId: input.conversationId,
+    const newSource = await sourceRepo.createOrIgnore({
+      id: createId(),
       workspaceId: input.workspaceId,
+      conversationId: input.conversationId,
+      messageId: selectedAttachment.messageId,
+      attachmentId: selectedAttachment.id,
+      sourceType: DOCUMENT_SOURCE_TYPE,
+      status: aiConversationSourceStatuses.enum.pending,
       sourceKey,
+      mimeType: selectedAttachment.mimeType,
+      title: selectedAttachment.name,
     })
+
+    if (newSource) {
+      sourceRepo
+        .deleteOlderByConversation({
+          workspaceId: input.workspaceId,
+          conversationId: input.conversationId,
+          sourceType: DOCUMENT_SOURCE_TYPE,
+          exceptSourceKey: sourceKey,
+        })
+        .catch((error: unknown) => {
+          logger.warn(
+            {
+              error: normalizeError(error),
+              workspaceId: input.workspaceId,
+              conversationId: input.conversationId,
+            },
+            "[document-source] failed to delete older document sources",
+          )
+        })
+    }
+
+    source = newSource
   } else if (
     source.status === aiConversationSourceStatuses.enum.error &&
     source.attachmentId
   ) {
-    source = await db
-      .update(aiConversationSourceModel)
-      .set({
+    source =
+      (await sourceRepo.update(source.id, {
         status: aiConversationSourceStatuses.enum.pending,
         errorMessage: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(aiConversationSourceModel.id, source.id))
-      .returning()
-      .then((rows) => rows[0] ?? source)
+      })) ?? source
   }
 
   if (!source) {
@@ -258,27 +192,6 @@ async function resolveDocumentSource(
   }
 }
 
-function mapEmbeddingSearchRowToSnippet(
-  row: unknown,
-): ConversationContextSnippet | null {
-  const parsedRow = embeddingSearchRowSchema.safeParse(row)
-  if (!parsedRow.success) {
-    return null
-  }
-
-  const content = parsedRow.data.content.trim()
-  if (!content) {
-    return null
-  }
-
-  return {
-    chunkIndex: parsedRow.data.chunkIndex,
-    content,
-    similarity: parsedRow.data.similarity,
-    source: "cached_embedding",
-  }
-}
-
 async function retrieveDocumentChunks(
   input: RetrieveRelevantChunksInput,
 ): Promise<ConversationContextSnippet[]> {
@@ -292,14 +205,8 @@ async function retrieveDocumentChunks(
   }
 
   if (!input.query.trim()) {
-    const rows = await db.query.aiConversationEmbeddingModel.findMany({
-      where: {
-        sourceId: resolvedSource.source.id,
-        status: aiEmbeddingStatuses.enum.success,
-      },
-      orderBy: {
-        chunkIndex: "asc",
-      },
+    const rows = await embeddingRepo.findManyBySource({
+      sourceId: resolvedSource.source.id,
       limit: topK,
     })
 
@@ -322,29 +229,18 @@ async function retrieveDocumentChunks(
 
   const queryEmbeddingVector = `[${embedding.join(",")}]`
 
-  const result = await db.execute(sql`
-    SELECT
-      "id",
-      "chunkIndex",
-      "content",
-      1 - ("embedding" <=> ${queryEmbeddingVector}::vector) as similarity
-    FROM "AIConversationEmbedding"
-    WHERE "sourceId" = ${resolvedSource.source.id}
-      AND "status" = ${aiEmbeddingStatuses.enum.success}::"aiConversationEmbeddingStatus"
-      AND "embedding" IS NOT NULL
-    ORDER BY "embedding" <=> ${queryEmbeddingVector}::vector
-    LIMIT ${topK}
-  `)
+  const rows = await embeddingRepo.vectorSearch({
+    sourceId: resolvedSource.source.id,
+    queryVector: queryEmbeddingVector,
+    topK,
+  })
 
-  const snippets: ConversationContextSnippet[] = []
-  for (const row of result.rows) {
-    const snippet = mapEmbeddingSearchRowToSnippet(row)
-    if (snippet) {
-      snippets.push(snippet)
-    }
-  }
-
-  return snippets
+  return rows.map((row) => ({
+    chunkIndex: row.chunkIndex,
+    content: row.content,
+    similarity: row.similarity,
+    source: "cached_embedding",
+  }))
 }
 
 async function prepareDocumentContext(

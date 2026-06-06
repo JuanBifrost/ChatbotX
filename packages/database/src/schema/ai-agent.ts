@@ -23,6 +23,7 @@ export const aiAgentModel = pgTable("AIAgent", {
   messages: jsonb().array().notNull().default(sql`[]`),
   isDefault: boolean().default(false).notNull(),
   tools: text().array().notNull().default(sql`[]`),
+  webSearchAuthorizedDomains: text().array().notNull().default(sql`[]`),
   models: jsonb().array().notNull().default(sql`[]`),
   temperature: doublePrecision().notNull(),
   maxOutputTokens: integer().notNull(),

@@ -20,6 +20,10 @@ export type AIIntegrationModel =
   | IntegrationClaudeModel
   | IntegrationDeepseekModel
 
+export type AIProviderInstance = ReturnType<
+  (typeof providerSdkFactories)[keyof typeof providerSdkFactories]
+>
+
 export async function getAIIntegrationInDB(props: {
   workspaceId: string
   provider: string
@@ -62,18 +66,23 @@ function resolveProviderFactory(provider: string) {
   return providerSdkFactories[parsed.data as AIProvider]
 }
 
-export function getAIModel(model: AIIntegrationModel, provider: string) {
+export function createAIProviderInstance(props: {
+  model: AIIntegrationModel
+  provider: string
+}): AIProviderInstance {
+  const { model, provider } = props
   const authParsed = secretTextAuthSchema.safeParse(model.auth)
   if (!authParsed.success) {
     throw new Error("Invalid AI integration auth configuration")
   }
 
-  // NOTE: retries and cancellation are call-level concerns. They must be passed
-  // to `generateText`/`streamText`/`generateImage` (`maxRetries`, `abortSignal`),
-  // not to the provider factory, which silently ignores them.
   const createProvider = resolveProviderFactory(provider)
 
   return createProvider({ apiKey: authParsed.data.secretText })
+}
+
+export function getAIModel(model: AIIntegrationModel, provider: string) {
+  return createAIProviderInstance({ model, provider })
 }
 
 export function createAIModelInstance(props: {
@@ -83,7 +92,7 @@ export function createAIModelInstance(props: {
   traceId?: string
 }) {
   const { model, provider, modelId } = props
-  const providerInstance = getAIModel(model, provider)
+  const providerInstance = createAIProviderInstance({ model, provider })
 
   return providerInstance(modelId)
 }

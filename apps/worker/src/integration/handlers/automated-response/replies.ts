@@ -1,5 +1,6 @@
 import {
   aiPolicies,
+  aiProviders,
   aiTimeouts,
   helpTexts,
   processStreamingText,
@@ -7,11 +8,13 @@ import {
   toolPrefixes,
 } from "@chatbotx.io/ai"
 import {
+  type AIProviderInstance,
   aiContextService,
-  createAIModelInstance,
+  createAIProviderInstance,
   getAIIntegrationInDB,
   getAIToolset,
   McpClient,
+  normalizeAuthorizedWebSearchDomains,
   normalizeMcpContent,
 } from "@chatbotx.io/ai/server"
 import type {
@@ -97,16 +100,31 @@ function createReplyToolset(options: {
   modelId: string
   props: ReplyByAIProps
   provider: string
+  providerInstance: AIProviderInstance
 }) {
   const { conversation, aiAgent } = options.props
   const tools = filterToolsByAllowedSystemFunctions(
     aiAgent.tools,
     options.props.allowedSystemFunctionIds,
   )
+  const webSearchToolValue = `${toolPrefixes.enum.sys}:${systemFunctionNames.webSearch}`
+  const hasWebSearchTool = tools.includes(webSearchToolValue)
+  const toolsetTools = hasWebSearchTool
+    ? tools.filter((tool) => tool !== webSearchToolValue)
+    : tools
+  const nativeWebSearchTool = hasWebSearchTool
+    ? createNativeWebSearchTool({
+        aiAgent,
+        conversation,
+        modelId: options.modelId,
+        provider: options.provider,
+        providerInstance: options.providerInstance,
+      })
+    : { tool: undefined, omitReason: undefined }
 
   return getAIToolset({
     workspaceId: aiAgent.workspaceId,
-    tools,
+    tools: toolsetTools,
     toolPrefixes: {
       file: toolPrefixes.enum.file,
       fn: toolPrefixes.enum.fn,
@@ -166,7 +184,195 @@ function createReplyToolset(options: {
       McpClient,
       normalizeMcpContent,
     },
+  }).then((toolset) => ({
+    cleanup: toolset.cleanup,
+    tools: {
+      ...toolset.tools,
+      ...(nativeWebSearchTool.tool
+        ? { [systemFunctionNames.webSearch]: nativeWebSearchTool.tool }
+        : {}),
+    },
+    webSearchOmitReason: nativeWebSearchTool.omitReason,
+  }))
+}
+
+// gpt-4o-mini and its variants reject the `filters` param at the API level
+const OPENAI_MODELS_WITHOUT_SEARCH_FILTER = new Set([
+  "gpt-4o-mini",
+  "gpt-4o-mini-2024-07-18",
+  "gpt-4o-mini-search-preview",
+  "gpt-4o-mini-search-preview-2025-03-11",
+])
+
+function openAIModelSupportsWebSearchFilter(modelId: string): boolean {
+  return !OPENAI_MODELS_WITHOUT_SEARCH_FILTER.has(modelId)
+}
+
+function createNativeWebSearchTool(options: {
+  aiAgent: AIAgentModel
+  conversation: ConversationModel
+  modelId: string
+  provider: string
+  providerInstance: AIProviderInstance
+}): { omitReason?: string; tool?: ToolSet[string] } {
+  const rawDomains = options.aiAgent.webSearchAuthorizedDomains
+  const authorizedDomains = normalizeAuthorizedWebSearchDomains(rawDomains)
+  const authorizedDomainsCount = authorizedDomains.length
+
+  logger.info(
+    {
+      provider: options.provider,
+      modelId: options.modelId,
+      conversationId: options.conversation.id,
+      workspaceId: options.conversation.workspaceId,
+      rawDomains,
+      authorizedDomains,
+      authorizedDomainsCount,
+      hasProviderTools: "tools" in options.providerInstance,
+    },
+    "[automated-response] createNativeWebSearchTool: domain filter check",
+  )
+
+  if (options.provider === aiProviders.enum.openai) {
+    if (!("tools" in options.providerInstance)) {
+      logWebSearchOmit({
+        authorizedDomainsCount,
+        conversationId: options.conversation.id,
+        modelId: options.modelId,
+        provider: options.provider,
+        reason: "provider_web_search_not_supported",
+        workspaceId: options.conversation.workspaceId,
+      })
+
+      return { omitReason: "provider_not_supported" }
+    }
+
+    const modelSupportsDomainFilter = openAIModelSupportsWebSearchFilter(
+      options.modelId,
+    )
+
+    if (authorizedDomains.length > 0 && !modelSupportsDomainFilter) {
+      logWebSearchOmit({
+        authorizedDomainsCount,
+        conversationId: options.conversation.id,
+        modelId: options.modelId,
+        provider: options.provider,
+        reason: "model_domain_filter_not_supported",
+        workspaceId: options.conversation.workspaceId,
+      })
+
+      return { omitReason: "model_domain_filter_not_supported" }
+    }
+
+    const providerTools = options.providerInstance.tools
+
+    if ("webSearch" in providerTools) {
+      const filters =
+        authorizedDomains.length > 0 && modelSupportsDomainFilter
+          ? { allowedDomains: authorizedDomains }
+          : undefined
+
+      logger.info(
+        {
+          provider: options.provider,
+          modelId: options.modelId,
+          conversationId: options.conversation.id,
+          workspaceId: options.conversation.workspaceId,
+          filtersApplied: !!filters,
+          allowedDomains: filters?.allowedDomains ?? [],
+          modelSupportsDomainFilter,
+        },
+        "[automated-response] createNativeWebSearchTool: openai webSearch tool created",
+      )
+
+      return {
+        tool: providerTools.webSearch({
+          externalWebAccess: true,
+          filters,
+          searchContextSize: "medium",
+        }),
+      }
+    }
+  }
+
+  if (options.provider === aiProviders.enum.gemini) {
+    if (authorizedDomains.length > 0) {
+      logWebSearchOmit({
+        authorizedDomainsCount,
+        conversationId: options.conversation.id,
+        modelId: options.modelId,
+        provider: options.provider,
+        reason: "gemini_domain_allowlist_not_supported",
+        workspaceId: options.conversation.workspaceId,
+      })
+
+      return { omitReason: "domain_allowlist_not_supported" }
+    }
+
+    if (!("tools" in options.providerInstance)) {
+      logWebSearchOmit({
+        authorizedDomainsCount,
+        conversationId: options.conversation.id,
+        modelId: options.modelId,
+        provider: options.provider,
+        reason: "provider_web_search_not_supported",
+        workspaceId: options.conversation.workspaceId,
+      })
+
+      return { omitReason: "provider_not_supported" }
+    }
+
+    const providerTools = options.providerInstance.tools
+
+    if ("googleSearch" in providerTools) {
+      logger.info(
+        {
+          provider: options.provider,
+          modelId: options.modelId,
+          conversationId: options.conversation.id,
+          workspaceId: options.conversation.workspaceId,
+        },
+        "[automated-response] createNativeWebSearchTool: gemini googleSearch tool created (no domain filter)",
+      )
+
+      return {
+        tool: providerTools.googleSearch({}),
+      }
+    }
+  }
+
+  logWebSearchOmit({
+    authorizedDomainsCount,
+    conversationId: options.conversation.id,
+    modelId: options.modelId,
+    provider: options.provider,
+    reason: "provider_web_search_not_supported",
+    workspaceId: options.conversation.workspaceId,
   })
+
+  return { omitReason: "provider_not_supported" }
+}
+
+function logWebSearchOmit(input: {
+  authorizedDomainsCount: number
+  conversationId: string
+  modelId: string
+  provider: string
+  reason: string
+  workspaceId: string
+}) {
+  logger.warn(
+    {
+      authorizedDomainsCount: input.authorizedDomainsCount,
+      conversationId: input.conversationId,
+      modelId: input.modelId,
+      provider: input.provider,
+      reason: input.reason,
+      toolName: systemFunctionNames.webSearch,
+      workspaceId: input.workspaceId,
+    },
+    "[automated-response] web search tool omitted",
+  )
 }
 
 function filterToolsByAllowedSystemFunctions(
@@ -212,12 +418,11 @@ async function runAIReply(
       return null
     }
 
-    const model = createAIModelInstance({
+    const providerInstance = createAIProviderInstance({
       model: integration,
       provider,
-      modelId: selectedModelId,
-      traceId: conversation.id,
     })
+    const model = providerInstance(selectedModelId)
 
     const toolset = await createReplyToolset({
       abortSignal,
@@ -225,6 +430,7 @@ async function runAIReply(
       modelId: selectedModelId,
       props,
       provider,
+      providerInstance,
     })
     const tools = toolset.tools
     cleanup = toolset.cleanup
@@ -242,9 +448,9 @@ async function runAIReply(
       ? `Conversation Context: ${props.summary}\n\n${promptBase}`
       : promptBase
 
-    const systemPrompt = appendHandoffPolicy(
-      appendToolOutputGuard(completePrompt),
-      tools,
+    const systemPrompt = appendUnavailableWebSearchPolicy(
+      appendHandoffPolicy(appendToolOutputGuard(completePrompt), tools),
+      toolset.webSearchOmitReason,
     )
 
     const toolNamesSet = new Set<string>()
@@ -294,10 +500,8 @@ async function runAIReply(
         }
 
         toolResultsCount += toolResults.length
-        for (const tr of toolResults as unknown as Array<{
-          isError?: boolean
-        }>) {
-          if (tr?.isError) {
+        for (const toolResult of toolResults) {
+          if (isToolResultError(toolResult)) {
             toolErrorsCount += 1
           }
         }
@@ -444,4 +648,23 @@ function appendHandoffPolicy(systemPrompt: string, tools: ToolSet): string {
   }
 
   return `${systemPrompt}\n\n${aiPolicies.handoff}`.trim()
+}
+
+function appendUnavailableWebSearchPolicy(
+  systemPrompt: string,
+  webSearchOmitReason?: string,
+): string {
+  if (!webSearchOmitReason) {
+    return systemPrompt
+  }
+
+  return `${systemPrompt}\n\nWEB SEARCH AVAILABILITY (REQUIRED):\n- Web search is configured for this agent but is unavailable for the current provider or domain policy.\n- Do not claim that you searched, browsed, or looked up live web information.\n- Answer only from the conversation and available tools, or ask the user for clarification if live information is required.`.trim()
+}
+
+function isToolResultError(value: unknown): boolean {
+  if (!value || typeof value !== "object" || !("isError" in value)) {
+    return false
+  }
+
+  return value.isError === true
 }

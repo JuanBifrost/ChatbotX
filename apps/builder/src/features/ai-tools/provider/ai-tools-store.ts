@@ -1,4 +1,4 @@
-import { systemFunctionNames } from "@chatbotx.io/ai"
+import { systemFunctionCatalog } from "@chatbotx.io/ai"
 import ky, { HTTPError } from "ky"
 import { createStore } from "zustand/vanilla"
 import type { ListAIFilesResponse } from "@/features/ai-files/schemas"
@@ -40,12 +40,10 @@ export const createAIToolsStore = (props: Pick<AIToolsState, "workspaceId">) =>
     files: [],
     functions: [],
     mcpServers: [],
-    systemFunctions: [
-      {
-        id: systemFunctionNames.connectUserToHuman,
-        name: systemFunctionNames.connectUserToHuman,
-      },
-    ],
+    systemFunctions: Object.values(systemFunctionCatalog).map((item) => ({
+      id: item.id,
+      name: item.id,
+    })),
 
     initialize: async () => {
       if (get().initialized) {

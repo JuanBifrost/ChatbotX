@@ -18,6 +18,7 @@ import { withCache } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { BaseService } from "../common/base.service"
+import { normalizeWebSearchDomains } from "./lib/web-search-tool"
 import type {
   CreateAIAgentRequest,
   UpdateAIAgentRequest,
@@ -107,8 +108,12 @@ class AiAgentService extends BaseService {
           .set({ isDefault: false })
           .where(eq(aiAgentModel.workspaceId, workspaceId))
       }
+      const { webSearchAuthorizedDomains, ...rest } = data
       await client.insert(aiAgentModel).values({
-        ...data,
+        ...rest,
+        webSearchAuthorizedDomains: normalizeWebSearchDomains(
+          webSearchAuthorizedDomains,
+        ),
         workspaceId,
         id: createId(),
       })
@@ -142,9 +147,17 @@ class AiAgentService extends BaseService {
           .set({ isDefault: false })
           .where(eq(aiAgentModel.workspaceId, ctx.workspaceId))
       }
+      const { webSearchAuthorizedDomains, ...rest } = data
       await tx
         .update(aiAgentModel)
-        .set(data)
+        .set({
+          ...rest,
+          ...(webSearchAuthorizedDomains !== undefined && {
+            webSearchAuthorizedDomains: normalizeWebSearchDomains(
+              webSearchAuthorizedDomains,
+            ),
+          }),
+        })
         .where(eq(aiAgentModel.id, aiAgent.id))
     })
 

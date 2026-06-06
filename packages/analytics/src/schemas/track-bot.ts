@@ -4,6 +4,7 @@ import {
   botMessageFallbackReasons,
   botMessageResults,
   botMessageRouteTypes,
+  botMessageToolStatsSchema,
   trackingResponseTypes,
 } from "./bot-message"
 import { triggerContextSchema } from "./trigger-context"
@@ -20,6 +21,7 @@ const trackBotRequestSchema = z.object({
       intentId: z.string().optional(),
       intentConfidence: z.number().optional(),
       fallbackReason: botMessageFallbackReasons.optional(),
+      toolStats: botMessageToolStatsSchema.optional(),
     })
     .optional(),
   responseType: trackingResponseTypes,

@@ -1,10 +1,11 @@
-import { db, desc, eq, sql } from "@chatbotx.io/database/client"
 import {
   aiConversationSourceStatuses,
   aiConversationSourceTypes,
-  aiEmbeddingStatuses,
 } from "@chatbotx.io/database/partials"
-import { aiConversationSourceModel } from "@chatbotx.io/database/schema"
+import {
+  createConversationEmbeddingRepository,
+  createConversationSourceRepository,
+} from "@chatbotx.io/database/repositories"
 import { createId } from "@chatbotx.io/utils"
 import {
   AIJobAction,
@@ -32,35 +33,10 @@ const STALE_PROCESSING_THRESHOLD_MS = 5 * 60 * 1000
 const PROCESS_SOURCE_JOB_ID_PREFIX = AIJobAction.processConversationSource
 const MAX_SOURCE_KEY_LENGTH = 500
 
-const nullableFiniteNumberFromDbSchema = z.preprocess((value) => {
-  if (typeof value === "number") {
-    return Number.isFinite(value) ? value : null
-  }
-  if (typeof value === "string") {
-    const parsed = Number(value)
-    return Number.isFinite(parsed) ? parsed : null
-  }
-  return null
-}, z.number().finite().nullable())
+export const urlMetadataSchema = z.object({ url: z.string() }).passthrough()
 
-const nullableChunkIndexFromDbSchema = z.preprocess((value) => {
-  if (typeof value === "number") {
-    return Number.isInteger(value) ? value : null
-  }
-  if (typeof value === "string") {
-    const parsed = Number(value)
-    return Number.isInteger(parsed) ? parsed : null
-  }
-  return null
-}, z.number().int().nullable())
-
-const embeddingSearchRowSchema = z.object({
-  chunkIndex: nullableChunkIndexFromDbSchema,
-  content: z.string(),
-  similarity: nullableFiniteNumberFromDbSchema,
-})
-
-const urlMetadataSchema = z.object({ url: z.string() }).passthrough()
+const sourceRepo = createConversationSourceRepository()
+const embeddingRepo = createConversationEmbeddingRepository()
 
 function buildUrlSourceKey(url: string): string {
   return `url:${url}`.slice(0, MAX_SOURCE_KEY_LENGTH)
@@ -85,60 +61,6 @@ async function enqueueConversationSource(
   })
 }
 
-function findUrlConversationSource(input: {
-  sourceKey: string
-  workspaceId: string
-}) {
-  return db.query.aiConversationSourceModel.findFirst({
-    where: {
-      workspaceId: input.workspaceId,
-      sourceType: URL_SOURCE_TYPE,
-      sourceKey: input.sourceKey,
-    },
-  })
-}
-
-async function createUrlConversationSource(input: {
-  conversationId: string
-  messageId: string
-  sourceKey: string
-  url: string
-  workspaceId: string
-}) {
-  const source = await db
-    .insert(aiConversationSourceModel)
-    .values({
-      id: createId(),
-      workspaceId: input.workspaceId,
-      conversationId: input.conversationId,
-      messageId: input.messageId,
-      attachmentId: null,
-      sourceType: URL_SOURCE_TYPE,
-      status: aiConversationSourceStatuses.enum.pending,
-      sourceKey: input.sourceKey,
-      mimeType: "text/html",
-      title: input.url,
-      metadata: { url: input.url },
-    })
-    .onConflictDoNothing({
-      target: [
-        aiConversationSourceModel.workspaceId,
-        aiConversationSourceModel.sourceType,
-        aiConversationSourceModel.sourceKey,
-      ],
-    })
-    .returning()
-    .then((rows) => rows[0])
-
-  return (
-    source ??
-    findUrlConversationSource({
-      workspaceId: input.workspaceId,
-      sourceKey: input.sourceKey,
-    })
-  )
-}
-
 async function resolveUrlSource(
   input: ResolveConversationSourceInput,
 ): Promise<null | ResolvedConversationSource> {
@@ -153,73 +75,96 @@ async function resolveUrlSource(
     return null
   }
 
-  let source: Awaited<ReturnType<typeof findUrlConversationSource>>
-
   if (input.sourceHint?.trim()) {
     const url = input.sourceHint.trim()
     const sourceKey = buildUrlSourceKey(url)
 
-    source = await findUrlConversationSource({
+    const existingSource = await sourceRepo.findByKey({
       workspaceId: input.workspaceId,
+      sourceType: URL_SOURCE_TYPE,
       sourceKey,
     })
 
-    if (!source) {
-      source = await createUrlConversationSource({
+    if (!existingSource) {
+      const newSource = await sourceRepo.createOrIgnore({
+        id: createId(),
+        workspaceId: input.workspaceId,
         conversationId: input.conversationId,
         messageId: input.messageId,
-        sourceKey,
-        url,
-        workspaceId: input.workspaceId,
-      })
-    }
-  } else {
-    source = await db.query.aiConversationSourceModel.findFirst({
-      where: {
-        workspaceId: input.workspaceId,
-        conversationId: input.conversationId,
+        attachmentId: null,
         sourceType: URL_SOURCE_TYPE,
-      },
-      orderBy: (table) => [desc(table.createdAt)],
-    })
+        status: aiConversationSourceStatuses.enum.pending,
+        sourceKey,
+        mimeType: "text/html",
+        title: url,
+        metadata: { url },
+      })
+
+      if (newSource) {
+        sourceRepo
+          .deleteOlderByConversation({
+            workspaceId: input.workspaceId,
+            conversationId: input.conversationId,
+            sourceType: URL_SOURCE_TYPE,
+            exceptSourceKey: sourceKey,
+          })
+          .catch((error: unknown) => {
+            logger.warn(
+              {
+                error: normalizeError(error),
+                workspaceId: input.workspaceId,
+                conversationId: input.conversationId,
+              },
+              "[url-source] failed to delete older url sources",
+            )
+          })
+      }
+    }
   }
+
+  const source = await sourceRepo.findLatestByConversation({
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    sourceType: URL_SOURCE_TYPE,
+  })
 
   if (!source) {
     return null
   }
 
-  if (source.status === aiConversationSourceStatuses.enum.error && source.id) {
-    source = await db
-      .update(aiConversationSourceModel)
-      .set({
-        status: aiConversationSourceStatuses.enum.pending,
-        errorMessage: null,
-        updatedAt: new Date(),
-      })
-      .where(eq(aiConversationSourceModel.id, source.id))
-      .returning()
-      .then((rows) => rows[0] ?? source)
+  if (source.status === aiConversationSourceStatuses.enum.error) {
+    await sourceRepo.update(source.id, {
+      status: aiConversationSourceStatuses.enum.pending,
+      errorMessage: null,
+    })
   }
 
-  if (!source) {
+  const latestSource = await sourceRepo.findLatestByConversation({
+    workspaceId: input.workspaceId,
+    conversationId: input.conversationId,
+    sourceType: URL_SOURCE_TYPE,
+  })
+
+  if (!latestSource) {
     return null
   }
 
   const isStaleProcessing =
-    source.status === aiConversationSourceStatuses.enum.processing &&
-    Date.now() - source.updatedAt.getTime() > STALE_PROCESSING_THRESHOLD_MS
+    latestSource.status === aiConversationSourceStatuses.enum.processing &&
+    Date.now() - latestSource.updatedAt.getTime() >
+      STALE_PROCESSING_THRESHOLD_MS
 
   if (
-    source.status === aiConversationSourceStatuses.enum.pending ||
-    source.status === aiConversationSourceStatuses.enum.error ||
+    latestSource.status === aiConversationSourceStatuses.enum.pending ||
+    latestSource.status === aiConversationSourceStatuses.enum.error ||
     isStaleProcessing
   ) {
-    enqueueConversationSource(source).catch((error: unknown) => {
+    enqueueConversationSource(latestSource).catch((error: unknown) => {
       const normalizedError = normalizeError(error)
       logger.error(
         {
           error: normalizedError,
-          sourceId: source?.id,
+          sourceId: latestSource.id,
           workspaceId: input.workspaceId,
           conversationId: input.conversationId,
         },
@@ -229,29 +174,8 @@ async function resolveUrlSource(
   }
 
   return {
-    source,
+    source: latestSource,
     attachment: undefined,
-  }
-}
-
-function mapEmbeddingSearchRowToSnippet(
-  row: unknown,
-): ConversationContextSnippet | null {
-  const parsedRow = embeddingSearchRowSchema.safeParse(row)
-  if (!parsedRow.success) {
-    return null
-  }
-
-  const content = parsedRow.data.content.trim()
-  if (!content) {
-    return null
-  }
-
-  return {
-    chunkIndex: parsedRow.data.chunkIndex,
-    content,
-    similarity: parsedRow.data.similarity,
-    source: "cached_embedding",
   }
 }
 
@@ -268,14 +192,8 @@ async function retrieveUrlChunks(
   }
 
   if (!input.query.trim()) {
-    const rows = await db.query.aiConversationEmbeddingModel.findMany({
-      where: {
-        sourceId: resolvedSource.source.id,
-        status: aiEmbeddingStatuses.enum.success,
-      },
-      orderBy: {
-        chunkIndex: "asc",
-      },
+    const rows = await embeddingRepo.findManyBySource({
+      sourceId: resolvedSource.source.id,
       limit: topK,
     })
 
@@ -298,29 +216,18 @@ async function retrieveUrlChunks(
 
   const queryEmbeddingVector = `[${embedding.join(",")}]`
 
-  const result = await db.execute(sql`
-    SELECT
-      "id",
-      "chunkIndex",
-      "content",
-      1 - ("embedding" <=> ${queryEmbeddingVector}::vector) as similarity
-    FROM "AIConversationEmbedding"
-    WHERE "sourceId" = ${resolvedSource.source.id}
-      AND "status" = ${aiEmbeddingStatuses.enum.success}::"aiConversationEmbeddingStatus"
-      AND "embedding" IS NOT NULL
-    ORDER BY "embedding" <=> ${queryEmbeddingVector}::vector
-    LIMIT ${topK}
-  `)
+  const rows = await embeddingRepo.vectorSearch({
+    sourceId: resolvedSource.source.id,
+    queryVector: queryEmbeddingVector,
+    topK,
+  })
 
-  const snippets: ConversationContextSnippet[] = []
-  for (const row of result.rows) {
-    const snippet = mapEmbeddingSearchRowToSnippet(row)
-    if (snippet) {
-      snippets.push(snippet)
-    }
-  }
-
-  return snippets
+  return rows.map((row) => ({
+    chunkIndex: row.chunkIndex,
+    content: row.content,
+    similarity: row.similarity,
+    source: "cached_embedding",
+  }))
 }
 
 async function prepareUrlContext(
@@ -343,8 +250,6 @@ async function prepareUrlContext(
     summary: resolvedSource.source.summary,
   }
 }
-
-export { urlMetadataSchema }
 
 export const urlContextSourceAdapter: ConversationContextSourceAdapter = {
   sourceType: URL_SOURCE_TYPE,

@@ -7,6 +7,7 @@ import {
 } from "@chatbotx.io/ai"
 import { aiMessageRoles } from "@chatbotx.io/database/partials"
 import { z } from "zod"
+import { MAX_WEB_SEARCH_AUTHORIZED_DOMAINS } from "../lib/web-search-tool"
 
 export const createAIAgentRequest = z.object({
   name: z.string().trim().min(1).max(255),
@@ -40,6 +41,14 @@ export const createAIAgentRequest = z.object({
   temperature: z.number().min(0).max(2),
   maxOutputTokens: z.number().min(1).max(32_768),
   tools: z.array(z.string()),
+  webSearchAuthorizedDomains: z
+    .array(
+      z.object({
+        value: z.string().trim().pipe(z.hostname()),
+      }),
+    )
+    .max(MAX_WEB_SEARCH_AUTHORIZED_DOMAINS)
+    .default([]),
   isDefault: z.boolean(),
 })
 export type CreateAIAgentRequest = z.infer<typeof createAIAgentRequest>

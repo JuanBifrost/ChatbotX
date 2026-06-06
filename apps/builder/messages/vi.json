@@ -485,6 +485,11 @@
       "description": "Các tên miền hoặc tên miền phụ được ủy quyền truy cập webchat của bạn.",
       "label": "Tên miền được ủy quyền{plural, select, 1 {} other {}}"
     },
+    "webSearchAuthorizedDomains": {
+      "label": "Website được phép cho công cụ Tìm kiếm web",
+      "placeholder": "example.com",
+      "tooltip": "Danh sách domain AI agent được phép truy cập. Để trống để cho phép tất cả domain."
+    },
     "authToken": {
       "label": "Token"
     },

@@ -474,6 +474,11 @@
       "description": "The domains or subdomains that are authorized to access your webchat.",
       "label": "Authorized Domain{plural, select, 1 {s} other {}}"
     },
+    "webSearchAuthorizedDomains": {
+      "label": "Authorized websites for Web Search tool",
+      "placeholder": "example.com",
+      "tooltip": "List of domains that the AI agent can access. Leave empty to allow all domains."
+    },
     "authToken": {
       "label": "Token"
     },

@@ -40,6 +40,7 @@ import {
   createAIAgentRequest,
 } from "@/features/ai-agents/schemas/action"
 import { AIToolMultiSelect } from "@/features/ai-tools/components/ai-tool-multi-select"
+import { WebSearchAuthorizedDomainsField } from "./components/web-search-authorized-domains-field"
 
 type CreateAIAgentDialogProps = {
   workspaceId: string
@@ -95,6 +96,7 @@ export function CreateAIAgentDialog({
           temperature: 0.4,
           maxOutputTokens: 2048,
           tools: [],
+          webSearchAuthorizedDomains: [],
         },
       },
       errorMapProps: {},
@@ -246,6 +248,7 @@ export function CreateAIAgentDialog({
             </div>
 
             <AIToolMultiSelect name="tools" />
+            <WebSearchAuthorizedDomainsField />
 
             <DialogFooter className="justify-end gap-2 sm:gap-2">
               <Button

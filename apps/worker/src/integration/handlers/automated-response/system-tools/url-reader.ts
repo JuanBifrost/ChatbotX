@@ -3,92 +3,36 @@ import type {
   SystemToolExecutors,
   UrlContextInput,
 } from "@chatbotx.io/ai/server"
+import { Readability } from "@mozilla/readability"
 import { htmlToText } from "html-to-text"
+import { JSDOM } from "jsdom"
 import { normalizeError } from "universal-error-normalizer"
-import { withTimeout } from "../../../../ai-agent/lib/async-utils"
 import { logger } from "../../../../lib/logger"
+import { assertPublicUrl } from "../../../../lib/ssrf-guard"
 import { getContextSourceAdapter } from "./context-sources/registry"
 import type { ConversationContextSnippet } from "./context-sources/types"
 import { urlMetadataSchema } from "./context-sources/url-source"
+import {
+  FALLBACK_MAX_TEXT_CHARS,
+  pickRelevantFallbackSnippets,
+  summarizeSnippets,
+} from "./fallback-text-utils"
 
 const FALLBACK_FETCH_TIMEOUT_MS = 10_000
 const FALLBACK_MAX_RESPONSE_BYTES = 500_000
-const FALLBACK_MAX_TEXT_CHARS = 40_000
-const FALLBACK_SNIPPET_LIMIT = 3
-const PARAGRAPH_SEPARATOR_REGEX = /\n{2,}/g
-const QUERY_TERM_SEPARATOR_REGEX = /\s+/
-const WHITESPACE_REGEX = /\s+/g
+const FALLBACK_MAX_REDIRECTS = 3
 
-function splitPlainTextToSnippets(text: string): string[] {
-  return text
-    .split(PARAGRAPH_SEPARATOR_REGEX)
-    .map((segment) => segment.replace(WHITESPACE_REGEX, " ").trim())
-    .filter(Boolean)
-}
-
-function pickRelevantFallbackSnippets(
-  text: string,
-  query: string,
-): ConversationContextSnippet[] {
-  const normalizedQuery = query.toLowerCase()
-  const queryTerms = normalizedQuery
-    .split(QUERY_TERM_SEPARATOR_REGEX)
-    .map((term) => term.trim())
-    .filter((term) => term.length > 2)
-    .slice(0, 8)
-
-  const segments = splitPlainTextToSnippets(text)
-  if (segments.length === 0) {
-    return []
+function extractReadableText(html: string, url: string): string {
+  try {
+    const dom = new JSDOM(html, { url })
+    const article = new Readability(dom.window.document).parse()
+    if (article?.textContent && article.textContent.trim().length > 200) {
+      return article.textContent.trim()
+    }
+  } catch {
+    // Readability parse failure — fall back to htmlToText
   }
-
-  if (queryTerms.length === 0) {
-    return segments.slice(0, FALLBACK_SNIPPET_LIMIT).map((segment, index) => ({
-      chunkIndex: index,
-      content: segment.slice(0, 500),
-      similarity: null,
-      source: "fallback_parse",
-    }))
-  }
-
-  const scoredSegments = segments
-    .map((segment, index) => {
-      const lowered = segment.toLowerCase()
-      const score = queryTerms.reduce(
-        (acc, term) => (lowered.includes(term) ? acc + 1 : acc),
-        0,
-      )
-      return { segment, score, index }
-    })
-    .sort((left, right) => {
-      if (right.score !== left.score) {
-        return right.score - left.score
-      }
-      return left.index - right.index
-    })
-
-  const selected = scoredSegments.slice(0, FALLBACK_SNIPPET_LIMIT)
-  return selected.map((segment) => ({
-    chunkIndex: segment.index,
-    content: segment.segment.slice(0, 500),
-    similarity: segment.score > 0 ? segment.score : null,
-    source: "fallback_parse",
-  }))
-}
-
-function summarizeSnippets(
-  summary: null | string,
-  snippets: ConversationContextSnippet[],
-): string {
-  if (summary?.trim()) {
-    return summary.trim().slice(0, 500)
-  }
-
-  if (snippets.length === 0) {
-    return "I found the URL, but I need a more specific question to extract relevant details."
-  }
-
-  return snippets[0]?.content.slice(0, 500) ?? ""
+  return htmlToText(html, { wordwrap: false })
 }
 
 function formatToolOutput(props: {
@@ -119,6 +63,36 @@ function formatToolOutput(props: {
   return output.join("\n")
 }
 
+async function fetchSafe(
+  url: string,
+  signal: AbortSignal,
+  redirectsLeft = FALLBACK_MAX_REDIRECTS,
+): Promise<Response> {
+  assertPublicUrl(url, "URL context")
+
+  const response = await fetch(url, {
+    signal,
+    redirect: "manual",
+    headers: {
+      "User-Agent": "ChatbotX-URLContext/1.0",
+      Accept: "text/html,text/plain;q=0.9",
+    },
+  })
+
+  if (response.status >= 300 && response.status < 400) {
+    if (redirectsLeft <= 0) {
+      throw new Error("Too many redirects")
+    }
+    const location = response.headers.get("location")
+    if (!location) {
+      throw new Error("Redirect with no Location header")
+    }
+    return fetchSafe(new URL(location, url).href, signal, redirectsLeft - 1)
+  }
+
+  return response
+}
+
 async function fetchUrlText(url: string): Promise<string> {
   const controller = new AbortController()
   const timeoutId = setTimeout(
@@ -127,13 +101,7 @@ async function fetchUrlText(url: string): Promise<string> {
   )
 
   try {
-    const response = await fetch(url, {
-      signal: controller.signal,
-      headers: {
-        "User-Agent": "ChatbotX-URLContext/1.0",
-        Accept: "text/html,text/plain;q=0.9",
-      },
-    })
+    const response = await fetchSafe(url, controller.signal)
 
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`)
@@ -177,7 +145,7 @@ async function fetchUrlText(url: string): Promise<string> {
     }
 
     const rawHtml = new TextDecoder().decode(combined)
-    const text = htmlToText(rawHtml, { wordwrap: false })
+    const text = extractReadableText(rawHtml, url)
     return text.slice(0, FALLBACK_MAX_TEXT_CHARS)
   } finally {
     clearTimeout(timeoutId)
@@ -225,10 +193,7 @@ export function createUrlReaderExecutor(options: {
 
         if (resolvedUrl) {
           try {
-            const text = await withTimeout(
-              fetchUrlText(resolvedUrl),
-              FALLBACK_FETCH_TIMEOUT_MS,
-            )
+            const text = await fetchUrlText(resolvedUrl)
             snippets = pickRelevantFallbackSnippets(text, args.query)
           } catch (fetchError) {
             const normalizedFetchError = normalizeError(fetchError)
@@ -254,7 +219,11 @@ export function createUrlReaderExecutor(options: {
         args.url ??
         "User-provided URL"
 
-      const summary = summarizeSnippets(preparedContext.summary, snippets)
+      const summary = summarizeSnippets(
+        preparedContext.summary,
+        snippets,
+        "I found the URL, but I need a more specific question to extract relevant details.",
+      )
       return formatToolOutput({
         url: displayUrl,
         snippets,

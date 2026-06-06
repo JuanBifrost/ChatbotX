@@ -30,6 +30,22 @@ export const botMessageFallbackReasons = z.enum([
 ])
 export type BotMessageFallbackReason = z.infer<typeof botMessageFallbackReasons>
 
+export const botMessageToolStatsSchema = z.object({
+  steps: z.number(),
+  toolCallsCount: z.number(),
+  toolResultsCount: z.number(),
+  toolErrorsCount: z.number(),
+  toolNames: z.array(z.string()),
+  finishReasons: z.array(
+    z.object({
+      stepNumber: z.number(),
+      finishReason: z.string(),
+      rawFinishReason: z.string().optional(),
+    }),
+  ),
+})
+export type BotMessageToolStats = z.infer<typeof botMessageToolStatsSchema>
+
 export const botMessageMetadataSchema = z.object({
   flowId: zodBigintAsString().optional(),
   automatedResponseId: zodBigintAsString().optional(),
@@ -37,6 +53,7 @@ export const botMessageMetadataSchema = z.object({
   intentConfidence: z.number().optional(),
   fallbackReason: botMessageFallbackReasons.optional(),
   latency: z.number().optional(),
+  toolStats: botMessageToolStatsSchema.optional(),
   triggerContext: triggerContextSchema.optional(),
 })
 
