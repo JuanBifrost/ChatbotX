@@ -1,8 +1,8 @@
 "use client"
 
-import { BotIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useFormContext } from "react-hook-form"
+import { AIIcon } from "../ai-generate-text/components/ai-icon"
 import { BaseStepEditor } from "../base/editor"
 import { AIModelDialog } from "./components/ai-model-dialog"
 
@@ -21,7 +21,7 @@ export const AIGenerateTextAgentEditor = (
 
   return (
     <BaseStepEditor
-      icon={BotIcon}
+      iconNode={<AIIcon provider={provider} showLabel={false} />}
       title={t("fields.flows.aiGenerateTextAgent", {
         aiName: t(`aiProviders.${provider}`),
       })}

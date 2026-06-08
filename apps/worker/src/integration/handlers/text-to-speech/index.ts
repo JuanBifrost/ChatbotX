@@ -10,6 +10,7 @@ import { logger } from "../../../lib/logger"
 import { saveResultToCustomField } from "../../utils/contact"
 import { sendMessageWithRender } from "../../utils/message"
 import type { ExecuteStepProps } from "../flow"
+import type { ExecuteStepResult } from "../step"
 import { textToSpeechStorageService } from "./storage"
 
 function getExecutionId(
@@ -23,7 +24,7 @@ export async function handleAITextToSpeech({
   conversation,
   metadata,
   step,
-}: ExecuteStepProps<AITextToSpeechSchema>) {
+}: ExecuteStepProps<AITextToSpeechSchema>): Promise<ExecuteStepResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), aiTimeouts.aiTotal)
 
@@ -38,7 +39,11 @@ export async function handleAITextToSpeech({
         { workspaceId: conversation.workspaceId, provider: step.provider },
         "[ai-text-to-speech] AI configuration not found",
       )
-      return
+      return {
+        status: "error",
+        errorMessage: "AI integration not found",
+        result: null,
+      }
     }
 
     const openaiProvider = getAIModel(aiConfig, "openai")
@@ -92,26 +97,27 @@ export async function handleAITextToSpeech({
         workspaceId: conversation.workspaceId,
       })
     }
-  } catch (error) {
-    if (error instanceof NoSpeechGeneratedError) {
+
+    return { status: "success", result: null }
+  } catch (err) {
+    if (err instanceof NoSpeechGeneratedError) {
       logger.error(
         {
-          cause: error.cause,
-          responses: error.responses,
+          cause: err.cause,
+          responses: err.responses,
         },
         "[ai-text-to-speech] No speech generated",
       )
     } else {
-      const parsedError = normalizeError(error)
-      logger.error(parsedError, "[ai-text-to-speech] Step failed")
+      const error = normalizeError(err)
+      logger.error(error, "[ai-text-to-speech] Step failed")
     }
-
-    await sendMessageWithRender(
-      conversation.id,
-      "Error converting text to speech",
-    )
-
-    throw error
+    return {
+      status: "error",
+      errorMessage:
+        err instanceof Error ? err.message : "Text to speech failed",
+      result: null,
+    }
   } finally {
     clearTimeout(timeoutId)
   }

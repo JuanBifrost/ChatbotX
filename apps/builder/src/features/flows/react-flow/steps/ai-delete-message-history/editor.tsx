@@ -1,16 +1,25 @@
 "use client"
 
-import { BotIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { useFormContext } from "react-hook-form"
+import { AIIcon } from "../ai-generate-text/components/ai-icon"
 import { BaseStepEditor } from "../base/editor"
 
-export const AIDeleteMessageHistoryEditor = () => {
+export const AIDeleteMessageHistoryEditor = ({
+  parentName,
+}: {
+  parentName: string
+}) => {
   const t = useTranslations()
+  const { getValues } = useFormContext()
+  const provider = getValues(`${parentName}.provider`) ?? "openai"
 
   return (
     <BaseStepEditor
-      icon={BotIcon}
-      title={t("flows.actions.aiDeleteMessageHistory")}
+      iconNode={<AIIcon provider={provider} showLabel={false} />}
+      title={t("fields.flows.aiDeleteMessageHistory", {
+        aiName: t(`aiProviders.${provider}`),
+      })}
     />
   )
 }

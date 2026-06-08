@@ -673,12 +673,13 @@
       "aiGenerateText": "{aiName}: Tạo văn bản",
       "aiGenerateImage": "{aiName}: Tạo hình ảnh",
       "aiEditImage": "{aiName}: Chỉnh sửa hình ảnh",
-      "aiAnalyzeImage": "{aiName}: AI Phân tích hình ảnh",
-      "aiSpeechToText": "{aiName}: AI Chuyển giọng nói thành văn bản",
-      "aiTextToSpeech": "{aiName}: AI Chuyển văn bản thành giọng nói",
+      "aiAnalyzeImage": "{aiName}: Phân tích hình ảnh",
+      "aiSpeechToText": "{aiName}: Chuyển giọng nói thành văn bản",
+      "aiTextToSpeech": "{aiName}: Chuyển văn bản thành giọng nói",
       "label": "Luồng",
       "placeholder": "Chọn luồng",
-      "aiGenerateTextAgent": "{aiName}: AI tạo văn bản agent"
+      "aiGenerateTextAgent": "{aiName}: Tạo văn bản Agent",
+      "aiDeleteMessageHistory": "{aiName}: Xóa lịch sử tin nhắn"
     },
     "steps": {
       "label": "Bước",
@@ -942,9 +943,9 @@
         "square1024": "Vuông - 1024×1024",
         "landscape1536x1024": "Ngang - 1536×1024",
         "portrait1024x1536": "Dọc - 1024×1536",
-        "dalle2_256": "256×256 (DALL·E 2)",
-        "dalle2_512": "512×512 (DALL·E 2)",
-        "dalle3_1792x1024": "1792×1024 (DALL·E 3)"
+        "dalle2_256": "256×256",
+        "dalle2_512": "512×512",
+        "dalle3_1792x1024": "1792×1024"
       }
     },
     "status": {
@@ -1409,19 +1410,19 @@
   "flows": {
     "title": "Luồng",
     "aiGenerateText": {
-      "label": "{name}: AI Tạo văn bản"
+      "label": "{name}: Tạo văn bản"
     },
     "aiGenerateImage": {
-      "label": "{name}: AI Tạo hình ảnh"
+      "label": "{name}: Tạo hình ảnh"
     },
     "aiEditImage": {
-      "label": "{name}: AI Chỉnh sửa hình ảnh"
+      "label": "{name}: Chỉnh sửa hình ảnh"
     },
     "aiAnalyzeImage": {
-      "label": "{name}: AI Phân tích hình ảnh"
+      "label": "{name}: Phân tích hình ảnh"
     },
     "aiExtractData": {
-      "label": "{name}: AI Trích xuất dữ liệu"
+      "label": "{name}: Trích xuất dữ liệu"
     },
     "actions": {
       "addContactNotes": "Thêm ghi chú liên hệ",

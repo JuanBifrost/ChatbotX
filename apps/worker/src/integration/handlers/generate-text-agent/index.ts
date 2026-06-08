@@ -3,16 +3,18 @@ import { aiContextService } from "@chatbotx.io/ai/server"
 import { db } from "@chatbotx.io/database/client"
 import { aiAgentProviders } from "@chatbotx.io/database/partials"
 import type { AIGenerateTextAgentSchema } from "@chatbotx.io/flow-config"
+import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../../../lib/logger"
 import { saveResultToCustomField } from "../../utils/contact"
 import type { ExecuteStepProps } from "../flow"
 import { runAIAgentRunner } from "../shared/ai-agent-runner"
+import type { ExecuteStepResult } from "../step"
 import { buildAIAgentMessages } from "./messages"
 
 export async function handleAIGenerateTextAgent({
   conversation,
   step,
-}: ExecuteStepProps<AIGenerateTextAgentSchema>) {
+}: ExecuteStepProps<AIGenerateTextAgentSchema>): Promise<ExecuteStepResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), aiTimeouts.aiTotal)
 
@@ -29,7 +31,11 @@ export async function handleAIGenerateTextAgent({
         { workspaceId: conversation.workspaceId, aiAgentId: step.aiAgentId },
         "[ai-generate-text-agent] AI Agent not found",
       )
-      return
+      return {
+        status: "error",
+        errorMessage: "AI Agent not found",
+        result: null,
+      }
     }
 
     const aiContext = await aiContextService.getOrInitContext({
@@ -51,7 +57,11 @@ export async function handleAIGenerateTextAgent({
         },
         "[ai-generate-text-agent] Unsupported AI Agent provider",
       )
-      return
+      return {
+        status: "error",
+        errorMessage: "Unsupported AI Agent provider",
+        result: null,
+      }
     }
 
     const result = await runAIAgentRunner({
@@ -70,7 +80,10 @@ export async function handleAIGenerateTextAgent({
         workspaceId: conversation.workspaceId,
       })
     }
-  } catch (error) {
+
+    return { status: "success", result: null }
+  } catch (err) {
+    const error = normalizeError(err)
     logger.error(
       {
         err: error,
@@ -80,7 +93,7 @@ export async function handleAIGenerateTextAgent({
       },
       "[ai-generate-text-agent] Step failed",
     )
-    throw error
+    return { status: "error", errorMessage: error.message, result: null }
   } finally {
     clearTimeout(timeoutId)
   }

@@ -169,7 +169,12 @@ export const openaiModelOptions: { label: string; value: OpenAIModel }[] = [
   },
 ]
 
-export const openaiImageModels = z.enum(["gpt-image-1", "dall-e-3", "dall-e-2"])
+export const openaiImageModels = z.enum([
+  "gpt-image-2",
+  "gpt-image-1.5",
+  "gpt-image-1",
+  "gpt-image-1-mini",
+])
 export type OpenAIImageModel = z.infer<typeof openaiImageModels>
 
 export const openaiImageModelOptions: {
@@ -177,16 +182,20 @@ export const openaiImageModelOptions: {
   value: OpenAIImageModel
 }[] = [
   {
+    label: "GPT Image 2",
+    value: openaiImageModels.enum["gpt-image-2"],
+  },
+  {
+    label: "GPT Image 1.5",
+    value: openaiImageModels.enum["gpt-image-1.5"],
+  },
+  {
     label: "GPT Image 1",
     value: openaiImageModels.enum["gpt-image-1"],
   },
   {
-    label: "DALL-E 3",
-    value: openaiImageModels.enum["dall-e-3"],
-  },
-  {
-    label: "DALL-E 2",
-    value: openaiImageModels.enum["dall-e-2"],
+    label: "GPT Image 1 Mini",
+    value: openaiImageModels.enum["gpt-image-1-mini"],
   },
 ]
 

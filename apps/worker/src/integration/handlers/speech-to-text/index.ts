@@ -10,6 +10,7 @@ import { logger } from "../../../lib/logger"
 import { saveResultToCustomField } from "../../utils/contact"
 import { sendMessageWithRender } from "../../utils/message"
 import type { ExecuteStepProps } from "../flow"
+import type { ExecuteStepResult } from "../step"
 
 const supportedAudioMimeTypes = z.enum([
   "audio/mpeg",
@@ -25,7 +26,7 @@ const supportedAudioMimeTypes = z.enum([
 export async function handleAISpeechToText({
   conversation,
   step,
-}: ExecuteStepProps<AISpeechToTextSchema>) {
+}: ExecuteStepProps<AISpeechToTextSchema>): Promise<ExecuteStepResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), aiTimeouts.aiTotal)
 
@@ -40,7 +41,11 @@ export async function handleAISpeechToText({
         { workspaceId: conversation.workspaceId, provider: step.provider },
         "[ai-speech-to-text] AI configuration not found",
       )
-      return
+      return {
+        status: "error",
+        errorMessage: "AI integration not found",
+        result: null,
+      }
     }
 
     const openaiProvider = getAIModel(aiConfig, "openai")
@@ -52,8 +57,11 @@ export async function handleAISpeechToText({
     )
 
     if (!audioUrl) {
-      await sendMessageWithRender(conversation.id, "No audio URL provided")
-      return
+      return {
+        status: "error",
+        errorMessage: "No audio URL provided",
+        result: null,
+      }
     }
 
     const response = await ky.head(audioUrl, {
@@ -68,11 +76,11 @@ export async function handleAISpeechToText({
         (supportedAudioMimeTypes.options as string[]).includes(contentType)
       )
     ) {
-      await sendMessageWithRender(
-        conversation.id,
-        `Unsupported audio format: ${contentType || "unknown"}. Supported formats: ${supportedAudioMimeTypes.options.join(", ")}`,
-      )
-      return
+      return {
+        status: "error",
+        errorMessage: `Unsupported audio format: ${contentType || "unknown"}`,
+        result: null,
+      }
     }
 
     if (!("transcription" in openaiProvider)) {
@@ -97,16 +105,12 @@ export async function handleAISpeechToText({
         workspaceId: conversation.workspaceId,
       })
     }
-  } catch (error) {
-    const parsedError = normalizeError(error)
-    logger.error(parsedError, "[ai-speech-to-text] Step failed")
 
-    await sendMessageWithRender(
-      conversation.id,
-      "Error converting speech to text",
-    )
-
-    throw error
+    return { status: "success", result: null }
+  } catch (err) {
+    const error = normalizeError(err)
+    logger.error(error, "[ai-speech-to-text] Step failed")
+    return { status: "error", errorMessage: error.message, result: null }
   } finally {
     clearTimeout(timeoutId)
   }

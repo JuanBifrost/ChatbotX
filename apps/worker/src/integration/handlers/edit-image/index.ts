@@ -15,6 +15,7 @@ import {
 } from "@chatbotx.io/flow-config"
 import { generateImage, type ImageModel } from "ai"
 import ky from "ky"
+import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../../../lib/logger"
 import { assertPublicUrl } from "../../../lib/ssrf-guard"
 import {
@@ -24,6 +25,7 @@ import {
 } from "../../utils/contact"
 import { sendMessageWithRender } from "../../utils/message"
 import type { ExecuteStepProps } from "../flow"
+import type { ExecuteStepResult } from "../step"
 import { editImageInputSchema } from "./schema"
 
 const FETCH_IMAGE_TIMEOUT_MS = 30_000
@@ -45,7 +47,7 @@ export async function handleAIEditImage({
   contactInbox: baseContactInbox,
   metadata,
   step,
-}: ExecuteStepProps<AIEditImageSchema>) {
+}: ExecuteStepProps<AIEditImageSchema>): Promise<ExecuteStepResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), aiTimeouts.aiTotal)
 
@@ -57,7 +59,11 @@ export async function handleAIEditImage({
     })
 
     if (!ctx) {
-      return
+      return {
+        status: "error",
+        errorMessage: "Integration context not found",
+        result: null,
+      }
     }
 
     const imageUrl = await readCustomFieldValue({
@@ -82,7 +88,11 @@ export async function handleAIEditImage({
         },
         "[ai-edit-image] Invalid input, skipping",
       )
-      return
+      return {
+        status: "error",
+        errorMessage: "Invalid input for image edit",
+        result: null,
+      }
     }
 
     const aiConfig = await aiIntegrationService.findBy({
@@ -91,7 +101,11 @@ export async function handleAIEditImage({
     })
 
     if (!aiConfig) {
-      return
+      return {
+        status: "error",
+        errorMessage: "AI integration not found",
+        result: null,
+      }
     }
 
     let model: ImageModel
@@ -226,7 +240,10 @@ export async function handleAIEditImage({
         workspaceId: conversation.workspaceId,
       })
     }
-  } catch (error) {
+
+    return { status: "success", result: null }
+  } catch (err) {
+    const error = normalizeError(err)
     logger.error(
       {
         err: error,
@@ -236,10 +253,7 @@ export async function handleAIEditImage({
       },
       "[ai-edit-image] Step failed",
     )
-
-    await sendMessageWithRender(conversation.id, "Error editing image")
-
-    throw error
+    return { status: "error", errorMessage: error.message, result: null }
   } finally {
     clearTimeout(timeoutId)
   }

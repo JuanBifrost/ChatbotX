@@ -1,6 +1,12 @@
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 
+import {
+  errorStateDefaultFn,
+  errorStateSchema,
+  successStateDefaultFn,
+  successStateSchema,
+} from "../states"
 import { stepTypes } from "./step-action"
 
 export const aiAnalyzeImageProvider = z.enum(["openai", "gemini", "claude"])
@@ -22,6 +28,7 @@ export const aiAnalyzeImageSchema = z.object({
   outputFieldId: z.string().trim().min(1),
   temperature: z.number().min(0).max(2),
   maxOutputTokens: z.number().int().min(250).max(4096),
+  states: z.tuple([successStateSchema, errorStateSchema]).optional(),
 })
 
 export type AIAnalyzeImageSchema = z.infer<typeof aiAnalyzeImageSchema>
@@ -45,5 +52,6 @@ export const AIAnalyzeImageDefaultFn = (
     maxOutputTokens: 1000,
     ...props,
     stepType: stepTypes.enum.aiAnalyzeImage,
+    states: [successStateDefaultFn(), errorStateDefaultFn()],
   }
 }

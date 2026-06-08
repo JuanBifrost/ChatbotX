@@ -88,9 +88,6 @@ const stepWithAiName =
   (key: Parameters<TranslationFn>[0]) => (t: TranslationFn, aiName: string) =>
     t(key, { aiName })
 
-const stepNoParam = (key: Parameters<TranslationFn>[0]) => (t: TranslationFn) =>
-  t(key)
-
 const PROVIDER_CONFIGS: ProviderConfig[] = [
   {
     label: "OpenAI",
@@ -115,7 +112,7 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       },
       {
         stepType: stepTypes.enum.aiGenerateTextAgent,
-        getLabel: stepNoParam("flows.actions.aiGenerateTextAgent"),
+        getLabel: stepWithAiName("fields.flows.aiGenerateTextAgent"),
       },
       {
         stepType: stepTypes.enum.aiExtractData,
@@ -131,7 +128,7 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       },
       {
         stepType: stepTypes.enum.aiDeleteMessageHistory,
-        getLabel: stepNoParam("flows.actions.aiDeleteMessageHistory"),
+        getLabel: stepWithAiName("fields.flows.aiDeleteMessageHistory"),
       },
     ],
   },
@@ -150,7 +147,7 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       },
       {
         stepType: stepTypes.enum.aiGenerateTextAgent,
-        getLabel: stepNoParam("flows.actions.aiGenerateTextAgent"),
+        getLabel: stepWithAiName("fields.flows.aiGenerateTextAgent"),
       },
       {
         stepType: stepTypes.enum.aiExtractData,
@@ -158,7 +155,7 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       },
       {
         stepType: stepTypes.enum.aiDeleteMessageHistory,
-        getLabel: stepNoParam("flows.actions.aiDeleteMessageHistory"),
+        getLabel: stepWithAiName("fields.flows.aiDeleteMessageHistory"),
       },
     ],
   },
@@ -185,7 +182,7 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       },
       {
         stepType: stepTypes.enum.aiGenerateTextAgent,
-        getLabel: stepNoParam("flows.actions.aiGenerateTextAgent"),
+        getLabel: stepWithAiName("fields.flows.aiGenerateTextAgent"),
       },
       {
         stepType: stepTypes.enum.aiExtractData,
@@ -204,11 +201,11 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
       },
       {
         stepType: stepTypes.enum.aiGenerateTextAgent,
-        getLabel: stepNoParam("flows.actions.aiGenerateTextAgent"),
+        getLabel: stepWithAiName("fields.flows.aiGenerateTextAgent"),
       },
       {
         stepType: stepTypes.enum.aiDeleteMessageHistory,
-        getLabel: stepNoParam("flows.actions.aiDeleteMessageHistory"),
+        getLabel: stepWithAiName("fields.flows.aiDeleteMessageHistory"),
       },
     ],
   },

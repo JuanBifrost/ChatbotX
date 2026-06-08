@@ -1,6 +1,12 @@
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 
+import {
+  errorStateDefaultFn,
+  errorStateSchema,
+  successStateDefaultFn,
+  successStateSchema,
+} from "../states"
 import { stepTypes } from "./step-action"
 
 export const AI_EDIT_IMAGE_DEFAULT_OPENAI_MODEL = "gpt-image-1-mini" as const
@@ -43,6 +49,7 @@ export const aiEditImageSchema = z.object({
   size: z.string().trim().min(1),
   quality: z.string().trim().min(1),
   outputFieldId: z.string().trim().min(1),
+  states: z.tuple([successStateSchema, errorStateSchema]).optional(),
 })
 
 export type AIEditImageSchema = z.infer<typeof aiEditImageSchema>
@@ -63,5 +70,6 @@ export const aiEditImageDefaultFn = (
     outputFieldId: "",
     ...props,
     stepType: stepTypes.enum.aiEditImage,
+    states: [successStateDefaultFn(), errorStateDefaultFn()],
   }
 }

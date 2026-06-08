@@ -1,7 +1,7 @@
 "use client"
 
-import { BotIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
+import { AIIcon } from "../ai-generate-text/components/ai-icon"
 import { BaseStepEditor } from "../base/editor"
 import { AIModelDialog } from "./components/ai-model-dialog"
 
@@ -14,7 +14,7 @@ const AITextToSpeechEditor = ({ parentName }: AITextToSpeechEditorProps) => {
 
   return (
     <BaseStepEditor
-      icon={BotIcon}
+      iconNode={<AIIcon provider="openai" showLabel={false} />}
       title={t("fields.flows.aiTextToSpeech", {
         aiName: t("aiProviders.openai"),
       })}

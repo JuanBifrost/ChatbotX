@@ -1,5 +1,12 @@
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
+
+import {
+  errorStateDefaultFn,
+  errorStateSchema,
+  successStateDefaultFn,
+  successStateSchema,
+} from "../states"
 import { stepTypes } from "./step-action"
 
 export const aiExtractDataModels = {
@@ -55,6 +62,7 @@ const extractDataBase = {
   provider: z.enum(["openai", "gemini", "claude"]),
   model: z.string().trim().min(1),
   extractFields: z.array(extractFieldSchema),
+  states: z.tuple([successStateSchema, errorStateSchema]).optional(),
 }
 
 export const aiExtractDataSchema = z.discriminatedUnion("inputType", [
@@ -98,5 +106,6 @@ export const aiExtractDataDefaultFn = (
     extractFields: [],
     ...props,
     stepType: stepTypes.enum.aiExtractData,
+    states: [successStateDefaultFn(), errorStateDefaultFn()],
   }
 }

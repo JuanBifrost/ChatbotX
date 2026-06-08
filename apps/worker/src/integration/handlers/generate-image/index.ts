@@ -6,6 +6,7 @@ import {
 import { resolvePlatformSettings } from "@chatbotx.io/business"
 import { getPublicFileUrl } from "@chatbotx.io/business/utils"
 import {
+  type AIGenerateImageQualityType,
   type AIGenerateImageSchema,
   getAIGeneratedImagePath,
   IMAGE_AUTO_VALUE,
@@ -14,6 +15,7 @@ import {
   IMAGE_DEFAULT_MIME_TYPE,
 } from "@chatbotx.io/flow-config"
 import { generateImage } from "ai"
+import { normalizeError } from "universal-error-normalizer"
 import { logger } from "../../../lib/logger"
 import {
   getIntegrationContext,
@@ -21,16 +23,45 @@ import {
 } from "../../utils/contact"
 import { sendMessageWithRender } from "../../utils/message"
 import type { ExecuteStepProps } from "../flow"
+import type { ExecuteStepResult } from "../step"
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 const ALLOWED_EXTENSIONS = new Set(["png", "jpg", "jpeg", "webp", "gif"])
+const GPT_IMAGE_QUALITY_MAP: Record<
+  AIGenerateImageQualityType,
+  "auto" | "high" | "medium" | "low"
+> = {
+  auto: "auto",
+  hd: "high",
+  md: "medium",
+  ld: "low",
+}
+
+const DALL_E_QUALITY_MAP: Record<
+  AIGenerateImageQualityType,
+  "auto" | "hd" | "standard"
+> = {
+  auto: "auto",
+  hd: "hd",
+  md: "standard",
+  ld: "standard",
+}
+
+function getOpenAIImageQuality(
+  modelId: string,
+  quality: AIGenerateImageQualityType,
+) {
+  return modelId.startsWith("gpt-image") || modelId.startsWith("chatgpt-image")
+    ? GPT_IMAGE_QUALITY_MAP[quality]
+    : DALL_E_QUALITY_MAP[quality]
+}
 
 export async function handleAIGenerateImage({
   conversation,
   contactInbox: baseContactInbox,
   metadata,
   step,
-}: ExecuteStepProps<AIGenerateImageSchema>) {
+}: ExecuteStepProps<AIGenerateImageSchema>): Promise<ExecuteStepResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), aiTimeouts.aiTotal)
 
@@ -41,7 +72,11 @@ export async function handleAIGenerateImage({
     })
 
     if (!aiConfig) {
-      return
+      return {
+        status: "error",
+        errorMessage: "AI integration not found",
+        result: null,
+      }
     }
 
     const ctx = await getIntegrationContext({
@@ -58,13 +93,19 @@ export async function handleAIGenerateImage({
         },
         "[ai-generate-image] Integration context not found, skipping",
       )
-      return
+      return {
+        status: "error",
+        errorMessage: "Integration context not found",
+        result: null,
+      }
     }
+
+    const modelId = step.model
 
     const model = createAIImageModelInstance({
       model: aiConfig,
       provider: step.provider,
-      modelId: step.model,
+      modelId,
     })
 
     const size =
@@ -79,13 +120,11 @@ export async function handleAIGenerateImage({
         ? (step.size as `${number}:${number}`)
         : undefined
 
-    // Forward quality to OpenAI provider options — "hd" costs 2× but produces
-    // sharper results; all other values ("md", "ld", "auto") map to "standard".
     const providerOptions =
       step.provider === aiProviders.enum.openai && step.quality !== "auto"
         ? {
             openai: {
-              quality: step.quality === "hd" ? "hd" : "standard",
+              quality: getOpenAIImageQuality(modelId, step.quality),
             },
           }
         : undefined
@@ -155,7 +194,10 @@ export async function handleAIGenerateImage({
         workspaceId: conversation.workspaceId,
       })
     }
-  } catch (error) {
+
+    return { status: "success", result: null }
+  } catch (err) {
+    const error = normalizeError(err)
     logger.error(
       {
         err: error,
@@ -164,10 +206,7 @@ export async function handleAIGenerateImage({
       },
       "[ai-generate-image] Step failed",
     )
-
-    await sendMessageWithRender(conversation.id, "Error generating image")
-
-    throw error
+    return { status: "error", errorMessage: error.message, result: null }
   } finally {
     clearTimeout(timeoutId)
   }

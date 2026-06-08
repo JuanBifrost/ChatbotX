@@ -1,6 +1,12 @@
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 
+import {
+  errorStateDefaultFn,
+  errorStateSchema,
+  successStateDefaultFn,
+  successStateSchema,
+} from "../states"
 import { stepTypes } from "./step-action"
 
 export const aiGenerateTextAgentProvider = z.enum([
@@ -21,6 +27,7 @@ export const aiGenerateTextAgentSchema = z.object({
   message: z.string().trim().min(1),
   outputFieldId: z.string().trim().min(1),
   rememberConversation: z.boolean(),
+  states: z.tuple([successStateSchema, errorStateSchema]).optional(),
 })
 
 export type AIGenerateTextAgentSchema = z.infer<
@@ -41,5 +48,6 @@ export const aiGenerateTextAgentDefaultFn = (
     rememberConversation: true,
     ...props,
     stepType: stepTypes.enum.aiGenerateTextAgent,
+    states: [successStateDefaultFn(), errorStateDefaultFn()],
   }
 }

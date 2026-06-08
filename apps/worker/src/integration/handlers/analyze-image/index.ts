@@ -13,11 +13,12 @@ import {
 } from "../../utils/contact"
 import { sendMessageWithRender } from "../../utils/message"
 import type { ExecuteStepProps } from "../flow"
+import type { ExecuteStepResult } from "../step"
 
 export async function handleAIAnalyzeImage({
   conversation,
   step,
-}: ExecuteStepProps<AIAnalyzeImageSchema>) {
+}: ExecuteStepProps<AIAnalyzeImageSchema>): Promise<ExecuteStepResult> {
   const controller = new AbortController()
   const timeoutId = setTimeout(() => controller.abort(), aiTimeouts.aiTotal)
 
@@ -28,7 +29,11 @@ export async function handleAIAnalyzeImage({
     })
 
     if (!aiConfig) {
-      return
+      return {
+        status: "error",
+        errorMessage: "AI integration not found",
+        result: null,
+      }
     }
 
     const model = createAIModelInstance({
@@ -43,8 +48,11 @@ export async function handleAIAnalyzeImage({
       customFieldId: step.inputFieldId,
     })
     if (!(imageUrl && isImageUrl(imageUrl))) {
-      await sendMessageWithRender(conversation.id, "Invalid image URL provided")
-      return
+      return {
+        status: "error",
+        errorMessage: "Invalid image URL provided",
+        result: null,
+      }
     }
 
     const result = streamText({
@@ -81,13 +89,12 @@ export async function handleAIAnalyzeImage({
         workspaceId: conversation.workspaceId,
       })
     }
-  } catch (error) {
-    const parsedError = normalizeError(error)
-    logger.error(parsedError, "[ai-analyze-image] Step failed")
 
-    await sendMessageWithRender(conversation.id, "Error analyzing image")
-
-    throw error
+    return { status: "success", result: null }
+  } catch (err) {
+    const error = normalizeError(err)
+    logger.error(error, "[ai-analyze-image] Step failed")
+    return { status: "error", errorMessage: error.message, result: null }
   } finally {
     clearTimeout(timeoutId)
   }

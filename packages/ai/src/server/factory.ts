@@ -103,11 +103,101 @@ export function createAIImageModelInstance(props: {
   modelId: string
 }) {
   const { model, provider, modelId } = props
-  const providerInstance = getAIModel(model, provider)
+  const authParsed = secretTextAuthSchema.safeParse(model.auth)
+  if (!authParsed.success) {
+    throw new Error("Invalid AI integration auth configuration")
+  }
+
+  const createProvider = resolveProviderFactory(provider)
+
+  // OpenAI removed `response_format` from the images endpoint. The AI SDK
+  // still adds it for dall-e models, so we strip it and convert URL responses
+  // to base64 inline so the SDK schema validation still passes.
+  const isDallE =
+    provider === aiProviders.enum.openai && modelId.startsWith("dall-e")
+
+  const providerInstance = createProvider({
+    apiKey: authParsed.data.secretText,
+    ...(isDallE ? { fetch: createDallEImageFetch() } : {}),
+  })
 
   if ("image" in providerInstance) {
     return providerInstance.image(modelId) as ImageModel
   }
 
   throw new Error(`Provider ${provider} does not support image generation`)
+}
+
+function createDallEImageFetch(): typeof globalThis.fetch {
+  return async (url, inputInit) => {
+    const urlStr = url instanceof URL ? url.href : String(url)
+
+    if (!urlStr.includes("/images/generations")) {
+      return globalThis.fetch(url, inputInit)
+    }
+
+    let patchedInit = inputInit
+    if (inputInit?.body && typeof inputInit.body === "string") {
+      let parsed: Record<string, unknown>
+      try {
+        parsed = JSON.parse(inputInit.body) as Record<string, unknown>
+        const { response_format: _stripped, ...rest } = parsed
+        patchedInit = { ...inputInit, body: JSON.stringify(rest) }
+      } catch {
+        // leave body unchanged if parsing fails
+        patchedInit = inputInit
+      }
+    }
+
+    const response = await globalThis.fetch(url, patchedInit)
+    if (!response.ok) {
+      return response
+    }
+
+    const text = await response.text()
+    let json: {
+      data?: Array<{
+        url?: string
+        b64_json?: string
+        revised_prompt?: string
+      }>
+    }
+    try {
+      json = JSON.parse(text)
+    } catch {
+      return new Response(text, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      })
+    }
+
+    if (!Array.isArray(json.data)) {
+      return new Response(text, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: response.headers,
+      })
+    }
+
+    json.data = await Promise.all(
+      json.data.map(async (item) => {
+        if (item.url && !item.b64_json) {
+          const imgRes = await globalThis.fetch(item.url)
+          if (!imgRes.ok) {
+            return item
+          }
+          const buf = await imgRes.arrayBuffer()
+          return { ...item, b64_json: Buffer.from(buf).toString("base64") }
+        }
+        return item
+      }),
+    )
+
+    return new Response(JSON.stringify(json), {
+      status: response.status,
+      statusText: response.statusText,
+      headers: response.headers,
+    })
+  }
 }

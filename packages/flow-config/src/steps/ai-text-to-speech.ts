@@ -1,5 +1,12 @@
 import { createId, zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
+
+import {
+  errorStateDefaultFn,
+  errorStateSchema,
+  successStateDefaultFn,
+  successStateSchema,
+} from "../states"
 import { stepTypes } from "./step-action"
 
 export const aiTextToSpeechModelTypes = z.enum([
@@ -33,6 +40,7 @@ export const aiTextToSpeechSchema = z.object({
   voiceType: aiTextToSpeechVoiceTypes,
   voiceTone: z.string().trim().optional(),
   outputFieldId: z.string().trim().min(1),
+  states: z.tuple([successStateSchema, errorStateSchema]).optional(),
 })
 
 export type AITextToSpeechSchema = z.infer<typeof aiTextToSpeechSchema>
@@ -57,10 +65,11 @@ export const AITextToSpeechDefaultFn = (
   id: createId(),
   provider: "openai",
   model: aiTextToSpeechModelTypes.enum["gpt-4o-mini-tts"],
-  stepType: stepTypes.enum.aiTextToSpeech,
   message: "",
   voiceType: aiTextToSpeechVoiceTypes.enum.alloy,
   voiceTone: "",
   outputFieldId: "",
   ...props,
+  stepType: stepTypes.enum.aiTextToSpeech,
+  states: [successStateDefaultFn(), errorStateDefaultFn()],
 })

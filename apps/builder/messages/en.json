@@ -665,13 +665,14 @@
       "aiGenerateText": "{aiName}: Generate Text",
       "aiGenerateImage": "{aiName}: Generate Image",
       "aiEditImage": "{aiName}: Edit Image",
-      "aiAnalyzeImage": "{aiName}: AI Analyze Image",
+      "aiAnalyzeImage": "{aiName}: Analyze Image",
       "aiExtractData": "{aiName}: Extract Data",
-      "aiSpeechToText": "{aiName}: AI Speech to Text",
-      "aiTextToSpeech": "{aiName}: AI Text to Speech",
+      "aiSpeechToText": "{aiName}: Speech to Text",
+      "aiTextToSpeech": "{aiName}: Text to Speech",
       "label": "Flows",
       "placeholder": "Select flow",
-      "aiGenerateTextAgent": "{aiName}: Generate Text Agent"
+      "aiGenerateTextAgent": "{aiName}: Generate Text Agent",
+      "aiDeleteMessageHistory": "{aiName}: Delete Message History"
     },
     "steps": {
       "label": "Steps",
@@ -953,9 +954,9 @@
         "square1024": "Square - 1024×1024",
         "landscape1536x1024": "Landscape - 1536×1024",
         "portrait1024x1536": "Portrait - 1024×1536",
-        "dalle2_256": "256×256 (DALL·E 2)",
-        "dalle2_512": "512×512 (DALL·E 2)",
-        "dalle3_1792x1024": "1792×1024 (DALL·E 3)"
+        "dalle2_256": "256×256",
+        "dalle2_512": "512×512",
+        "dalle3_1792x1024": "1792×1024"
       }
     },
     "status": {
@@ -1397,19 +1398,19 @@
   "flows": {
     "title": "Flows",
     "aiGenerateText": {
-      "label": "{name}: AI Generate Text"
+      "label": "{name}: Generate Text"
     },
     "aiGenerateImage": {
-      "label": "{name}: AI Generate Image"
+      "label": "{name}: Generate Image"
     },
     "aiEditImage": {
-      "label": "{name}: AI Edit Image"
+      "label": "{name}: Edit Image"
     },
     "aiAnalyzeImage": {
-      "label": "{name}: AI Analyze Image"
+      "label": "{name}: Analyze Image"
     },
     "aiExtractData": {
-      "label": "{name}: AI Extract Data"
+      "label": "{name}: Extract Data"
     },
     "actions": {
       "addContactNotes": "Add Contact Notes",

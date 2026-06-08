@@ -1,8 +1,8 @@
 "use client"
 
-import { ImageIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import { useFormContext } from "react-hook-form"
+import { AIIcon } from "../ai-generate-text/components/ai-icon"
 import { BaseStepEditor } from "../base/editor"
 import { AIEditImageDialog } from "./components/ai-model-dialog"
 
@@ -19,7 +19,7 @@ export const AIEditImageEditor = (props: AIEditImageEditorProps) => {
 
   return (
     <BaseStepEditor
-      icon={ImageIcon}
+      iconNode={<AIIcon provider={provider} showLabel={false} />}
       title={t("fields.flows.aiEditImage", {
         aiName: t(`aiProviders.${provider}`),
       })}
