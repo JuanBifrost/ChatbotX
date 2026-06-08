@@ -44,7 +44,10 @@ const genericHandler: UploadHandler = (input) => {
       status: 400,
     }
   }
-  if (!input.path.startsWith(`workspaces/${input.workspaceId}/`)) {
+  const isValidPath =
+    input.path.startsWith(`workspaces/${input.workspaceId}/`) ||
+    input.path.startsWith(`public/space/${input.workspaceId}/`)
+  if (!isValidPath) {
     return { ok: false, error: "Invalid path", status: 400 }
   }
   return { ok: true, path: input.path }

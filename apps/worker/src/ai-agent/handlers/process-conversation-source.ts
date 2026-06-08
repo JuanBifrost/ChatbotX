@@ -13,7 +13,9 @@ import {
   type AIJobProcessConversationSource,
   aiAgentQueue,
 } from "@chatbotx.io/worker-config"
+import { Readability } from "@mozilla/readability"
 import { htmlToText } from "html-to-text"
+import { parseHTML } from "linkedom"
 import { normalizeError } from "universal-error-normalizer"
 import { z } from "zod"
 import { logger } from "../../lib/logger"
@@ -72,14 +74,13 @@ function splitTextIntoChunks(
   return chunks
 }
 
-function extractReadableText(html: string, _url: string): string {
+function extractReadableText(html: string, url?: string): string {
   try {
-    return ""
-    // const dom = new JSDOM(html, { url })
-    // const article = new Readability(dom.window.document).parse()
-    // if (article?.textContent && article.textContent.trim().length > 200) {
-    //   return article.textContent.trim()
-    // }
+    const { document } = parseHTML(html, url ?? "")
+    const article = new Readability(document as unknown as Document).parse()
+    if (article?.textContent && article.textContent.trim().length > 200) {
+      return article.textContent.trim()
+    }
   } catch {
     // Readability parse failure — fall back to htmlToText
   }

@@ -76,16 +76,14 @@ export function DirectUploadButton({
               headers: {
                 "Content-Type": "application/json",
               },
-              body: JSON.stringify([
-                {
-                  path: filePath,
-                  workspaceId,
-                  fileName: file.name,
-                  type: "generic",
-                  subType: "generic",
-                  mimeType,
-                },
-              ]),
+              body: JSON.stringify({
+                path: filePath,
+                workspaceId,
+                fileName: file.name,
+                type: "generic",
+                subType: "generic",
+                mimeType,
+              }),
             })
 
             if (!presignedResponse.ok) {
@@ -94,8 +92,7 @@ export function DirectUploadButton({
               )
             }
 
-            const presignedData = await presignedResponse.json()
-            const presignedPost = presignedData[0]
+            const presignedPost = await presignedResponse.json()
 
             // Upload with progress tracking
             const xhr = new XMLHttpRequest()

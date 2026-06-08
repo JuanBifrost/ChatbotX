@@ -2,17 +2,49 @@ import type { ConversationContextSnippet } from "./context-sources/types"
 
 const FALLBACK_MAX_TEXT_CHARS = 40_000
 const FALLBACK_SNIPPET_LIMIT = 3
+const CHUNK_TARGET_CHARS = 500
 const PARAGRAPH_SEPARATOR_REGEX = /\n{2,}/g
+const SENTENCE_END_REGEX = /(?<=[.!?])\s+/
 const QUERY_TERM_SEPARATOR_REGEX = /\s+/
 const WHITESPACE_REGEX = /\s+/g
 
 export { FALLBACK_MAX_TEXT_CHARS }
+
+function chunkLargeSegment(segment: string): string[] {
+  if (segment.length <= CHUNK_TARGET_CHARS) {
+    return [segment]
+  }
+
+  const sentences = segment.split(SENTENCE_END_REGEX)
+  const chunks: string[] = []
+  let current = ""
+
+  for (const sentence of sentences) {
+    const candidate = current ? `${current} ${sentence}` : sentence
+    if (candidate.length <= CHUNK_TARGET_CHARS) {
+      current = candidate
+    } else {
+      if (current) {
+        chunks.push(current)
+      }
+      current =
+        sentence.length > CHUNK_TARGET_CHARS
+          ? sentence.slice(0, CHUNK_TARGET_CHARS)
+          : sentence
+    }
+  }
+  if (current) {
+    chunks.push(current)
+  }
+  return chunks
+}
 
 function splitPlainTextToSnippets(text: string): string[] {
   return text
     .split(PARAGRAPH_SEPARATOR_REGEX)
     .map((segment) => segment.replace(WHITESPACE_REGEX, " ").trim())
     .filter(Boolean)
+    .flatMap(chunkLargeSegment)
 }
 
 export function pickRelevantFallbackSnippets(

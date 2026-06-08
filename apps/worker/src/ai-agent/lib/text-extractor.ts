@@ -22,6 +22,7 @@ import JSZip from "jszip"
 import { simpleParser } from "mailparser"
 import { extractRawText } from "mammoth"
 import { lookup } from "mime-types"
+import pdfParse from "pdf-parse-new"
 import removeMd from "remove-markdown"
 import { read, utils } from "xlsx"
 import { logger } from "../../lib/logger"
@@ -86,12 +87,10 @@ async function streamToBuffer(
   return Buffer.concat(chunks)
 }
 
-export async function extractTextFromPdf(_buffer: Buffer): Promise<string> {
+export async function extractTextFromPdf(buffer: Buffer): Promise<string> {
   try {
-    return await ""
-    // const parser = await pdfParse(buffer)
-
-    // return parser.text
+    const parser = await pdfParse(buffer)
+    return parser.text
   } catch (error) {
     logger.warn(error, "PDF parsing failed, falling back to plain text")
     throw new Error("PDF parsing failed")

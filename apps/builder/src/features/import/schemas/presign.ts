@@ -4,7 +4,7 @@ import { z } from "zod"
 
 export const presignImportUploadRequest = z.object({
   type: uploadTypes,
-  subType: z.union([importTypes, z.literal("file")]),
+  subType: z.union([importTypes, z.literal("file"), z.literal("generic")]),
   workspaceId: zodBigintAsString(),
   path: z.string().min(1).max(255).optional(),
   fileName: z.string().min(1).max(255),

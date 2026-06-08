@@ -121,7 +121,7 @@ export async function handleSummarizeConversation(
             },
           },
           {
-            jobId: `summarize:${conversationId}`,
+            jobId: `summarize-${conversationId}`,
             removeOnComplete: true,
             removeOnFail: true,
           },

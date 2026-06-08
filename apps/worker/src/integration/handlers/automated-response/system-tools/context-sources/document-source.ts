@@ -61,7 +61,7 @@ function matchesHint(attachment: AttachmentModel, hint: string) {
 }
 
 function getProcessSourceJobId(source: ResolvedConversationSource["source"]) {
-  return `${PROCESS_SOURCE_JOB_ID_PREFIX}:${source.id}:${source.updatedAt.getTime()}`
+  return `${PROCESS_SOURCE_JOB_ID_PREFIX}-${source.id}-${source.updatedAt.getTime()}`
 }
 
 async function enqueueConversationSource(

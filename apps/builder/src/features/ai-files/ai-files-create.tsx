@@ -55,7 +55,8 @@ export function AIFilesCreate({ onSuccess }: { onSuccess?: () => void }) {
           size: file.size,
         })
       }}
-      uploadPath={`public/space/${workspaceId}/ai-files`}
+      uploadPath={`workspaces/${workspaceId}/ai-files`}
+      workspaceId={workspaceId}
     />
   )
 }

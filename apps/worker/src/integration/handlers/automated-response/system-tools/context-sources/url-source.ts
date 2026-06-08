@@ -43,7 +43,7 @@ function buildUrlSourceKey(url: string): string {
 }
 
 function getProcessSourceJobId(source: ResolvedConversationSource["source"]) {
-  return `${PROCESS_SOURCE_JOB_ID_PREFIX}:${source.id}:${source.updatedAt.getTime()}`
+  return `${PROCESS_SOURCE_JOB_ID_PREFIX}-${source.id}-${source.updatedAt.getTime()}`
 }
 
 async function enqueueConversationSource(

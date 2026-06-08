@@ -384,7 +384,7 @@ export const aiContextService = {
               },
             },
             {
-              jobId: `summarize:${conversationId}`,
+              jobId: `summarize-${conversationId}`,
               removeOnComplete: true,
               removeOnFail: true,
             },
