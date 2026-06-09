@@ -19,6 +19,7 @@ export const ScheduleJobData = {
   maintainMacPartitions: "maintainMacPartitions",
   scanCoexistRuns: "scanCoexistRuns",
   purgeCoexistStaging: "purgeCoexistStaging",
+  refreshZaloTokens: "refreshZaloTokens",
 } as const
 
 export type ScheduleJobBroadcast = {
@@ -87,6 +88,11 @@ export type ScheduleJobPurgeCoexistStaging = {
   data: Record<string, never>
 }
 
+export type ScheduleJobRefreshZaloTokens = {
+  type: typeof ScheduleJobData.refreshZaloTokens
+  data: Record<string, never>
+}
+
 export type ScheduleJobData =
   | ScheduleJobBroadcast
   | ScheduleJobEnqueueBroadcast
@@ -100,6 +106,7 @@ export type ScheduleJobData =
   | ScheduleJobMaintainMacPartitions
   | ScheduleJobScanCoexistRuns
   | ScheduleJobPurgeCoexistStaging
+  | ScheduleJobRefreshZaloTokens
 
 export const scheduleQueue =
   process.env.NEXT_PHASE === "phase-production-build"
