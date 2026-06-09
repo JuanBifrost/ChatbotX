@@ -100,6 +100,8 @@ export const getIntegrationField = async (
           return inbox.integrationWhatsapp?.name ?? null
         case channelTypes.enum.zalo:
           return inbox.integrationZalo?.name ?? null
+        case channelTypes.enum.tiktok:
+          return inbox.integrationTiktok?.name ?? null
         case channelTypes.enum.telegram:
           return inbox.integrationTelegram?.name ?? null
         case channelTypes.enum.webchat:

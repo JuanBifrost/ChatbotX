@@ -114,6 +114,7 @@ export type InboxWithIntegrations = InboxModel & {
   integrationWhatsapp?: IntegrationWhatsappModel | null
   integrationZalo?: IntegrationZaloModel | null
   integrationSmtp?: IntegrationSmtpModel | null
+  integrationTiktok?: IntegrationTiktokModel | null
 }
 
 export type ContactOnSmartDelayModel =

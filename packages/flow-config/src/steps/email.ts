@@ -135,7 +135,7 @@ export const emailStepDefaultFn = (
     {
       id: createId(),
       type: pageElementTypes.enum.text,
-      text: `You received this email from {{page_name}}. If you would like to unsubscribe, <a href="${UNSUBSCRIBE_PLACEHOLDER}">click here</a>`,
+      text: `You received this email from {{page_user_name}}. If you would like to unsubscribe, <a href="${UNSUBSCRIBE_PLACEHOLDER}">click here</a>`,
     },
   ],
   ...props,
