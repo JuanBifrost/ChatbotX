@@ -188,6 +188,10 @@ const PROVIDER_CONFIGS: ProviderConfig[] = [
         stepType: stepTypes.enum.aiExtractData,
         getLabel: stepWithName("flows.aiExtractData.label"),
       },
+      {
+        stepType: stepTypes.enum.aiDeleteMessageHistory,
+        getLabel: stepWithAiName("fields.flows.aiDeleteMessageHistory"),
+      },
     ],
   },
   {

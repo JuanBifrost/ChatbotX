@@ -11,6 +11,7 @@ import { stepTypes } from "./step-action"
 
 export const aiDeleteMessageHistoryProvider = z.enum([
   "openai",
+  "gemini",
   "claude",
   "deepseek",
 ])
