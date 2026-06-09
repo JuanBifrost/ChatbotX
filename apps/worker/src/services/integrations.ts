@@ -87,7 +87,7 @@ export const integrationService = {
       }
       case "instagram": {
         modelName = "IntegrationInstagram"
-        columnName = "pageId"
+        columnName = "igId"
         break
       }
       case "tiktok": {
