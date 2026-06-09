@@ -12,7 +12,7 @@ type SendCardStepEditorProps = {
 }
 
 const SendCardStepEditor = ({ parentName }: SendCardStepEditorProps) => {
-  const params = useParams<{ workspaceId: string; flowId: string }>()
+  const params = useParams<{ workspaceId: string; id: string }>()
   const { register, getValues } = useFormContext()
   const t = useTranslations()
   const stepId = getValues(`${parentName}.id`)
@@ -23,7 +23,7 @@ const SendCardStepEditor = ({ parentName }: SendCardStepEditorProps) => {
         <DirectUploadOrInsertLink
           fileType="image"
           parentName={`${parentName}.image`}
-          uploadPath={`public/space/${params.workspaceId}/flows/${params.flowId}/steps/${stepId}`}
+          uploadPath={`public/space/${params.workspaceId}/flows/${params.id}/steps/${stepId}`}
         />
         <Input
           placeholder={`${t("fields.title.placeholder")} (required)`}

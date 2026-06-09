@@ -16,7 +16,7 @@ import {
  */
 export type DirectUploadButtonProps = FileUploadProps & {
   /** Workspace ID for the upload */
-  workspaceId?: string
+  workspaceId: string
   /** The base path where files will be uploaded to S3 */
   uploadPath?: string
   /** Custom upload handler URL, defaults to /api/presigned-upload */

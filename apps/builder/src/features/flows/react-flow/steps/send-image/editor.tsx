@@ -10,7 +10,7 @@ type SendImageStepEditorProps = {
 }
 
 const SendImageStepEditor = ({ parentName }: SendImageStepEditorProps) => {
-  const params = useParams<{ workspaceId: string; flowId: string }>()
+  const params = useParams<{ workspaceId: string; id: string }>()
   const { getValues } = useFormContext()
   const stepId = getValues(`${parentName}.id`)
 
@@ -20,7 +20,7 @@ const SendImageStepEditor = ({ parentName }: SendImageStepEditorProps) => {
         <DirectUploadOrInsertLink
           fileType="image"
           parentName={parentName}
-          uploadPath={`public/space/${params.workspaceId}/flows/${params.flowId}/steps/${stepId}`}
+          uploadPath={`public/space/${params.workspaceId}/flows/${params.id}/steps/${stepId}`}
         />
       </div>
       <div className="bg-slate-200 px-3 py-2 dark:bg-neutral-900">

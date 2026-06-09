@@ -19,6 +19,7 @@ import { useTranslations } from "next-intl"
 import { useMemo, useRef } from "react"
 import { useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
+import { useWorkspaceId } from "@/hooks/routing"
 
 export function DirectUploadOrInsertLink({
   parentName,
@@ -32,6 +33,7 @@ export function DirectUploadOrInsertLink({
   onSuccess?: (url: string) => void
 }) {
   const t = useTranslations()
+  const workspaceId = useWorkspaceId()
 
   const { setValue, getValues, control } = useFormContext()
   const uploadMode = useWatch({ control, name: `${parentName}.mode` }) || "file"
@@ -105,6 +107,7 @@ export function DirectUploadOrInsertLink({
         }}
         triggerRef={triggerRef}
         uploadPath={uploadPath}
+        workspaceId={workspaceId}
       />
 
       {uploadMode === "file" ? (
@@ -133,6 +136,7 @@ export function DirectUploadOrInsertLink({
             }}
             triggerRef={triggerRef}
             uploadPath={uploadPath}
+            workspaceId={workspaceId}
           />
           {publicUrl && publicUrl.length > 0 ? (
             <Button
@@ -144,15 +148,18 @@ export function DirectUploadOrInsertLink({
               {fileType === "image" ? (
                 <Image
                   alt={stepId}
-                  fill={true}
-                  objectFit="contain"
+                  className="h-full w-full object-contain"
+                  height={1000}
                   src={publicUrl}
+                  width={1000}
                 />
               ) : (
-                <>
-                  <fileConfigs.icon className="size-5" />
-                  <span className="flex-1 truncate">{publicUrl}</span>
-                </>
+                <div className="flex w-full min-w-0 items-center gap-2 px-3">
+                  <fileConfigs.icon className="size-5 flex-none" />
+                  <span className="min-w-0 flex-1 truncate text-left">
+                    {publicUrl}
+                  </span>
+                </div>
               )}
             </Button>
           ) : (

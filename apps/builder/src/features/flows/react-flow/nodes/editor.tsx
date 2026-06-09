@@ -371,15 +371,7 @@ export const NodeEditor = memo((props: NodeEditorProps) => {
                         <div className="w-4">{"\u00A0"}</div>
                       )
                     })()}
-                    <div
-                      className={cn(
-                        "break-word flex-1",
-                        // biome-ignore lint/suspicious/noExplicitAny: wip
-                        (field as any).stepType === stepTypes.enum.sendCarousel
-                          ? "overflow-hidden"
-                          : "",
-                      )}
-                    >
+                    <div className={cn("break-word flex-1 overflow-hidden")}>
                       <DynamicStepEditor
                         key={field.id}
                         parentName={`steps.${index}`}

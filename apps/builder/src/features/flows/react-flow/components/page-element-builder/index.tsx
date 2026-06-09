@@ -19,7 +19,7 @@ type BuilderProps = {
   type: PageElementType
 }
 export function PageElementBuilder({ type, parentName }: BuilderProps) {
-  const params = useParams<{ workspaceId: string; flowId: string }>()
+  const params = useParams<{ workspaceId: string; id: string }>()
 
   const t = useTranslations()
   switch (type) {
@@ -42,7 +42,7 @@ export function PageElementBuilder({ type, parentName }: BuilderProps) {
         <DirectUploadOrInsertLink
           fileType="image"
           parentName={parentName}
-          uploadPath={`public/space/${params.workspaceId}/flows/${params.flowId}/elements/${parentName}`}
+          uploadPath={`public/space/${params.workspaceId}/flows/${params.id}/elements/${parentName}`}
         />
       )
     case pageElementTypes.enum.button:
