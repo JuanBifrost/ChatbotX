@@ -5,7 +5,7 @@ import {
   listSequenceStepContactsRequest,
   listSequenceStepContactsResponse,
 } from "@chatbotx.io/analytics/schemas"
-import { db } from "@chatbotx.io/database/client"
+import { contactInboxService } from "@chatbotx.io/business"
 import type { ChannelType } from "@chatbotx.io/database/partials"
 import { workspaceAuthorizedMidddleware } from "@/middlewares/auth"
 import { authorizedAPI } from "@/orpc"
@@ -71,49 +71,30 @@ export const sequencesPrivateAPI = {
         }
       }
 
-      const contactInboxes = await db.query.contactInboxModel.findMany({
-        where: {
-          id: { in: contactInboxIds },
-        },
-        columns: {
-          id: true,
-          contactId: true,
-          sourceId: true,
-          channel: true,
-        },
-        with: {
-          contact: {
-            columns: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              fullName: true,
-              avatar: true,
-            },
-          },
-          conversation: {
-            columns: {
-              id: true,
-            },
-          },
-        },
-      })
+      const contactInboxes =
+        await contactInboxService.findManyByIds(contactInboxIds)
 
       const contactMap = new Map(contactInboxes.map((c) => [c.id, c]))
       const pageCount = Math.ceil(totalValue / perPage)
 
-      const data = contactInboxIds
-        .map((contactInboxId) => {
-          const eventData = contactEventMap.get(contactInboxId)
-          if (!eventData) {
-            return null
-          }
+      const data = contactInboxIds.flatMap((contactInboxId) => {
+        const eventData = contactEventMap.get(contactInboxId)
+        if (!eventData) {
+          return []
+        }
 
-          const contact = contactMap.get(contactInboxId)
-          if (!contact) {
-            return null
-          }
-          return {
+        const contact = contactMap.get(contactInboxId)
+        if (!contact) {
+          return []
+        }
+
+        const conversationId = contact.conversation?.id
+        if (!conversationId) {
+          return []
+        }
+
+        return [
+          {
             contactId: contact.id,
             contactInboxId,
             firstName: contact.contact?.firstName ?? null,
@@ -122,12 +103,12 @@ export const sequencesPrivateAPI = {
             sourceId: contact.sourceId as string | null,
             avatar: contact.contact?.avatar ?? null,
             channel: contact.channel as ChannelType,
-            conversationId: contact.conversation?.id ?? null,
+            conversationId,
             errorContent: eventData.errorContent ?? null,
             occurredAt: eventData.occurredAt,
-          }
-        })
-        .filter((c) => c !== null)
+          },
+        ]
+      })
 
       return { data, total: totalValue, page, pageCount }
     }),

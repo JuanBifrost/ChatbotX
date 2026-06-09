@@ -1,10 +1,22 @@
-import { contactCustomFieldService, tagService } from "@chatbotx.io/business"
+import {
+  automatedResponseService,
+  contactCustomFieldService,
+  contactService,
+  conversationService,
+  tagService,
+} from "@chatbotx.io/business"
 import { notFoundException } from "@chatbotx.io/business/errors"
-import { db } from "@chatbotx.io/database/client"
+import { genderTypes } from "@chatbotx.io/database/partials"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
 import { createMessage } from "@/features/messages/actions/create-message.action"
+import {
+  listMessages,
+  publicFindContactMessage,
+} from "@/features/messages/queries"
 import { createMessageRequest } from "@/features/messages/schema/mutation"
+import { listMessagesResponse } from "@/features/messages/schema/query"
+import { messageResourceWithRelations } from "@/features/messages/schema/resource"
 import { publicListTagsResponse } from "@/features/tags/schema/query"
 import { workspaceTokenAuthAPI } from "@/orpc"
 import { setContactCustomFieldValue } from "../actions/add-contact-custom-field.action"
@@ -12,6 +24,8 @@ import { blockContact } from "../actions/block-contact.action"
 import { createContact } from "../actions/create-contact.action"
 import { deleteContact } from "../actions/delete-contact.action"
 import { unblockContact } from "../actions/unblock-contact.action"
+import { updateContactFields } from "../actions/update-contact-field.action"
+import { contactImportService } from "../contact-import.service"
 import {
   findContactCustomField,
   listContactCustomFields,
@@ -21,14 +35,17 @@ import { listContactsForAPI } from "../queries/list-contacts.queries"
 import {
   publicFindContact,
   publicListContactsByCustomField,
+  resolveContactId,
 } from "../queries/public-find-contact"
-import { createContactRequest } from "../schemas/action"
+import {
+  createContactRequest,
+  updateContactFieldRequest,
+} from "../schemas/action"
 import {
   listPublicContactCustomFieldsResponse,
   publicContactCustomFieldResource,
-  setBulkContactCustomFieldsRequest,
-  setContactCustomFieldValueRequest,
 } from "../schemas/contact-custom-field"
+import { importContactsRequest } from "../schemas/contact-import"
 import {
   contactResponse,
   listContactsRequest,
@@ -55,18 +72,23 @@ export const workspaceTokenAuthAPIs = {
         }),
     ),
 
-  findContactWorkspaceTokenAPI: workspaceTokenAuthAPI
+  getContactWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/contacts/{contactId}",
-      summary: "Get contact by contact id",
+      path: "/v1/contacts/{identifier}",
+      summary:
+        "Get contact by identifier (id:123, email:user@example.com, phone:+84...)",
       tags: ["Contacts"],
     })
-    .input(z.object({ contactId: zodBigintAsString() }))
+    .input(z.object({ identifier: z.string().min(1) }))
     .output(contactResponse)
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       const contact = await publicFindContact({
-        id: input.contactId,
+        id: contactId,
         workspaceId: context.workspace.id,
       })
       if (!contact) {
@@ -99,7 +121,7 @@ export const workspaceTokenAuthAPIs = {
       return newContact
     }),
 
-  listContactsByCustomFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
+  filterContactsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
       path: "/v1/contacts/find-by-custom-field",
@@ -121,60 +143,71 @@ export const workspaceTokenAuthAPIs = {
   listContactTagsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/contacts/{contactId}/tags",
+      path: "/v1/contacts/{identifier}/tags",
       summary: "Get all tags added to this contact",
       tags: ["Contacts"],
     })
-    .input(z.object({ contactId: zodBigintAsString() }))
+    .input(z.object({ identifier: z.string().min(1) }))
     .output(publicListTagsResponse)
-    .handler(
-      async ({ context, input }) =>
-        await listContactTags({
-          workspaceId: context.workspace.id,
-          contactId: input.contactId,
-        }),
-    ),
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      return await listContactTags({
+        workspaceId: context.workspace.id,
+        contactId,
+      })
+    }),
 
   addContactTagsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "POST",
-      path: "/v1/contacts/{contactId}/tags",
+      path: "/v1/contacts/{identifier}/tags",
       summary: "Add tags to the contact",
       successStatus: 204,
       tags: ["Contacts"],
     })
     .input(
       z.object({
-        contactId: zodBigintAsString(),
+        identifier: z.string().min(1),
         tagIds: z.array(zodBigintAsString()).min(1).max(100),
       }),
     )
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await tagService.attachToContact({
         workspaceId: context.workspace.id,
-        contactId: input.contactId,
+        contactId,
         tagIds: input.tagIds,
       })
     }),
 
-  deleteContactTagsWorkspaceTokenAPI: workspaceTokenAuthAPI
+  removeContactTagsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "DELETE",
-      path: "/v1/contacts/{contactId}/tags",
+      path: "/v1/contacts/{identifier}/tags",
       summary: "Remove tags from the contact",
       successStatus: 204,
       tags: ["Contacts"],
     })
     .input(
       z.object({
-        contactId: zodBigintAsString(),
+        identifier: z.string().min(1),
         tagIds: z.array(zodBigintAsString()).min(1).max(100),
       }),
     )
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await tagService.detachFromContact({
         workspaceId: context.workspace.id,
-        contactId: input.contactId,
+        contactId,
         tagIds: input.tagIds,
       })
     }),
@@ -182,173 +215,219 @@ export const workspaceTokenAuthAPIs = {
   listContactCustomFieldsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/contacts/{contactId}/custom-fields",
+      path: "/v1/contacts/{identifier}/custom-fields",
       summary: "Get all custom fields from a contact",
       tags: ["Contacts"],
     })
-    .input(z.object({ contactId: zodBigintAsString() }))
+    .input(z.object({ identifier: z.string().min(1) }))
     .output(listPublicContactCustomFieldsResponse)
-    .handler(
-      async ({ context, input }) =>
-        await listContactCustomFields({
-          workspaceId: context.workspace.id,
-          contactId: input.contactId,
-        }),
-    ),
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      return await listContactCustomFields({
+        workspaceId: context.workspace.id,
+        contactId,
+      })
+    }),
 
-  findContactCustomFieldValueWorkspaceTokenAPI: workspaceTokenAuthAPI
+  getContactCustomFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/contacts/{contactId}/custom-fields/{customFieldId}",
+      path: "/v1/contacts/{identifier}/custom-fields/{customFieldId}",
       summary: "Get contact custom field value",
       tags: ["Contacts"],
     })
     .input(
       z.object({
-        contactId: zodBigintAsString(),
+        identifier: z.string().min(1),
         customFieldId: zodBigintAsString(),
       }),
     )
     .output(publicContactCustomFieldResource)
-    .handler(
-      async ({ context, input }) =>
-        await findContactCustomField({
-          contactId: input.contactId,
-          customFieldId: input.customFieldId,
-          workspaceId: context.workspace.id,
-        }),
-    ),
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      return await findContactCustomField({
+        contactId,
+        customFieldId: input.customFieldId,
+        workspaceId: context.workspace.id,
+      })
+    }),
 
-  setContactCustomFieldValueWorkspaceTokenAPI: workspaceTokenAuthAPI
+  setContactCustomFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "POST",
-      path: "/v1/contacts/{contactId}/custom-fields/{customFieldId}",
+      path: "/v1/contacts/{identifier}/custom-fields/{customFieldId}",
       summary: "Set contact custom field value",
       tags: ["Contacts"],
     })
-    .input(setContactCustomFieldValueRequest)
+    .input(
+      z.object({
+        identifier: z.string().min(1),
+        customFieldId: zodBigintAsString(),
+        value: z.string().trim(),
+      }),
+    )
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await setContactCustomFieldValue({
         workspaceId: context.workspace.id,
-        contactId: input.contactId,
+        contactId,
         customFieldId: input.customFieldId,
         value: input.value,
       })
     }),
 
-  setBulkContactCustomFieldsWorkspaceTokenAPI: workspaceTokenAuthAPI
+  setContactCustomFieldsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "PUT",
-      path: "/v1/contacts/{contactId}/custom-fields",
+      path: "/v1/contacts/{identifier}/custom-fields",
       summary: "Set multiple custom field values for a contact",
       successStatus: 204,
       tags: ["Contacts"],
     })
-    .input(setBulkContactCustomFieldsRequest)
+    .input(
+      z.object({
+        identifier: z.string().min(1),
+        fields: z
+          .array(
+            z.object({
+              customFieldId: zodBigintAsString(),
+              value: z.string().trim(),
+            }),
+          )
+          .min(1)
+          .max(20),
+      }),
+    )
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await contactCustomFieldService.setValues({
         workspaceId: context.workspace.id,
-        contactId: input.contactId,
+        contactId,
         fields: input.fields,
       })
     }),
 
-  deleteContactCustomFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
+  clearContactCustomFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "DELETE",
-      path: "/v1/contacts/{contactId}/custom-fields/{keyword}",
+      path: "/v1/contacts/{identifier}/custom-fields/{idOrName}",
       summary: "Delete contact custom field by id or name",
       successStatus: 204,
       tags: ["Contacts"],
     })
     .input(
       z.object({
-        contactId: zodBigintAsString(),
-        keyword: z.string().min(1),
+        identifier: z.string().min(1),
+        idOrName: z.string().min(1),
       }),
     )
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await contactCustomFieldService.deleteByKey({
         workspaceId: context.workspace.id,
-        contactId: input.contactId,
-        keyword: input.keyword,
+        contactId,
+        keyword: input.idOrName,
       })
     }),
 
   blockContactWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "POST",
-      path: "/v1/contacts/{contactId}/block",
+      path: "/v1/contacts/{identifier}/block",
       summary: "Block a contact",
       successStatus: 204,
       tags: ["Contacts"],
     })
-    .input(z.object({ contactId: zodBigintAsString() }))
+    .input(z.object({ identifier: z.string().min(1) }))
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await blockContact({
         workspaceId: context.workspace.id,
-        id: input.contactId,
+        id: contactId,
       })
     }),
 
   unblockContactWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "POST",
-      path: "/v1/contacts/{contactId}/unblock",
+      path: "/v1/contacts/{identifier}/unblock",
       summary: "Unblock a contact",
       successStatus: 204,
       tags: ["Contacts"],
     })
-    .input(z.object({ contactId: zodBigintAsString() }))
+    .input(z.object({ identifier: z.string().min(1) }))
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await unblockContact({
         workspaceId: context.workspace.id,
-        id: input.contactId,
+        id: contactId,
       })
     }),
 
   deleteContactWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "DELETE",
-      path: "/v1/contacts/{contactId}",
+      path: "/v1/contacts/{identifier}",
       summary: "Delete a contact",
       successStatus: 204,
       tags: ["Contacts"],
     })
-    .input(z.object({ contactId: zodBigintAsString() }))
+    .input(z.object({ identifier: z.string().min(1) }))
     .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
       await deleteContact({
         workspaceId: context.workspace.id,
-        ids: [input.contactId],
+        ids: [contactId],
       })
     }),
 
   sendMessageWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "POST",
-      path: "/v1/contacts/{contactId}/messages",
+      path: "/v1/contacts/{identifier}/messages",
       summary: "Send message to contact",
+      successStatus: 204,
       tags: ["Contacts"],
     })
     .input(
       createMessageRequest.and(
         z.object({
-          contactId: zodBigintAsString(),
+          identifier: z.string().min(1),
         }),
       ),
     )
     .handler(async ({ context, input }) => {
-      const conversation = await db.query.conversationModel.findFirst({
-        where: {
-          contactId: input.contactId,
-          workspaceId: context.workspace.id,
-          contactInboxes: {
-            channel: input.inboxId,
-          },
-        },
-        with: {
-          contactInboxes: true,
-        },
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      const conversation = await conversationService.findByContactWithInboxes({
+        contactId,
+        workspaceId: context.workspace.id,
       })
       if (!conversation) {
         throw notFoundException("Conversation not found")
@@ -366,6 +445,277 @@ export const workspaceTokenAuthAPIs = {
         contactInbox,
         parsedInput: input,
       })
+    }),
+
+  listContactMessagesWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "GET",
+      path: "/v1/contacts/{identifier}/messages",
+      summary: "List messages for contact",
+      tags: ["Contacts"],
+    })
+    .input(
+      z.object({
+        identifier: z.string().min(1),
+        perPage: z.coerce.number().optional().default(20),
+        cursor: z.string().optional(),
+      }),
+    )
+    .output(listMessagesResponse)
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      const conversation = await conversationService.findByContactWithInboxes({
+        contactId,
+        workspaceId: context.workspace.id,
+      })
+      if (!conversation) {
+        throw notFoundException("Conversation not found")
+      }
+      return await listMessages({
+        workspaceId: context.workspace.id,
+        conversationId: conversation.id,
+        perPage: input.perPage,
+        cursor: input.cursor,
+      })
+    }),
+
+  getContactMessageWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "GET",
+      path: "/v1/contacts/{identifier}/messages/{messageId}",
+      summary: "Get a message by ID for a contact",
+      tags: ["Contacts"],
+    })
+    .input(
+      z.object({
+        identifier: z.string().min(1),
+        messageId: zodBigintAsString(),
+      }),
+    )
+    .output(messageResourceWithRelations)
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      const conversation = await conversationService.findByContactWithInboxes({
+        contactId,
+        workspaceId: context.workspace.id,
+      })
+      if (!conversation) {
+        throw notFoundException("Conversation not found")
+      }
+      return publicFindContactMessage({
+        messageId: input.messageId,
+        conversationId: conversation.id,
+        workspaceId: context.workspace.id,
+      })
+    }),
+
+  triggerAutoReplyWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "POST",
+      path: "/v1/contacts/{identifier}/auto-replies",
+      summary: "Trigger auto reply for contact",
+      successStatus: 204,
+      tags: ["Contacts"],
+    })
+    .input(
+      z.object({
+        identifier: z.string().min(1),
+        keyword: z.string().min(1),
+        inboxId: zodBigintAsString().optional(),
+      }),
+    )
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      const autoReply = await automatedResponseService.findByKeyword(
+        context.workspace.id,
+        input.keyword,
+      )
+      if (!autoReply) {
+        throw notFoundException("No automated response found for this keyword")
+      }
+
+      const conversation = await conversationService.findByContactWithInboxes({
+        contactId,
+        workspaceId: context.workspace.id,
+      })
+      if (!conversation) {
+        throw notFoundException("Conversation not found")
+      }
+
+      const contactInbox = input.inboxId
+        ? conversation.contactInboxes.find((ci) => ci.inboxId === input.inboxId)
+        : conversation.contactInboxes[0]
+      if (!contactInbox) {
+        throw notFoundException("Conversation not found")
+      }
+
+      const parsedInput = autoReply.flowId
+        ? { flowId: autoReply.flowId, inboxId: input.inboxId }
+        : { text: autoReply.text ?? "", inboxId: input.inboxId }
+
+      await createMessage({ conversation, contactInbox, parsedInput })
+    }),
+
+  sendContactFlowWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "POST",
+      path: "/v1/contacts/{identifier}/flows",
+      summary: "Send flow to contact",
+      successStatus: 204,
+      tags: ["Contacts"],
+    })
+    .input(
+      z.object({
+        identifier: z.string().min(1),
+        flowId: zodBigintAsString(),
+        inboxId: zodBigintAsString().optional(),
+      }),
+    )
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      const conversation = await conversationService.findByContactWithInboxes({
+        contactId,
+        workspaceId: context.workspace.id,
+      })
+      if (!conversation) {
+        throw notFoundException("Conversation not found")
+      }
+
+      const contactInbox = input.inboxId
+        ? conversation.contactInboxes.find((ci) => ci.inboxId === input.inboxId)
+        : conversation.contactInboxes[0]
+      if (!contactInbox) {
+        throw notFoundException("Conversation not found")
+      }
+
+      await createMessage({
+        conversation,
+        contactInbox,
+        parsedInput: { flowId: input.flowId, inboxId: input.inboxId },
+      })
+    }),
+
+  importContactsWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "POST",
+      path: "/v1/contacts/import",
+      summary: "Import contacts from a file",
+      successStatus: 201,
+      tags: ["Contacts"],
+    })
+    .input(importContactsRequest)
+    .handler(
+      async ({ context, input }) =>
+        await contactImportService.startImport(context.workspace.id, input),
+    ),
+
+  updateContactWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "PUT",
+      path: "/v1/contacts/{identifier}",
+      summary: "Update contact fields",
+      successStatus: 204,
+      tags: ["Contacts"],
+    })
+    .input(
+      z
+        .object({ identifier: z.string().min(1) })
+        .and(updateContactFieldRequest),
+    )
+    .handler(async ({ context, input }) => {
+      const { identifier, ...fields } = input
+      const contactId = await resolveContactId({
+        identifier,
+        workspaceId: context.workspace.id,
+      })
+      await updateContactFields(
+        { workspaceId: context.workspace.id, id: contactId },
+        fields,
+      )
+    }),
+
+  clearContactCustomFieldsWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "DELETE",
+      path: "/v1/contacts/{identifier}/custom-fields",
+      summary: "Clear all custom fields from a contact",
+      successStatus: 204,
+      tags: ["Contacts"],
+    })
+    .input(z.object({ identifier: z.string().min(1) }))
+    .handler(async ({ context, input }) => {
+      const contactId = await resolveContactId({
+        identifier: input.identifier,
+        workspaceId: context.workspace.id,
+      })
+      await contactCustomFieldService.clearByContactId({
+        workspaceId: context.workspace.id,
+        contactId,
+      })
+    }),
+
+  upsertContactWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "POST",
+      path: "/v1/contacts/{identifier}/upsert",
+      summary: "Upsert a contact by identifier",
+      tags: ["Contacts"],
+    })
+    .input(
+      z.object({
+        identifier: z.string().min(1),
+        firstName: z.string().trim().max(100).optional(),
+        lastName: z.string().trim().max(100).optional(),
+        email: z.union([z.literal(""), z.email().max(100)]).optional(),
+        phoneNumber: z
+          .string()
+          .min(10)
+          .max(20)
+          .regex(/\+?\d{10,20}/)
+          .optional(),
+        avatar: z.string().optional(),
+        gender: genderTypes.optional(),
+      }),
+    )
+    .output(contactResponse)
+    .handler(async ({ context, input }) => {
+      const workspaceId = context.workspace.id
+      const { identifier, avatar, ...fields } = input
+
+      const { contact } = await contactService.upsertByIdentifier({
+        workspaceId,
+        identifier,
+        avatar,
+        data: {
+          ...(fields.firstName !== undefined && {
+            firstName: fields.firstName,
+          }),
+          ...(fields.lastName !== undefined && { lastName: fields.lastName }),
+          ...(fields.email !== undefined && { email: fields.email }),
+          ...(fields.phoneNumber !== undefined && {
+            phoneNumber: fields.phoneNumber,
+          }),
+          ...(fields.gender !== undefined && { gender: fields.gender }),
+        },
+      })
+
+      const result = await publicFindContact({ id: contact.id, workspaceId })
+      if (!result) {
+        throw notFoundException("Contact not found")
+      }
+      return result
     }),
 }
 

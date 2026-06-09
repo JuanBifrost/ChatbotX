@@ -1,5 +1,9 @@
-import { db, relationsFilterToSQL } from "@chatbotx.io/database/client"
-import { broadcastModel } from "@chatbotx.io/database/schema"
+import { notFoundException } from "@chatbotx.io/business/errors"
+import { db, eq, relationsFilterToSQL } from "@chatbotx.io/database/client"
+import {
+  broadcastModel,
+  contactsOnBroadcastsModel,
+} from "@chatbotx.io/database/schema"
 import {
   getPaginationWithDefaults,
   parseOrderByAsObject,
@@ -34,4 +38,67 @@ export async function listBroadcasts(
   const pageCount = Math.ceil(total / pagination.limit)
 
   return { data, pageCount }
+}
+
+const NUMERIC_RE = /^\d+$/
+
+export async function listBroadcastAudience(input: {
+  broadcastId: string
+  workspaceId: string
+  page?: number | null
+  perPage?: number | null
+}) {
+  const { limit, offset } = getPaginationWithDefaults(input)
+
+  const [rows, total] = await Promise.all([
+    db.query.contactsOnBroadcastsModel.findMany({
+      where: { broadcastId: input.broadcastId },
+      with: { contact: true },
+      limit,
+      offset,
+    }),
+    db.$count(
+      contactsOnBroadcastsModel,
+      eq(contactsOnBroadcastsModel.broadcastId, input.broadcastId),
+    ),
+  ])
+
+  return {
+    data: rows.map((row) => ({
+      contactId: row.contactId,
+      contact: {
+        id: row.contact.id,
+        firstName: row.contact.firstName,
+        lastName: row.contact.lastName,
+        fullName: row.contact.fullName,
+        email: row.contact.email,
+        phoneNumber: row.contact.phoneNumber,
+        avatar: row.contact.avatar,
+        gender: row.contact.gender,
+      },
+      sent: row.sent,
+      delivered: row.delivered,
+      seen: row.seen,
+      clicked: row.clicked,
+      failed: row.failed,
+    })),
+    pageCount: Math.ceil(total / limit),
+  }
+}
+
+export async function publicGetBroadcast(
+  workspaceId: string,
+  idOrName: string,
+) {
+  const where = NUMERIC_RE.test(idOrName)
+    ? { id: idOrName, workspaceId }
+    : { name: idOrName, workspaceId }
+
+  const broadcast = await db.query.broadcastModel.findFirst({ where })
+
+  if (!broadcast) {
+    throw notFoundException("Broadcast not found")
+  }
+
+  return broadcast
 }

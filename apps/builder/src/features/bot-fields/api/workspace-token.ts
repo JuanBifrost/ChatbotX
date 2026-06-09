@@ -53,58 +53,123 @@ const botFieldWorkspaceTokenAPIs = {
         }),
     ),
 
-  searchBotFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
+  getBotFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/bot-fields/{key}",
-      summary: "Search bot field by id or name",
+      path: "/v1/bot-fields/{idOrName}",
+      summary: "Get bot field by id or name",
       tags: ["Bot Fields"],
     })
-    .input(z.object({ key: z.string().max(255) }))
+    .input(z.object({ idOrName: z.string().max(255) }))
     .output(publicBotFieldResource)
     .errors(possibleErrorsOnFindingResource)
     .handler(
       async ({ context, input }) =>
         await botFieldService.findByKeyOrFail({
-          key: input.key,
+          key: input.idOrName,
           workspaceId: context.workspace.id,
         }),
     ),
 
-  updateBotFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
+  setBotFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "PUT",
-      path: "/v1/bot-fields/{key}",
-      summary: "Update bot field by id or name",
+      path: "/v1/bot-fields/{idOrName}",
+      summary: "Set bot field value by id or name",
       tags: ["Bot Fields"],
     })
-    .input(z.object({ key: z.string().max(255), value: z.string().max(255) }))
+    .input(
+      z.object({ idOrName: z.string().max(255), value: z.string().max(255) }),
+    )
     .output(publicBotFieldResource)
     .errors(possibleErrorsOnCreatingResource)
     .handler(async ({ context, input }) => {
-      const { key, ...rest } = input
+      const { idOrName, ...rest } = input
       return await botFieldService.updateByKey({
         workspaceId: context.workspace.id,
-        key,
+        key: idOrName,
         data: rest,
+      })
+    }),
+
+  setBotFieldsWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "PUT",
+      path: "/v1/bot-fields",
+      summary: "Set multiple bot field values",
+      successStatus: 204,
+      tags: ["Bot Fields"],
+    })
+    .input(
+      z.object({
+        fields: z.array(
+          z.object({ key: z.string().max(255), value: z.string().max(255) }),
+        ),
+      }),
+    )
+    .errors(possibleErrorsOnCreatingResource)
+    .handler(async ({ context, input }) => {
+      await Promise.all(
+        input.fields.map(({ key, value }) =>
+          botFieldService.updateByKey({
+            workspaceId: context.workspace.id,
+            key,
+            data: { value },
+          }),
+        ),
+      )
+    }),
+
+  bulkUpdateBotFieldsWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "PUT",
+      path: "/v1/bot-fields/bulk-update",
+      summary: "Bulk update bot field values by id or name",
+      successStatus: 204,
+      tags: ["Bot Fields"],
+    })
+    .input(
+      z.object({
+        fields: z.array(
+          z.union([
+            z.object({
+              id: z.coerce.number().int().positive(),
+              value: z.union([z.string(), z.number()]).transform(String),
+            }),
+            z.object({
+              name: z.string().max(255),
+              value: z.union([z.string(), z.number()]).transform(String),
+            }),
+          ]),
+        ),
+      }),
+    )
+    .errors(possibleErrorsOnCreatingResource)
+    .handler(async ({ context, input }) => {
+      await botFieldService.bulkUpdateByKeys({
+        workspaceId: context.workspace.id,
+        updates: input.fields.map((field) => ({
+          key: "id" in field ? String(field.id) : field.name,
+          value: field.value,
+        })),
       })
     }),
 
   deleteBotFieldsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "DELETE",
-      path: "/v1/bot-fields/{key}",
+      path: "/v1/bot-fields/{idOrName}",
       summary: "Unset the value of the bot field by id or name",
       successStatus: 204,
       tags: ["Bot Fields"],
     })
-    .input(z.object({ key: z.string().max(255) }))
+    .input(z.object({ idOrName: z.string().max(255) }))
     .errors(possibleErrorsOnDeletingResource)
     .handler(
       async ({ context, input }) =>
         await botFieldService.deleteByKey({
           workspaceId: context.workspace.id,
-          key: input.key,
+          key: input.idOrName,
         }),
     ),
 }

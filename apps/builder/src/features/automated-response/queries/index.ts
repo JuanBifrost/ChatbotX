@@ -1,6 +1,6 @@
+import { automatedResponseService } from "@chatbotx.io/business"
 import type { PaginatedResponse } from "@/features/common/schemas/pagination"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
-import { automatedResponseService } from "../automated-response.service"
 import type {
   FindAutomatedResponseRequest,
   ListAutomatedResponsesRequest,

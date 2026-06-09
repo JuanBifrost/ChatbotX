@@ -4,6 +4,7 @@ import { aiAgentsAPI } from "@/features/ai-agents/api"
 import { aiFilesAPI } from "@/features/ai-files/api"
 import { aiFunctionsAPI } from "@/features/ai-functions/api"
 import { aiMcpServerAPIs } from "@/features/ai-mcp-servers/api"
+import { keywordsAPI } from "@/features/automated-response/api"
 import { botFieldAPIs } from "@/features/bot-fields/api"
 import { broadcastAPIs } from "@/features/broadcasts/api"
 import { contactsAPIs } from "@/features/contacts/api"
@@ -20,6 +21,7 @@ import { integrationSmtpAPI } from "@/features/integration-smtp/api"
 import { integrationWhatsappAPIs } from "@/features/integration-whatsapp/api"
 import { whatsappFlowAPIs } from "@/features/integration-whatsapp/flows/api"
 import { whatsappMessageTemplateAPIs } from "@/features/integration-whatsapp/message-templates/api"
+import { integrationsAPI } from "@/features/integrations/api"
 import { messagesAPI } from "@/features/messages/api"
 import { platformCredentialsAPI } from "@/features/platform-credentials/api"
 import { productsAPI } from "@/features/products/api"
@@ -27,6 +29,8 @@ import { savedRepliesAPI } from "@/features/saved-replies/api"
 import { sequencesAPI } from "@/features/sequences/api"
 import { spreadsheetsAPI } from "@/features/spreadsheets/api"
 import { tagsAPI } from "@/features/tags/api"
+import { triggersAPI } from "@/features/triggers/api"
+import { webhooksAPI } from "@/features/webhooks/api"
 import { workspaceMembersAPI } from "@/features/workspace-members/api"
 import { workspacesAPI } from "@/features/workspaces/api"
 import { workspaceAuthorizedMidddleware } from "@/middlewares/auth"
@@ -67,4 +71,8 @@ export const router = {
   aiFunctionsAPI,
   platformCredentialsAPI,
   productsAPI,
+  keywordsAPI,
+  integrationsAPI,
+  triggersAPI,
+  webhooksAPI,
 }

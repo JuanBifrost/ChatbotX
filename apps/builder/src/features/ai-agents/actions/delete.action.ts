@@ -1,11 +1,11 @@
 "use server"
 
+import { aiAgentService } from "@chatbotx.io/business"
 import {
   bulkUpdateIdsRequest,
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { authActionClient } from "@/lib/safe-action"
-import { aiAgentService } from "../ai-agent.service"
 
 export const deleteAIAgentAction = authActionClient
   .bindArgsSchemas(workspaceIdrequestParams)

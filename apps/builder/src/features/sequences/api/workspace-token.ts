@@ -9,7 +9,7 @@ export const sequencesWorkspaceTokenAPIs = {
   listSequencesWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/sequences",
+      path: "/v1/sequences",
       summary: "List sequences",
       tags: ["Sequences"],
     })
@@ -26,7 +26,7 @@ export const sequencesWorkspaceTokenAPIs = {
   getSequenceWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/sequences/{id}",
+      path: "/v1/sequences/{id}",
       summary: "Get sequence details",
       tags: ["Sequences"],
     })

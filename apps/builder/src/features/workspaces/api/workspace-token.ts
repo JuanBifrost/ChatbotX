@@ -5,7 +5,7 @@ export const workspaceWorkspaceTokenAPIs = {
   getWorkspaceWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/workspace",
+      path: "/v1/workspaces",
       summary: "Get workspace",
       tags: ["Workspace"],
     })

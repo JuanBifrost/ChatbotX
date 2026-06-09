@@ -6,7 +6,7 @@ import {
 } from "../schema/action"
 
 export const inboxesWorkspaceTokenAPIs = {
-  listInboxesWorkspaceTokenAPI: workspaceTokenAuthAPI
+  listChannelsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
       path: "/v1/channels",
@@ -15,10 +15,19 @@ export const inboxesWorkspaceTokenAPIs = {
     })
     .input(publishInboxesRequest)
     .output(publicListInboxesResponse)
-    .handler(
-      async ({ context, input }) =>
-        await listInboxes({ ...input, workspaceId: context.workspace.id }),
-    ),
+    .handler(async ({ context, input }) => {
+      const result = await listInboxes({
+        ...input,
+        workspaceId: context.workspace.id,
+      })
+      return {
+        ...result,
+        data: result.data.map(({ sourceId, ...inbox }) => ({
+          ...inbox,
+          id: sourceId,
+        })),
+      }
+    }),
 }
 
 export default inboxesWorkspaceTokenAPIs

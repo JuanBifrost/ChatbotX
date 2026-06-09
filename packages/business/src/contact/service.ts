@@ -3,17 +3,31 @@ import {
   type DatabaseClient,
   db,
   eq,
+  findOrFail,
   inArray,
 } from "@chatbotx.io/database/client"
-import { contactModel } from "@chatbotx.io/database/schema"
+import { channelTypes, contactSources } from "@chatbotx.io/database/partials"
+import {
+  contactInboxModel,
+  contactModel,
+  conversationModel,
+  inboxModel,
+} from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
   ContactModel,
 } from "@chatbotx.io/database/types"
+import { emit } from "@chatbotx.io/event-bus"
+import { emitContactCreated } from "@chatbotx.io/events"
+import { uploadFileFromUrl } from "@chatbotx.io/filesystem/node-upload"
 import { invalidateCacheByTags, withCache } from "@chatbotx.io/redis"
 import { createId } from "@chatbotx.io/utils"
 import { BaseService } from "../base.service"
-import { notFoundException } from "../errors"
+import { ChatbotXException, notFoundException } from "../errors"
+import { userQuotaService } from "../user-quota/service"
+import { workspaceService } from "../workspace/service"
+
+const NUMERIC_RE = /^\d+$/
 
 type ContactWriteData = Partial<
   Pick<
@@ -28,6 +42,7 @@ type ContactWriteData = Partial<
     | "blockedAt"
     | "emailOptIn"
     | "timezone"
+    | "avatar"
   >
 >
 
@@ -192,6 +207,179 @@ class ContactService extends BaseService {
       ...(props.ids?.map((id) => `contacts:${id}`) ?? []),
     ]
     await this.invalidateCacheTags(tags)
+  }
+
+  async upsertByIdentifier(props: {
+    workspaceId: string
+    identifier: string
+    data: Omit<ContactWriteData, "blockedAt" | "emailOptIn">
+    avatar?: string
+  }): Promise<{ contact: ContactModel; isNew: boolean }> {
+    const { workspaceId, identifier, data, avatar } = props
+
+    const colonIdx = identifier.indexOf(":")
+    if (colonIdx === -1) {
+      throw notFoundException("Invalid identifier format")
+    }
+
+    const prefix = identifier.slice(0, colonIdx)
+    const value = identifier.slice(colonIdx + 1)
+    if (!value) {
+      throw notFoundException("Invalid identifier format")
+    }
+
+    const whereClause: Record<string, unknown> = { workspaceId }
+    if (prefix === "id") {
+      if (!NUMERIC_RE.test(value)) {
+        throw notFoundException("Contact not found")
+      }
+      whereClause.id = value
+    } else if (prefix === "email") {
+      whereClause.email = value
+    } else if (prefix === "phone") {
+      whereClause.phoneNumber = value
+    } else {
+      throw notFoundException(
+        "Invalid identifier format. Use id:, email:, or phone: prefix",
+      )
+    }
+
+    const existing = await db.query.contactModel.findFirst({
+      where: whereClause,
+      columns: { id: true },
+    })
+
+    if (existing) {
+      const avatarPath = avatar
+        ? await this.resolveAvatarPath(avatar, workspaceId, existing.id)
+        : undefined
+      const contact = await this.update(
+        { workspaceId, id: existing.id },
+        { ...data, ...(avatarPath !== undefined && { avatar: avatarPath }) },
+      )
+      return { contact, isNew: false }
+    }
+
+    if (prefix === "id") {
+      throw notFoundException("Contact not found")
+    }
+
+    const phoneNumber =
+      data.phoneNumber ?? (prefix === "phone" ? value : undefined)
+    if (phoneNumber) {
+      const phoneConflict = await db.query.contactModel.findFirst({
+        where: { workspaceId, phoneNumber },
+        columns: { id: true },
+      })
+      if (phoneConflict) {
+        throw new ChatbotXException(
+          "Phone number already exists",
+          "phoneExists",
+          422,
+        )
+      }
+    }
+
+    const workspace = await workspaceService.find({
+      where: { id: workspaceId },
+    })
+    if (!workspace) {
+      throw notFoundException("Workspace not found")
+    }
+
+    if (await userQuotaService.isLimitReached(workspace.ownerId, "contacts")) {
+      throw new ChatbotXException("Contact limit reached", "quotaExceeded", 422)
+    }
+
+    const inbox = await findOrFail({
+      table: inboxModel,
+      where: { workspaceId, channel: channelTypes.enum.webchat },
+      message: "Inbox not found",
+    })
+
+    const identifierData =
+      prefix === "phone" ? { phoneNumber: value } : { email: value }
+
+    const [contact, contactInbox] = await db.transaction(async (tx) => {
+      const newContact = await this.insert({
+        workspaceId,
+        data: { ...identifierData, ...data },
+        tx,
+      })
+
+      const [newContactInbox] = await tx
+        .insert(contactInboxModel)
+        .values({
+          originalContactId: newContact.id,
+          contactId: newContact.id,
+          inboxId: inbox.id,
+          channel: channelTypes.enum.webchat,
+          source: contactSources.enum.imported,
+          sourceId: createId(),
+        })
+        .returning()
+
+      await tx.insert(conversationModel).values({
+        workspaceId,
+        contactId: newContact.id,
+        id: createId(),
+      })
+
+      return [newContact, newContactInbox] as const
+    })
+
+    if (avatar) {
+      const avatarPath = await this.resolveAvatarPath(
+        avatar,
+        workspaceId,
+        contact.id,
+      )
+      await this.update({ workspaceId, id: contact.id }, { avatar: avatarPath })
+    }
+
+    await userQuotaService.increment(workspace.ownerId, "contacts")
+
+    await emitContactCreated(
+      workspaceId,
+      contact.id,
+      contact.firstName || undefined,
+      contact.phoneNumber || undefined,
+      contact.email || undefined,
+    )
+
+    emit("analytics:dashboard", {
+      eventType: "contact:created",
+      workspaceId,
+      contactId: contactInbox.id,
+      occurredAt: contact.createdAt,
+      source: contactInbox.source,
+      sourceId: contactInbox.sourceId,
+      channel: inbox.channel,
+      metadata: {
+        triggerContext: {
+          triggerSource: "api",
+          triggerHandler: "upsertContact",
+          triggerType: "contact_created",
+        },
+      },
+    })
+
+    return { contact, isNew: true }
+  }
+
+  private async resolveAvatarPath(
+    avatar: string,
+    workspaceId: string,
+    contactId: string,
+  ): Promise<string> {
+    if (!avatar.startsWith("http")) {
+      return avatar
+    }
+    const uploaded = await uploadFileFromUrl(
+      avatar,
+      `public/space/${workspaceId}/contacts/${contactId}/avatar/${createId()}`,
+    )
+    return uploaded.originPath
   }
 
   async unsubscribeEmail(cid: string) {

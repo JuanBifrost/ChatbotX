@@ -3,12 +3,12 @@ import { listInboxTeams } from "../queries"
 import { listInboxTeamsResponse } from "../schema/action"
 
 export const inboxTeamsWorkspaceTokenAPIs = {
-  listInboxTeamsWorkspaceTokenAPI: workspaceTokenAuthAPI
+  listTeamsWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/inbox-teams",
-      summary: "List inbox teams",
-      tags: ["Inbox Teams"],
+      path: "/v1/teams",
+      summary: "List teams",
+      tags: ["Teams"],
     })
     .output(listInboxTeamsResponse)
     .handler(

@@ -1,9 +1,9 @@
 "use server"
 
+import { aiAgentService } from "@chatbotx.io/business"
 import { createAIAgentRequest } from "@/features/ai-agents/schemas/action"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { aiAgentService } from "../ai-agent.service"
 
 export const createAIAgentAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdrequestParams)

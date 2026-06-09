@@ -57,20 +57,20 @@ const createTagWorkspaceTokenAPI = workspaceTokenAuthAPI
     return data
   })
 
-const findTagWorkspaceTokenAPI = workspaceTokenAuthAPI
+const getTagWorkspaceTokenAPI = workspaceTokenAuthAPI
   .route({
     method: "GET",
-    path: "/v1/tags/{key}",
+    path: "/v1/tags/{idOrName}",
     summary: "Get tag by id or name",
     tags: ["Tags"],
   })
-  .input(z.object({ key: z.string() }))
+  .input(z.object({ idOrName: z.string() }))
   .output(tagResource.pick({ id: true, name: true }))
   .errors(possibleErrorsOnFindingResource)
   .handler(
     async ({ context, input }) =>
       await tagService.findByKeyOrFail({
-        key: input.key,
+        key: input.idOrName,
         workspaceId: context.workspace.id,
       }),
   )
@@ -98,7 +98,7 @@ const updateTagWorkspaceTokenAPI = workspaceTokenAuthAPI
     })
   })
 
-const deleteTagsWorkspaceTokenAPI = workspaceTokenAuthAPI
+const deleteTagWorkspaceTokenAPI = workspaceTokenAuthAPI
   .route({
     method: "DELETE",
     path: "/v1/tags/{id}",
@@ -120,7 +120,7 @@ const deleteTagsWorkspaceTokenAPI = workspaceTokenAuthAPI
 export const tagWorkspaceTokenAPIs = {
   listTagsWorkspaceTokenAPI,
   createTagWorkspaceTokenAPI,
-  findTagWorkspaceTokenAPI,
+  getTagWorkspaceTokenAPI,
   updateTagWorkspaceTokenAPI,
-  deleteTagsWorkspaceTokenAPI,
+  deleteTagWorkspaceTokenAPI,
 }

@@ -1,14 +1,14 @@
 "use server"
 
+import {
+  automatedResponseService,
+  flowService,
+  type UpdateAutomatedResponseRequest,
+} from "@chatbotx.io/business"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { returnValidationErrors } from "next-safe-action"
-import { flowService } from "@/features/flows/flow.service"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { automatedResponseService } from "../automated-response.service"
-import {
-  type UpdateAutomatedResponseRequest,
-  updateAutomatedResponseRequest,
-} from "../schema/action"
+import { updateAutomatedResponseRequest } from "../schema/action"
 
 export const updateAutomatedResponseAction = workspaceActionClient
   .bindArgsSchemas([zodBigintAsString(), zodBigintAsString()])

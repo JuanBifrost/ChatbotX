@@ -54,19 +54,19 @@ const customFieldsWorkspaceTokenAPI = {
         }),
     ),
 
-  findCustomFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
+  getCustomFieldWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/custom-fields/{keyword}",
+      path: "/v1/custom-fields/{idOrName}",
       summary: "Get custom field by id or name",
       tags: ["Custom Fields"],
     })
-    .input(z.object({ keyword: z.string() }))
+    .input(z.object({ idOrName: z.string() }))
     .output(publicCustomFieldResource)
     .errors(possibleErrorsOnFindingResource)
     .handler(async ({ context, input }) => {
       const customField = await customFieldService.findByKey({
-        key: input.keyword,
+        key: input.idOrName,
         workspaceId: context.workspace.id,
       })
       if (!customField) {

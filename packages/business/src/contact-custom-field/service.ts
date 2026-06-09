@@ -84,6 +84,16 @@ class ContactCustomFieldService extends BaseService {
     await this.invalidate({ workspaceId, contactId })
   }
 
+  async clearByContactId(input: {
+    workspaceId: string
+    contactId: string
+  }): Promise<void> {
+    await db
+      .delete(contactCustomFieldModel)
+      .where(eq(contactCustomFieldModel.contactId, input.contactId))
+    await this.invalidate(input)
+  }
+
   async deleteByKey(input: DeleteByKeyInput): Promise<void> {
     const { workspaceId, contactId, keyword } = input
 

@@ -6,11 +6,11 @@ import {
 } from "../schema/query"
 
 export const whatsappMessageTemplateWorkspaceTokenAPIs = {
-  listWhatsappMessageTemplatesWorkspaceTokenAPI: workspaceTokenAuthAPI
+  listTemplateMessagesWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/whatsapp-message-templates",
-      summary: "List WhatsApp message templates",
+      path: "/v1/template-messages",
+      summary: "List template messages",
       tags: ["Template Messages"],
     })
     .input(

@@ -1,9 +1,9 @@
 "use server"
 
+import { automatedResponseService } from "@chatbotx.io/business"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import z from "zod"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { automatedResponseService } from "../automated-response.service"
 
 const enableRequest = z.object({
   status: z.boolean(),

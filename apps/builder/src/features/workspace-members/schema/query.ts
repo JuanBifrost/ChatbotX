@@ -40,3 +40,18 @@ export const listWorkspaceMembersResponse = z.object({
 export type ListWorkspaceMembersResponse = z.infer<
   typeof listWorkspaceMembersResponse
 >
+
+export const getWorkspaceMemberRequest = z.object({
+  memberId: zodBigintAsString(),
+  workspaceId: zodBigintAsString(),
+})
+export type GetWorkspaceMemberRequest = z.infer<
+  typeof getWorkspaceMemberRequest
+>
+
+export const getWorkspaceMemberResponse = workspaceMemberResource.extend({
+  user: userResource.pick({ id: true, name: true, image: true }),
+})
+export type GetWorkspaceMemberResponse = z.infer<
+  typeof getWorkspaceMemberResponse
+>

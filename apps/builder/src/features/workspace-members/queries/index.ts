@@ -5,6 +5,8 @@ import { workspaceMemberModel } from "@chatbotx.io/database/schema"
 import { getPaginationWithDefaults } from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
+  GetWorkspaceMemberRequest,
+  GetWorkspaceMemberResponse,
   ListWorkspaceMembersRequest,
   ListWorkspaceMembersResponse,
 } from "../schema/query"
@@ -44,6 +46,20 @@ export async function listWorkspaceMembers(
   const pageCount = Math.ceil(totalRows / pagination.limit)
 
   return { data, pageCount }
+}
+
+export async function getWorkspaceMember(
+  input: GetWorkspaceMemberRequest,
+): Promise<GetWorkspaceMemberResponse | undefined> {
+  return await db.query.workspaceMemberModel.findFirst({
+    where: {
+      id: input.memberId,
+      workspaceId: input.workspaceId,
+    },
+    with: {
+      user: true,
+    },
+  })
 }
 
 export const getAllWorkspaceMembers = async (userId: string) => {

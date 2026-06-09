@@ -1,10 +1,10 @@
 "use server"
 
+import { aiMcpServerService } from "@chatbotx.io/business"
 import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { aiMcpServerService } from "../ai-mcp-server.service"
 import { createAIMcpServerRequest } from "../schemas/action"
 
 export const createAIMcpServerAction = workspaceActionClient

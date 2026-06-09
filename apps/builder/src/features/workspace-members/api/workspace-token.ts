@@ -1,6 +1,9 @@
+import { notFoundException } from "@chatbotx.io/business/errors"
 import { workspaceTokenAuthAPI } from "@/orpc"
-import { listWorkspaceMembers } from "../queries"
+import { getWorkspaceMember, listWorkspaceMembers } from "../queries"
 import {
+  getWorkspaceMemberRequest,
+  getWorkspaceMemberResponse,
   listWorkspaceMembersRequest,
   listWorkspaceMembersResponse,
 } from "../schema/query"
@@ -9,7 +12,7 @@ export const workspaceMembersAPIs = {
   listMembersWorkspaceTokenAPI: workspaceTokenAuthAPI
     .route({
       method: "GET",
-      path: "/v1/workspace-members",
+      path: "/v1/members",
       summary: "List workspace members",
       tags: ["Members"],
     })
@@ -22,6 +25,25 @@ export const workspaceMembersAPIs = {
           workspaceId: context.workspace.id,
         }),
     ),
+  getMemberWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "GET",
+      path: "/v1/members/{memberId}",
+      summary: "Get workspace member by id",
+      tags: ["Members"],
+    })
+    .input(getWorkspaceMemberRequest.omit({ workspaceId: true }))
+    .output(getWorkspaceMemberResponse)
+    .handler(async ({ context, input }) => {
+      const member = await getWorkspaceMember({
+        ...input,
+        workspaceId: context.workspace.id,
+      })
+      if (!member) {
+        throw notFoundException("Member not found")
+      }
+      return member
+    }),
 }
 
 export default workspaceMembersAPIs

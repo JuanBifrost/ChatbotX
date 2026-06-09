@@ -1,9 +1,9 @@
 "use server"
 
+import { aiAgentService } from "@chatbotx.io/business"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { updateAIAgentRequest } from "@/features/ai-agents/schemas/action"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { aiAgentService } from "../ai-agent.service"
 
 export const updateAIAgentAction = workspaceActionClient
   .bindArgsSchemas([zodBigintAsString(), zodBigintAsString()])

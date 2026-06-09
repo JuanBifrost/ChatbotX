@@ -1,11 +1,10 @@
 "use server"
 
+import { automatedResponseService, flowService } from "@chatbotx.io/business"
 import { returnValidationErrors } from "next-safe-action"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
-import { flowService } from "@/features/flows/flow.service"
 import { ensureFolderIsExists } from "@/features/folders/actions/utils"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { automatedResponseService } from "../automated-response.service"
 import { createAutomatedResponseRequest } from "../schema/action"
 
 export const createAutomatedResponseAction = workspaceActionClient

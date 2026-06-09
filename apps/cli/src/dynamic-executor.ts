@@ -31,11 +31,22 @@ export async function executeDynamicCommand(
     }
   }
 
-  const body: Record<string, string> = {}
+  const body: Record<string, unknown> = {}
   for (const key of tool.bodyParamNames) {
     const value = params[key]
     if (value !== undefined) {
-      body[key] = value
+      const propSchema = tool.inputSchema.properties[key] as
+        | { type?: string }
+        | undefined
+      if (propSchema?.type === "array" || propSchema?.type === "object") {
+        try {
+          body[key] = JSON.parse(value)
+        } catch {
+          body[key] = value
+        }
+      } else {
+        body[key] = value
+      }
     }
   }
 

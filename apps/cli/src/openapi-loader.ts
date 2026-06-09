@@ -72,6 +72,15 @@ const CACHE_FILE = join(CACHE_DIR, "openapi-cache.json")
 const DEFAULT_TTL_SECONDS = 3600
 
 const HTTP_METHODS = new Set(["get", "post", "put", "patch", "delete"])
+
+const POST_VERB_OVERRIDES: Record<string, string> = {
+  message: "send",
+}
+
+// Sub-paths that are actions themselves (not nouns), collapse to group:action (2-level)
+const ACTION_SUBPATHS = new Set(["block", "unblock"])
+// Singleton resources — GET on the collection returns a single object, use "get" not "list"
+const SINGLETON_RESOURCES = new Set(["workspaces"])
 const V1_PREFIX_RE = /^\/v1\//
 const LEADING_SLASH_RE = /^\//
 
@@ -129,7 +138,7 @@ export function pathAndMethodToCommandName(
 
   if (segments.length === 1) {
     const actions: Record<string, string> = {
-      get: "list",
+      get: SINGLETON_RESOURCES.has(group) ? "get" : "list",
       post: "create",
       put: "update",
       patch: "update",
@@ -152,7 +161,7 @@ export function pathAndMethodToCommandName(
 
   if (remainingAfterResource.length === 0) {
     const actions: Record<string, string> = {
-      get: "show",
+      get: "get",
       put: "update",
       patch: "update",
       delete: "delete",
@@ -172,18 +181,24 @@ export function pathAndMethodToCommandName(
     : subResource
 
   if (m === "get") {
-    return `${group}:${isLastRemainderParam ? `show-${singular}` : `list-${subResource}`}`
+    const sub = isLastRemainderParam ? singular : subResource
+    const verb = isLastRemainderParam ? "get" : "list"
+    return `${group}:${sub}:${verb}`
   }
   if (m === "post") {
-    return `${group}:add-${singular}`
+    if (ACTION_SUBPATHS.has(subResource ?? "")) {
+      return `${group}:${subResource}`
+    }
+    const verb = POST_VERB_OVERRIDES[singular ?? ""] ?? "add"
+    return `${group}:${singular}:${verb}`
   }
   if (m === "delete") {
-    return `${group}:delete-${singular}`
+    return `${group}:${singular}:delete`
   }
   if (m === "put" || m === "patch") {
-    return `${group}:update-${subResource}`
+    return `${group}:${subResource}:update`
   }
-  return `${group}:${m}-${subResource}`
+  return `${group}:${subResource}:${m}`
 }
 
 function buildInputSchema(operation: OpenAPIOperation): {

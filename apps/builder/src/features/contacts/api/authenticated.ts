@@ -243,5 +243,3 @@ export const contactsAuthenticatedAPI = {
       })
     }),
 }
-
-export default contactsAuthenticatedAPI

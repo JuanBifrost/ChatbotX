@@ -1,10 +1,10 @@
 "use server"
 
+import { aiFunctionService } from "@chatbotx.io/business"
 import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { workspaceIdrequestParams } from "@/features/common/schemas"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { aiFunctionService } from "../ai-function.service"
 import { createAIFunctionRequest } from "../schemas/action"
 
 export const createAIFunctionAction = workspaceActionClient

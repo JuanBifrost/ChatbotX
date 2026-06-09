@@ -95,5 +95,3 @@ export const privateCustomFieldsAPI = {
       })
     }),
 }
-
-export default privateCustomFieldsAPI

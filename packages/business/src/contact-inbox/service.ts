@@ -1,7 +1,22 @@
 import { type DatabaseClient, db } from "@chatbotx.io/database/client"
-import type { ContactInboxModel } from "@chatbotx.io/database/types"
+import type {
+  ContactInboxModel,
+  ContactModel,
+  ConversationModel,
+} from "@chatbotx.io/database/types"
 import { withCache } from "@chatbotx.io/redis"
 import { BaseService } from "../base.service"
+
+export type ContactInboxWithAnalytics = Pick<
+  ContactInboxModel,
+  "id" | "contactId" | "sourceId" | "channel"
+> & {
+  contact: Pick<
+    ContactModel,
+    "id" | "firstName" | "lastName" | "fullName" | "avatar"
+  >
+  conversation: Pick<ConversationModel, "id"> | null
+}
 
 type FindByProps = {
   id: string
@@ -64,6 +79,25 @@ class ContactInboxService extends BaseService {
         tags: [`contacts:${contactId}:contact-inboxes`],
       },
     )
+  }
+
+  async findManyByIds(ids: string[]): Promise<ContactInboxWithAnalytics[]> {
+    return (await db.query.contactInboxModel.findMany({
+      where: { id: { in: ids } },
+      columns: { id: true, contactId: true, sourceId: true, channel: true },
+      with: {
+        contact: {
+          columns: {
+            id: true,
+            firstName: true,
+            lastName: true,
+            fullName: true,
+            avatar: true,
+          },
+        },
+        conversation: { columns: { id: true } },
+      },
+    })) as ContactInboxWithAnalytics[]
   }
 
   async findRecentByContactId(props: {

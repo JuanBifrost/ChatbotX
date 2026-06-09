@@ -1,15 +1,15 @@
 "use server"
 
+import {
+  aiMcpServerService,
+  type UpdateAIMcpServerRequest,
+} from "@chatbotx.io/business"
 import { notFoundException } from "@chatbotx.io/business/errors"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { getTranslations } from "next-intl/server"
 import { returnValidationErrors } from "next-safe-action"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { aiMcpServerService } from "../ai-mcp-server.service"
-import {
-  type UpdateAIMcpServerRequest,
-  updateAIMcpServerRequest,
-} from "../schemas/action"
+import { updateAIMcpServerRequest } from "../schemas/action"
 
 export const updateAIMcpServerAction = workspaceActionClient
   .bindArgsSchemas([zodBigintAsString(), zodBigintAsString()])

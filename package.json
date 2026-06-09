@@ -46,7 +46,8 @@
       "@types/node": "24.x",
       "kysely": "0.28.17",
       "zod": "^4.3.6",
-      "miniflare>zod": "^3.22.3"
+      "miniflare>zod": "^3.22.3",
+      "google-auth-library": "^10.7.0"
     },
     "updateConfig": {
       "ignoreDependencies": [

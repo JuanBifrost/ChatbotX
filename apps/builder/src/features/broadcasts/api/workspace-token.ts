@@ -1,6 +1,15 @@
+import z from "zod"
 import { workspaceTokenAuthAPI } from "@/orpc"
-import { listBroadcasts } from "../queries"
-import { publicListBroadcastsResponse } from "../schemas/query"
+import {
+  listBroadcastAudience,
+  listBroadcasts,
+  publicGetBroadcast,
+} from "../queries"
+import {
+  listBroadcastAudienceResponse,
+  publicListBroadcastsResponse,
+} from "../schemas/query"
+import { publicBroadcastResource } from "../schemas/resource"
 
 export const broadcastWorkspaceTokenAPIs = {
   listBroadcastsWorkspaceTokenAPI: workspaceTokenAuthAPI
@@ -21,5 +30,47 @@ export const broadcastWorkspaceTokenAPIs = {
       })
 
       return { data }
+    }),
+
+  getBroadcastWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "GET",
+      path: "/v1/broadcasts/{idOrName}",
+      summary: "Get broadcast by id or name",
+      tags: ["Broadcasts"],
+    })
+    .input(z.object({ idOrName: z.string() }))
+    .output(publicBroadcastResource)
+    .handler(
+      async ({ context, input }) =>
+        await publicGetBroadcast(context.workspace.id, input.idOrName),
+    ),
+
+  getBroadcastAudienceWorkspaceTokenAPI: workspaceTokenAuthAPI
+    .route({
+      method: "GET",
+      path: "/v1/broadcasts/{idOrName}/audience",
+      summary: "Get broadcast audience",
+      tags: ["Broadcasts"],
+    })
+    .input(
+      z.object({
+        idOrName: z.string(),
+        page: z.coerce.number().int().min(1).optional(),
+        perPage: z.coerce.number().int().min(1).optional(),
+      }),
+    )
+    .output(listBroadcastAudienceResponse)
+    .handler(async ({ context, input }) => {
+      const broadcast = await publicGetBroadcast(
+        context.workspace.id,
+        input.idOrName,
+      )
+      return await listBroadcastAudience({
+        broadcastId: broadcast.id,
+        workspaceId: context.workspace.id,
+        page: input.page,
+        perPage: input.perPage,
+      })
     }),
 }

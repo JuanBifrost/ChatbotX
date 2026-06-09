@@ -4,7 +4,7 @@ import {
   listBroadcastContactsRequest,
   listBroadcastContactsResponse,
 } from "@chatbotx.io/analytics/schemas"
-import { db } from "@chatbotx.io/database/client"
+import { contactInboxService } from "@chatbotx.io/business"
 import type { ChannelType } from "@chatbotx.io/database/partials"
 import { z } from "zod"
 import { workspaceAuthorizedMidddleware } from "@/middlewares/auth"
@@ -76,33 +76,8 @@ export const broadcastPrivateAPIs = {
         }
       }
 
-      const contactInboxes = await db.query.contactInboxModel.findMany({
-        where: {
-          id: { in: contactInboxIds },
-        },
-        columns: {
-          id: true,
-          contactId: true,
-          sourceId: true,
-          channel: true,
-        },
-        with: {
-          contact: {
-            columns: {
-              id: true,
-              firstName: true,
-              lastName: true,
-              fullName: true,
-              avatar: true,
-            },
-          },
-          conversation: {
-            columns: {
-              id: true,
-            },
-          },
-        },
-      })
+      const contactInboxes =
+        await contactInboxService.findManyByIds(contactInboxIds)
 
       const contactMap = new Map(contactInboxes.map((c) => [c.id, c]))
       const pageCount = Math.ceil(totalValue / perPage)
@@ -137,5 +112,3 @@ export const broadcastPrivateAPIs = {
       return { data, total: totalValue, page, pageCount }
     }),
 }
-
-export default broadcastPrivateAPIs

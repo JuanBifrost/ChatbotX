@@ -206,6 +206,21 @@ class BotFieldService extends BaseService {
     return updated
   }
 
+  async bulkUpdateByKeys(props: {
+    workspaceId: string
+    updates: Array<{ key: string; value: string }>
+  }): Promise<void> {
+    await Promise.all(
+      props.updates.map(({ key, value }) =>
+        this.updateByKey({
+          workspaceId: props.workspaceId,
+          key,
+          data: { value },
+        }),
+      ),
+    )
+  }
+
   async deleteByKey(props: {
     workspaceId: string
     key: string

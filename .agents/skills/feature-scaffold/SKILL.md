@@ -505,6 +505,28 @@ Use `err: error` (not `error: error`) — pino's serializer is keyed on `err`.
 
 Client components may use `console` only for local development debugging that is removed before merge.
 
+## Services — Business Logic Belongs in @chatbotx.io/business
+
+Business logic services (DB queries, domain mutations, cache management) **MUST NOT** be placed inside `features/<name>/`. They belong in `packages/business/src/<domain>/service.ts`.
+
+### Pattern
+- `packages/business/src/<domain>/service.ts` — class extending `BaseService`, singleton export
+- `packages/business/src/<domain>/index.ts` — `export * from "./service"`
+- `packages/business/src/index.ts` — add `export * from "./<domain>"`
+
+### Feature folders only contain
+- `queries/` — RSC wrappers that call business services + add auth checks
+- `actions/` — next-safe-action handlers that call business services
+- `api/` — oRPC handlers
+- `schema/` — Zod validation schemas (NOT imported by business package)
+- `components/`, `hooks/`, `provider/` — UI concerns
+
+**Never** create a `*.service.ts` inside a feature folder for new work. If one already exists, move it to `@chatbotx.io/business` before extending it.
+
+```typescript
+import { integrationService, webhookService } from "@chatbotx.io/business"
+```
+
 ## Checklist for New Feature
 
 1. Create feature directory under `src/features/<name>/`

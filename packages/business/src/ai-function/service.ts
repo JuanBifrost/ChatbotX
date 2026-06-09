@@ -1,0 +1,127 @@
+import {
+  type DatabaseClient,
+  db,
+  eq,
+  type RelationsFieldFilter,
+} from "@chatbotx.io/database/client"
+import { aiFunctionModel } from "@chatbotx.io/database/schema"
+import type { AIFunctionModel } from "@chatbotx.io/database/types"
+import { createId } from "@chatbotx.io/utils"
+import { BaseService } from "../base.service"
+import { notFoundException } from "../errors"
+
+type FindByProps = {
+  tx?: DatabaseClient
+  where: Partial<{
+    id?: RelationsFieldFilter<string>
+    workspaceId?: RelationsFieldFilter<string>
+    name?: RelationsFieldFilter<string>
+  }>
+}
+
+type TranslationFn = (
+  key: string,
+  params?: Record<string, string | number | Date>,
+) => string
+
+export type CreateAIFunctionRequest = {
+  name: string
+  purpose?: string | null
+  dataCollect: Array<{ from: string; to: string }>
+  outputMessage?: string | null
+  triggerFlowId?: string | null
+}
+
+export type UpdateAIFunctionRequest = CreateAIFunctionRequest
+
+class AiFunctionService extends BaseService {
+  async findBy(props: FindByProps): Promise<AIFunctionModel | undefined> {
+    const { tx = db, where } = props
+    return await tx.query.aiFunctionModel.findFirst({
+      where,
+    })
+  }
+
+  async isNameTaken(
+    workspaceId: string,
+    name: string,
+    excludeId?: string,
+  ): Promise<boolean> {
+    const existing = await this.findBy({ where: { workspaceId, name } })
+    return existing ? existing.id !== excludeId : false
+  }
+
+  async deleteAIFunction(
+    ctx: { workspaceId: string; aiFunctionId: string },
+    t: TranslationFn,
+  ): Promise<void> {
+    const aiFunction = await this.findBy({
+      where: { id: ctx.aiFunctionId, workspaceId: ctx.workspaceId },
+    })
+
+    if (!aiFunction) {
+      throw notFoundException(
+        t("messages.featureNotFound", {
+          feature: t("fields.aiFunction.label"),
+        }),
+      )
+    }
+
+    await this.delete(ctx.aiFunctionId)
+  }
+
+  async updateAIFunction(
+    ctx: { workspaceId: string; id: string },
+    data: UpdateAIFunctionRequest,
+    t: TranslationFn,
+  ): Promise<void> {
+    const aiFunction = await this.findBy({
+      where: { id: ctx.id, workspaceId: ctx.workspaceId },
+    })
+
+    if (!aiFunction) {
+      throw notFoundException(
+        t("messages.featureNotFound", {
+          feature: t("fields.aiFunction.label"),
+        }),
+      )
+    }
+
+    await this.update(ctx.id, data)
+  }
+
+  async create(
+    workspaceId: string,
+    data: CreateAIFunctionRequest,
+    tx?: DatabaseClient,
+  ) {
+    const client = tx ?? db
+    return await client
+      .insert(aiFunctionModel)
+      .values({
+        ...data,
+        id: createId(),
+        workspaceId,
+      })
+      .returning()
+  }
+
+  async update(id: string, data: UpdateAIFunctionRequest, tx?: DatabaseClient) {
+    const client = tx ?? db
+    return await client
+      .update(aiFunctionModel)
+      .set(data)
+      .where(eq(aiFunctionModel.id, id))
+      .returning()
+  }
+
+  async delete(id: string, tx?: DatabaseClient) {
+    const client = tx ?? db
+    return await client
+      .delete(aiFunctionModel)
+      .where(eq(aiFunctionModel.id, id))
+      .returning()
+  }
+}
+
+export const aiFunctionService = new AiFunctionService()

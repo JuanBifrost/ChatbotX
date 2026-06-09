@@ -1,6 +1,7 @@
 "use server"
 
 import { resolvePlatformSettings } from "@chatbotx.io/business"
+import { notFoundException } from "@chatbotx.io/business/errors"
 import { getPublicFileUrl } from "@chatbotx.io/business/utils"
 import { db } from "@chatbotx.io/database/client"
 import {
@@ -119,6 +120,29 @@ export const listMessages = async (
   }
 
   return { data: messagesWithUrls, nextCursor, prevCursor }
+}
+
+export const publicFindContactMessage = async ({
+  messageId,
+  conversationId,
+  workspaceId,
+}: {
+  messageId: string
+  conversationId: string
+  workspaceId: string
+}): Promise<MessageResourceWithRelations> => {
+  const { storageUrl } = await resolvePlatformSettings({ workspaceId })
+  const repository = await createMessageRepository()
+  const message = await repository.findById(messageId)
+
+  if (!message || message.conversationId !== conversationId) {
+    throw notFoundException("Message not found")
+  }
+
+  return {
+    ...message,
+    attachments: await presignAttachments(message.attachments, storageUrl),
+  } as MessageResourceWithRelations
 }
 
 export const findMessage = async (

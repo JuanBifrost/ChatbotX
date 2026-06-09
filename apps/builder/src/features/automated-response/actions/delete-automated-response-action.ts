@@ -1,11 +1,11 @@
 "use server"
 
+import { automatedResponseService } from "@chatbotx.io/business"
 import {
   bulkUpdateIdsRequest,
   workspaceIdrequestParams,
 } from "@/features/common/schemas"
 import { workspaceActionClient } from "@/lib/safe-action"
-import { automatedResponseService } from "../automated-response.service"
 
 export const deleteAutomatedResponseAction = workspaceActionClient
   .bindArgsSchemas(workspaceIdrequestParams)

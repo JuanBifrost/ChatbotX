@@ -87,6 +87,10 @@ type FindByProps = {
   workspaceId: string
 }
 
+export type ConversationWithContactInboxes = ConversationModel & {
+  contactInboxes: ContactInboxModel[]
+}
+
 class ConversationService extends BaseService {
   protected readonly cachePrefix: string = "conversations"
 
@@ -100,6 +104,18 @@ class ConversationService extends BaseService {
     return await tx.query.conversationModel.findFirst({
       where,
     })
+  }
+
+  async findByContactWithInboxes(props: {
+    contactId: string
+    workspaceId: string
+    tx?: DatabaseClient
+  }): Promise<ConversationWithContactInboxes | undefined> {
+    const { tx = db, contactId, workspaceId } = props
+    return (await tx.query.conversationModel.findFirst({
+      where: { contactId, workspaceId },
+      with: { contactInboxes: true },
+    })) as ConversationWithContactInboxes | undefined
   }
 
   async findBy(props: {
