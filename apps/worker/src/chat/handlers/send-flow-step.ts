@@ -24,7 +24,7 @@ import {
 } from "@chatbotx.io/database/schema"
 import type { AttachmentModel } from "@chatbotx.io/database/types"
 import { emit } from "@chatbotx.io/event-bus"
-import { uploadFileFromUrl } from "@chatbotx.io/filesystem/node-upload"
+import { uploadFileFromUrl } from "@chatbotx.io/filesystem"
 import type { MetadataPayload } from "@chatbotx.io/flow-config"
 import {
   appendCodeToMagicLink,

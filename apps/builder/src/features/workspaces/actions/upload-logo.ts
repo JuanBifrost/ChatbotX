@@ -9,7 +9,7 @@ import {
   workspaceMemberModel,
   workspaceModel,
 } from "@chatbotx.io/database/schema"
-import { uploadFileFromUrl } from "@chatbotx.io/filesystem/node-upload"
+import { uploadFileFromUrl } from "@chatbotx.io/filesystem"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import type { AuthValue, Context } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
