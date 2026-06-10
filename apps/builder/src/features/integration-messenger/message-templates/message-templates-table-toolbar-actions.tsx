@@ -7,6 +7,7 @@ import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
 import { toast } from "sonner"
 import { syncMessengerMessageTemplateAction } from "./actions/sync-message-templates"
+import { CreateMessageTemplateDialog } from "./create-message-template-dialog"
 
 export function MessengerMessageTemplatesTableToolbarActions({
   workspaceId,
@@ -39,6 +40,10 @@ export function MessengerMessageTemplatesTableToolbarActions({
 
   return (
     <div className="flex items-center gap-2">
+      <CreateMessageTemplateDialog
+        integrationMessengerId={integrationMessengerId}
+        workspaceId={workspaceId}
+      />
       <Button
         disabled={isPending}
         onClick={() => execute()}

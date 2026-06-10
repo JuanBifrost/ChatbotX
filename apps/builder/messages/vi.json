@@ -1784,6 +1784,25 @@
         "postbackPayload": "Payload nút",
         "postbackPayloadPlaceholder": "Nhập payload (tùy chọn)"
       },
+      "create": {
+        "header": "Đầu mẫu",
+        "headerType": "Loại đầu mẫu",
+        "none": "Không có",
+        "text": "Văn bản",
+        "textAndImage": "Văn bản + hình ảnh",
+        "image": "Hình ảnh",
+        "imageHint": "PNG, JPG hoặc GIF. Hình ảnh sẽ được tải lên trước khi gửi.",
+        "noImageSelected": "Chưa chọn hình ảnh",
+        "body": "Nội dung",
+        "buttons": "Nút",
+        "addButton": "Thêm nút",
+        "addVariable": "Thêm biến",
+        "buttonText": "Văn bản nút",
+        "buttonType": "Loại nút",
+        "visitWebsite": "Mở website",
+        "callPhoneNumber": "Gọi điện thoại",
+        "postback": "Nút"
+      },
       "clone": {
         "title": "Nhân bản mẫu tin nhắn",
         "titleWithName": "Nhân bản mẫu tin nhắn: {name}",

@@ -1773,6 +1773,25 @@
         "postbackPayload": "Button Payload",
         "postbackPayloadPlaceholder": "Enter payload (optional)"
       },
+      "create": {
+        "header": "Header",
+        "headerType": "Header Type",
+        "none": "None",
+        "text": "Text",
+        "textAndImage": "Text + Image",
+        "image": "Image",
+        "imageHint": "PNG, JPG, or GIF. The image is uploaded before submission.",
+        "noImageSelected": "No image selected",
+        "body": "Body",
+        "buttons": "Buttons",
+        "addButton": "Add Button",
+        "addVariable": "Add Variable",
+        "buttonText": "Button Text",
+        "buttonType": "Button Type",
+        "visitWebsite": "Visit Website",
+        "callPhoneNumber": "Call Phone Number",
+        "postback": "Button"
+      },
       "clone": {
         "title": "Clone Message Template",
         "titleWithName": "Clone Message Template: {name}",
