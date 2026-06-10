@@ -1,6 +1,5 @@
 import type {
   ButtonStepProps,
-  MessengerTemplateButtonParam,
   MessengerTemplateParams,
   MetadataPayload,
   SendMessengerTemplateMessageStepSchema,
@@ -22,6 +21,7 @@ type MessengerTemplateComponentParameter =
   | { type: "image"; image: { link: string } }
   | { type: "POSTBACK"; payload: string }
   | { type: "URL"; url: string }
+  | { type: "PHONE_NUMBER" }
 
 type MessengerTemplateComponent = {
   type: "header" | "body" | "buttons"
@@ -37,8 +37,8 @@ type MessengerTemplateComponent = {
  *
  * NOT message.attachment.payload — that is the old generic-template shape.
  *
- * Button components come from two sources:
- *   - URL buttons: built from template.params.button (sub_type "url")
+ * Button parameters come from two sources and are merged in template order:
+ *   - URL / PHONE_NUMBER buttons: built from template.params.button
  *   - POSTBACK buttons: built from step.buttons[] with encoded flow payloads
  */
 export function buildMessengerTemplateSendRequest(
@@ -134,68 +134,82 @@ export function buildMessengerTemplateComponents(
     components.push({ type: "body", parameters: bodyParameters })
   }
 
-  // URL button components — built from params.button (sub_type "url" only)
-  if (params.button && params.button.length > 0) {
-    for (const btn of params.button) {
-      if (btn.sub_type === "url") {
-        components.push(buildUrlButtonComponent(btn))
-      }
-    }
-  }
-
-  // POSTBACK button components — built from flow buttons with encoded payloads
-  const flowButtons = flowContext?.flowButtons ?? []
-  if (flowButtons.length > 0) {
-    const { flowId = "", flowVersionId, metadata } = flowContext ?? {}
-    const broadcastId = extractMetadata("broadcastId", metadata)
-    const sequenceStepId = extractMetadata("sequenceStepId", metadata)
-    for (const button of flowButtons) {
-      // startExternalFlow: encode the button's own target flowId without a
-      // buttonId so runFlowPostback takes the direct-start path instead of
-      // the node-lookup path (which requires a live flow context).
-      if (button.buttonType === buttonTypes.enum.startExternalFlow) {
-        components.push({
-          type: "buttons",
-          parameters: [
-            {
-              type: "POSTBACK",
-              payload: encodeButtonPayload({
-                flowId: button.beforeStep.flowId,
-                broadcastId,
-                sequenceStepId,
-              }),
-            },
-          ],
-        })
-        continue
-      }
-
-      components.push({
-        type: "buttons",
-        parameters: [
-          {
-            type: "POSTBACK",
-            payload: encodeButtonPayload({
-              flowId,
-              flowVersionId,
-              buttonId: button.id,
-              broadcastId,
-              sequenceStepId,
-            }),
-          },
-        ],
-      })
-    }
+  const buttonParameters = buildButtonParameters(params, flowContext)
+  if (buttonParameters.length > 0) {
+    components.push({ type: "buttons", parameters: buttonParameters })
   }
 
   return components
 }
 
-function buildUrlButtonComponent(
-  param: MessengerTemplateButtonParam,
-): MessengerTemplateComponent {
-  return {
-    type: "buttons",
-    parameters: [{ type: "URL", url: param.text ?? "" }],
+function buildButtonParameters(
+  params: MessengerTemplateParams,
+  flowContext?: {
+    flowId?: string
+    flowVersionId?: string
+    metadata?: MetadataPayload
+    flowButtons?: ButtonStepProps[]
+  },
+): MessengerTemplateComponentParameter[] {
+  const indexedParameters: Array<{
+    index: number
+    parameter: MessengerTemplateComponentParameter
+  }> = []
+
+  for (const [fallbackIndex, button] of (params.button ?? []).entries()) {
+    const index = button.index ?? fallbackIndex
+
+    if (button.sub_type === "url") {
+      indexedParameters.push({
+        index,
+        parameter: { type: "URL", url: button.text ?? "" },
+      })
+    }
+
+    if (button.sub_type === "phone_number") {
+      indexedParameters.push({
+        index,
+        parameter: { type: "PHONE_NUMBER" },
+      })
+    }
   }
+
+  const usedIndexes = new Set(
+    indexedParameters.map((indexedParameter) => indexedParameter.index),
+  )
+  let nextPostbackIndex = 0
+  const { flowId = "", flowVersionId, metadata } = flowContext ?? {}
+  const broadcastId = extractMetadata("broadcastId", metadata)
+  const sequenceStepId = extractMetadata("sequenceStepId", metadata)
+
+  for (const button of flowContext?.flowButtons ?? []) {
+    while (usedIndexes.has(nextPostbackIndex)) {
+      nextPostbackIndex += 1
+    }
+
+    const payload =
+      button.buttonType === buttonTypes.enum.startExternalFlow
+        ? encodeButtonPayload({
+            flowId: button.beforeStep.flowId,
+            broadcastId,
+            sequenceStepId,
+          })
+        : encodeButtonPayload({
+            flowId,
+            flowVersionId,
+            buttonId: button.id,
+            broadcastId,
+            sequenceStepId,
+          })
+
+    indexedParameters.push({
+      index: nextPostbackIndex,
+      parameter: { type: "POSTBACK", payload },
+    })
+    usedIndexes.add(nextPostbackIndex)
+  }
+
+  return indexedParameters
+    .sort((left, right) => left.index - right.index)
+    .map((indexedParameter) => indexedParameter.parameter)
 }

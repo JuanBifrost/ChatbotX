@@ -37,7 +37,8 @@ const config: IntegrationDefinition<
   },
   actions: {
     updatePersona,
-    listMessageTemplates: async ({ ctx }) => listPageMessageTemplates(ctx.auth),
+    listMessageTemplates: async ({ ctx, input }) =>
+      listPageMessageTemplates(ctx.auth, input),
     cloneMessageTemplate: async ({
       ctx,
       input,

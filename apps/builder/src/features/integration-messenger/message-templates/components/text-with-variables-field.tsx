@@ -28,6 +28,7 @@ type TextWithVariablesFieldProps = {
   variablesName: FieldPath<FieldValues>
   label: string
   maxVariables?: number
+  variablesLayout?: "grid" | "stack"
 }
 
 const VARIABLE_PATTERN = /{{\d}}/g
@@ -46,6 +47,7 @@ export function TextWithVariablesField({
   variablesName,
   label,
   maxVariables = 9,
+  variablesLayout = "grid",
 }: TextWithVariablesFieldProps) {
   const t = useTranslations()
   const form = useFormContext<FieldValues>()
@@ -112,7 +114,13 @@ export function TextWithVariablesField({
         </Button>
       )}
       {variableKeys.length > 0 && (
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div
+          className={
+            variablesLayout === "stack"
+              ? "grid gap-3"
+              : "grid gap-3 sm:grid-cols-2"
+          }
+        >
           {variableKeys.map((key, index) => (
             <InputField
               key={key}

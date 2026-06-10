@@ -55,6 +55,40 @@ export interface ProcessMessengerTemplateResult {
   providerMessageId?: string
 }
 
+function mergeMessengerTemplateButtonParams(
+  params: MessengerTemplateParams,
+  components: MessengerTemplateComponent[],
+  parameterFormat: "POSITIONAL" | "NAMED",
+): MessengerTemplateParams {
+  const templateButtonParams = extractMessengerTemplateParams(
+    components,
+    parameterFormat,
+  ).button
+
+  if (!templateButtonParams || templateButtonParams.length === 0) {
+    return params
+  }
+
+  const currentButtons = params.button ?? []
+  const currentKeys = new Set(
+    currentButtons.map((button) => `${button.sub_type}:${button.index ?? ""}`),
+  )
+  const missingButtons = templateButtonParams.filter(
+    (button) => !currentKeys.has(`${button.sub_type}:${button.index ?? ""}`),
+  )
+
+  if (missingButtons.length === 0) {
+    return params
+  }
+
+  return {
+    ...params,
+    button: [...currentButtons, ...missingButtons].sort(
+      (left, right) => (left.index ?? 0) - (right.index ?? 0),
+    ),
+  }
+}
+
 export async function processMessengerTemplate(
   params: ProcessMessengerTemplateParams,
 ): Promise<ProcessMessengerTemplateResult> {
@@ -104,8 +138,13 @@ export async function processMessengerTemplate(
     const variables = await contactVariableService.getAll(
       conversation.contactId,
     )
+    const completeParams = mergeMessengerTemplateButtonParams(
+      template.params,
+      (validated.template.components as MessengerTemplateComponent[]) || [],
+      template.parameterFormat,
+    )
     const replacedParams = await replaceMessengerTemplateVariables({
-      templateParams: template.params,
+      templateParams: completeParams,
       variables,
       parameterFormat: template.parameterFormat,
     })

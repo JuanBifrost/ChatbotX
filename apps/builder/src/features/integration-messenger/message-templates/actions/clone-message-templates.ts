@@ -1,25 +1,90 @@
 "use server"
 
 import { db, inArray } from "@chatbotx.io/database/client"
-import {
-  integrationMessengerModel,
-  messengerMessageTemplateModel,
-} from "@chatbotx.io/database/schema"
+import { integrationMessengerModel } from "@chatbotx.io/database/schema"
 import { createPageMessageTemplate } from "@chatbotx.io/integration-messenger/apis/message-templates"
 import { resumableUploadImage } from "@chatbotx.io/integration-messenger/apis/upload"
 import type { MessengerAuthValue } from "@chatbotx.io/integration-messenger/schema"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
 import { SdkException } from "@chatbotx.io/sdk"
-import { createId, zodBigintAsString } from "@chatbotx.io/utils"
+import { zodBigintAsString } from "@chatbotx.io/utils"
 import { chunk } from "remeda"
 import { z } from "zod"
 import { getAllWorkspaceMembers } from "@/features/workspace-members/queries"
 import { workspaceActionClient } from "@/lib/safe-action"
+import { syncMessengerMessageTemplatesForIntegration } from "./sync-message-templates"
 
-// IMAGE header handles are page-scoped — re-upload each one to the target page
-// to get a fresh handle. Other components pass through unchanged.
-// PHP ref: UtilityMessageTemplateService::copyMessageTemplates + reuploadHeaderImage
-async function prepareComponentsForClone(
+function isHttpUrl(value: string): boolean {
+  try {
+    const url = new URL(value)
+    return url.protocol === "http:" || url.protocol === "https:"
+  } catch {
+    return false
+  }
+}
+
+function isMetaImageUrl(value: string): boolean {
+  try {
+    const hostname = new URL(value).hostname
+    return (
+      hostname === "facebook.com" ||
+      hostname.endsWith(".facebook.com") ||
+      hostname.endsWith(".fbcdn.net") ||
+      hostname.endsWith(".fbsbx.com")
+    )
+  } catch {
+    return false
+  }
+}
+
+function stripLegacyInternalHeaderImageUrl(
+  // biome-ignore lint/suspicious/noExplicitAny: Meta component example shape varies
+  example: any,
+) {
+  if (!example || typeof example !== "object") {
+    return example
+  }
+
+  const { header_image_url: _headerImageUrl, ...rest } = example
+  return rest
+}
+
+function getStoredHeaderImageUrl(
+  // biome-ignore lint/suspicious/noExplicitAny: Meta component shape varies
+  component: any,
+): string | undefined {
+  const headerHandle: string | undefined = component.example?.header_handle?.[0]
+  if (headerHandle && isHttpUrl(headerHandle)) {
+    return headerHandle
+  }
+
+  const legacyInternalImageUrl: string | undefined =
+    component.example?.header_image_url
+  if (legacyInternalImageUrl && isHttpUrl(legacyInternalImageUrl)) {
+    return legacyInternalImageUrl
+  }
+
+  return
+}
+
+function withHeaderHandle(
+  // biome-ignore lint/suspicious/noExplicitAny: Meta component shape varies
+  component: any,
+  headerHandle: string,
+) {
+  return {
+    ...component,
+    example: {
+      ...stripLegacyInternalHeaderImageUrl(component.example),
+      header_handle: [headerHandle],
+    },
+  }
+}
+
+// IMAGE header handles are page-scoped. The DB stores Meta's listed image URL in
+// example.header_handle[0], while the create-template request needs a freshly
+// uploaded handle for each target Page.
+export async function prepareComponentsForClone(
   // biome-ignore lint/suspicious/noExplicitAny: Meta API component shape varies
   components: any[],
   auth: MessengerAuthValue,
@@ -34,18 +99,19 @@ async function prepareComponentsForClone(
       ) {
         return c
       }
-      const existingHandle: string | undefined = c.example?.header_handle?.[0]
-      if (!existingHandle) {
-        return c
+      const storedHeaderImageUrl = getStoredHeaderImageUrl(c)
+
+      if (!storedHeaderImageUrl) {
+        throw new Error(
+          "Image header cannot be cloned because Meta returned a page-owned file handle instead of a downloadable image URL. Recreate the template on the target channel with the original image.",
+        )
       }
-      const newHandle = await resumableUploadImage(auth, existingHandle)
-      return {
-        ...c,
-        example: {
-          ...c.example,
-          header_handle: [newHandle],
-        },
-      }
+
+      const newHandle = await resumableUploadImage(auth, storedHeaderImageUrl, {
+        authenticatedDownload: isMetaImageUrl(storedHeaderImageUrl),
+      })
+
+      return withHeaderHandle(c, newHandle)
     }),
   )
 }
@@ -150,34 +216,13 @@ export const cloneMessengerMessageTemplateAction = workspaceActionClient
         })
 
         if (resp.status === "APPROVED") {
-          await db
-            .insert(messengerMessageTemplateModel)
-            .values({
-              id: createId(),
-              sourceId: resp.id,
-              status: resp.status,
-              name: sourceTemplate.name,
-              language: sourceTemplate.language,
-              category: sourceTemplate.category,
-              parameterFormat: sourceTemplate.parameterFormat,
-              components: sourceTemplate.components,
-              integrationMessengerId: target.id,
-            })
-            .onConflictDoUpdate({
-              target: [
-                messengerMessageTemplateModel.integrationMessengerId,
-                messengerMessageTemplateModel.sourceId,
-              ],
-              set: {
-                sourceId: resp.id,
-                status: resp.status,
-                name: sourceTemplate.name,
-                language: sourceTemplate.language,
-                category: sourceTemplate.category,
-                parameterFormat: sourceTemplate.parameterFormat,
-                components: sourceTemplate.components,
-              },
-            })
+          await syncMessengerMessageTemplatesForIntegration({
+            workspaceId: target.workspaceId,
+            integrationMessenger: target,
+            templateId: resp.id,
+            templateName: sourceTemplate.name,
+            templateLanguage: sourceTemplate.language,
+          })
           succeeded.push({ channel: target.name })
         } else {
           failed.push({

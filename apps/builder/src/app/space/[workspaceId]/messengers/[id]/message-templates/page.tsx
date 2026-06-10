@@ -4,6 +4,7 @@ import { notFound } from "next/navigation"
 import { Suspense } from "react"
 import { MessengerMessageTemplatesTable } from "@/features/integration-messenger/message-templates/message-templates-table"
 import { messengerMessageTemplateService } from "@/features/integration-messenger/message-templates/queries"
+import { listMessengerMessageTemplatesSearchParamsCache } from "@/features/integration-messenger/message-templates/schema/query"
 import { findIntegrationMessenger } from "@/features/integration-messenger/queries"
 import { getAllWorkspaceMembers } from "@/features/workspace-members/queries"
 import { withWorkspaceIdAndIdSchema } from "@/features/workspaces/schema/resource"
@@ -11,6 +12,7 @@ import { getCurrentUserId } from "@/lib/auth/utils"
 
 export default async function MessengerMessageTemplatesPage(props: {
   params: Promise<{ workspaceId: string; id: string }>
+  searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const { data } = withWorkspaceIdAndIdSchema.safeParse(await props.params)
   if (!data) {
@@ -18,6 +20,9 @@ export default async function MessengerMessageTemplatesPage(props: {
   }
 
   const { workspaceId, id } = data
+  const search = listMessengerMessageTemplatesSearchParamsCache.parse(
+    await props.searchParams,
+  )
 
   let integrationMessenger: Awaited<ReturnType<typeof findIntegrationMessenger>>
   try {
@@ -58,11 +63,14 @@ export default async function MessengerMessageTemplatesPage(props: {
     }
   }
 
-  const promises = messengerMessageTemplateService.list({
+  const promises = messengerMessageTemplateService.listPaginated({
     where: {
       workspaceId,
       integrationMessengerId: id,
+      name: search.name,
     },
+    page: search.page,
+    perPage: search.perPage,
   })
 
   return (

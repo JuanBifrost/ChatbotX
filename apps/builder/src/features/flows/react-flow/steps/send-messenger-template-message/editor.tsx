@@ -1,16 +1,18 @@
 "use client"
 
 import {
+  type ButtonStepProps,
   extractMessengerFlowButtons,
   extractMessengerParameterInfos,
   extractMessengerTemplateParams,
   type MessengerTemplateComponent,
+  mergeMessengerFlowButtonsWithExisting,
   type ParameterInfo,
 } from "@chatbotx.io/flow-config"
 import { ComboboxField } from "@chatbotx.io/ui/components/form/combobox-field"
 import { SelectField } from "@chatbotx.io/ui/components/form/select-field"
 import { useTranslations } from "next-intl"
-import { useEffect, useMemo, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import { useFormContext } from "react-hook-form"
 import { useMessengerInboxOptions } from "@/features/inboxes/provider/inbox-hook"
 import { MessengerTemplateParamsForm } from "@/features/integration-messenger/message-templates/components/template-params-form"
@@ -29,11 +31,12 @@ function SendMessengerTemplateMessageStepEditor(
 ) {
   const { parentName } = props
   const t = useTranslations()
-  const { setValue, watch } = useFormContext()
+  const { getValues, setValue, unregister, watch } = useFormContext()
   const [selectedTemplate, setSelectedTemplate] =
     useState<FlowMessengerTemplateResource | null>(null)
   const [parameters, setParameters] = useState<ParameterInfo[]>([])
   const prevInboxIdRef = useRef<string | undefined>(undefined)
+  const prevTemplateIdRef = useRef<string | undefined>(undefined)
 
   const messengerInboxOptions = useMessengerInboxOptions()
   const messengerTemplates = useFlowTemplate((s) => s.messengerTemplates)
@@ -46,6 +49,40 @@ function SendMessengerTemplateMessageStepEditor(
       | "POSITIONAL"
       | "NAMED") || "POSITIONAL"
   const flowButtons = (watch(`${parentName}.buttons`) as unknown[]) || []
+  const resetTemplateParams = useCallback(
+    (
+      template: FlowMessengerTemplateResource,
+      format: "POSITIONAL" | "NAMED",
+    ) => {
+      unregister(`${parentName}.template.params`)
+      setValue(
+        `${parentName}.template.params`,
+        extractMessengerTemplateParams(
+          template.components as MessengerTemplateComponent[],
+          format,
+        ),
+        { shouldDirty: true, shouldValidate: true },
+      )
+    },
+    [parentName, setValue, unregister],
+  )
+  const resetFlowButtons = useCallback(
+    (template: FlowMessengerTemplateResource) => {
+      const templateButtons = extractMessengerFlowButtons(
+        template.components as MessengerTemplateComponent[],
+      )
+      const existingButtons =
+        (getValues(`${parentName}.buttons`) as ButtonStepProps[] | undefined) ??
+        []
+
+      setValue(
+        `${parentName}.buttons`,
+        mergeMessengerFlowButtonsWithExisting(templateButtons, existingButtons),
+        { shouldDirty: true, shouldValidate: true },
+      )
+    },
+    [getValues, parentName, setValue],
+  )
 
   useEffect(() => {
     if (
@@ -56,17 +93,21 @@ function SendMessengerTemplateMessageStepEditor(
       setValue(`${parentName}.template.name`, "")
       setValue(`${parentName}.template.language`, "")
       setValue(`${parentName}.template.parameterFormat`, "POSITIONAL")
+      unregister(`${parentName}.template.params`)
       setValue(`${parentName}.template.params`, {})
       setSelectedTemplate(null)
       setParameters([])
     }
     prevInboxIdRef.current = integrationInboxId
-  }, [integrationInboxId, parentName, setValue])
+  }, [integrationInboxId, parentName, setValue, unregister])
 
   useEffect(() => {
     if (templateId && messengerTemplates.length > 0) {
       const template = messengerTemplates.find((t) => t.id === templateId)
       if (template) {
+        const hasTemplateChanged =
+          prevTemplateIdRef.current !== undefined &&
+          prevTemplateIdRef.current !== templateId
         setSelectedTemplate(template)
         setValue(`${parentName}.template.name`, template.name)
         setValue(`${parentName}.template.language`, template.language)
@@ -77,25 +118,36 @@ function SendMessengerTemplateMessageStepEditor(
         const format = (template.parameterFormat ?? "POSITIONAL") as
           | "POSITIONAL"
           | "NAMED"
+        if (hasTemplateChanged) {
+          resetTemplateParams(template, format)
+        }
         const params = extractMessengerParameterInfos(
           template.components as MessengerTemplateComponent[],
           format,
         )
         setParameters(params)
 
-        // Seed flow buttons only when not yet configured (preserve persisted buttons)
-        const existingButtons = watch(`${parentName}.buttons`)
-        if (!existingButtons || (existingButtons as unknown[]).length === 0) {
-          setValue(
-            `${parentName}.buttons`,
-            extractMessengerFlowButtons(
-              template.components as MessengerTemplateComponent[],
-            ),
-          )
+        if (hasTemplateChanged) {
+          resetFlowButtons(template)
+        } else {
+          // Seed flow buttons only when not yet configured (preserve persisted buttons)
+          const existingButtons = watch(`${parentName}.buttons`)
+          if (!existingButtons || (existingButtons as unknown[]).length === 0) {
+            resetFlowButtons(template)
+          }
         }
       }
     }
-  }, [templateId, messengerTemplates, parentName, setValue, watch])
+    prevTemplateIdRef.current = templateId
+  }, [
+    templateId,
+    messengerTemplates,
+    parentName,
+    resetFlowButtons,
+    resetTemplateParams,
+    setValue,
+    watch,
+  ])
 
   const filteredTemplates = useMemo(
     () =>
@@ -129,17 +181,8 @@ function SendMessengerTemplateMessageStepEditor(
       setValue(`${parentName}.template.name`, template.name)
       setValue(`${parentName}.template.language`, template.language)
       setValue(`${parentName}.template.parameterFormat`, format)
-      const initialParams = extractMessengerTemplateParams(
-        template.components as MessengerTemplateComponent[],
-        format,
-      )
-      setValue(`${parentName}.template.params`, initialParams)
-      setValue(
-        `${parentName}.buttons`,
-        extractMessengerFlowButtons(
-          template.components as MessengerTemplateComponent[],
-        ),
-      )
+      resetTemplateParams(template, format)
+      resetFlowButtons(template)
       setSelectedTemplate(template)
       const params = extractMessengerParameterInfos(
         template.components as MessengerTemplateComponent[],
@@ -170,6 +213,7 @@ function SendMessengerTemplateMessageStepEditor(
             components={
               selectedTemplate?.components as MessengerTemplateComponent[]
             }
+            key={templateId}
             parameterFormat={parameterFormat}
             parentName={`${parentName}.template.params`}
           />

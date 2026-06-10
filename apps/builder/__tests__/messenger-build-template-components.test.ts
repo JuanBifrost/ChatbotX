@@ -30,6 +30,21 @@ describe("buildMessengerMessageTemplateComponents", () => {
     ])
   })
 
+  test("omits body example when body has no variables", () => {
+    expect(
+      buildMessengerMessageTemplateComponents({
+        ...baseInput,
+        body: "Plain body text",
+        bodyVariables: [],
+      }),
+    ).toEqual([
+      {
+        type: "BODY",
+        text: "Plain body text",
+      },
+    ])
+  })
+
   test("builds text header with header_text example", () => {
     expect(
       buildMessengerMessageTemplateComponents({
@@ -46,6 +61,30 @@ describe("buildMessengerMessageTemplateComponents", () => {
         example: {
           header_text: ["Customer"],
         },
+      },
+      {
+        type: "BODY",
+        text: "Hello {{1}}",
+        example: {
+          body_text: [["Hung"]],
+        },
+      },
+    ])
+  })
+
+  test("omits text header example when header has no variables", () => {
+    expect(
+      buildMessengerMessageTemplateComponents({
+        ...baseInput,
+        headerType: "text",
+        headerText: "PAMAOI XIN THONG BAO",
+        headerVariables: [],
+      }),
+    ).toEqual([
+      {
+        type: "HEADER",
+        format: "TEXT",
+        text: "PAMAOI XIN THONG BAO",
       },
       {
         type: "BODY",
@@ -76,6 +115,37 @@ describe("buildMessengerMessageTemplateComponents", () => {
         text: "Hi {{1}}",
         example: {
           header_text: ["Customer"],
+          header_handle: ["header-handle"],
+        },
+      },
+      {
+        type: "BODY",
+        text: "Hello {{1}}",
+        example: {
+          body_text: [["Hung"]],
+        },
+      },
+    ])
+  })
+
+  test("omits image header text example when header has no variables", () => {
+    expect(
+      buildMessengerMessageTemplateComponents(
+        {
+          ...baseInput,
+          headerType: "text_and_image",
+          headerText: "PAMAOI XIN THONG BAO",
+          headerVariables: [],
+          headerImageUrl: "https://example.com/header.jpg",
+        },
+        "header-handle",
+      ),
+    ).toEqual([
+      {
+        type: "HEADER",
+        format: "IMAGE",
+        text: "PAMAOI XIN THONG BAO",
+        example: {
           header_handle: ["header-handle"],
         },
       },
@@ -133,7 +203,9 @@ describe("buildMessengerMessageTemplateComponents", () => {
             type: "URL",
             text: "Open",
             url: "https://example.com/{{1}}",
-            example: ["abc"],
+            example: {
+              url_suffix_example: "https://example.com/abc",
+            },
           },
         ],
       },
@@ -234,6 +306,22 @@ describe("createMessengerMessageTemplateRequest", () => {
             title: "Open",
             url: "https://example.com/{{1}}",
             variables: [],
+          },
+        ],
+      }).success,
+    ).toBe(false)
+  })
+
+  test("rejects more than one URL variable", () => {
+    expect(
+      createMessengerMessageTemplateRequest.safeParse({
+        ...baseInput,
+        buttons: [
+          {
+            type: "URL",
+            title: "Open",
+            url: "https://example.com/{{1}}/{{2}}",
+            variables: ["one", "two"],
           },
         ],
       }).success,

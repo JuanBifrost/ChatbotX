@@ -11,7 +11,51 @@ type MessengerTemplatePreviewProps = {
     image?: { link: string }
   }>
   bodyParams: Array<{ text?: string }>
-  buttonParams: Array<{ text?: string; payload?: string }>
+  buttonParams: Array<{
+    sub_type?: string
+    index?: number
+    text?: string
+    payload?: string
+  }>
+}
+
+const NAMED_PARAMETER_PATTERN = /\{\{[a-zA-Z_]+\}\}/
+
+function renderTemplateText(
+  templateText: string,
+  params: Array<{ text?: string }>,
+) {
+  let text = templateText
+  const textParams = params.filter((param) => param.text)
+
+  for (const [i, param] of textParams.entries()) {
+    if (param.text) {
+      text = text.replaceAll(`{{${i + 1}}}`, param.text)
+    }
+  }
+
+  for (const param of textParams) {
+    if (param.text) {
+      text = text.replace(NAMED_PARAMETER_PATTERN, param.text)
+    }
+  }
+
+  return text
+}
+
+function getButtonParam(
+  buttonParams: MessengerTemplatePreviewProps["buttonParams"],
+  buttonType: string,
+  buttonIndex: number,
+) {
+  const subType = buttonType.toLowerCase()
+  return (
+    buttonParams.find(
+      (param) => param.index === buttonIndex && param.sub_type === subType,
+    ) ??
+    buttonParams.find((param) => param.index === buttonIndex) ??
+    buttonParams.find((param) => param.sub_type === subType)
+  )
 }
 
 export function MessengerTemplatePreview({
@@ -27,27 +71,15 @@ export function MessengerTemplatePreview({
   return (
     <div className="space-y-2 rounded-lg bg-muted p-3">
       {components.map((component) => {
-        if (component.type === "HEADER") {
-          if (component.format === "TEXT" && component.text) {
-            let text = component.text
-            if (headerParams && headerParams.length > 0) {
-              for (const [i, param] of headerParams.entries()) {
-                if (param?.text) {
-                  text = text.replace(`{{${i + 1}}}`, param.text)
-                  text = text.replace(/\{\{[a-zA-Z_]+\}\}/g, param.text)
-                }
-              }
-            }
-            return (
-              <div
-                className="font-bold text-sm"
-                key={`header-text-${component.type}`}
-              >
-                {text}
-              </div>
-            )
-          }
-          if (component.format === "IMAGE" && headerParams?.[0]?.image?.link) {
+        const componentType = component.type?.toUpperCase()
+        const componentFormat = component.format?.toUpperCase()
+
+        if (componentType === "HEADER") {
+          const headerText = component.text
+            ? renderTemplateText(component.text, headerParams)
+            : null
+
+          if (componentFormat === "IMAGE" && headerParams?.[0]?.image?.link) {
             let imageUrl: URL | null = null
             try {
               imageUrl = new URL(headerParams[0].image.link)
@@ -56,7 +88,7 @@ export function MessengerTemplatePreview({
             }
 
             return (
-              <div className="mb-2" key={`header-image-${component.type}`}>
+              <div className="space-y-2" key={`header-image-${component.type}`}>
                 {imageUrl ? (
                   <div className="relative h-32 w-full">
                     <Image
@@ -71,20 +103,26 @@ export function MessengerTemplatePreview({
                     {headerParams[0].image.link}
                   </div>
                 )}
+                {headerText && (
+                  <div className="font-bold text-sm">{headerText}</div>
+                )}
+              </div>
+            )
+          }
+
+          if (headerText) {
+            return (
+              <div
+                className="font-bold text-sm"
+                key={`header-text-${component.type}`}
+              >
+                {headerText}
               </div>
             )
           }
         }
-        if (component.type === "BODY" && component.text) {
-          let text = component.text
-          if (bodyParams && bodyParams.length > 0) {
-            for (const [i, param] of bodyParams.entries()) {
-              if (param?.text) {
-                text = text.replace(`{{${i + 1}}}`, param.text)
-                text = text.replace(/\{\{[a-zA-Z_]+\}\}/g, param.text)
-              }
-            }
-          }
+        if (componentType === "BODY" && component.text) {
+          const text = renderTemplateText(component.text, bodyParams)
           return (
             <div
               className="whitespace-pre-wrap text-sm"
@@ -94,7 +132,7 @@ export function MessengerTemplatePreview({
             </div>
           )
         }
-        if (component.type === "FOOTER" && component.text) {
+        if (componentType === "FOOTER" && component.text) {
           return (
             <div
               className="mt-2 text-muted-foreground text-xs"
@@ -104,33 +142,43 @@ export function MessengerTemplatePreview({
             </div>
           )
         }
-        if (component.type === "BUTTONS" && component.buttons) {
-          // POSTBACK / QUICK_REPLY buttons render separately as flow buttons —
-          // only URL buttons belong in the template preview.
-          const urlButtons = component.buttons.filter(
-            (button) => button.type?.toUpperCase() === "URL",
-          )
-          if (urlButtons.length === 0) {
-            return null
-          }
+        if (componentType === "BUTTONS" && component.buttons) {
           return (
             <div className="mt-2 space-y-1" key={`buttons-${component.type}`}>
-              {urlButtons.map((button, btnIdx) => {
-                let url = button.url ?? ""
-                if (
-                  button.type === "URL" &&
-                  url.includes("{{1}}") &&
-                  buttonParams?.[btnIdx]?.text
-                ) {
-                  url = url.replace("{{1}}", buttonParams[btnIdx].text ?? "")
+              {component.buttons.map((button, btnIdx) => {
+                const buttonType = button.type?.toUpperCase()
+                const buttonParam = getButtonParam(
+                  buttonParams,
+                  button.type,
+                  btnIdx,
+                )
+                let detail = ""
+
+                if (buttonType === "URL") {
+                  detail = button.url ?? ""
+                  const value = buttonParam?.text
+                  if (detail.includes("{{1}}") && value) {
+                    detail = detail.replace("{{1}}", value)
+                  } else if (!detail && value) {
+                    detail = value
+                  }
                 }
+
+                if (
+                  buttonType === "PHONE_NUMBER" &&
+                  "phone_number" in button &&
+                  button.phone_number
+                ) {
+                  detail = button.phone_number
+                }
+
                 return (
                   <div
                     className="rounded border bg-gray-300 px-2 py-1 text-center text-blue-600 text-xs"
                     // biome-ignore lint/suspicious/noArrayIndexKey: safe index
                     key={`button-${component.type}-${btnIdx}-${button.text}`}
                   >
-                    {button.text} {url && `→ ${url}`}
+                    {button.text} {detail && `→ ${detail}`}
                   </div>
                 )
               })}

@@ -4,6 +4,7 @@ import {
   extractMessengerParameterInfos,
   extractMessengerTemplateParams,
   type MessengerTemplateComponent,
+  mergeMessengerFlowButtonsWithExisting,
   messengerTemplateButtonParamSchema,
   sendMessengerTemplateMessageStepDefaultFn,
   sendMessengerTemplateMessageStepSchema,
@@ -111,7 +112,7 @@ describe("extractMessengerTemplateParams", () => {
       expect(result.button).toEqual([{ sub_type: "url", index: 0, text: "" }])
     })
 
-    test("URL button WITHOUT {{1}} in url — not added", () => {
+    test("URL button WITHOUT {{1}} in url — uses fixed url as send param", () => {
       const component: MessengerTemplateComponent = {
         type: "BUTTONS",
         buttons: [
@@ -119,7 +120,9 @@ describe("extractMessengerTemplateParams", () => {
         ],
       }
       const result = extractMessengerTemplateParams([component], "POSITIONAL")
-      expect(result.button).toBeUndefined()
+      expect(result.button).toEqual([
+        { sub_type: "url", index: 0, text: "https://example.com/fixed" },
+      ])
     })
 
     test("POSTBACK with fixed payload (no {{) — not added", () => {
@@ -167,6 +170,26 @@ describe("extractMessengerTemplateParams", () => {
       expect(result.button).toHaveLength(1)
       expect(result.button?.[0].sub_type).toBe("url")
       expect(result.button?.[0].index).toBe(1)
+    })
+
+    test("POSTBACK + PHONE_NUMBER + static URL — phone and URL produce send params", () => {
+      const component: MessengerTemplateComponent = {
+        type: "BUTTONS",
+        buttons: [
+          { type: "POSTBACK", text: "Detail", payload: "{{1}}" },
+          {
+            type: "PHONE_NUMBER",
+            text: "Phone",
+            phone_number: "+84349566551",
+          },
+          { type: "URL", text: "Visit website", url: "https://ahachat.com/" },
+        ],
+      }
+      const result = extractMessengerTemplateParams([component], "POSITIONAL")
+      expect(result.button).toEqual([
+        { sub_type: "phone_number", index: 1 },
+        { sub_type: "url", index: 2, text: "https://ahachat.com/" },
+      ])
     })
   })
 })
@@ -566,5 +589,68 @@ describe("sendMessengerTemplateMessageStepSchema — inboxId/integrationMessenge
       sub_type: "quick_reply",
     })
     expect(result.success).toBe(false)
+  })
+})
+
+describe("mergeMessengerFlowButtonsWithExisting", () => {
+  test("keeps existing button id and routing config by index while updating label", () => {
+    const result = mergeMessengerFlowButtonsWithExisting(
+      [
+        {
+          id: "new-button",
+          label: "New template label",
+          buttonType: null,
+          beforeStep: null,
+          steps: [],
+        },
+      ],
+      [
+        {
+          id: "connected-button",
+          label: "Old template label",
+          buttonType: "startAnotherNode",
+          beforeStep: {
+            id: "before-step",
+            stepType: "startAnotherNode",
+            nodeId: "target-node",
+            viewOnly: true,
+          },
+          steps: [],
+        },
+      ],
+    )
+
+    expect(result).toEqual([
+      {
+        id: "connected-button",
+        label: "New template label",
+        buttonType: "startAnotherNode",
+        beforeStep: {
+          id: "before-step",
+          stepType: "startAnotherNode",
+          nodeId: "target-node",
+          viewOnly: true,
+        },
+        steps: [],
+      },
+    ])
+  })
+
+  test("uses new template button when there is no existing button at that index", () => {
+    const result = mergeMessengerFlowButtonsWithExisting([
+      {
+        id: "new-button",
+        label: "New template label",
+        buttonType: null,
+        beforeStep: null,
+        steps: [],
+      },
+    ])
+
+    expect(result[0]).toMatchObject({
+      id: "new-button",
+      label: "New template label",
+      buttonType: null,
+    })
   })
 })

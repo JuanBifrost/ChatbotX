@@ -154,6 +154,7 @@ export function DirectUploadButton({
         })
       } finally {
         setIsUploading(false)
+        setFiles([])
       }
     },
     [workspaceId, uploadPath, uploadHandlerUrl, onUploadSuccess, onUploadError],

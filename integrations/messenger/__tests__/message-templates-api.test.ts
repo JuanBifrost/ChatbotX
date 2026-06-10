@@ -178,6 +178,33 @@ describe("listPageMessageTemplates", () => {
     expect(url).toContain("fields=")
   })
 
+  test("adds name filter when listing one template", async () => {
+    mockGet.mockResolvedValueOnce({ data: [] })
+
+    await listPageMessageTemplates(AUTH, { name: "delivery_confirmation" })
+
+    const [url] = mockGet.mock.calls[0]
+    expect(url).toContain("name=delivery_confirmation")
+  })
+
+  test("keeps name filter on paginated requests", async () => {
+    mockGet
+      .mockResolvedValueOnce({
+        data: [],
+        paging: {
+          cursors: { before: "abc", after: "cursor_abc" },
+          next: "https://graph.facebook.com/v23.0/PAGE123/message_templates?after=cursor_abc",
+        },
+      })
+      .mockResolvedValueOnce({ data: [] })
+
+    await listPageMessageTemplates(AUTH, { name: "delivery_confirmation" })
+
+    const secondCallUrl = mockGet.mock.calls[1][0] as string
+    expect(secondCallUrl).toContain("name=delivery_confirmation")
+    expect(secondCallUrl).toContain("after=cursor_abc")
+  })
+
   test("auth without version uses DEFAULT_API_VERSION (v23.0)", async () => {
     const authNoVersion = {
       ...AUTH,

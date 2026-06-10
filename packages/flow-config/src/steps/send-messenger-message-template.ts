@@ -7,9 +7,7 @@ import { stepTypes } from "./step-action"
 import type { ParameterInfo } from "./wa-template-utils"
 
 export const messengerTemplateButtonParamSchema = z.object({
-  // "quick_reply" has no handler in buildMessengerTemplateComponents — silently dropped.
-  // extractMessengerTemplateParams only creates sub_type "url".
-  sub_type: z.literal("url"),
+  sub_type: z.enum(["url", "phone_number"]),
   index: z.number().optional(),
   text: z.string().optional(),
   payload: z.string().optional(),
@@ -56,6 +54,7 @@ export type MessengerTemplateComponentButton = {
   text: string
   url?: string
   payload?: string
+  phone_number?: string
   example?: string[]
 }
 
@@ -156,11 +155,17 @@ export function extractMessengerTemplateParams(
       for (const [idx, button] of component.buttons.entries()) {
         const buttonType = button.type.toUpperCase()
 
-        if (buttonType === "URL" && button.url?.includes("{{1}}")) {
+        if (buttonType === "URL" && button.url) {
           buttonParams.push({
             sub_type: "url",
             index: idx,
-            text: "",
+            text: button.url.includes("{{1}}") ? "" : button.url,
+          })
+        }
+        if (buttonType === "PHONE_NUMBER") {
+          buttonParams.push({
+            sub_type: "phone_number",
+            index: idx,
           })
         }
         // POSTBACK/QUICK_REPLY buttons are handled as flow buttons (step.buttons[]),
@@ -265,4 +270,22 @@ export function extractMessengerFlowButtons(
   }
 
   return buttons
+}
+
+export function mergeMessengerFlowButtonsWithExisting(
+  templateButtons: ButtonStepProps[],
+  existingButtons: ButtonStepProps[] = [],
+): ButtonStepProps[] {
+  return templateButtons.map((templateButton, index) => {
+    const existingButton = existingButtons[index]
+
+    if (!existingButton) {
+      return templateButton
+    }
+
+    return {
+      ...existingButton,
+      label: templateButton.label,
+    }
+  })
 }

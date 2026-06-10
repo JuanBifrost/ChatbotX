@@ -10,6 +10,8 @@ export type MessengerMessageTemplateEntity = {
   language: string
   category: "AUTHENTICATION" | "MARKETING" | "UTILITY"
   parameter_format?: string
+  rejection_reason?: string
+  specific_rejection_reason?: string
   // biome-ignore lint/suspicious/noExplicitAny: Meta API shape varies
   components: any[]
 }
@@ -25,6 +27,10 @@ export type ListMessengerMessageTemplatesResponse = {
   }
 }
 
+export type ListMessengerMessageTemplatesProps = {
+  name?: string
+}
+
 export type CreateMessengerTemplateProps = {
   name: string
   language: string
@@ -36,12 +42,19 @@ export type CreateMessengerTemplateProps = {
 
 export const listPageMessageTemplates = (
   auth: MessengerAuthValue,
+  props: ListMessengerMessageTemplatesProps = {},
 ): Promise<ListMessengerMessageTemplatesResponse> => {
   const version = auth.metadata.version ?? DEFAULT_API_VERSION
   const pageId = auth.metadata.pageId
   const accessToken = auth.tokens.accessToken
 
-  const BASE_PATH = `/${version}/${pageId}/message_templates?fields=name,status,language,category,parameter_format,components`
+  const searchParams = new URLSearchParams({
+    fields: "name,status,language,category,parameter_format,components",
+  })
+  if (props.name) {
+    searchParams.set("name", props.name)
+  }
+  const BASE_PATH = `/${version}/${pageId}/message_templates?${searchParams.toString()}`
   const MAX_PAGES = 50
 
   return rescue("message_templates", async () => {

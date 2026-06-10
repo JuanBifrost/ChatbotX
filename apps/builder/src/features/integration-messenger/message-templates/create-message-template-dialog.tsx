@@ -38,7 +38,7 @@ import {
   Trash2Icon,
 } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useTranslations } from "next-intl"
+import { useLocale, useTranslations } from "next-intl"
 import { useCallback, useEffect, useMemo, useState } from "react"
 import { useFieldArray, useFormContext, useWatch } from "react-hook-form"
 import { toast } from "sonner"
@@ -223,9 +223,15 @@ export function CreateMessageTemplateDialog({
   integrationMessengerId,
 }: CreateMessageTemplateDialogProps) {
   const t = useTranslations()
+  const locale = useLocale()
   const router = useRouter()
   const [open, setOpen] = useState(false)
   const [uploadedImage, setUploadedImage] = useState<UploadedImage | null>(null)
+  const defaultLanguage = locale.startsWith("en") ? "en" : "vi"
+  const formDefaultValues = useMemo(
+    () => ({ ...defaultValues, language: defaultLanguage }),
+    [defaultLanguage],
+  )
 
   const boundAction = useMemo(
     () =>
@@ -256,13 +262,15 @@ export function CreateMessageTemplateDialog({
           },
           onError: ({ error }) => {
             if (error.serverError) {
-              toast.error(error.serverError)
+              toast.error(error.serverError, {
+                duration: 5000,
+              })
             }
           },
         },
         formProps: {
           mode: "onChange",
-          defaultValues,
+          defaultValues: formDefaultValues,
         },
         errorMapProps: {},
       },
@@ -281,16 +289,19 @@ export function CreateMessageTemplateDialog({
   const resetDialog = useCallback(() => {
     setUploadedImage(null)
     resetFormAndAction()
-  }, [resetFormAndAction])
+    form.reset(formDefaultValues)
+  }, [form, formDefaultValues, resetFormAndAction])
 
   const handleOpenChange = useCallback(
     (isOpen: boolean) => {
       setOpen(isOpen)
-      if (!isOpen) {
+      if (isOpen) {
+        form.reset(formDefaultValues)
+      } else {
         resetDialog()
       }
     },
-    [resetDialog],
+    [form, formDefaultValues, resetDialog],
   )
 
   const headerOptions = useMemo(
@@ -307,12 +318,13 @@ export function CreateMessageTemplateDialog({
       <DialogTrigger asChild>
         <Button size="sm">
           <PlusIcon className="size-4" />
-          {t("actions.createFeature", {
-            feature: t("fields.messageTemplate.label"),
-          })}
+          {t("messenger.messageTemplate.create.trigger")}
         </Button>
       </DialogTrigger>
-      <DialogContent className="max-h-screen overflow-y-auto sm:max-w-2xl">
+      <DialogContent
+        className="max-h-screen overflow-y-auto sm:max-w-2xl"
+        onInteractOutside={(event) => event.preventDefault()}
+      >
         <DialogHeader className="mb-2">
           <DialogTitle>
             {t("actions.createFeature", {
@@ -323,7 +335,7 @@ export function CreateMessageTemplateDialog({
 
         <Form {...form}>
           <form className="space-y-6" onSubmit={handleSubmitWithAction}>
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid gap-4">
               <InputField label={t("fields.name.label")} name="name" required />
               <SelectField
                 label={t("fields.language.label")}
@@ -417,6 +429,7 @@ export function CreateMessageTemplateDialog({
               label={t("messenger.messageTemplate.create.body")}
               maxVariables={9}
               name="body"
+              variablesLayout="stack"
               variablesName="bodyVariables"
             />
 

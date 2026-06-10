@@ -193,7 +193,7 @@ describe("buildMessengerTemplateComponents", () => {
       })
     })
 
-    test("two url buttons in params → two URL components", () => {
+    test("two url buttons in params → one buttons component with two URL parameters", () => {
       const components = buildMessengerTemplateComponents(
         {
           button: [
@@ -203,15 +203,28 @@ describe("buildMessengerTemplateComponents", () => {
         },
         "POSITIONAL",
       )
-      expect(components).toHaveLength(2)
+      expect(components).toHaveLength(1)
       expect(components[0].parameters[0]).toMatchObject({
         type: "URL",
         url: "suffix1",
       })
-      expect(components[1].parameters[0]).toMatchObject({
+      expect(components[0].parameters[1]).toMatchObject({
         type: "URL",
         url: "suffix2",
       })
+    })
+
+    test("phone_number param → PHONE_NUMBER parameter", () => {
+      const components = buildMessengerTemplateComponents(
+        { button: [{ sub_type: "phone_number", index: 0 }] },
+        "POSITIONAL",
+      )
+      expect(components).toEqual([
+        {
+          type: "buttons",
+          parameters: [{ type: "PHONE_NUMBER" }],
+        },
+      ])
     })
 
     test("POSTBACK from flowContext.flowButtons → POSTBACK type with encoded payload", () => {
@@ -240,7 +253,7 @@ describe("buildMessengerTemplateComponents", () => {
       })
     })
 
-    test("two flow buttons → two POSTBACK components", () => {
+    test("two flow buttons → one buttons component with two POSTBACK parameters", () => {
       const buttons: ButtonStepProps[] = [
         { id: "2001", label: "Yes", buttonType: null },
         { id: "2002", label: "No", buttonType: null },
@@ -249,11 +262,10 @@ describe("buildMessengerTemplateComponents", () => {
         flowId: "333",
         flowButtons: buttons,
       })
-      expect(components).toHaveLength(2)
-      for (const comp of components) {
-        const param = comp.parameters[0] as { type: string }
-        expect(param.type).toBe("POSTBACK")
-      }
+      expect(components).toHaveLength(1)
+      expect(components[0].parameters).toHaveLength(2)
+      expect(components[0].parameters[0]).toMatchObject({ type: "POSTBACK" })
+      expect(components[0].parameters[1]).toMatchObject({ type: "POSTBACK" })
     })
 
     test("broadcastId and sequenceStepId encoded into flow button payload", () => {
@@ -291,7 +303,7 @@ describe("buildMessengerTemplateComponents", () => {
     expect(components[2].type).toBe("buttons")
   })
 
-  test("URL params then POSTBACK flow buttons → URL components before POSTBACK components", () => {
+  test("URL params then POSTBACK flow buttons → button parameters ordered by index", () => {
     const flowButton: ButtonStepProps = {
       id: "9001",
       label: "Confirm",
@@ -306,11 +318,35 @@ describe("buildMessengerTemplateComponents", () => {
       "POSITIONAL",
       { flowId: "777", flowVersionId: "888", flowButtons: [flowButton] },
     )
-    expect(components).toHaveLength(4)
+    expect(components).toHaveLength(3)
     expect(components[0].type).toBe("header")
     expect(components[1].type).toBe("body")
     expect(components[2].parameters[0]).toMatchObject({ type: "URL" })
-    expect(components[3].parameters[0]).toMatchObject({ type: "POSTBACK" })
+    expect(components[2].parameters[1]).toMatchObject({ type: "POSTBACK" })
+  })
+
+  test("POSTBACK + PHONE_NUMBER + URL keeps template button order", () => {
+    const button: ButtonStepProps = {
+      id: "9002",
+      label: "Details",
+      buttonType: null,
+    }
+    const components = buildMessengerTemplateComponents(
+      {
+        button: [
+          { sub_type: "phone_number", index: 1 },
+          { sub_type: "url", index: 2, text: "https://ahachat.com/" },
+        ],
+      },
+      "POSITIONAL",
+      { flowId: "777", flowVersionId: "888", flowButtons: [button] },
+    )
+    expect(components).toHaveLength(1)
+    expect(components[0].parameters).toEqual([
+      expect.objectContaining({ type: "POSTBACK" }),
+      { type: "PHONE_NUMBER" },
+      { type: "URL", url: "https://ahachat.com/" },
+    ])
   })
 })
 
@@ -437,7 +473,7 @@ describe("buildMessengerTemplateSendRequest", () => {
     })
   })
 
-  test("URL params and step.buttons → URL then POSTBACK components", () => {
+  test("URL params and step.buttons → one buttons component with URL then POSTBACK parameters", () => {
     const button: ButtonStepProps = {
       id: "20001",
       label: "Start",
@@ -455,9 +491,9 @@ describe("buildMessengerTemplateSendRequest", () => {
       type: string
       parameters: Array<{ type: string }>
     }>
-    expect(components).toHaveLength(2)
+    expect(components).toHaveLength(1)
     expect(components[0].parameters[0].type).toBe("URL")
-    expect(components[1].parameters[0].type).toBe("POSTBACK")
+    expect(components[0].parameters[1].type).toBe("POSTBACK")
   })
 
   test("metadata broadcastId propagates into POSTBACK payload", () => {

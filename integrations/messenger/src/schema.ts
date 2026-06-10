@@ -7,6 +7,7 @@ import type {
 import { z } from "zod"
 import type {
   CloneMessengerTemplateProps,
+  ListMessengerMessageTemplatesProps,
   ListMessengerMessageTemplatesResponse,
   MessengerMessageTemplateEntity,
 } from "./apis/message-templates"
@@ -41,7 +42,7 @@ export type MessengerActions<
     persona: PersonaRequest
   }) => Promise<{ personaId?: string }>
   listMessageTemplates: Handler<
-    { ctx: Context<IAuth> },
+    { ctx: Context<IAuth>; input?: ListMessengerMessageTemplatesProps },
     ListMessengerMessageTemplatesResponse
   >
   cloneMessageTemplate: Handler<

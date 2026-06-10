@@ -1,6 +1,10 @@
 import { DEFAULT_API_VERSION } from "../constants"
 import type { MessengerAuthValue } from "../schema"
 
+type ResumableUploadImageOptions = {
+  authenticatedDownload?: boolean
+}
+
 /**
  * Upload an image to Meta's Resumable Upload API for a specific Page.
  *
@@ -13,15 +17,22 @@ import type { MessengerAuthValue } from "../schema"
 export async function resumableUploadImage(
   auth: MessengerAuthValue,
   imageUrl: string,
+  options: ResumableUploadImageOptions = {},
 ): Promise<string> {
   const version = auth.metadata.version ?? DEFAULT_API_VERSION
   const appId = auth.clientId
   const accessToken = auth.tokens.accessToken
+  const authenticatedDownload = options.authenticatedDownload ?? true
 
   // 1. Download image bytes from the stored handle URL
-  const imgRes = await fetch(imageUrl, {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  })
+  const imgRes = await fetch(
+    imageUrl,
+    authenticatedDownload
+      ? {
+          headers: { Authorization: `Bearer ${accessToken}` },
+        }
+      : undefined,
+  )
   if (!imgRes.ok) {
     throw new Error(`Template image download failed: HTTP ${imgRes.status}`)
   }

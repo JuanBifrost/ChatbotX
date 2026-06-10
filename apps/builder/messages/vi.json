@@ -1785,6 +1785,7 @@
         "postbackPayloadPlaceholder": "Nhập payload (tùy chọn)"
       },
       "create": {
+        "trigger": "Tạo mẫu mới",
         "header": "Đầu mẫu",
         "headerType": "Loại đầu mẫu",
         "none": "Không có",

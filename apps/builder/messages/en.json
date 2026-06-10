@@ -1774,6 +1774,7 @@
         "postbackPayloadPlaceholder": "Enter payload (optional)"
       },
       "create": {
+        "trigger": "Create new template",
         "header": "Header",
         "headerType": "Header Type",
         "none": "None",

@@ -22,7 +22,7 @@ const templateButtonSchema = z.discriminatedUnion("type", [
     type: z.literal("URL"),
     title: z.string().min(1).max(20),
     url: z.string().min(1),
-    variables: z.array(z.string().min(1)).default([]),
+    variables: z.array(z.string().min(1)).max(1).default([]),
   }),
 ])
 
@@ -151,6 +151,15 @@ export const createMessengerMessageTemplateRequest = z
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           message: "Only variables from {{1}} to {{9}} are supported",
+          path: ["buttons", index, "url"],
+        })
+        return
+      }
+
+      if (placeholders.length > 1) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "URL buttons support only one variable",
           path: ["buttons", index, "url"],
         })
         return
