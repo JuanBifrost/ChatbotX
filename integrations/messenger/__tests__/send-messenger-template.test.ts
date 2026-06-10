@@ -3,16 +3,26 @@ import type {
   SendMessengerTemplateMessageStepSchema,
 } from "@chatbotx.io/flow-config"
 import { decodeButtonPayload } from "@chatbotx.io/flow-config"
-import { describe, expect, test } from "vitest"
+import { beforeEach, describe, expect, test, vi } from "vitest"
+import { sendFlowStep } from "../src/handlers/message/outgoing-message"
 import {
   buildMessengerTemplateComponents,
   buildMessengerTemplateSendRequest,
 } from "../src/handlers/message/outgoing-message/send-messenger-template"
 import { MESSENGER_MESSAGE_METADATA } from "../src/schema"
 
+const { mockSendPageMessage } = vi.hoisted(() => ({
+  mockSendPageMessage: vi.fn(),
+}))
+
+vi.mock("../src/apis/message", () => ({
+  sendPageMessage: mockSendPageMessage,
+}))
+
 // Minimal props factory for buildMessengerTemplateSendRequest
 function makeProps(
   overrides: Partial<{
+    lastIncomingMessageAt: Date | string | null
     sourceId: string
     templateName: string
     templateLanguage: string
@@ -23,9 +33,11 @@ function makeProps(
     flowVersionId?: string
     buttons?: ButtonStepProps[]
     metadata?: Record<string, string>
+    sendFrom?: "inbox"
   }> = {},
 ) {
   const {
+    lastIncomingMessageAt,
     sourceId = "user-123",
     templateName = "order_update",
     templateLanguage = "en",
@@ -36,6 +48,7 @@ function makeProps(
     flowVersionId,
     buttons = [],
     metadata,
+    sendFrom,
   } = overrides
 
   return {
@@ -44,10 +57,11 @@ function makeProps(
       integrationDetail: personaId ? { personaId } : undefined,
     },
     data: {
-      contact: { sourceId, id: "contact-1" },
+      contact: { sourceId, id: "contact-1", lastIncomingMessageAt },
       flowId,
       flowVersionId,
       metadata,
+      sendFrom,
       step: {
         id: "step-1",
         nodeId: "node-1",
@@ -64,6 +78,11 @@ function makeProps(
     },
   } as Parameters<typeof buildMessengerTemplateSendRequest>[0]
 }
+
+beforeEach(() => {
+  vi.clearAllMocks()
+  mockSendPageMessage.mockResolvedValue({ recipient_id: "user-123" })
+})
 
 // ─── buildMessengerTemplateComponents ────────────────────────────────────────
 
@@ -315,6 +334,11 @@ describe("buildMessengerTemplateSendRequest", () => {
     expect(req.tag).toBeUndefined()
   })
 
+  test("no message_type field", () => {
+    const req = buildMessengerTemplateSendRequest(makeProps())
+    expect((req as Record<string, unknown>).message_type).toBeUndefined()
+  })
+
   test("persona_id included when integrationDetail.personaId present", () => {
     const req = buildMessengerTemplateSendRequest(
       makeProps({ personaId: "persona-abc" }),
@@ -458,5 +482,23 @@ describe("buildMessengerTemplateSendRequest", () => {
       components[0].parameters[0].payload ?? "",
     )
     expect(decoded).toMatchObject({ broadcastId: "55000" })
+  })
+})
+
+describe("sendFlowStep", () => {
+  test("sends Messenger template as UTILITY even when inbox send is outside the 7-day human-agent window", async () => {
+    await expect(
+      sendFlowStep(
+        makeProps({
+          lastIncomingMessageAt: "2026-06-01T00:00:00.000Z",
+          sendFrom: "inbox",
+        }),
+      ),
+    ).resolves.toEqual({ messageIds: [] })
+
+    expect(mockSendPageMessage).toHaveBeenCalledTimes(1)
+    const [, payload] = mockSendPageMessage.mock.calls[0]
+    expect(payload).toMatchObject({ messaging_type: "UTILITY" })
+    expect(payload).not.toHaveProperty("tag")
   })
 })
