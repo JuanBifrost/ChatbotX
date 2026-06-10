@@ -7,6 +7,7 @@ export const integrationTypes = z.enum([
   "gemini",
   "googleSheets",
   "instagram",
+  "mailchimp",
   "messenger",
   "openai",
   "smtp",

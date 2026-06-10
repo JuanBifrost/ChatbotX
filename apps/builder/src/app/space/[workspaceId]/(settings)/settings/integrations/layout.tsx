@@ -6,7 +6,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@chatbotx.io/ui/components/ui/accordion"
-import { BotIcon, CodeIcon, TableIcon } from "lucide-react"
+import { BotIcon, CodeIcon, MailIcon, TableIcon } from "lucide-react"
 import { useTranslations } from "next-intl"
 import type { ReactNode } from "react"
 
@@ -17,6 +17,7 @@ type SettingIntegrationLayoutProps = {
   claude: ReactNode
   deepSeek: ReactNode
   googleSheets: ReactNode
+  mailchimp: ReactNode
 }
 
 export default function SettingIntegrationLayout({
@@ -26,6 +27,7 @@ export default function SettingIntegrationLayout({
   claude,
   deepSeek,
   googleSheets,
+  mailchimp,
 }: SettingIntegrationLayoutProps) {
   const t = useTranslations()
 
@@ -59,6 +61,11 @@ export default function SettingIntegrationLayout({
       keyName: t("googleSheets.title"),
       icon: TableIcon,
       content: googleSheets,
+    },
+    {
+      keyName: t("mailchimp.title"),
+      icon: MailIcon,
+      content: mailchimp,
     },
   ]
 

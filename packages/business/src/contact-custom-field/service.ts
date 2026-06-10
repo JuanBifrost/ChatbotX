@@ -18,6 +18,13 @@ type DeleteByKeyInput = {
 }
 
 class ContactCustomFieldService extends BaseService {
+  async listValues(input: { contactId: string }) {
+    return await db.query.contactCustomFieldModel.findMany({
+      where: { contactId: input.contactId },
+      columns: { customFieldId: true, value: true },
+    })
+  }
+
   async setValues(
     input: SetValuesInput,
     tx: DatabaseClient = db,

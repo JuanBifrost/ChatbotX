@@ -716,6 +716,9 @@
     "googleSheets": {
       "label": "Google Sheets"
     },
+    "mailchimp": {
+      "label": "Mailchimp"
+    },
     "host": {
       "label": "Máy chủ",
       "placeholder": "smtp.example.com"
@@ -1451,6 +1454,7 @@
       "getDataFromJson": "Lấy dữ liệu từ JSON",
       "inboxActions": "Hành động hộp thư",
       "markEmailVerified": "Đánh dấu email đã xác minh",
+      "mailchimpAddMember": "Thêm liên hệ vào MailChimp",
       "openWebsite": "Mở trang web",
       "optInEmail": "Đăng ký nhận email",
       "optOutEmail": "Hủy đăng ký email",
@@ -1608,6 +1612,25 @@
     },
     "header": "Tiêu đề cột",
     "title": "Google"
+  },
+  "mailchimp": {
+    "title": "Mailchimp",
+    "setting": {
+      "label": "Mailchimp",
+      "description": "Tích hợp này cho phép bạn lưu thông tin liên hệ của khách hàng từ bot vào MailChimp."
+    },
+    "fields": {
+      "audience": "Danh sách đối tượng",
+      "email": "Trường email",
+      "emailTooltip": "Trường tùy chỉnh chứa email của người dùng để xác định liên hệ MailChimp.",
+      "doubleOptIn": "Xác nhận đăng ký hai bước",
+      "doubleOptInTooltip": "Nếu bật, email xác nhận sẽ được gửi trước khi thêm liên hệ vào danh sách.",
+      "on": "Bật",
+      "off": "Tắt",
+      "optional": "Không bắt buộc",
+      "tags": "Thẻ",
+      "mergeFields": "Trường tùy chỉnh trong MailChimp"
+    }
   },
   "integrations": {
     "title": "Tích hợp"

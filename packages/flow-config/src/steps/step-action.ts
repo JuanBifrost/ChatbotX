@@ -93,6 +93,9 @@ export const stepTypes = z.enum([
   "spreadsheetUpdateRow",
   "spreadsheetClearRow",
 
+  // Mail Marketing Operations (M_)
+  "mailchimpAddMember",
+
   // Sequence Operations (Q_)
   "subscribeSequence",
   "unsubscribeSequence",

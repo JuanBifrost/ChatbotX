@@ -16,6 +16,10 @@ export const integrationRelations = defineRelationsPart(schema, (r) => ({
       from: r.integrationModel.id,
       to: r.integrationGoogleSheetsModel.integrationId,
     }),
+    integrationMailchimp: r.one.integrationMailchimpModel({
+      from: r.integrationModel.id,
+      to: r.integrationMailchimpModel.integrationId,
+    }),
     integrationGemini: r.one.integrationGeminiModel({
       from: r.integrationModel.id,
       to: r.integrationGeminiModel.integrationId,

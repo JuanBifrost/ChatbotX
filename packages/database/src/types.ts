@@ -39,6 +39,8 @@ export type IntegrationGeminiModel =
 export type IntegrationModel = typeof schema.integrationModel.$inferSelect
 export type IntegrationGoogleSheetsModel =
   typeof schema.integrationGoogleSheetsModel.$inferSelect
+export type IntegrationMailchimpModel =
+  typeof schema.integrationMailchimpModel.$inferSelect
 export type IntegrationMessengerModel =
   typeof schema.integrationMessengerModel.$inferSelect
 export type IntegrationOpenAIModel =

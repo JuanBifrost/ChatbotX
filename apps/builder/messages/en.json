@@ -709,6 +709,9 @@
     "googleSheets": {
       "label": "Google Sheets"
     },
+    "mailchimp": {
+      "label": "Mailchimp"
+    },
     "host": {
       "label": "Host",
       "placeholder": "smtp.example.com"
@@ -1440,6 +1443,7 @@
       "getDataFromJson": "Get Data From JSON",
       "inboxActions": "Inbox Actions",
       "markEmailVerified": "Mark Email Verified",
+      "mailchimpAddMember": "Add Contact to MailChimp",
       "openWebsite": "Open Website",
       "optInEmail": "Opt In Email",
       "optOutEmail": "Opt Out Email",
@@ -1597,6 +1601,25 @@
     },
     "header": "Column Header",
     "title": "Google Sheets"
+  },
+  "mailchimp": {
+    "title": "Mailchimp",
+    "setting": {
+      "label": "Mailchimp",
+      "description": "This integration lets you save customers contacts from your bot to MailChimp."
+    },
+    "fields": {
+      "audience": "Audience",
+      "email": "Email field",
+      "emailTooltip": "Custom Field which contains the user's email to identify MailChimp contacts.",
+      "doubleOptIn": "Double Opt-In",
+      "doubleOptInTooltip": "If yes, a confirmation email will be sent to the email before add the contact to your list.",
+      "on": "On",
+      "off": "Off",
+      "optional": "Optional",
+      "tags": "Tags",
+      "mergeFields": "Custom Fields in MailChimp"
+    }
   },
   "integrations": {
     "title": "Integrations"

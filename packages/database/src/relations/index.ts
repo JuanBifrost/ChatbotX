@@ -60,6 +60,7 @@ import { integrationDeepseekRelations } from "./integration-deepseek"
 import { integrationGeminiRelations } from "./integration-gemini"
 import { integrationGoogleSheetsRelations } from "./integration-google-sheets"
 import { integrationInstagramRelations } from "./integration-instagram"
+import { integrationMailchimpRelations } from "./integration-mailchimp"
 import { integrationMessengerRelations } from "./integration-messenger"
 import { integrationOpenaiRelations } from "./integration-openai"
 import { integrationSmtpRelations } from "./integration-smtp"
@@ -173,6 +174,7 @@ export const relations = {
   ...integrationTelegramRelations,
   ...integrationTiktokRelations,
   ...integrationInstagramRelations,
+  ...integrationMailchimpRelations,
   ...flowAnalyticsSessionRelations,
   ...flowNodeStatRelations,
   ...contactOnSmartDelayRelations,

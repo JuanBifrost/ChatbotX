@@ -378,6 +378,11 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         icon: BellOffIcon,
         stepType: stepTypes.enum.optOutEmail,
       },
+      {
+        label: t("flows.actions.mailchimpAddMember"),
+        icon: MailIcon,
+        stepType: stepTypes.enum.mailchimpAddMember,
+      },
     ],
   },
   {
