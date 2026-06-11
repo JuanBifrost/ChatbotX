@@ -323,7 +323,10 @@ describe("ShardedMessageRepository.listByConversation — write-shard union", ()
       // Time-range registry excludes the shard: query window predates activation.
       getShardsForTimeRange: vi.fn().mockResolvedValue([]),
       getWriteShardInfo: vi.fn().mockResolvedValue(writeShard),
-      getShardClientForRead: vi.fn().mockResolvedValue(shardClient),
+      withShardClientForRead: vi.fn(
+        (_shard: unknown, fn: (client: unknown) => Promise<unknown>) =>
+          fn(shardClient),
+      ),
     }
     const localRepo = new ShardedMessageRepository(shardManager as never)
 
@@ -338,7 +341,7 @@ describe("ShardedMessageRepository.listByConversation — write-shard union", ()
     })
 
     expect(shardManager.getWriteShardInfo).toHaveBeenCalledWith("ws-1")
-    expect(shardManager.getShardClientForRead).toHaveBeenCalledTimes(1)
+    expect(shardManager.withShardClientForRead).toHaveBeenCalledTimes(1)
     expect(result.data).toHaveLength(1)
     expect(result.data[0].id).toBe("msg-hist-1")
   })
@@ -359,7 +362,10 @@ describe("ShardedMessageRepository.listByConversation — write-shard union", ()
     const shardManager = {
       getShardsForTimeRange: vi.fn().mockResolvedValue([timeRangeShard]),
       getWriteShardInfo: vi.fn().mockResolvedValue(writeShard),
-      getShardClientForRead: vi.fn().mockResolvedValue(shardClient),
+      withShardClientForRead: vi.fn(
+        (_shard: unknown, fn: (client: unknown) => Promise<unknown>) =>
+          fn(shardClient),
+      ),
     }
     const localRepo = new ShardedMessageRepository(shardManager as never)
 
@@ -374,7 +380,7 @@ describe("ShardedMessageRepository.listByConversation — write-shard union", ()
     })
 
     // Deduped by shard id → the single shard is queried exactly once.
-    expect(shardManager.getShardClientForRead).toHaveBeenCalledTimes(1)
+    expect(shardManager.withShardClientForRead).toHaveBeenCalledTimes(1)
     expect(result.data).toHaveLength(1)
   })
 
@@ -382,7 +388,7 @@ describe("ShardedMessageRepository.listByConversation — write-shard union", ()
     const shardManager = {
       getShardsForTimeRange: vi.fn().mockResolvedValue([]),
       getWriteShardInfo: vi.fn().mockResolvedValue(null),
-      getShardClientForRead: vi.fn(),
+      withShardClientForRead: vi.fn(),
     }
     const localRepo = new ShardedMessageRepository(shardManager as never)
 
@@ -397,6 +403,6 @@ describe("ShardedMessageRepository.listByConversation — write-shard union", ()
     })
 
     expect(result).toEqual({ data: [], nextCursor: null })
-    expect(shardManager.getShardClientForRead).not.toHaveBeenCalled()
+    expect(shardManager.withShardClientForRead).not.toHaveBeenCalled()
   })
 })

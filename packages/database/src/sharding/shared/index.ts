@@ -1,4 +1,5 @@
 export * from "./credentials"
+export * from "./env"
 export * from "./errors"
 export * from "./hash"
 export * from "./pool"

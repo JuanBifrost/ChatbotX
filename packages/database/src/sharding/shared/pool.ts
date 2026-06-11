@@ -1,5 +1,7 @@
 import { Pool } from "pg"
+import { logger } from "../../logger"
 import { resolveShardCredentials } from "./credentials"
+import { envInt } from "./env"
 import type { ShardConfig } from "./types"
 
 export interface CreateShardPoolOptions {
@@ -10,14 +12,10 @@ export interface CreateShardPoolOptions {
 }
 
 const ENV_DEFAULTS = {
-  max: process.env.SHARD_POOL_MAX ? Number(process.env.SHARD_POOL_MAX) : 10,
-  min: process.env.SHARD_POOL_MIN ? Number(process.env.SHARD_POOL_MIN) : 2,
-  idleTimeoutMillis: process.env.SHARD_POOL_IDLE_TIMEOUT_MS
-    ? Number(process.env.SHARD_POOL_IDLE_TIMEOUT_MS)
-    : 30_000,
-  connectionTimeoutMillis: process.env.SHARD_POOL_CONNECT_TIMEOUT_MS
-    ? Number(process.env.SHARD_POOL_CONNECT_TIMEOUT_MS)
-    : 5000,
+  max: envInt("SHARD_POOL_MAX", 10, { min: 1 }),
+  min: envInt("SHARD_POOL_MIN", 2),
+  idleTimeoutMillis: envInt("SHARD_POOL_IDLE_TIMEOUT_MS", 30_000),
+  connectionTimeoutMillis: envInt("SHARD_POOL_CONNECT_TIMEOUT_MS", 5000),
 }
 
 function buildSslConfig(sslMode: string) {
@@ -25,6 +23,19 @@ function buildSslConfig(sslMode: string) {
     return
   }
   return { rejectUnauthorized: sslMode !== "require" }
+}
+
+function attachPoolErrorHandler(
+  pool: Pool,
+  props: { role: "primary" | "read"; shardId: string },
+): Pool {
+  pool.on("error", (error) => {
+    logger.error(
+      { err: error, role: props.role, shardId: props.shardId },
+      "Unexpected idle shard pool error",
+    )
+  })
+  return pool
 }
 
 export function createShardPool(
@@ -38,18 +49,21 @@ export function createShardPool(
 
   const merged = { ...ENV_DEFAULTS, ...options }
 
-  return new Pool({
-    host: shard.host,
-    port: shard.port ?? 5432,
-    database: shard.database,
-    user: shard.user,
-    password,
-    ssl: buildSslConfig(sslMode),
-    max: merged.max,
-    min: merged.min,
-    idleTimeoutMillis: merged.idleTimeoutMillis,
-    connectionTimeoutMillis: merged.connectionTimeoutMillis,
-  })
+  return attachPoolErrorHandler(
+    new Pool({
+      host: shard.host,
+      port: shard.port ?? 5432,
+      database: shard.database,
+      user: shard.user,
+      password,
+      ssl: buildSslConfig(sslMode),
+      max: merged.max,
+      min: merged.min,
+      idleTimeoutMillis: merged.idleTimeoutMillis,
+      connectionTimeoutMillis: merged.connectionTimeoutMillis,
+    }),
+    { role: "primary", shardId: shard.id },
+  )
 }
 
 export function createReadShardPool(
@@ -67,16 +81,19 @@ export function createReadShardPool(
 
   const merged = { ...ENV_DEFAULTS, ...options }
 
-  return new Pool({
-    host: shard.readHost,
-    port: shard.readPort ?? shard.port ?? 5432,
-    database: shard.database,
-    user: shard.user,
-    password,
-    ssl: buildSslConfig(sslMode),
-    max: merged.max,
-    min: merged.min,
-    idleTimeoutMillis: merged.idleTimeoutMillis,
-    connectionTimeoutMillis: merged.connectionTimeoutMillis,
-  })
+  return attachPoolErrorHandler(
+    new Pool({
+      host: shard.readHost,
+      port: shard.readPort ?? shard.port ?? 5432,
+      database: shard.database,
+      user: shard.user,
+      password,
+      ssl: buildSslConfig(sslMode),
+      max: merged.max,
+      min: merged.min,
+      idleTimeoutMillis: merged.idleTimeoutMillis,
+      connectionTimeoutMillis: merged.connectionTimeoutMillis,
+    }),
+    { role: "read", shardId: shard.id },
+  )
 }

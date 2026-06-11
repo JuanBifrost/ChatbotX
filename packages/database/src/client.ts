@@ -8,6 +8,7 @@ import type { PgTable } from "drizzle-orm/pg-core"
 import { Pool } from "pg"
 import { ModelNotfoundException } from "./errors"
 import { keys } from "./keys"
+import { logger } from "./logger"
 import { relations } from "./relations"
 
 // biome-ignore lint/performance/noNamespaceImport: drizzle schema
@@ -20,6 +21,10 @@ const pool = new Pool({
   max: 10,
   idleTimeoutMillis: 30_000,
   connectionTimeoutMillis: 5000,
+})
+
+pool.on("error", (error) => {
+  logger.error({ err: error }, "Unexpected idle database pool error")
 })
 
 export const db = drizzle({

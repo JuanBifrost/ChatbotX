@@ -4,6 +4,8 @@ import { logger } from "../../logger"
 import {
   createReadShardPool,
   createShardPool,
+  envInt,
+  isConnectionError,
   type ShardConfig,
   ShardNotActiveError,
   ShardUnreachableError,
@@ -23,12 +25,20 @@ interface PoolEntry {
   lastUsed: Date
   pool: Pool
   readClient: MessageShardDatabaseClient | null
+  readFailedAt: Date | null
   readPool: Pool | null
+  readRetryPromise: Promise<void> | null
 }
 
 interface ActiveShardsCache {
   cachedAt: Date
   shards: ShardConfig[]
+}
+
+const READ_REPLICAS_ENABLED: boolean = false
+
+interface MessageShardConnectionManagerOptions {
+  readReplicasEnabled?: boolean
 }
 
 export class MessageShardConnectionManager {
@@ -37,12 +47,24 @@ export class MessageShardConnectionManager {
   private activeShardsCache: ActiveShardsCache | null = null
   private lastEvictedAt: Date | null = null
   private readonly registry: MessageShardRegistry
+  private readonly readReplicaRetryTtlMs: number
+  private readonly readReplicasEnabled: boolean
 
   private static readonly MAX_POOLS = 10
   private static readonly ACTIVE_SHARD_TTL_MS = 30_000
 
-  constructor(mainDb: DatabaseClient, registry?: MessageShardRegistry) {
+  constructor(
+    mainDb: DatabaseClient,
+    registry?: MessageShardRegistry,
+    options: MessageShardConnectionManagerOptions = {},
+  ) {
     this.registry = registry ?? new MessageShardRegistry(mainDb)
+    this.readReplicaRetryTtlMs = envInt(
+      "SHARD_READ_REPLICA_RETRY_TTL_MS",
+      60_000,
+    )
+    this.readReplicasEnabled =
+      options.readReplicasEnabled ?? READ_REPLICAS_ENABLED
   }
 
   async isShardingEnabled(): Promise<boolean> {
@@ -151,10 +173,14 @@ export class MessageShardConnectionManager {
   async getShardClient(
     shard: ShardConfig,
   ): Promise<MessageShardDatabaseClient> {
+    return (await this.ensureEntry(shard)).client
+  }
+
+  private async ensureEntry(shard: ShardConfig): Promise<PoolEntry> {
     const existing = this.pools.get(shard.id)
     if (existing) {
       existing.lastUsed = new Date()
-      return existing.client
+      return existing
     }
 
     if (this.pools.size >= MessageShardConnectionManager.MAX_POOLS) {
@@ -164,8 +190,11 @@ export class MessageShardConnectionManager {
     const pool = createShardPool(shard)
     await this.healthCheck(pool, shard.id)
 
-    const readPool = createReadShardPool(shard)
+    const readPool = this.readReplicasEnabled
+      ? createReadShardPool(shard)
+      : null
     let readClient: MessageShardDatabaseClient | null = null
+    let readFailedAt: Date | null = null
     if (readPool) {
       try {
         await this.healthCheck(readPool, `${shard.id}:read`)
@@ -175,31 +204,140 @@ export class MessageShardConnectionManager {
           { err: error, shardId: shard.id },
           "Read replica unhealthy, falling back to primary for reads",
         )
+        readFailedAt = new Date()
         await readPool.end().catch((_e) => undefined)
       }
     }
 
-    const client = createMessageShardClient(pool)
-    this.pools.set(shard.id, {
+    const entry: PoolEntry = {
       pool,
-      client,
+      client: createMessageShardClient(pool),
       readPool: readClient ? readPool : null,
       readClient,
+      readFailedAt,
+      readRetryPromise: null,
       lastUsed: new Date(),
-    })
-
-    return client
+    }
+    this.pools.set(shard.id, entry)
+    return entry
   }
 
-  getShardClientForRead(
+  async withShardClientForRead<T>(
     shard: ShardConfig,
-  ): Promise<MessageShardDatabaseClient> {
-    const entry = this.pools.get(shard.id)
-    if (entry?.readClient) {
-      entry.lastUsed = new Date()
-      return Promise.resolve(entry.readClient)
+    fn: (client: MessageShardDatabaseClient) => Promise<T>,
+  ): Promise<T> {
+    const entry = await this.ensureEntry(shard)
+
+    if (!this.readReplicasEnabled) {
+      return fn(entry.client)
     }
-    return this.getShardClient(shard)
+
+    if (!entry.readClient && this.shouldRetryReadReplica(shard, entry)) {
+      this.scheduleReadReplicaRetry(shard, entry)
+    }
+
+    const readClient = entry.readClient
+    if (!readClient) {
+      return fn(entry.client)
+    }
+
+    try {
+      return await fn(readClient)
+    } catch (error) {
+      if (!isConnectionError(error)) {
+        throw error
+      }
+      logger.warn(
+        { err: error, shardId: shard.id },
+        "Read replica query failed with connection error, retrying on primary",
+      )
+      this.markReadReplicaUnhealthy(shard.id)
+      const retryEntry =
+        this.pools.get(shard.id) === entry
+          ? entry
+          : await this.ensureEntry(shard)
+      return fn(retryEntry.client)
+    }
+  }
+
+  markReadReplicaUnhealthy(shardId: string): void {
+    const entry = this.pools.get(shardId)
+    if (!entry?.readClient) {
+      return
+    }
+    const readPool = entry.readPool
+    entry.readClient = null
+    entry.readPool = null
+    entry.readFailedAt = new Date()
+    readPool?.end().catch((_e) => undefined)
+  }
+
+  private shouldRetryReadReplica(
+    shard: ShardConfig,
+    entry: PoolEntry,
+  ): boolean {
+    if (!(this.readReplicasEnabled && shard.readHost) || entry.readClient) {
+      return false
+    }
+
+    if (!entry.readFailedAt) {
+      return true
+    }
+
+    const elapsedMs = Date.now() - entry.readFailedAt.getTime()
+    return elapsedMs >= this.readReplicaRetryTtlMs
+  }
+
+  private scheduleReadReplicaRetry(shard: ShardConfig, entry: PoolEntry): void {
+    if (entry.readRetryPromise) {
+      return
+    }
+
+    // .catch is mandatory: nothing awaits this promise. connectReadReplica
+    // catches expected failures internally, but this remains the final guard
+    // against future unexpected throws becoming unhandled rejections.
+    entry.readRetryPromise = this.connectReadReplica(shard, entry)
+      .catch((error) => {
+        logger.warn(
+          { err: error, shardId: shard.id },
+          "Unexpected error during read replica reconnect",
+        )
+      })
+      .finally(() => {
+        entry.readRetryPromise = null
+      })
+  }
+
+  private async connectReadReplica(
+    shard: ShardConfig,
+    entry: PoolEntry,
+  ): Promise<void> {
+    let readPool: Pool | null = null
+    try {
+      if (!this.readReplicasEnabled) {
+        return
+      }
+      readPool = createReadShardPool(shard)
+      if (!readPool) {
+        return
+      }
+      await this.healthCheck(readPool, `${shard.id}:read`)
+      if (this.pools.get(shard.id) !== entry) {
+        await readPool.end().catch((_e) => undefined)
+        return
+      }
+      entry.readPool = readPool
+      entry.readClient = createMessageShardClient(readPool)
+      entry.readFailedAt = null
+      logger.info({ shardId: shard.id }, "Read replica recovered")
+    } catch (error) {
+      entry.readFailedAt = new Date()
+      logger.warn(
+        { err: error, shardId: shard.id },
+        "Read replica still unhealthy, continuing primary fallback for reads",
+      )
+      await readPool?.end().catch((_e) => undefined)
+    }
   }
 
   private async healthCheck(pool: Pool, shardId: string): Promise<void> {
