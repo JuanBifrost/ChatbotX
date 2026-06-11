@@ -20,8 +20,10 @@ const {
   mockSendFlowStepToChannel,
   mockProcessWhatsappTemplate,
   mockProcessMessengerTemplate,
+  mockDbSet,
 } = vi.hoisted(() => {
-  const updateChain = { set: vi.fn(), where: vi.fn() }
+  const mockDbSet = vi.fn()
+  const updateChain = { set: mockDbSet, where: vi.fn() }
   updateChain.set.mockReturnValue(updateChain)
   updateChain.where.mockResolvedValue(undefined)
   const mockDbUpdate = vi.fn().mockReturnValue(updateChain)
@@ -105,6 +107,7 @@ const {
     mockProcessMessengerTemplate: vi
       .fn()
       .mockResolvedValue({ messageId: "msg-ms" }),
+    mockDbSet,
   }
 })
 
@@ -120,6 +123,11 @@ vi.mock("@chatbotx.io/database/client", () => ({
   db: {
     insert: mockDbInsert,
     update: mockDbUpdate,
+    transaction: vi
+      .fn()
+      .mockImplementation((fn: (tx: unknown) => unknown) =>
+        fn({ update: mockDbUpdate }),
+      ),
     query: {
       conversationModel: { findFirst: mockFindConversation },
       contactInboxModel: { findFirst: mockFindContactInbox },
@@ -131,6 +139,7 @@ vi.mock("@chatbotx.io/database/client", () => ({
 vi.mock("@chatbotx.io/database/schema", () => ({
   messageModel: { id: "id", sourceId: "sourceId" },
   contactInboxModel: { id: "id" },
+  conversationModel: { id: "id", lastActivityAt: "lastActivityAt" },
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
@@ -165,7 +174,7 @@ vi.mock("@chatbotx.io/variables", () => ({
   resolveContactVariablesDeep: mockResolveContactVariables,
 }))
 
-vi.mock("@chatbotx.io/filesystem/node-upload", () => ({
+vi.mock("@chatbotx.io/filesystem", () => ({
   uploadFileFromUrl: mockUploadFileFromUrl,
 }))
 
@@ -198,7 +207,9 @@ vi.mock("../src/chat/handlers/send-whatsapp-template", () => ({
 
 import type { ChatJobSendFlowStep } from "@chatbotx.io/worker-config"
 
-const { sendFlowStep } = await import("../src/chat/handlers/send-flow-step")
+const { sendChatMessage, sendFlowStep } = await import(
+  "../src/chat/handlers/send-flow-step"
+)
 
 // ---------------------------------------------------------------------------
 // Fixtures
@@ -368,6 +379,18 @@ describe("sendFlowStep", () => {
     }
   })
 
+  test("updates contact inbox lastMessageAt and conversation lastActivityAt after creating a flow message", async () => {
+    await sendFlowStep({ ...baseParams, step: sendTextStep })
+
+    const createdMessage = await mockRepositoryCreate.mock.results[0]?.value
+    expect(mockDbSet).toHaveBeenCalledWith({
+      lastMessageAt: createdMessage.createdAt,
+    })
+    expect(mockDbSet).toHaveBeenCalledWith({
+      lastActivityAt: createdMessage.createdAt,
+    })
+  })
+
   test("delegates to processWhatsappTemplate for sendWaTemplateMessage step — does not call createMessageRepository directly", async () => {
     const waStep = {
       id: "step-wa",
@@ -414,5 +437,48 @@ describe("sendFlowStep", () => {
 
     expect(mockProcessMessengerTemplate).toHaveBeenCalled()
     expect(mockCreateMessageRepository).not.toHaveBeenCalled()
+  })
+})
+
+describe("sendChatMessage", () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    mockCreateMessageRepository.mockResolvedValue({
+      create: mockRepositoryCreate,
+      createWithAttachments: mockRepositoryCreateWithAttachments,
+    })
+    mockResolvePlatformSettings.mockResolvedValue({
+      storageUrl: "https://storage.example.com",
+    })
+    mockRepositoryCreate.mockResolvedValue({
+      id: "msg-chat",
+      contactInboxId: "ci-1",
+      workspaceId: "ws-1",
+      conversationId: "conv-1",
+      messageType: "outgoing",
+      contentType: "text",
+      senderType: "bot",
+      sourceId: null,
+      text: "hello from chat",
+      contentAttributes: {},
+      createdAt: new Date("2026-01-02T00:00:00Z"),
+      updatedAt: new Date("2026-01-02T00:00:00Z"),
+    })
+  })
+
+  test("updates contact inbox lastMessageAt and conversation lastActivityAt after creating a chat message", async () => {
+    await sendChatMessage({
+      conversation: fakeConversation as never,
+      contactInbox: fakeContactInbox as never,
+      text: "hello from chat",
+    })
+
+    const createdMessage = await mockRepositoryCreate.mock.results[0]?.value
+    expect(mockDbSet).toHaveBeenCalledWith({
+      lastMessageAt: createdMessage.createdAt,
+    })
+    expect(mockDbSet).toHaveBeenCalledWith({
+      lastActivityAt: createdMessage.createdAt,
+    })
   })
 })

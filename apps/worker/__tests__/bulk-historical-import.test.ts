@@ -51,7 +51,7 @@ vi.mock("@chatbotx.io/database/client", () => {
     execute: mockTxExecute,
   }
   mockTransaction.mockImplementation((cb: (tx: unknown) => unknown) => cb(tx))
-  // db.update() is used best-effort outside transactions (lastActivityAt bump).
+  // db.update() is used best-effort outside transactions (lastMessageAt bump).
   // Return a chainable stub so it never throws.
   mockDbUpdate.mockImplementation(() => {
     const chain = { set: vi.fn(), where: vi.fn() }

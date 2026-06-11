@@ -62,7 +62,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
 }))
 
 const uploadFileFromUrl = vi.fn()
-vi.mock("@chatbotx.io/filesystem/node-upload", () => ({
+vi.mock("@chatbotx.io/filesystem", () => ({
   uploadFileFromUrl,
 }))
 

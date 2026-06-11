@@ -114,6 +114,7 @@ export async function handleCreateWebchatMessage({
   if ("text" in parsedInput && (parsedInput.text || uploadedFiles.length > 0)) {
     const repository = await createMessageRepository()
 
+    const now = new Date()
     const messageInput = {
       text: parsedInput.text ?? null,
       messageType: "incoming" as const,
@@ -123,7 +124,7 @@ export async function handleCreateWebchatMessage({
       senderId: conversation.contactId,
       contentType: "text" as const,
       contactInboxId: contactInbox.id,
-      createdAt: new Date(),
+      createdAt: now,
     }
 
     const attachmentInputs = uploadedFiles.map((file) => ({
@@ -148,16 +149,18 @@ export async function handleCreateWebchatMessage({
     await db
       .update(conversationModel)
       .set({
-        contactLastReadAt: new Date(),
-        lastActivityAt: new Date(),
-        contactRepliedAt: new Date(),
+        contactLastReadAt: now,
+        lastActivityAt: message.createdAt,
+        contactRepliedAt: message.createdAt,
       })
       .where(eq(conversationModel.id, conversation.id))
 
     await db
       .update(contactInboxModel)
       .set({
+        contactLastReadAt: now,
         lastMessageAt: message.createdAt,
+        lastIncomingMessageAt: message.createdAt,
       })
       .where(eq(contactInboxModel.id, contactInbox.id))
 

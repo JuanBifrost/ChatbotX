@@ -54,7 +54,7 @@ export type IntegrationJobMessageStatus = {
     integrationIdentifier: string
     payload: {
       messageId: string
-      status: "delivered" | "failed"
+      status: "delivered" | "failed" | "read"
       timestamp: string
       error?: unknown
     }

@@ -19,12 +19,18 @@ const {
   mockUpdateContactFromMessage,
   mockIntegrationQueueAdd,
   mockDbSet,
+  mockDbTransaction,
 } = vi.hoisted(() => {
   const mockDbSet = vi.fn()
   const updateChain = { set: mockDbSet, where: vi.fn() }
   updateChain.set.mockReturnValue(updateChain)
   updateChain.where.mockResolvedValue(undefined)
   const mockDbUpdate = vi.fn().mockReturnValue(updateChain)
+  const mockDbTransaction = vi
+    .fn()
+    .mockImplementation((fn: (tx: unknown) => unknown) =>
+      fn({ update: mockDbUpdate }),
+    )
 
   const mockFindContactInbox = vi.fn()
   const mockFindOrFail = vi.fn()
@@ -53,6 +59,7 @@ const {
     mockUpdateContactFromMessage: vi.fn().mockResolvedValue(undefined),
     mockIntegrationQueueAdd: vi.fn().mockResolvedValue(undefined),
     mockDbSet,
+    mockDbTransaction,
   }
 })
 
@@ -70,9 +77,7 @@ vi.mock("@chatbotx.io/database/client", () => ({
     query: {
       contactInboxModel: { findFirst: mockFindContactInbox },
     },
-    transaction: vi
-      .fn()
-      .mockImplementation((fn: (tx: unknown) => unknown) => fn({})),
+    transaction: mockDbTransaction,
   },
   eq: vi.fn((col: unknown, val: unknown) => ({ __eq: [col, val] })),
   findOrFail: mockFindOrFail,
@@ -85,7 +90,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
     lastIncomingMessageAt: "lastIncomingMessageAt",
   },
   contactModel: { id: "id" },
-  conversationModel: { id: "id" },
+  conversationModel: { id: "id", lastActivityAt: "lastActivityAt" },
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
@@ -301,7 +306,7 @@ describe("receiveMessage — message repository branch", () => {
     expect(mockCreateOrUpdate).not.toHaveBeenCalled()
   })
 
-  test("updates contactInbox message timestamps when incoming message is new", async () => {
+  test("updates contact inbox and conversation activity timestamps when incoming message is new", async () => {
     mockRunChannelHandler.mockResolvedValue({
       message: { ...baseIncomingMessage, attachments: [] },
       contact: { sourceId: "psid-123", firstName: "Test" },
@@ -316,14 +321,16 @@ describe("receiveMessage — message repository branch", () => {
 
     await receiveMessage(baseProps)
 
-    expect(mockDbUpdate).toHaveBeenCalled()
     expect(mockDbSet).toHaveBeenCalledWith({
       lastMessageAt: fakeCreatedMessage.createdAt,
       lastIncomingMessageAt: fakeCreatedMessage.createdAt,
     })
+    expect(mockDbSet).toHaveBeenCalledWith({
+      lastActivityAt: fakeCreatedMessage.createdAt,
+    })
   })
 
-  test("does NOT update lastIncomingMessageAt for outgoing webhook echo", async () => {
+  test("updates conversation activity but not lastIncomingMessageAt for outgoing webhook echo", async () => {
     mockRunChannelHandler.mockResolvedValue({
       message: {
         ...baseIncomingMessage,
@@ -345,6 +352,14 @@ describe("receiveMessage — message repository branch", () => {
     expect(mockDbSet).toHaveBeenCalledWith({
       lastMessageAt: fakeCreatedMessage.createdAt,
     })
+    expect(mockDbSet).toHaveBeenCalledWith({
+      lastActivityAt: fakeCreatedMessage.createdAt,
+    })
+    expect(mockDbSet).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        lastIncomingMessageAt: expect.any(Date),
+      }),
+    )
   })
 
   test("does NOT update lastMessageAt when isNew=false", async () => {

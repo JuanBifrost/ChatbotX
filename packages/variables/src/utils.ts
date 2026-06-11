@@ -1,3 +1,4 @@
+import { contactInboxService } from "@chatbotx.io/business"
 import {
   type SystemFieldType,
   systemFieldTypes,
@@ -80,14 +81,19 @@ export const getSystemFieldValue = async (
             "yyyy-MM-dd",
           )
         : null
-    case systemFieldTypes.enum.last_seen:
-      return contact.lastActivityAt
+    case systemFieldTypes.enum.last_seen: {
+      const lastSeenAt =
+        await contactInboxService.findLatestContactLastReadAtByContactId({
+          contactId: contact.id,
+        })
+      return lastSeenAt
         ? formatInTimeZone(
-            contact.lastActivityAt,
+            lastSeenAt,
             contact.timezone ?? "UTC",
-            "yyyy-MM-dd",
+            "yyyy-MM-dd HH:mm:ss",
           )
         : null
+    }
     case systemFieldTypes.enum.last_input:
       return await getContactLastInput(contact.id)
     case systemFieldTypes.enum.last_input_type:
@@ -154,14 +160,19 @@ export const getSystemFieldValue = async (
       return await getIntegrationField(contact, key)
     case systemFieldTypes.enum.last_ref:
       return contact.ref
-    case systemFieldTypes.enum.last_interaction:
-      return contact.lastActivityAt
+    case systemFieldTypes.enum.last_interaction: {
+      const lastInteractionAt =
+        await contactInboxService.findLatestLastIncomingMessageAtByContactId({
+          contactId: contact.id,
+        })
+      return lastInteractionAt
         ? formatInTimeZone(
-            contact.lastActivityAt,
+            lastInteractionAt,
             contact.timezone ?? "UTC",
             "yyyy-MM-dd HH:mm:ss",
           )
         : null
+    }
     case systemFieldTypes.enum.last_user_note:
       return await getLatestContactNoteString(contact.id)
     case systemFieldTypes.enum.member_name:

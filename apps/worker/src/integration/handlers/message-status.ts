@@ -1,10 +1,14 @@
 import { buildContext } from "@chatbotx.io/business"
-import { db } from "@chatbotx.io/database/client"
+import { db, eq } from "@chatbotx.io/database/client"
 import type { IntegrationType } from "@chatbotx.io/database/partials"
 import {
   createMessageRepository,
   getSafeSinceTime,
 } from "@chatbotx.io/database/repositories"
+import {
+  contactInboxModel,
+  conversationModel,
+} from "@chatbotx.io/database/schema"
 import { emit } from "@chatbotx.io/event-bus"
 import {
   type MetadataPayload,
@@ -21,6 +25,7 @@ import {
   allIntegrations,
   integrationService,
 } from "../../services/integrations"
+import { normalizeEpochTimestamp } from "../utils/message"
 import { runFlowPostback } from "./flow"
 
 export const handleMessageStatus = async (
@@ -88,6 +93,11 @@ export const handleMessageStatus = async (
       getSafeSinceTime(contactInbox.lastMessageAt, 365 * 24 * 60 * 60 * 1000),
     )
 
+    const seenAt =
+      eventStatus === "read"
+        ? (normalizeEpochTimestamp(payload.timestamp) ?? new Date())
+        : new Date()
+
     const eventLog = {
       context: {
         workspaceId: inbox.workspaceId,
@@ -103,7 +113,7 @@ export const handleMessageStatus = async (
           | string
           | undefined,
       },
-      occurredAt: new Date(),
+      occurredAt: seenAt,
       nodeId: (message?.contentAttributes?.nodeId ?? "") as string,
       metadata: {
         type: UPDATE_STATUS_PAYLOAD_TYPE,
@@ -130,6 +140,18 @@ export const handleMessageStatus = async (
     }
 
     if (eventStatus === "read") {
+      await db.transaction(async (tx) => {
+        await tx
+          .update(conversationModel)
+          .set({ contactLastReadAt: seenAt })
+          .where(eq(conversationModel.id, contactInbox.conversation.id))
+
+        await tx
+          .update(contactInboxModel)
+          .set({ contactLastReadAt: seenAt })
+          .where(eq(contactInboxModel.id, contactInbox.id))
+      })
+
       await emit(messageEventTypeSchema.enum["message:seen"], eventLog)
     }
 

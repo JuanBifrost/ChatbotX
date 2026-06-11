@@ -105,6 +105,7 @@ export const createMessage = async (props: {
 
   const repository = await createMessageRepository()
 
+  const now = new Date()
   const messageInput = {
     text: "text" in parsedInput ? parsedInput.text : null,
     messageType: "outgoing" as const,
@@ -114,7 +115,7 @@ export const createMessage = async (props: {
     senderId: user?.id ?? null,
     contactInboxId: contactInbox.id,
     contentType: "text" as const,
-    createdAt: new Date(),
+    createdAt: now,
   }
 
   const attachmentInputs = uploadedFiles.map((file) => ({
@@ -131,9 +132,9 @@ export const createMessage = async (props: {
   await db
     .update(conversationModel)
     .set({
-      agentLastReadAt: new Date(),
-      lastActivityAt: new Date(),
-      adminRepliedAt: new Date(),
+      agentLastReadAt: now,
+      lastActivityAt: now,
+      adminRepliedAt: now,
     })
     .where(eq(conversationModel.id, conversation.id))
 

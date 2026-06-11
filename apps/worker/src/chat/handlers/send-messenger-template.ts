@@ -1,7 +1,11 @@
 import { broadcastToWorkspaceParty } from "@chatbotx.io/business"
-import { db } from "@chatbotx.io/database/client"
+import { db, eq } from "@chatbotx.io/database/client"
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
-import type { messageModel } from "@chatbotx.io/database/schema"
+import {
+  contactInboxModel,
+  conversationModel,
+  type messageModel,
+} from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
   ConversationModel,
@@ -179,6 +183,19 @@ export async function processMessengerTemplate(
       sourceId: null,
       text: `Template: ${template.name}`,
       contentAttributes,
+    })
+    const createdMessage = newMessage
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(contactInboxModel)
+        .set({ lastMessageAt: createdMessage.createdAt })
+        .where(eq(contactInboxModel.id, contactInbox.id))
+
+      await tx
+        .update(conversationModel)
+        .set({ lastActivityAt: createdMessage.createdAt })
+        .where(eq(conversationModel.id, conversation.id))
     })
 
     broadcastToWorkspaceParty(conversation.workspaceId, {

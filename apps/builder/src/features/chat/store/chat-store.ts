@@ -307,6 +307,7 @@ export const createChatStore = () => {
 
         // Update the latest message
         conversation.messages = [message]
+        conversation.lastActivityAt = message.createdAt
 
         // Remove conversation from current position
         updatedConversations.splice(conversationIndex, 1)

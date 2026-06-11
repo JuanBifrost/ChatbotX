@@ -20,6 +20,7 @@
 | New channel integration | `integration-channel` |
 | New flow step with states (success/error/skip routing) | `flow-step-development` |
 | Dev/build/lint commands | `turborepo-workflow` |
+| Approved implementation plan | `implement-plan` |
 
 ### Never do without checking
 

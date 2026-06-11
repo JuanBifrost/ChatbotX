@@ -18,8 +18,10 @@ const {
   mockSendFlowStep,
   mockConvertButtons,
   mockParseSdkError,
+  mockDbSet,
 } = vi.hoisted(() => {
-  const updateChain = { set: vi.fn(), where: vi.fn() }
+  const mockDbSet = vi.fn()
+  const updateChain = { set: mockDbSet, where: vi.fn() }
   updateChain.set.mockReturnValue(updateChain)
   updateChain.where.mockResolvedValue(undefined)
   const mockDbUpdate = vi.fn().mockReturnValue(updateChain)
@@ -76,6 +78,7 @@ const {
       .mockResolvedValue({ messageIds: ["provider-wa-1"] }),
     mockConvertButtons: vi.fn().mockReturnValue([]),
     mockParseSdkError: vi.fn().mockResolvedValue({ message: "sdk error" }),
+    mockDbSet,
   }
 })
 
@@ -91,6 +94,11 @@ vi.mock("@chatbotx.io/database/client", () => ({
   db: {
     insert: mockDbInsert,
     update: mockDbUpdate,
+    transaction: vi
+      .fn()
+      .mockImplementation((fn: (tx: unknown) => unknown) =>
+        fn({ update: mockDbUpdate }),
+      ),
     query: {
       conversationModel: { findFirst: vi.fn().mockResolvedValue(null) },
     },
@@ -101,6 +109,7 @@ vi.mock("@chatbotx.io/database/client", () => ({
 vi.mock("@chatbotx.io/database/schema", () => ({
   messageModel: { id: "id", sourceId: "sourceId" },
   contactInboxModel: { id: "id" },
+  conversationModel: { id: "id", lastActivityAt: "lastActivityAt" },
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
@@ -305,6 +314,7 @@ describe("processWhatsappTemplate", () => {
 
   test("calls repository.updateSourceId when provider returns providerMessageId", async () => {
     mockSendFlowStep.mockResolvedValue({ messageIds: ["prov-123"] })
+    const createdAt = new Date("2026-01-01T00:00:00Z")
 
     await processWhatsappTemplate({
       conversation: fakeConversation,
@@ -317,8 +327,10 @@ describe("processWhatsappTemplate", () => {
       "prov-123",
       "ws-1",
     )
-    // db.update called once only for contactInbox lastMessageAt
-    expect(mockDbUpdate).toHaveBeenCalledTimes(1)
+    // db.update touches contactInbox.lastMessageAt and conversation.lastActivityAt
+    expect(mockDbUpdate).toHaveBeenCalledTimes(2)
+    expect(mockDbSet).toHaveBeenCalledWith({ lastMessageAt: createdAt })
+    expect(mockDbSet).toHaveBeenCalledWith({ lastActivityAt: createdAt })
   })
 
   test("emits message:failed on error and rethrows", async () => {

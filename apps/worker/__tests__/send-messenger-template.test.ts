@@ -8,23 +8,32 @@ import {
 } from "vitest"
 
 vi.mock("@chatbotx.io/database/client", () => ({
-  db: {
-    insert: vi.fn().mockReturnValue({
-      values: vi.fn().mockReturnValue({
-        returning: vi.fn().mockResolvedValue([{ id: "msg-1", sourceId: null }]),
-      }),
-    }),
-    update: vi.fn().mockReturnValue({
+  db: (() => {
+    const update = vi.fn().mockReturnValue({
       set: vi.fn().mockReturnValue({
         where: vi.fn().mockResolvedValue(undefined),
       }),
-    }),
-    query: {
-      inboxModel: { findFirst: vi.fn() },
-      messengerMessageTemplateModel: { findFirst: vi.fn() },
-      flowModel: { findFirst: vi.fn() },
-    },
-  },
+    })
+
+    return {
+      insert: vi.fn().mockReturnValue({
+        values: vi.fn().mockReturnValue({
+          returning: vi
+            .fn()
+            .mockResolvedValue([{ id: "msg-1", sourceId: null }]),
+        }),
+      }),
+      update,
+      transaction: vi
+        .fn()
+        .mockImplementation((fn: (tx: unknown) => unknown) => fn({ update })),
+      query: {
+        inboxModel: { findFirst: vi.fn() },
+        messengerMessageTemplateModel: { findFirst: vi.fn() },
+        flowModel: { findFirst: vi.fn() },
+      },
+    }
+  })(),
   and: vi.fn(),
   eq: vi.fn(),
 }))
@@ -96,6 +105,7 @@ const VALIDATED = {
 
 describe("processMessengerTemplate — sourceId persistence", () => {
   beforeEach(() => {
+    vi.clearAllMocks()
     mockValidate.mockResolvedValue(VALIDATED)
     mockReplace.mockImplementation(
       ({ templateParams }: { templateParams: unknown }) =>
@@ -118,7 +128,7 @@ describe("processMessengerTemplate — sourceId persistence", () => {
     expect(setCall).toHaveBeenCalledWith({ sourceId: PROVIDER_ID })
   })
 
-  test("does NOT call db.update when providerMessageId is undefined", async () => {
+  test("does NOT persist sourceId when providerMessageId is undefined", async () => {
     mockSendFlowStep.mockResolvedValueOnce({ messageIds: [] })
 
     await processMessengerTemplate({
@@ -127,6 +137,9 @@ describe("processMessengerTemplate — sourceId persistence", () => {
       template: TEMPLATE,
     })
 
-    expect(mockDbUpdate).not.toHaveBeenCalled()
+    const setCall = mockDbUpdate.mock.results[0].value.set
+    expect(setCall).not.toHaveBeenCalledWith(
+      expect.objectContaining({ sourceId: expect.any(String) }),
+    )
   })
 })

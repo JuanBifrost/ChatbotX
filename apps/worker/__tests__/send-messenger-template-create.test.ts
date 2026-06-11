@@ -16,6 +16,7 @@ const {
   mockReplaceVariables,
   mockContactVariables,
   mockSendFlowStep,
+  mockDbSet,
 } = vi.hoisted(() => {
   const insertChain = {
     values: vi.fn(),
@@ -24,7 +25,8 @@ const {
   insertChain.values.mockReturnValue(insertChain)
   const mockDbInsert = vi.fn().mockReturnValue(insertChain)
 
-  const updateChain = { set: vi.fn(), where: vi.fn() }
+  const mockDbSet = vi.fn()
+  const updateChain = { set: mockDbSet, where: vi.fn() }
   updateChain.set.mockReturnValue(updateChain)
   updateChain.where.mockResolvedValue(undefined)
   const mockDbUpdate = vi.fn().mockReturnValue(updateChain)
@@ -40,8 +42,8 @@ const {
     sourceId: null,
     text: "Template: my-template",
     contentAttributes: {},
-    createdAt: new Date(),
-    updatedAt: new Date(),
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    updatedAt: new Date("2026-01-01T00:00:00Z"),
   })
   const mockRepositoryUpdateSourceId = vi.fn().mockResolvedValue(undefined)
 
@@ -72,6 +74,7 @@ const {
     mockSendFlowStep: vi
       .fn()
       .mockResolvedValue({ messageIds: ["provider-msg-1"] }),
+    mockDbSet,
   }
 })
 
@@ -87,6 +90,11 @@ vi.mock("@chatbotx.io/database/client", () => ({
   db: {
     insert: mockDbInsert,
     update: mockDbUpdate,
+    transaction: vi
+      .fn()
+      .mockImplementation((fn: (tx: unknown) => unknown) =>
+        fn({ update: mockDbUpdate }),
+      ),
     query: {
       flowModel: { findFirst: vi.fn().mockResolvedValue(null) },
     },
@@ -96,6 +104,8 @@ vi.mock("@chatbotx.io/database/client", () => ({
 
 vi.mock("@chatbotx.io/database/schema", () => ({
   messageModel: { id: "id", sourceId: "sourceId" },
+  contactInboxModel: { id: "id" },
+  conversationModel: { id: "id", lastActivityAt: "lastActivityAt" },
 }))
 
 vi.mock("@chatbotx.io/business", () => ({
@@ -204,8 +214,8 @@ describe("processMessengerTemplate", () => {
       sourceId: null,
       text: "Template: my-template",
       contentAttributes: {},
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date("2026-01-01T00:00:00Z"),
+      updatedAt: new Date("2026-01-01T00:00:00Z"),
     })
     mockCreateMessageRepository.mockResolvedValue({
       create: mockRepositoryCreate,
@@ -274,6 +284,7 @@ describe("processMessengerTemplate", () => {
 
   test("calls repository.updateSourceId when provider returns providerMessageId", async () => {
     mockSendFlowStep.mockResolvedValue({ messageIds: ["prov-msg-42"] })
+    const createdAt = new Date("2026-01-01T00:00:00Z")
 
     await processMessengerTemplate({
       conversation: fakeConversation,
@@ -286,5 +297,8 @@ describe("processMessengerTemplate", () => {
       "prov-msg-42",
       "ws-1",
     )
+    expect(mockDbUpdate).toHaveBeenCalledTimes(2)
+    expect(mockDbSet).toHaveBeenCalledWith({ lastMessageAt: createdAt })
+    expect(mockDbSet).toHaveBeenCalledWith({ lastActivityAt: createdAt })
   })
 })

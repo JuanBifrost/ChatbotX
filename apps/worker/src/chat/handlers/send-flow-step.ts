@@ -20,6 +20,7 @@ import {
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import {
   contactInboxModel,
+  conversationModel,
   type messageModel,
 } from "@chatbotx.io/database/schema"
 import type { AttachmentModel } from "@chatbotx.io/database/types"
@@ -334,10 +335,17 @@ export async function sendFlowStep({
         }))
     }
 
-    await db
-      .update(contactInboxModel)
-      .set({ lastMessageAt: message.createdAt })
-      .where(eq(contactInboxModel.id, targetContactInbox.id))
+    await db.transaction(async (tx) => {
+      await tx
+        .update(contactInboxModel)
+        .set({ lastMessageAt: message.createdAt })
+        .where(eq(contactInboxModel.id, targetContactInbox.id))
+
+      await tx
+        .update(conversationModel)
+        .set({ lastActivityAt: message.createdAt })
+        .where(eq(conversationModel.id, conversation.id))
+    })
 
     const promises: Promise<unknown>[] = [
       broadcastToWorkspaceParty(conversation.workspaceId, {
@@ -547,10 +555,17 @@ export const sendChatMessage = async (
         }))
     }
 
-    await db
-      .update(contactInboxModel)
-      .set({ lastMessageAt: message.createdAt })
-      .where(eq(contactInboxModel.id, contactInbox.id))
+    await db.transaction(async (tx) => {
+      await tx
+        .update(contactInboxModel)
+        .set({ lastMessageAt: message.createdAt })
+        .where(eq(contactInboxModel.id, contactInbox.id))
+
+      await tx
+        .update(conversationModel)
+        .set({ lastActivityAt: message.createdAt })
+        .where(eq(conversationModel.id, conversation.id))
+    })
 
     const promises: Promise<unknown>[] = [
       broadcastToWorkspaceParty(conversation.workspaceId, {

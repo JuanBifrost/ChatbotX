@@ -62,5 +62,11 @@ export const conversationModel = pgTable(
     index("Conversation_aiContextLastMessageId_idx").on(
       table.aiContextLastMessageId,
     ),
+    index("Conversation_workspaceId_lastActivityAt_id_idx").using(
+      "btree",
+      table.workspaceId.asc().nullsLast(),
+      table.lastActivityAt.desc(),
+      table.id.desc(),
+    ),
   ],
 )

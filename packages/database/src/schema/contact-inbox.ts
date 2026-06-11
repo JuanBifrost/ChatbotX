@@ -1,4 +1,10 @@
-import { pgTable, text, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
+import {
+  index,
+  pgTable,
+  text,
+  timestamp,
+  uniqueIndex,
+} from "drizzle-orm/pg-core"
 import {
   bigintAsString,
   sharedColumns,
@@ -27,6 +33,7 @@ export const contactInboxModel = pgTable(
     channel: text().notNull(),
     source: text().notNull(),
     sourceId: text().notNull(),
+    contactLastReadAt: timestamp(timestampConfig),
     lastMessageAt: timestamp(timestampConfig),
     lastIncomingMessageAt: timestamp(timestampConfig),
   },
@@ -35,6 +42,11 @@ export const contactInboxModel = pgTable(
       "btree",
       table.inboxId.asc().nullsLast(),
       table.sourceId.asc().nullsLast(),
+    ),
+    index("ContactInbox_contactId_lastIncomingMessageAt_idx").using(
+      "btree",
+      table.contactId.asc().nullsLast(),
+      table.lastIncomingMessageAt.asc().nullsLast(),
     ),
   ],
 )

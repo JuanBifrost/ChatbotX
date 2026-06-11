@@ -42,3 +42,19 @@ export async function sendMessageWithRender(
     },
   })
 }
+
+export const normalizeEpochTimestamp = (value: unknown): Date | null => {
+  if (value === null || value === undefined) {
+    return null
+  }
+
+  const timestamp = Number(value)
+  if (!Number.isFinite(timestamp) || timestamp <= 0) {
+    return null
+  }
+
+  const milliseconds = timestamp < 10_000_000_000 ? timestamp * 1000 : timestamp
+  const date = new Date(milliseconds)
+
+  return Number.isNaN(date.getTime()) ? null : date
+}

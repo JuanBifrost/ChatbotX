@@ -64,7 +64,6 @@ export default function ConversationItem({
   conversation,
   onSelect,
 }: ConversationItemProps) {
-  const lastMessage = conversation.messages?.[0]
   const { activeConversationId, readConversation } = useChatStore(
     (state) => state,
   )
@@ -169,9 +168,7 @@ export default function ConversationItem({
           </div>
           <p className="text-right text-neutral-400 text-xs">
             <span>
-              {formatDistanceToNowStrict(
-                lastMessage?.createdAt ? lastMessage.createdAt : new Date(),
-              )}
+              {formatDistanceToNowStrict(conversation.lastActivityAt)}
             </span>
           </p>
         </div>

@@ -194,10 +194,17 @@ export const receiveMessage = async (
         lastMessageUpdate.lastIncomingMessageAt = newMessage.createdAt
       }
 
-      await db
-        .update(contactInboxModel)
-        .set(lastMessageUpdate)
-        .where(eq(contactInboxModel.id, contactInbox.id))
+      await db.transaction(async (tx) => {
+        await tx
+          .update(contactInboxModel)
+          .set(lastMessageUpdate)
+          .where(eq(contactInboxModel.id, contactInbox.id))
+
+        await tx
+          .update(conversationModel)
+          .set({ lastActivityAt: newMessage.createdAt })
+          .where(eq(conversationModel.id, conversation.id))
+      })
     }
 
     try {
@@ -361,7 +368,6 @@ const detectContactAndConversation = async (props: {
           .values({
             id: createId(),
             ...contactData,
-            lastActivityAt: new Date(),
           })
           .returning()
           .then((result) => result[0])

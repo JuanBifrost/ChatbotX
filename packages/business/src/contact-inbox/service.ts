@@ -111,6 +111,42 @@ class ContactInboxService extends BaseService {
         new Date(a.lastMessageAt ?? 0).getTime(),
     )[0]
   }
+
+  async findLatestContactLastReadAtByContactId(props: {
+    tx?: DatabaseClient
+    contactId: string
+  }): Promise<Date | null> {
+    const { tx = db, contactId } = props
+    const contactInboxes = await tx.query.contactInboxModel.findMany({
+      where: { contactId },
+      columns: { contactLastReadAt: true },
+    })
+
+    return (
+      contactInboxes
+        .map((contactInbox) => contactInbox.contactLastReadAt)
+        .filter((date): date is Date => Boolean(date))
+        .sort((a, b) => b.getTime() - a.getTime())[0] ?? null
+    )
+  }
+
+  async findLatestLastIncomingMessageAtByContactId(props: {
+    tx?: DatabaseClient
+    contactId: string
+  }): Promise<Date | null> {
+    const { tx = db, contactId } = props
+    const contactInboxes = await tx.query.contactInboxModel.findMany({
+      where: { contactId },
+      columns: { lastIncomingMessageAt: true },
+    })
+
+    return (
+      contactInboxes
+        .map((contactInbox) => contactInbox.lastIncomingMessageAt)
+        .filter((date): date is Date => Boolean(date))
+        .sort((a, b) => b.getTime() - a.getTime())[0] ?? null
+    )
+  }
 }
 
 export const contactInboxService = new ContactInboxService()

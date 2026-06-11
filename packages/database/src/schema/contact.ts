@@ -61,7 +61,6 @@ export const contactModel = pgTable(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    lastActivityAt: timestamp(timestampConfig).defaultNow().notNull(),
   },
   (table) => [
     index("idx_contact_broadcast_subscribed_at").on(

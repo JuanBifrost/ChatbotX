@@ -372,7 +372,6 @@ export const bulkImportContacts = async (props: {
         email: entry.email,
         phoneNumber: entry.phoneNumber,
         avatar: entry.avatar,
-        lastActivityAt: new Date(),
       }))
 
       await tx.insert(contactModel).values(contactRows)
@@ -770,22 +769,6 @@ export const bulkImportMessages = async (props: {
       for (const r of insertedAtt) {
         insertedAttachmentIds.push(r.id)
       }
-    }
-  }
-
-  // Touch parent contact lastActivityAt so list ordering reflects sync. Best
-  // effort — failure here doesn't roll back the message insert.
-  if (importedMessages > 0) {
-    try {
-      await db
-        .update(contactModel)
-        .set({ lastActivityAt: new Date() })
-        .where(eq(contactModel.id, contactId))
-    } catch (error) {
-      logger.warn(
-        { error, contactId },
-        "[coexist] failed to bump lastActivityAt",
-      )
     }
   }
 

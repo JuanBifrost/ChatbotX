@@ -3,6 +3,7 @@ import { db, eq } from "@chatbotx.io/database/client"
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import {
   contactInboxModel,
+  conversationModel,
   type messageModel,
 } from "@chatbotx.io/database/schema"
 import type {
@@ -157,11 +158,19 @@ export async function processWhatsappTemplate(
     if (!newMessage) {
       throw new Error("Failed to insert message record")
     }
+    const createdMessage = newMessage
 
-    await db
-      .update(contactInboxModel)
-      .set({ lastMessageAt: newMessage.createdAt })
-      .where(eq(contactInboxModel.id, contactInbox.id))
+    await db.transaction(async (tx) => {
+      await tx
+        .update(contactInboxModel)
+        .set({ lastMessageAt: createdMessage.createdAt })
+        .where(eq(contactInboxModel.id, contactInbox.id))
+
+      await tx
+        .update(conversationModel)
+        .set({ lastActivityAt: createdMessage.createdAt })
+        .where(eq(conversationModel.id, conversation.id))
+    })
 
     broadcastToWorkspaceParty(conversation.workspaceId, {
       eventType: RealtimeEventType.messageCreated,

@@ -29,7 +29,7 @@ type ContactWhere = Record<string, unknown>
  *  - Direct columns (fullName, email, gender, country, locale)
  *  - Column aliases (phone → phoneNumber, contactCreatedAt → createdAt)
  *  - Boolean-from-timestamp (subscribedToBroadcast → broadcastSubscribedAt, blocked → blockedAt)
- *  - Time-based booleans (interactedInLast24h → lastActivityAt)
+ *  - Time-based booleans (interactedInLast24h → contactInboxes.lastIncomingMessageAt)
  *  - Relations (tags, customFields, source / currentChannel → contactInboxes)
  *  - Conversation relations (archived, conversationTransferredToHuman)
  *
@@ -94,8 +94,16 @@ function buildConditionWhere(
       }
       const threshold = sql`NOW() - INTERVAL '24 hours'`
       return value === "true"
-        ? { lastActivityAt: { gte: threshold } }
-        : { lastActivityAt: { lt: threshold } }
+        ? {
+            contactInboxes: {
+              some: { lastIncomingMessageAt: { gte: threshold } },
+            },
+          }
+        : {
+            contactInboxes: {
+              none: { lastIncomingMessageAt: { gte: threshold } },
+            },
+          }
     }
 
     // ── Relation: tags (name in / notIn) ─────────────────────────────────────
