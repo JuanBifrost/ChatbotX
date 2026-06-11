@@ -266,6 +266,7 @@ export function CreateMessageTemplateDialog({
                 duration: 5000,
               })
             }
+            router.refresh()
           },
         },
         formProps: {
