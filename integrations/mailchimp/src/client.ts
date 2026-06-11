@@ -1,5 +1,6 @@
-import { createHash } from "node:crypto"
 import { AuthType } from "@chatbotx.io/sdk"
+import { md5 } from "@noble/hashes/legacy.js"
+import { bytesToHex } from "@noble/hashes/utils.js"
 import ky, { type Options } from "ky"
 import { z } from "zod"
 import { MAILCHIMP_API_BASE_URL_PATTERN } from "./constants"
@@ -35,7 +36,7 @@ export const createMailchimpAuth = (apiKey: string): MailchimpAuthValue =>
   })
 
 export const getSubscriberHash = (email: string): string =>
-  createHash("md5").update(email.trim().toLowerCase()).digest("hex")
+  bytesToHex(md5(new TextEncoder().encode(email.trim().toLowerCase())))
 
 export const getMailchimpClient = (auth: MailchimpAuthValue) =>
   ky.create({

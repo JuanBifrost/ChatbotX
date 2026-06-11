@@ -1,12 +1,12 @@
 import { buildContext } from "@chatbotx.io/business"
 import {
   mailchimpAudienceSchema,
+  integration as mailchimpIntegration,
   mailchimpMergeFieldSchema,
   mailchimpTagSchema,
 } from "@chatbotx.io/integration-mailchimp"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
-import { integrations } from "@/integration"
 import { workspaceAuthorizedMidddleware } from "@/middlewares/auth"
 import { authorizedAPI } from "@/orpc"
 import { getMailchimpAuth } from "../queries"
@@ -33,7 +33,7 @@ export const integrationMailchimpAPI = {
         integration: { ...row, auth },
       })
       return {
-        data: await integrations.mailchimp.runAction("listAudiences", {
+        data: await mailchimpIntegration.runAction("listAudiences", {
           ctx,
           props: {},
         }),
@@ -57,7 +57,7 @@ export const integrationMailchimpAPI = {
         integration: { ...row, auth },
       })
       return {
-        data: await integrations.mailchimp.runAction("listTags", {
+        data: await mailchimpIntegration.runAction("listTags", {
           ctx,
           props: { listId: input.listId },
         }),
@@ -81,7 +81,7 @@ export const integrationMailchimpAPI = {
         integration: { ...row, auth },
       })
       return {
-        data: await integrations.mailchimp.runAction("listMergeFields", {
+        data: await mailchimpIntegration.runAction("listMergeFields", {
           ctx,
           props: { listId: input.listId },
         }),
