@@ -74,10 +74,12 @@
     "upgradeToPro": "Nâng cấp lên Pro",
     "uploadFile": "Tải lên tệp",
     "view": "Xem",
+    "viewAnalytics": "Xem phân tích",
     "duplicate": "Nhân bản",
     "getDraftLink": "Lấy liên kết bản nháp",
     "getPublishedLink": "Lấy liên kết đã xuất bản",
     "analytics": "Phân tích",
+    "deleteAnalytics": "Xóa phân tích",
     "flowVersions": "Phiên bản luồng",
     "revertToPublished": "Khôi phục về phiên bản đã xuất bản",
     "search": "Tìm kiếm",
@@ -199,7 +201,11 @@
     "blockedConversationsHelp": "Cuộc trò chuyện mà tài khoản của bạn đã chặn.",
     "blockedContacts": "Liên hệ bị chặn",
     "blockedContactsHelp": "Khách hàng không muốn nhận tin nhắn từ tài khoản của bạn",
-    "newContactsByCountry": "Liên hệ mới theo quốc gia"
+    "newContactsByCountry": "Liên hệ mới theo quốc gia",
+    "date": "Ngày",
+    "total": "Tổng",
+    "sessionsThroughTheRef": "Phiên qua Ref '{ref}' mỗi ngày",
+    "sessionsThroughTheMagicLink": "Phiên qua Magic Link '{ref}' mỗi ngày"
   },
   "autoAssignConversation": {
     "rule": {

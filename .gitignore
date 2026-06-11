@@ -50,5 +50,9 @@ yarn-error.log*
 test.rest
 test-webchat
 
+# Cursor
+.cursor/skills/
+CLAUDE.md
+
 .pnpm-store/
 .plans/

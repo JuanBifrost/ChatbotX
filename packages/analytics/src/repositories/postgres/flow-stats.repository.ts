@@ -1,4 +1,4 @@
-import { and, count, db, eq, sql } from "@chatbotx.io/database/client"
+import { and, count, db, eq, inArray, sql } from "@chatbotx.io/database/client"
 import {
   conversationModel,
   flowAnalyticsSessionModel,
@@ -15,7 +15,6 @@ import type { ContactEventData } from "../../schemas/common"
 import type {
   FlowNodeEventType,
   FlowNodeStatItem,
-  FlowNodeStats,
   FlowNodeStatsResponse,
   FlowStatsRequest,
   RemoveFlowStatsRequest,
@@ -23,109 +22,94 @@ import type {
 import { BaseRepository } from "./base.repository"
 
 export class FlowStatsRepository extends BaseRepository {
-  async getNodeStats(input: {
+  /**
+   * Aggregate per-node counts (delivered / failed / clicked) for every node in
+   * one grouped query instead of per-node round-trips.
+   */
+  private async getNodeEventCounts(input: {
     workspaceId: string
-    flowId: string
     analyticsId: string
-    nodeId: string
-  }): Promise<FlowNodeStats> {
-    const { workspaceId, analyticsId, nodeId } = input
+    nodeIds: string[]
+  }): Promise<{
+    deliveredByNode: Map<string, number>
+    failedByNode: Map<string, number>
+    clickedByNode: Map<string, number>
+  }> {
+    const { workspaceId, analyticsId, nodeIds } = input
     const t = flowNodeStatModel
 
-    const [statsResult, uniqueDeliveredResult, clickedResult, seenResult] =
-      await Promise.all([
-        db
-          .select({
-            eventType: t.eventType,
-            total: count(),
-          })
-          .from(t)
-          .where(
-            and(
-              eq(t.workspaceId, workspaceId),
-              eq(t.analyticsId, analyticsId),
-              eq(t.nodeId, nodeId),
-              sql`${t.eventType} IN ('message:delivered', 'message:failed')`,
-            ),
-          )
-          .groupBy(t.eventType),
-        db
-          .select({
-            count: count(),
-          })
-          .from(t)
-          .where(
-            and(
-              eq(t.workspaceId, workspaceId),
-              eq(t.analyticsId, analyticsId),
-              eq(t.nodeId, nodeId),
-              eq(t.eventType, messageEventTypeSchema.enum["message:delivered"]),
-            ),
-          ),
-        db
-          .select({
-            count: count(),
-          })
-          .from(t)
-          .where(
-            and(
-              eq(t.workspaceId, workspaceId),
-              eq(t.analyticsId, analyticsId),
-              eq(t.nodeId, nodeId),
-              eq(t.eventType, "flow:clicked"),
-            ),
-          ),
-        db
-          .select({
-            count: count(),
-          })
-          .from(t)
-          .innerJoin(
-            conversationModel,
-            eq(conversationModel.contactId, t.contactId),
-          )
-          .where(
-            and(
-              eq(t.workspaceId, workspaceId),
-              eq(t.analyticsId, analyticsId),
-              eq(t.nodeId, nodeId),
-              eq(t.eventType, messageEventTypeSchema.enum["message:delivered"]),
-              sql`${conversationModel.contactLastReadAt} >= ${t.occurredAt}`,
-            ),
-          ),
-      ])
+    const rows = await db
+      .select({ nodeId: t.nodeId, eventType: t.eventType, total: count() })
+      .from(t)
+      .where(
+        and(
+          eq(t.workspaceId, workspaceId),
+          eq(t.analyticsId, analyticsId),
+          inArray(t.nodeId, nodeIds),
+          sql`${t.eventType} IN ('message:delivered', 'message:failed', 'flow:clicked')`,
+        ),
+      )
+      .groupBy(t.nodeId, t.eventType)
 
-    let delivered = 0
-    let failed = 0
+    const deliveredByNode = new Map<string, number>()
+    const failedByNode = new Map<string, number>()
+    const clickedByNode = new Map<string, number>()
 
-    for (const row of statsResult) {
+    for (const row of rows) {
+      const total = Number(row.total)
       switch (row.eventType) {
         case "message:delivered":
-          delivered = Number(row.total)
+          deliveredByNode.set(row.nodeId, total)
           break
         case "message:failed":
-          failed = Number(row.total)
+          failedByNode.set(row.nodeId, total)
+          break
+        case "flow:clicked":
+          clickedByNode.set(row.nodeId, total)
           break
         default:
           break
       }
     }
 
-    const seen = Number(seenResult[0]?.count ?? 0)
+    return { deliveredByNode, failedByNode, clickedByNode }
+  }
 
-    const clicked = Number(clickedResult[0]?.count ?? 0)
-    const uniqueDelivered = Number(uniqueDeliveredResult[0]?.count ?? 0)
+  /**
+   * Per-node "seen" counts (delivered messages whose contact read the
+   * conversation afterwards) for every node in one grouped query.
+   */
+  private async getNodeSeenCounts(input: {
+    workspaceId: string
+    analyticsId: string
+    nodeIds: string[]
+  }): Promise<Map<string, number>> {
+    const { workspaceId, analyticsId, nodeIds } = input
+    const t = flowNodeStatModel
 
-    return {
-      "message:sent": delivered + failed,
-      "message:seen": seen,
-      "message:delivered": delivered,
-      "flow:clicked": {
-        clicked,
-        totalUsers: uniqueDelivered,
-      },
-      "message:failed": failed,
+    const rows = await db
+      .select({ nodeId: t.nodeId, seen: count() })
+      .from(t)
+      .innerJoin(
+        conversationModel,
+        eq(conversationModel.contactId, t.contactId),
+      )
+      .where(
+        and(
+          eq(t.workspaceId, workspaceId),
+          eq(t.analyticsId, analyticsId),
+          inArray(t.nodeId, nodeIds),
+          eq(t.eventType, messageEventTypeSchema.enum["message:delivered"]),
+          sql`${conversationModel.contactLastReadAt} >= ${t.occurredAt}`,
+        ),
+      )
+      .groupBy(t.nodeId)
+
+    const seenByNode = new Map<string, number>()
+    for (const row of rows) {
+      seenByNode.set(row.nodeId, Number(row.seen))
     }
+    return seenByNode
   }
 
   async insertNodeStats(data: FlowNodeStatItem[]): Promise<void> {
@@ -202,34 +186,39 @@ export class FlowStatsRepository extends BaseRepository {
       return {}
     }
 
-    const stepStatsPromises = nodeIds.map((nodeId) =>
-      this.getNodeStats({
-        workspaceId: input.workspaceId,
-        flowId: input.flowId,
-        analyticsId,
-        nodeId,
-      }),
-    )
-
-    const stepStatsResults = await Promise.all(stepStatsPromises)
+    const [{ deliveredByNode, failedByNode, clickedByNode }, seenByNode] =
+      await Promise.all([
+        this.getNodeEventCounts({
+          workspaceId: input.workspaceId,
+          analyticsId,
+          nodeIds,
+        }),
+        this.getNodeSeenCounts({
+          workspaceId: input.workspaceId,
+          analyticsId,
+          nodeIds,
+        }),
+      ])
 
     const result: FlowNodeStatsResponse = {}
 
-    for (let i = 0; i < nodeIds.length; i++) {
-      const nodeId = nodeIds[i]
-      const stepStat = stepStatsResults[i]
+    for (const nodeId of nodeIds) {
+      const delivered = deliveredByNode.get(nodeId) ?? 0
+      const failed = failedByNode.get(nodeId) ?? 0
+      const clicked = clickedByNode.get(nodeId) ?? 0
+      const seen = seenByNode.get(nodeId) ?? 0
       const buttonIds = stepButtonMap.get(nodeId) || []
 
       result[nodeId] = {
         node: {
-          "message:sent": stepStat["message:sent"],
-          "message:seen": stepStat["message:seen"],
-          "message:delivered": stepStat["message:delivered"], // TODO: need to implement delivered logic
+          "message:sent": delivered + failed,
+          "message:seen": seen,
+          "message:delivered": delivered, // TODO: need to implement delivered logic
           "flow:clicked": {
-            clicked: stepStat["flow:clicked"].clicked,
-            totalUsers: stepStat["flow:clicked"].totalUsers,
+            clicked,
+            totalUsers: delivered,
           },
-          "message:failed": stepStat["message:failed"],
+          "message:failed": failed,
         },
         buttons: Object.fromEntries(
           buttonIds.map((buttonId) => [buttonId, { buttonId, clicks: 0 }]),

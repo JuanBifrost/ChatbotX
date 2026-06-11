@@ -1,4 +1,4 @@
-import { index, pgTable, timestamp } from "drizzle-orm/pg-core"
+import { pgTable, timestamp, uniqueIndex } from "drizzle-orm/pg-core"
 import { bigintAsString, timestampConfig } from "../partials/shared"
 import { magicLinkModel } from "./magic-link"
 import { workspaceModel } from "./workspace"
@@ -24,10 +24,16 @@ export const magicLinkStatModel = pgTable(
     createdAt: timestamp(timestampConfig).defaultNow().notNull(),
   },
   (table) => [
-    index("MagicLinkStat_workspaceId_linkId_occurredAt_idx").on(
+    // Unique on the natural event key so worker re-deliveries dedupe via
+    // onConflictDoNothing. The (workspaceId, linkId, occurredAt) prefix still
+    // serves the date-range and per-contact aggregate queries.
+    uniqueIndex(
+      "MagicLinkStat_workspaceId_linkId_occurredAt_contactInboxId_key",
+    ).on(
       table.workspaceId,
       table.linkId,
       table.occurredAt,
+      table.contactInboxId,
     ),
   ],
 )

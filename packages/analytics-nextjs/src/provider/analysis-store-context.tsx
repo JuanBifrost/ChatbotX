@@ -17,6 +17,7 @@ export const AnalysisStoreContext = createContext<AnalysisStoreApi | undefined>(
 )
 
 export type AnalysisStoreProviderProps = {
+  type?: "dashboard" | "reflinks" | "magic-links"
   defaultSearchParams: { [x: string]: string }
   children: ReactNode
   autoInitialize?: boolean
@@ -25,11 +26,12 @@ export type AnalysisStoreProviderProps = {
 export const AnalysisStoreProvider = ({
   children,
   autoInitialize = true,
+  type = "dashboard",
   defaultSearchParams,
 }: AnalysisStoreProviderProps) => {
   const storeRef = useRef<AnalysisStoreApi>(null)
   if (!storeRef.current) {
-    storeRef.current = createAnalysisStore({ defaultSearchParams })
+    storeRef.current = createAnalysisStore({ type, defaultSearchParams })
   }
 
   useEffect(() => {

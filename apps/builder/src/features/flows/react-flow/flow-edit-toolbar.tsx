@@ -33,6 +33,7 @@ import { GetInboxUrlDialog } from "@/features/inboxes/components/get-inbox-url"
 import { publishFlowAction } from "../actions/publish-flow-action"
 import { DeleteFlowsDialog } from "../delete-flow-dialog"
 import { updateFlowVersionSchema } from "../schemas/action"
+import AnalyticsFlow from "./components/analytics-flow"
 import { DuplicateFlowDialog } from "./components/duplicate-flow"
 import { FlowVersionsDialog } from "./components/flow-versions-dialog"
 import { RenameFlowDialog } from "./components/rename-flow"
@@ -138,7 +139,13 @@ export function FlowEditToolbar({
           </DropdownMenuGroup>
           <DropdownMenuSeparator />
           <DropdownMenuGroup>
-            <DropdownMenuItem>
+            <DropdownMenuItem
+              onClick={() =>
+                router.push(
+                  `/space/${flow.workspaceId}/flows/${flow.id}/analytics`,
+                )
+              }
+            >
               <ChartNoAxesCombinedIcon />
               {t("actions.analytics")}
             </DropdownMenuItem>
@@ -215,6 +222,8 @@ export function FlowEditToolbar({
         open={action === "flowVersions"}
         workspaceId={workspaceId}
       />
+
+      {action === "analytics" && <AnalyticsFlow flow={flow} />}
     </div>
   )
 }

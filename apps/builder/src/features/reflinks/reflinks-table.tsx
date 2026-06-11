@@ -26,6 +26,7 @@ import { useDataTable } from "@chatbotx.io/ui/hooks/use-data-table"
 import type { DataTableRowAction } from "@chatbotx.io/ui/types/data-table"
 import type { ColumnDef } from "@tanstack/react-table"
 import {
+  ChartLineIcon,
   LinkIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -157,6 +158,17 @@ export function ReflinksTable({ workspaceId, promises }: ReflinksTableProps) {
               </DropdownMenuItem>
 
               <DropdownMenuItem
+                onClick={() => {
+                  router.push(
+                    `/space/${workspaceId}/reflinks/${row.original.id}/analytics`,
+                  )
+                }}
+              >
+                <ChartLineIcon />
+                {t("actions.viewAnalytics")}
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
                 onClick={() => setRowAction({ row, variant: "update" })}
               >
                 <PencilIcon />
@@ -177,7 +189,7 @@ export function ReflinksTable({ workspaceId, promises }: ReflinksTableProps) {
         enableHiding: false,
       },
     ],
-    [t],
+    [t, router.push, workspaceId],
   )
 
   const { table } = useDataTable({

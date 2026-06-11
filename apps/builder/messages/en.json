@@ -74,10 +74,12 @@
     "upgradeToPro": "Upgrade to Pro",
     "uploadFile": "Upload File",
     "view": "View",
+    "viewAnalytics": "View Analytics",
     "duplicate": "Duplicate",
     "getDraftLink": "Get Draft Link",
     "getPublishedLink": "Get Published Link",
     "analytics": "Analytics",
+    "deleteAnalytics": "Delete Analytics",
     "flowVersions": "Flow Versions",
     "revertToPublished": "Revert to Published",
     "search": "Search",
@@ -199,7 +201,11 @@
     "blockedConversationsHelp": "Conversations that your account blocked.",
     "blockedContacts": "Blocked contacts",
     "blockedContactsHelp": "Contacts don't want to receive messages from your account",
-    "newContactsByCountry": "New contacts by country"
+    "newContactsByCountry": "New contacts by country",
+    "date": "Date",
+    "total": "Total",
+    "sessionsThroughTheRef": "Sessions through the Ref \"{ref}\" per day",
+    "sessionsThroughTheMagicLink": "Sessions through the Magic Link \"{ref}\" per day"
   },
   "autoAssignConversation": {
     "rule": {

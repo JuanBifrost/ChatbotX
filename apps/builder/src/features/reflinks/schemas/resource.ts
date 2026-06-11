@@ -10,3 +10,6 @@ export const reflinkResource = createSelectSchema(reflinkModel, {
   type: reflinkTypes,
 })
 export type ReflinkResource = z.infer<typeof reflinkResource>
+
+export const reflinkResponse = reflinkResource.optional()
+export type ReflinkResponse = z.infer<typeof reflinkResponse>

@@ -39,3 +39,9 @@ export const listReflinksResponse = z.object({
   pageCount: z.number(),
 })
 export type ListReflinksResponse = z.infer<typeof listReflinksResponse>
+
+export const getReflinkRequest = z.object({
+  workspaceId: z.string(),
+  id: z.string(),
+})
+export type GetReflinkRequest = z.infer<typeof getReflinkRequest>

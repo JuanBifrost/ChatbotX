@@ -58,20 +58,10 @@ export const decodeButtonPayload = (payload: string): ButtonPayload | null => {
 
 const MAGIC_LINK_PATHNAME_REGEX = /^\/r\/[^/]+\/[^/]+/
 export const isMagicLinkUrl = (url: string): boolean => {
-  // TODO: get platform domain from config instead of hardcoding builder url
-  const builderUrl = process.env.NEXT_PUBLIC_BUILDER_URL
-  if (!builderUrl) {
-    return false
-  }
-
   try {
     const urlObj = new URL(url)
-    const builderUrlObj = new URL(builderUrl)
 
-    return (
-      urlObj.host === builderUrlObj.host &&
-      MAGIC_LINK_PATHNAME_REGEX.test(urlObj.pathname)
-    )
+    return MAGIC_LINK_PATHNAME_REGEX.test(urlObj.pathname)
   } catch {
     return false
   }

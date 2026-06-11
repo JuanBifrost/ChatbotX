@@ -23,15 +23,22 @@ import type {
   GetMessagesStatsResponseSchema,
   GetUniqueConversationsByAdminResponse,
   HumanAgentStats,
+  ListFlowNodeContactsResponse,
   MessagesByAdminStats,
   MessagesBySenderStats,
+  RefLinkTimeseriesRow,
   UniqueConversationsByAdminStats,
 } from "@chatbotx.io/analytics"
 import { endOfToday, startOfToday, subDays } from "date-fns"
 import ky, { HTTPError } from "ky"
 import { createStore } from "zustand/vanilla"
 
+const REFLINK_CONTACTS_PER_PAGE = 10
+
+export type AnalysisDashboardType = "dashboard" | "reflinks" | "magic-links"
+
 export type AnalysisState = {
+  type: AnalysisDashboardType
   loading: boolean
   errors: Map<string, string>
 
@@ -63,6 +70,18 @@ export type AnalysisState = {
   botMessagesWithResponse: BotMessageStats[]
   botMessagesNoResponse: BotMessageStats[]
   humanAgentStats: HumanAgentStats[]
+
+  // reflink stats
+  refLinkStats: RefLinkTimeseriesRow[]
+  reflinkContacts: ListFlowNodeContactsResponse["data"]
+  reflinkContactsPage: number
+  reflinkContactsPageCount: number
+
+  // magic-link stats
+  magicLinkStats: RefLinkTimeseriesRow[]
+  magicLinkContacts: ListFlowNodeContactsResponse["data"]
+  magicLinkContactsPage: number
+  magicLinkContactsPageCount: number
 }
 
 export type AnalysisActions = {
@@ -94,12 +113,21 @@ export type AnalysisActions = {
   getBotMessagesWithResponse: () => Promise<void>
   getBotMessagesNoResponse: () => Promise<void>
   getHumanAgentStats: () => Promise<void>
+
+  getRefLinkStats: () => Promise<void>
+  getReflinkContacts: () => Promise<void>
+  setReflinkContactsPage: (page: number) => Promise<void>
+
+  getMagicLinkStats: () => Promise<void>
+  getMagicLinkContacts: () => Promise<void>
+  setMagicLinkContactsPage: (page: number) => Promise<void>
 }
 
 export type AnalysisStore = AnalysisState & AnalysisActions
 
 export const createAnalysisStore = (props: Partial<AnalysisState>) =>
   createStore<AnalysisStore>((set, get) => ({
+    type: "dashboard",
     loading: false,
     errors: new Map<string, string>(),
 
@@ -134,6 +162,18 @@ export const createAnalysisStore = (props: Partial<AnalysisState>) =>
     botMessagesNoResponse: [],
     humanAgentStats: [],
 
+    // Default reflink stats
+    refLinkStats: [],
+    reflinkContacts: [],
+    reflinkContactsPage: 1,
+    reflinkContactsPageCount: 0,
+
+    // Default magic-link stats
+    magicLinkStats: [],
+    magicLinkContacts: [],
+    magicLinkContactsPage: 1,
+    magicLinkContactsPageCount: 0,
+
     initialize: async () => {
       const { loadAnalysisData } = get()
       await loadAnalysisData()
@@ -154,6 +194,24 @@ export const createAnalysisStore = (props: Partial<AnalysisState>) =>
     },
 
     loadAnalysisData: async () => {
+      const { type } = get()
+
+      if (type === "reflinks") {
+        const { getRefLinkStats, getReflinkContacts } = get()
+        set({ loading: true, errors: new Map<string, string>() })
+        await Promise.all([getRefLinkStats(), getReflinkContacts()])
+        set({ loading: false })
+        return
+      }
+
+      if (type === "magic-links") {
+        const { getMagicLinkStats, getMagicLinkContacts } = get()
+        set({ loading: true, errors: new Map<string, string>() })
+        await Promise.all([getMagicLinkStats(), getMagicLinkContacts()])
+        set({ loading: false })
+        return
+      }
+
       const {
         getContactCounts,
         getNewContactCounts,
@@ -683,5 +741,109 @@ export const createAnalysisStore = (props: Partial<AnalysisState>) =>
       } catch (error: unknown) {
         get().handleError("getHumanAgentStats", error)
       }
+    },
+
+    getRefLinkStats: async () => {
+      const { defaultSearchParams, from, to } = get()
+
+      try {
+        const { data: refLinkStats } = await ky
+          .get("/api/analytics/ref-links-stats", {
+            searchParams: {
+              ...defaultSearchParams,
+              startDate: from.toISOString(),
+              endDate: to.toISOString(),
+            },
+          })
+          .json<{ data: RefLinkTimeseriesRow[] }>()
+
+        set({ refLinkStats })
+      } catch (error: unknown) {
+        get().handleError("getRefLinkStats", error)
+      }
+    },
+
+    getReflinkContacts: async () => {
+      const { defaultSearchParams, reflinkContactsPage, from, to } = get()
+
+      try {
+        const result = await ky
+          .get("/api/analytics/ref-links-contacts", {
+            searchParams: {
+              ...defaultSearchParams,
+              page: reflinkContactsPage,
+              perPage: REFLINK_CONTACTS_PER_PAGE,
+              startDate: from.toISOString(),
+              endDate: to.toISOString(),
+            },
+          })
+          .json<ListFlowNodeContactsResponse>()
+
+        set({
+          reflinkContacts: result.data,
+          reflinkContactsPageCount: result.pageCount,
+        })
+      } catch (error: unknown) {
+        get().handleError("getReflinkContacts", error)
+      }
+    },
+
+    setReflinkContactsPage: async (page: number) => {
+      set({ reflinkContactsPage: page })
+
+      const { getReflinkContacts } = get()
+      await getReflinkContacts()
+    },
+
+    getMagicLinkStats: async () => {
+      const { defaultSearchParams, from, to } = get()
+
+      try {
+        const { data: magicLinkStats } = await ky
+          .get("/api/analytics/magic-links-stats", {
+            searchParams: {
+              ...defaultSearchParams,
+              startDate: from.toISOString(),
+              endDate: to.toISOString(),
+            },
+          })
+          .json<{ data: RefLinkTimeseriesRow[] }>()
+
+        set({ magicLinkStats })
+      } catch (error: unknown) {
+        get().handleError("getMagicLinkStats", error)
+      }
+    },
+
+    getMagicLinkContacts: async () => {
+      const { defaultSearchParams, magicLinkContactsPage, from, to } = get()
+
+      try {
+        const result = await ky
+          .get("/api/analytics/magic-links-contacts", {
+            searchParams: {
+              ...defaultSearchParams,
+              page: magicLinkContactsPage,
+              perPage: REFLINK_CONTACTS_PER_PAGE,
+              startDate: from.toISOString(),
+              endDate: to.toISOString(),
+            },
+          })
+          .json<ListFlowNodeContactsResponse>()
+
+        set({
+          magicLinkContacts: result.data,
+          magicLinkContactsPageCount: result.pageCount,
+        })
+      } catch (error: unknown) {
+        get().handleError("getMagicLinkContacts", error)
+      }
+    },
+
+    setMagicLinkContactsPage: async (page: number) => {
+      set({ magicLinkContactsPage: page })
+
+      const { getMagicLinkContacts } = get()
+      await getMagicLinkContacts()
     },
   }))

@@ -6,6 +6,7 @@ import {
 } from "@chatbotx.io/database/utils"
 import { assertCurrentUserCanAccessChatbot } from "@/lib/auth/utils"
 import type {
+  GetReflinkRequest,
   ListReflinksRequest,
   ListReflinksResponse,
 } from "../schemas/query"
@@ -43,10 +44,9 @@ export async function listReflinks(
   return { data, pageCount }
 }
 
-export async function findReflink(where: {
-  workspaceId: string
-  id: string
-}): Promise<ReflinkResource | undefined> {
+export async function findReflink(
+  where: GetReflinkRequest,
+): Promise<ReflinkResource | undefined> {
   return await db.query.reflinkModel.findFirst({
     where: { ...where, type: "refLink" },
   })

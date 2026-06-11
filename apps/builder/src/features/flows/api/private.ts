@@ -86,4 +86,20 @@ export const privateFlowsAPI = {
           nodeId: input.nodeId,
         }),
     ),
+
+  privateResetFlowStatsAPI: authorizedAPI
+    .route({
+      method: "DELETE",
+      path: "/workspaces/{workspaceId}/flows/{flowId}/stats",
+      summary: "Reset flow stats",
+      tags: ["Flows"],
+    })
+    .input(flowStatsRequest)
+    .use(workspaceAuthorizedMidddleware, (input) => input.workspaceId)
+    .handler(async ({ input }) => {
+      await flowAnalyticsService.resetStatsSession({
+        workspaceId: input.workspaceId,
+        flowId: input.flowId,
+      })
+    }),
 }

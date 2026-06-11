@@ -10,14 +10,12 @@ import {
 import { startOfSecond } from "date-fns"
 import { toDate } from "../lib/date"
 import { magicLinkStatsRepository } from "../repositories/postgres/magic-link-stats.repository"
-import type {
-  FlowNodeContactData,
-  ListFlowNodeContactsResponse,
-} from "../schemas/flow-stats"
+import type { ListFlowNodeContactsResponse } from "../schemas/flow-stats"
 import type {
   MagicLinkContactStatsInput,
   MagicLinkStatsInput,
 } from "../schemas/magic-link"
+import { listLinkContactStats } from "./link-contact-stats"
 
 type ExtractedPayload<T extends MessagePayload> = {
   clickedPayloads: T[]
@@ -61,9 +59,17 @@ export class MagicLinkAnalyticsService {
       createdAt: new Date(),
     }))
 
-    await Promise.all([
-      db.insert(magicLinkStatModel).values(items).onConflictDoNothing(),
-    ])
+    await db
+      .insert(magicLinkStatModel)
+      .values(items)
+      .onConflictDoNothing({
+        target: [
+          magicLinkStatModel.workspaceId,
+          magicLinkStatModel.linkId,
+          magicLinkStatModel.contactInboxId,
+          magicLinkStatModel.occurredAt,
+        ],
+      })
   }
 
   async getMagicLinkStatsByDateRange(input: MagicLinkStatsInput) {
@@ -78,87 +84,20 @@ export class MagicLinkAnalyticsService {
     return rows.sort((a, b) => a.dateReport.localeCompare(b.dateReport))
   }
 
-  async getMagicLinkContactStats(
+  getMagicLinkContactStats(
     input: MagicLinkContactStatsInput,
   ): Promise<ListFlowNodeContactsResponse> {
-    const { workspaceId, linkId, page, perPage } = input
-
-    if (!linkId) {
-      return { data: [], total: 0, page: 1, pageCount: 0 }
-    }
-
-    const row = await db.query.magicLinkModel.findFirst({
-      where: {
-        workspaceId,
-        id: linkId,
-      },
-    })
-
-    if (!row) {
-      return { data: [], total: 0, page: 1, pageCount: 0 }
-    }
-
-    const { contactInboxIds, rows } =
-      await magicLinkStatsRepository.getContactStats({
-        workspaceId,
-        linkId,
-        page,
-        perPage,
-      })
-
-    if (contactInboxIds.length === 0) {
-      return { data: [], total: 0, page, pageCount: 0 }
-    }
-
-    // Fetch contact details
-    const contactInboxes = await db.query.contactInboxModel.findMany({
-      where: { id: { in: contactInboxIds } },
-      with: {
-        contact: {
-          columns: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            avatar: true,
-          },
-        },
-        conversation: {
+    return listLinkContactStats({
+      params: input,
+      repository: magicLinkStatsRepository,
+      verifyLink: async ({ workspaceId, linkId }) => {
+        const row = await db.query.magicLinkModel.findFirst({
+          where: { workspaceId, id: linkId },
           columns: { id: true },
-        },
-      },
-      columns: {
-        id: true,
-        sourceId: true,
-        channel: true,
+        })
+        return Boolean(row)
       },
     })
-
-    const contactInboxesMap = new Map<string, (typeof contactInboxes)[0]>()
-    for (const ci of contactInboxes) {
-      contactInboxesMap.set(ci.id, ci)
-    }
-
-    const data: FlowNodeContactData[] = rows.map((row) => {
-      const ci = contactInboxesMap.get(row.contactInboxId)
-      return {
-        contactId: ci?.contact?.id ?? "",
-        contactInboxId: ci?.id ?? "",
-        firstName: ci?.contact?.firstName ?? null,
-        lastName: ci?.contact?.lastName ?? null,
-        sourceId: ci?.sourceId ?? null,
-        avatar: ci?.contact?.avatar ?? null,
-        channel: ci?.channel ?? null,
-        conversationId: ci?.conversation?.id ?? "",
-        occurredAt: row.occurredAt.toISOString(),
-      }
-    })
-
-    return {
-      data,
-      total: data.length,
-      page,
-      pageCount: data.length === 0 ? 0 : 1,
-    }
   }
 }
 
