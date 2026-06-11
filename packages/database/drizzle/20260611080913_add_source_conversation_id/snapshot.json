@@ -1,8 +1,8 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "00ec001e-ef94-4702-afde-69c8fba361c5",
-  "prevIds": ["c744036c-a1a7-46d5-9952-109e12fc83a3"],
+  "id": "60161194-dbfc-49df-8635-0e8db1a0f547",
+  "prevIds": ["42b9360b-d40a-4c49-b18f-df5ec19f9e88"],
   "ddl": [
     {
       "values": ["pending", "success", "error", "processing"],
@@ -5282,19 +5282,6 @@
       "table": "Contact"
     },
     {
-      "type": "timestamp(6) with time zone",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
-      "default": "now()",
-      "generated": null,
-      "identity": null,
-      "name": "lastActivityAt",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "Contact"
-    },
-    {
       "type": "bigint",
       "typeSchema": null,
       "notNull": true,
@@ -5563,6 +5550,32 @@
       "generated": null,
       "identity": null,
       "name": "sourceId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "sourceConversationId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "type": "timestamp(6) with time zone",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "contactLastReadAt",
       "entityType": "columns",
       "schema": "public",
       "table": "ContactInbox"
@@ -7066,6 +7079,45 @@
       "table": "CustomDomain"
     },
     {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cfHostnameId",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CustomDomain"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cfOwnershipValue",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CustomDomain"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": false,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "cfAcmeValue",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "CustomDomain"
+    },
+    {
       "type": "bigint",
       "typeSchema": null,
       "notNull": true,
@@ -7718,7 +7770,7 @@
     {
       "type": "bigint",
       "typeSchema": null,
-      "notNull": true,
+      "notNull": false,
       "dimensions": 0,
       "default": null,
       "generated": null,
@@ -16363,6 +16415,34 @@
           "asc": true,
           "nullsFirst": false,
           "opclass": null
+        },
+        {
+          "value": "lastIncomingMessageAt",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "ContactInbox_contactId_lastIncomingMessageAt_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "ContactInbox"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "contactId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
         }
       ],
       "isUnique": false,
@@ -16707,6 +16787,41 @@
       "method": "btree",
       "concurrently": false,
       "name": "Conversation_aiContextLastMessageId_idx",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "Conversation"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "lastActivityAt",
+          "isExpression": false,
+          "asc": false,
+          "nullsFirst": false,
+          "opclass": null
+        },
+        {
+          "value": "id",
+          "isExpression": false,
+          "asc": false,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "Conversation_workspaceId_lastActivityAt_id_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "Conversation"
@@ -17638,6 +17753,27 @@
       "method": "btree",
       "concurrently": false,
       "name": "IntegrationMailchimp_integrationId_key",
+      "entityType": "indexes",
+      "schema": "public",
+      "table": "IntegrationMailchimp"
+    },
+    {
+      "nameExplicit": true,
+      "columns": [
+        {
+          "value": "workspaceId",
+          "isExpression": false,
+          "asc": true,
+          "nullsFirst": false,
+          "opclass": null
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "with": "",
+      "method": "btree",
+      "concurrently": false,
+      "name": "IntegrationMailchimp_workspaceId_idx",
       "entityType": "indexes",
       "schema": "public",
       "table": "IntegrationMailchimp"

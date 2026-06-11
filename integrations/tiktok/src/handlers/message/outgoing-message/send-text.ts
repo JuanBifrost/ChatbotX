@@ -15,7 +15,7 @@ export function* convertFlowStepText(
     yield {
       business_id: businessId,
       recipient_type: "CONVERSATION",
-      recipient: contact.sourceId,
+      recipient: contact.sourceConversationId ?? contact.sourceId,
       message_type: "TEXT",
       text: { body: step.text },
     }
@@ -33,7 +33,7 @@ export function* convertFlowStepText(
     yield {
       business_id: businessId,
       recipient_type: "CONVERSATION",
-      recipient: contact.sourceId,
+      recipient: contact.sourceConversationId ?? contact.sourceId,
       message_type: "TEMPLATE",
       template,
     }

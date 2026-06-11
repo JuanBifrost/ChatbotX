@@ -19,7 +19,7 @@ export const sendMessage: MessageHandlers<TiktokAuthValue>["sendMessage"] =
     } = props
 
     const businessId = ctx.auth.metadata.openId
-    const conversationId = contact.sourceId
+    const conversationId = contact.sourceConversationId ?? contact.sourceId
     const messageIds: string[] = []
 
     try {
@@ -69,7 +69,7 @@ export const sendFlowStep: MessageHandlers<TiktokAuthValue>["sendFlowStep"] =
     } = props
 
     const businessId = ctx.auth.metadata.openId
-    const conversationId = contact.sourceId
+    const conversationId = contact.sourceConversationId ?? contact.sourceId
     const messageIds: string[] = []
 
     try {

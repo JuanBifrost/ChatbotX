@@ -87,6 +87,7 @@ export const receiveMessage = async ({
 
   const contact: IncomingContact = {
     sourceId: customerOpenId,
+    sourceConversationId: content.conversation_id,
     firstName: isEcho
       ? (content.to ?? content.to_user?.id ?? content.from_user.id)
       : (content.from ?? content.from_user.id),

@@ -383,6 +383,7 @@ const detectContactAndConversation = async (props: {
             contactId: newContact.id,
             originalContactId: newContact.id,
             source: inbox.channel,
+            sourceConversationId: incomingContact.sourceConversationId,
             sourceId: incomingContact.sourceId,
             channel: inbox.channel,
           })

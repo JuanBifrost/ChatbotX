@@ -3,6 +3,7 @@ import { z } from "zod"
 
 export type IncomingContact = {
   sourceId: string
+  sourceConversationId?: string
   phoneNumber?: string
   phoneNumberId?: string
   firstName?: string
@@ -15,6 +16,7 @@ export type IncomingContact = {
 export type OutgoingContact = {
   sourceId: string
   id: string
+  sourceConversationId?: string | null
   lastIncomingMessageAt?: Date | string | null
 }
 
