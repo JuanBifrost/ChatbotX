@@ -112,7 +112,8 @@
     "onSkip": "On skip",
     "onSuccess": "On success",
     "clone": "Clone",
-    "remove": "Remove"
+    "remove": "Remove",
+    "restore": "Restore"
   },
   "states": {
     "success": "Success",
@@ -1396,7 +1397,8 @@
         "step2": "Authorize your account and copy the <strong>access token</strong>, <strong>open ID</strong>, and <strong>client secret</strong>.",
         "step3": "Paste the credentials below to connect."
       }
-    }
+    },
+    "currentVersion": "Current"
   },
   "flows": {
     "title": "Flows",
@@ -1711,7 +1713,11 @@
     "noData": "No data",
     "featureNotFound": "{feature} not found",
     "enableSuccess": "{feature} enabled successfully",
-    "userInactive": "User has been inactive more than 7 days"
+    "userInactive": "User has been inactive more than 7 days",
+    "restoreVersionSuccess": "Flow restored to selected version",
+    "noVersionsFound": "No published versions found",
+    "publishVersionSuccess": "A new version has been published",
+    "flowConfigIncomplete": "Some configurations are incomplete"
   },
   "instagram": {
     "description": "This integration lets you create Instagram bots.",

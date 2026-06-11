@@ -9,8 +9,8 @@ export const flowVersionResource = createSelectSchema(flowVersionModel, {
   flowId: z.string(),
   workspaceId: z.string(),
   startNodeId: z.string(),
+  createdAt: z.coerce.date(),
 }).omit({
-  createdAt: true,
   updatedAt: true,
 })
 export type FlowVersionResource = z.infer<typeof flowVersionResource>

@@ -5,6 +5,10 @@ import {
   flowStatsRequest,
   listFlowNodeContactsResponse,
 } from "@chatbotx.io/analytics"
+import { flowVersionService } from "@chatbotx.io/business"
+import { zodBigintAsString } from "@chatbotx.io/utils"
+import z from "zod"
+import { flowVersionResource } from "@/features/flow-versions/schema/resource"
 import { withWorkspaceIdSchema } from "@/features/workspaces/schema/resource"
 import { workspaceAuthorizedMidddleware } from "@/middlewares/auth"
 import { authorizedAPI } from "@/orpc"
@@ -44,6 +48,23 @@ export const privateFlowsAPI = {
           workspaceId: input.workspaceId,
           flowId: input.flowId,
         }),
+    ),
+
+  privateListFlowVersionsAPI: authorizedAPI
+    .route({
+      method: "GET",
+      path: "/workspaces/{workspaceId}/flows/{flowId}/versions",
+      summary: "List flow versions",
+      tags: ["Flows"],
+    })
+    .input(withWorkspaceIdSchema.and(z.object({ flowId: zodBigintAsString() })))
+    .use(workspaceAuthorizedMidddleware, (input) => input.workspaceId)
+    .output(z.array(flowVersionResource))
+    .handler(async ({ input }) =>
+      flowVersionService.list({
+        flowId: input.flowId,
+        workspaceId: input.workspaceId,
+      }),
     ),
 
   privateGetFlowContactStatsAPI: authorizedAPI

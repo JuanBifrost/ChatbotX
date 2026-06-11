@@ -1,5 +1,6 @@
 "use server"
 
+import { flowVersionService } from "@chatbotx.io/business"
 import { notFoundException } from "@chatbotx.io/business/errors"
 import { and, db, eq } from "@chatbotx.io/database/client"
 import { flowModel, flowVersionModel } from "@chatbotx.io/database/schema"
@@ -74,4 +75,6 @@ export const publishFlow = async (ctx: { workspaceId: string; id: string }) => {
       })
       .where(eq(flowModel.id, flow.id))
   })
+
+  await flowVersionService.invalidateList(flow.id)
 }

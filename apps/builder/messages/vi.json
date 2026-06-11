@@ -112,7 +112,8 @@
     "onSkip": "Khi bỏ qua",
     "onSuccess": "Khi thành công",
     "clone": "Nhân bản",
-    "remove": "Xóa"
+    "remove": "Xóa",
+    "restore": "Khôi phục"
   },
   "states": {
     "success": "Thành công",
@@ -1408,7 +1409,8 @@
         "step2": "Cấp quyền tài khoản và sao chép <strong>access token</strong>, <strong>open ID</strong> và <strong>client secret</strong>.",
         "step3": "Dán thông tin xác thực bên dưới để kết nối."
       }
-    }
+    },
+    "currentVersion": "Hiện tại"
   },
   "flows": {
     "title": "Luồng",
@@ -1722,7 +1724,11 @@
     "noData": "No data",
     "featureNotFound": "Không tìm thấy {feature}",
     "enableSuccess": "Đã bật {feature} thành công",
-    "userInactive": "Người dùng không hoạt động hơn 7 ngày"
+    "userInactive": "Người dùng không hoạt động hơn 7 ngày",
+    "restoreVersionSuccess": "Đã khôi phục luồng về phiên bản đã chọn",
+    "noVersionsFound": "Không tìm thấy phiên bản đã xuất bản",
+    "publishVersionSuccess": "Đã xuất bản phiên bản mới",
+    "flowConfigIncomplete": "Một số cấu hình chưa hoàn chỉnh"
   },
   "instagram": {
     "description": "Tích hợp này cho phép bạn tạo bot Instagram.",
