@@ -14,6 +14,7 @@
     "worker:ai-agent": "dotenv -e ../../.env -- tsx --watch src/ai-agent/worker.ts",
     "worker:chat": "dotenv -e ../../.env -- tsx --watch src/chat/worker.ts",
     "worker:default": "dotenv -e ../../.env -- tsx --watch src/default/worker.ts",
+    "worker:events": "dotenv -e ../../.env -- tsx --watch src/events/worker.ts",
     "worker:integration": "dotenv -e ../../.env -- tsx --watch src/integration/worker.ts",
     "worker:sequence-consumer": "dotenv -e ../../.env -- tsx --watch src/sequence-scheduler/worker-consumer.ts",
     "worker:sequence-producer": "dotenv -e ../../.env -- tsx --watch src/sequence-scheduler/worker-producer.ts",
