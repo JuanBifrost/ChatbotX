@@ -21,6 +21,31 @@
 | New flow step with states (success/error/skip routing) | `flow-step-development` |
 | Dev/build/lint commands | `turborepo-workflow` |
 | Approved implementation plan | `implement-plan` |
+| Security-sensitive change (auth, scoping, webhooks, AI tools, permissions) | `security-review` |
+| Writing tests / verifying a change is done | `testing-workflow` |
+| Concurrent code (worker jobs, migrations, replace-writes) | `reliability-concurrency` |
+
+### Specialist agents (`.claude/agents/`)
+
+Dispatch these project subagents by name when relevant:
+
+| Agent | When |
+|-------|------|
+| `invariant-guard` | after editing `apps/`/`packages/`/`integrations/` — checks the ChatbotX invariants no linter enforces |
+| `rag-eval` | changes under `packages/ai` or the embedding repositories/handlers |
+| `incident-responder` | triaging a production error or failed job |
+
+Reviewers, planners, build-fixers, etc. come from the `~/.claude/` global set — don't recreate them here.
+
+### Model routing (cost)
+
+Default to the cheapest tier that fits the task; reserve the top tier for judgment:
+
+| Task class | Tier |
+|------------|------|
+| file lookup, grep, inventory, verification/refutation | Haiku / Sonnet |
+| implementation, code review, debugging | Sonnet |
+| architecture, synthesis, incident root-cause | Opus |
 
 ### Never do without checking
 
@@ -29,3 +54,4 @@
 - Do not skip `pnpm lint` — the CI will fail.
 - Do not hardcode user-facing strings — use `useTranslations()`.
 - Do not import `db` directly in `apps/` or `integrations/` — all DB access must go through a service (`@chatbotx.io/business`) or repository (`@chatbotx.io/database/repositories`). See `.agents/rules/data-access.md`.
+- Do not use dynamic `import()` — it breaks the tsdown build. See `.agents/rules/no-dynamic-import.md`.

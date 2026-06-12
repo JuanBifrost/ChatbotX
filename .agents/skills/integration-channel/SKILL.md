@@ -283,7 +283,7 @@ After editing, immediately read back each file to verify both import AND spread 
 
 **CRITICAL — `ChannelType` cascade:** Adding a value to the `channelTypes` enum causes compile errors in every `Record<ChannelType, ...>` that doesn't include the new key. Grep for `Record<ChannelType` and `Record<\n\s*ChannelType` (multiline) to find and fix ALL hits.
 
-**Phase 3 checkpoint:** Run `ReadLints` on all modified files. Fix any undeclared variable or missing import errors before continuing.
+**Phase 3 checkpoint:** Run `pnpm lint` and `pnpm --filter <touched-workspace> check-types` on the modified files. Fix any undeclared-variable or missing-import errors before continuing.
 
 ### Phase 4: Builder Feature + Settings Page
 

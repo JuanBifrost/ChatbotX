@@ -8,7 +8,7 @@ Enforced by `lefthook.yml` commit-msg hook. Pattern:
 <type>(<scope>): <subject>
 ```
 
-**Types:** `feat`, `fix`, `bugfix`, `refactor`, `docs`, `style`, `test`, `chore`, `ci`, `perf`, `build`, `revert`
+**Types:** `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`, `ci`, `perf`, `build`, `revert` (Conventional Commits; non-standard types like `bugfix` are dropped by release-note tooling)
 
 **Examples:**
 ```

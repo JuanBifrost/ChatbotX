@@ -459,3 +459,20 @@ Most formatting and common issues are automatically fixed by Biome. Run `npx ult
 # Git Conventions
 
 See **`.agents/rules/git.md`** for the full canonical rules (commit format, branch naming, staging, PRs, changelog).
+
+---
+
+# ChatbotX Project Invariants
+
+> The standards above are generic. These are the project-specific landmines that the linter does NOT catch. Canonical source: `AGENTS.md` (read it for detail). If this drifts from `AGENTS.md`, `AGENTS.md` wins.
+
+- **Stack:** pnpm + Turborepo, Drizzle ORM + PostgreSQL (pgvector), Redis + BullMQ, Next.js 16 builder. **Drizzle only — never Prisma.**
+- **Triple-d middleware names** — use `workspaceAuthorizedMidddleware` / `workspaceTokenAuthMidddleware` (three `d`s, preserved typo).
+- **`relations/index.ts` needs TWO edits** when adding a table — `import` the relations file AND spread it into the `relations` object.
+- **`ChannelType` cascade** — adding a `channelTypes` value breaks every `Record<ChannelType, …>`; grep and fix all hits.
+- **`.bind()` with `bindArgsSchemas`** — call `.bind(null, workspaceId)` when wiring such actions to `useHookFormAction`/`useAction`.
+- **`execute()` on no-input actions** — call `execute()` with no arguments, not `execute({})`.
+- **i18n is mandatory** — no hardcoded user-facing strings; use `useTranslations()`; check `apps/builder/messages/en.json` → `fields.*` first.
+- **No direct `db` in `apps/` or `integrations/`** — go through a service (`@chatbotx.io/business`) or repository (`@chatbotx.io/database/repositories`). See `.agents/rules/data-access.md`.
+- **No dynamic `import()`** — it breaks the tsdown build. See `.agents/rules/no-dynamic-import.md`.
+- **New workspace package** — run `CI=true pnpm install --no-frozen-lockfile` to link it.

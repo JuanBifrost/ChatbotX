@@ -13,7 +13,7 @@ Create a git commit for the current changes following the ChatbotX conventions i
    - `git log -n 10 --oneline` for style reference
 
 2. Analyze the diff:
-   - Determine commit `type`: `feat`, `fix`, `bugfix`, `refactor`, `docs`, `style`, `test`, `chore`, `ci`, `perf`, `build`, `revert`
+   - Determine commit `type`: `feat`, `fix`, `refactor`, `docs`, `style`, `test`, `chore`, `ci`, `perf`, `build`, `revert`
    - Determine `scope` from touched package/app/feature when obvious (e.g. `builder`, `worker`, `whatsapp`, `database`)
    - Draft subject: `<type>(<scope>): <subject>` — ≤ 100 chars, lowercase after `:`, no trailing period
    - Add body only when the *why* is non-obvious
