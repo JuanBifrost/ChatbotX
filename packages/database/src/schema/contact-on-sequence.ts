@@ -28,7 +28,6 @@ export const contactsOnSequenceModel = pgTable(
     nextStepId: bigintAsString(),
     lockedAt: timestamp(timestampConfig),
     lockOwner: text(),
-    errorCount: integer().notNull().default(0),
     lastError: text(),
     contactId: bigintAsString()
       .notNull()

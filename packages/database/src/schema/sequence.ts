@@ -1,6 +1,5 @@
 import {
   boolean,
-  doublePrecision,
   index,
   integer,
   pgTable,
@@ -23,8 +22,6 @@ export const sequenceModel = pgTable(
     active: boolean().notNull().default(true),
     subscribers: integer().notNull().default(0),
     messages: integer().notNull().default(0),
-    openRate: doublePrecision(),
-    ctr: doublePrecision(),
     workspaceId: bigintAsString()
       .notNull()
       .references(() => workspaceModel.id, {

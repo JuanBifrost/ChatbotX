@@ -77,10 +77,6 @@ export async function listBroadcastAudience(input: {
         gender: row.contact.gender,
       },
       sent: row.sent,
-      delivered: row.delivered,
-      seen: row.seen,
-      clicked: row.clicked,
-      failed: row.failed,
     })),
     pageCount: Math.ceil(total / limit),
   }

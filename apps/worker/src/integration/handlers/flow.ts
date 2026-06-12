@@ -138,7 +138,7 @@ export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
       const broadcastMeta = props.metadata as BroadcastMetadataPayload
       await db
         .update(contactsOnBroadcastsModel)
-        .set({ failed: true, failedAt: new Date() })
+        .set({ failedAt: new Date() })
         .where(
           and(
             eq(

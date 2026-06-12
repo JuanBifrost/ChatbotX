@@ -40,10 +40,6 @@ export const broadcastAudienceItemResource = z.object({
   contactId: z.string(),
   contact: broadcastAudienceContactResource,
   sent: z.boolean(),
-  delivered: z.boolean(),
-  seen: z.boolean(),
-  clicked: z.boolean(),
-  failed: z.boolean(),
 })
 
 export const listBroadcastAudienceResponse = z.object({
