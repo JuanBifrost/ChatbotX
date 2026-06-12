@@ -1,7 +1,7 @@
 ---
 name: integration-channel
 description: >-
-  Create and modify integration channels (messenger, whatsapp, zalo, webchat,
+  Create and modify integration channels (messenger, whatsapp, zalo, tiktok, webchat,
   etc.) for the chatbot platform. Use when adding a new channel integration,
   modifying webhook handlers, working with message send/receive, or connecting
   external platforms.
@@ -40,20 +40,20 @@ Channel name → determines package name (`@chatbotx.io/integration-<channel>`),
 
 ### Question 2: Auth fields
 
-| Base | When to use | Examples |
-|------|-------------|---------|
-| `customAuthSchema` (from SDK) | User provides credentials directly. No OAuth. | email, webchat |
-| `Oauth2AuthValue` (from SDK) | Platform uses OAuth2 with clientId/clientSecret + tokens. | messenger, whatsapp, zalo |
+| Base                          | When to use                                               | Examples                          |
+| ----------------------------- | --------------------------------------------------------- | --------------------------------- |
+| `customAuthSchema` (from SDK) | User provides credentials directly. No OAuth.             | email, webchat                    |
+| `Oauth2AuthValue` (from SDK)  | Platform uses OAuth2 with clientId/clientSecret + tokens. | messenger, whatsapp, zalo, tiktok |
 
 For EACH field: name, Zod type, required or optional. Infer types from context (e.g. "port" → `z.number().int().positive()`).
 
 ### Question 3: Platform credentials
 
-| Scenario | Platform credentials? | Examples |
-|----------|----------------------|---------|
-| OAuth app (clientId/clientSecret shared across workspaces) | YES | messenger, whatsapp, zalo |
-| Per-workspace credentials only | NO | email, webchat, smtp |
-| Shared third-party API key | YES | giphy, stripe |
+| Scenario                                                   | Platform credentials? | Examples                          |
+| ---------------------------------------------------------- | --------------------- | --------------------------------- |
+| OAuth app (clientId/clientSecret shared across workspaces) | YES                   | messenger, whatsapp, zalo, tiktok |
+| Per-workspace credentials only                             | NO                    | email, webchat, smtp              |
+| Shared third-party API key                                 | YES                   | giphy, stripe                     |
 
 ### Confirmation Summary
 
@@ -79,6 +79,7 @@ After confirmation, execute these 4 phases **in order**. Each phase ends with a 
 Create 5 files. All are boilerplate — write them in a single batch.
 
 **Directory structure:**
+
 ```
 integrations/<channel>/
   package.json
@@ -92,6 +93,7 @@ integrations/<channel>/
 ```
 
 **`package.json`:**
+
 ```json
 {
   "name": "@chatbotx.io/integration-<channel>",
@@ -115,6 +117,7 @@ integrations/<channel>/
 ```
 
 **`tsconfig.json`:**
+
 ```json
 {
   "extends": "@chatbotx.io/typescript-config/base.json",
@@ -124,11 +127,13 @@ integrations/<channel>/
 ```
 
 **`src/index.ts`:**
+
 ```typescript
-export * from "./integration"
+export * from "./integration";
 ```
 
 **`src/schema.ts`** — fill in auth fields from confirmation:
+
 ```typescript
 import type { BaseConfig } from "@chatbotx.io/sdk"
 import { customAuthSchema } from "@chatbotx.io/sdk"
@@ -145,6 +150,7 @@ export type <Channel>Actions = Record<string, never>
 ```
 
 **`src/integration.ts`:**
+
 ```typescript
 import {
   type BaseConfig,
@@ -179,6 +185,7 @@ export const integration = new Integration(config)
 ```
 
 **`src/handlers/webhook.ts`:**
+
 ```typescript
 import type { HandleRequestProps } from "@chatbotx.io/sdk"
 import type { <Channel>Config } from "../schema"
@@ -202,6 +209,7 @@ export const webhookHandler = async (props: HandleRequestProps<<Channel>Config>)
 Create 2 new files, edit 5 existing files. Do all edits in a single batch.
 
 **Create `packages/database/src/schema/integration-<channel>.ts`:**
+
 ```typescript
 import { index, jsonb, pgTable, text, uniqueIndex } from "drizzle-orm/pg-core"
 import { bigintAsString, sharedColumns } from "../partials/shared"
@@ -228,6 +236,7 @@ export const integration<Channel>Model = pgTable(
 ```
 
 **Create `packages/database/src/relations/integration-<channel>.ts`:**
+
 ```typescript
 import { defineRelationsPart } from "drizzle-orm"
 // biome-ignore lint/performance/noNamespaceImport: drizzle schema
@@ -247,15 +256,16 @@ export const integration<Channel>Relations = defineRelationsPart(schema, (r) => 
 
 **Edit 5 registration files (all in one batch):**
 
-| # | File | Edit |
-|---|------|------|
-| 1 | `packages/database/src/partials/channel.ts` | Add `"<channel>"` to `channelTypes` z.enum array |
-| 2 | `packages/database/src/partials/integration.ts` | Add `"<channel>"` to `integrationTypes` z.enum array |
-| 3 | `packages/database/src/schema/index.ts` | Add `export * from "./integration-<channel>"` |
-| 4 | `packages/database/src/relations/index.ts` | Add import at top AND spread in `relations` object |
-| 5 | `packages/database/src/types.ts` | Add `export type Integration<Channel>Model = typeof schema.integration<Channel>Model.$inferSelect` |
+| #   | File                                            | Edit                                                                                               |
+| --- | ----------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| 1   | `packages/database/src/partials/channel.ts`     | Add `"<channel>"` to `channelTypes` z.enum array                                                   |
+| 2   | `packages/database/src/partials/integration.ts` | Add `"<channel>"` to `integrationTypes` z.enum array                                               |
+| 3   | `packages/database/src/schema/index.ts`         | Add `export * from "./integration-<channel>"`                                                      |
+| 4   | `packages/database/src/relations/index.ts`      | Add import at top AND spread in `relations` object                                                 |
+| 5   | `packages/database/src/types.ts`                | Add `export type Integration<Channel>Model = typeof schema.integration<Channel>Model.$inferSelect` |
 
 **CRITICAL — `relations/index.ts` needs TWO edits:**
+
 1. Import: `import { integration<Channel>Relations } from "./integration-<channel>"`
 2. Spread: `...integration<Channel>Relations,` in the relations object
 
@@ -265,21 +275,21 @@ After editing, immediately read back each file to verify both import AND spread 
 
 **Integration registration (4 files, single batch):**
 
-| # | File | Edit |
-|---|------|------|
-| 1 | `apps/builder/src/integration.ts` | Add `import { integration as integration<Channel> } from "@chatbotx.io/integration-<channel>"` AND `<channel>: integration<Channel>` in object |
-| 2 | `apps/worker/src/services/integrations.ts` | Add `import ...` AND `<channel>: integration<Channel>` in `allIntegrations` |
-| 3 | `apps/builder/package.json` | Add `"@chatbotx.io/integration-<channel>": "workspace:*"` to dependencies |
-| 4 | `apps/worker/package.json` | Add `"@chatbotx.io/integration-<channel>": "workspace:*"` to dependencies |
+| #   | File                                       | Edit                                                                                                                                           |
+| --- | ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `apps/builder/src/integration.ts`          | Add `import { integration as integration<Channel> } from "@chatbotx.io/integration-<channel>"` AND `<channel>: integration<Channel>` in object |
+| 2   | `apps/worker/src/services/integrations.ts` | Add `import ...` AND `<channel>: integration<Channel>` in `allIntegrations`                                                                    |
+| 3   | `apps/builder/package.json`                | Add `"@chatbotx.io/integration-<channel>": "workspace:*"` to dependencies                                                                      |
+| 4   | `apps/worker/package.json`                 | Add `"@chatbotx.io/integration-<channel>": "workspace:*"` to dependencies                                                                      |
 
 **CRITICAL — verify imports:** After each StrReplace on `integration.ts` and `integrations.ts`, immediately read back lines 1-10 to confirm the import line is actually present. The `import` and the usage are TWO separate edits.
 
 **UI registration (2 files):**
 
-| # | File | Edit |
-|---|------|------|
-| 5 | `apps/builder/src/features/inboxes/components/inbox-icon.tsx` | Add icon to lucide import AND entry in `INBOX_ICON_CONFIG` |
-| 6 | `apps/builder/src/features/inboxes/components/inbox-card-list.tsx` | Add `<channel>: undefined` to `cardConfigs` |
+| #   | File                                                               | Edit                                                       |
+| --- | ------------------------------------------------------------------ | ---------------------------------------------------------- |
+| 5   | `apps/builder/src/features/inboxes/components/inbox-icon.tsx`      | Add icon to lucide import AND entry in `INBOX_ICON_CONFIG` |
+| 6   | `apps/builder/src/features/inboxes/components/inbox-card-list.tsx` | Add `<channel>: undefined` to `cardConfigs`                |
 
 **CRITICAL — `ChannelType` cascade:** Adding a value to the `channelTypes` enum causes compile errors in every `Record<ChannelType, ...>` that doesn't include the new key. Grep for `Record<ChannelType` and `Record<\n\s*ChannelType` (multiline) to find and fix ALL hits.
 
@@ -290,6 +300,7 @@ After editing, immediately read back each file to verify both import AND spread 
 Create the feature directory and settings page. This is standard feature-scaffold work.
 
 **Directory structure:**
+
 ```
 apps/builder/src/features/integration-<channel>/
   schema/
@@ -310,6 +321,7 @@ apps/builder/src/features/integration-<channel>/
 **Key patterns for integration features:**
 
 **`schema/mutation.ts`** — Zod schemas for create/update:
+
 ```typescript
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { z } from "zod"
@@ -326,6 +338,7 @@ export type Update<Channel>Request = z.infer<typeof update<Channel>Request>
 ```
 
 **`schema/resource.ts`** — Select schema for responses:
+
 ```typescript
 import { createSelectSchema, integration<Channel>Model } from "@chatbotx.io/database/schema"
 import type { z } from "zod"
@@ -338,6 +351,7 @@ export type Integration<Channel>Resource = z.infer<typeof integration<Channel>Re
 ```
 
 **`actions/create-<channel>.action.ts`** — Create action pattern:
+
 - Uses `workspaceActionClient.bindArgsSchemas(workspaceIdrequestParams).inputSchema(schema).action(...)`
 - Creates `Inbox` + `Integration<Channel>` in a DB transaction
 - The inbox `channel` value must match the enum value added in Phase 2: `channelTypes.enum.<channel>`
@@ -345,11 +359,13 @@ export type Integration<Channel>Resource = z.infer<typeof integration<Channel>Re
 - All auth fields go into the `auth` JSONB column
 
 **`actions/delete-<channel>.action.ts`** — Delete action pattern:
+
 - Uses `workspaceActionClient.bindArgsSchemas([zodBigintAsString(), zodBigintAsString()]).action(...)`
 - **No `.inputSchema()`** — delete has no input
 - Disconnect component calls `execute()` with NO arguments (not `execute({})`)
 
 **`queries/index.ts`** — Server-side queries:
+
 ```typescript
 "use server"
 import { db, findOrFail } from "@chatbotx.io/database/client"
@@ -368,19 +384,23 @@ export const listIntegration<Channel>s = async (input: { workspaceId: string }) 
 ```
 
 **`components/create-<channel>-form.tsx`** — Form pattern:
+
 - Uses `useHookFormAction(createAction.bind(null, workspaceId), zodResolver(schema), ...)`
 - **CRITICAL:** Must call `.bind(null, workspaceId)` because the action uses `bindArgsSchemas`
 
 **`components/<channel>-disconnect.tsx`** — Disconnect pattern:
+
 - Uses `useAction(deleteAction.bind(null, workspaceId, integrationId), ...)`
 - Calls `execute()` with NO arguments
 
 **`<channel>-manage.tsx`** — Manage table:
+
 - Uses `use(promises)` to unwrap server promises
 - Shows table with integration data
 - Add button links to `/channels/create?channel=<channel>&workspaceId=...`
 
 **Settings page — create `@<channel>/page.tsx`:**
+
 ```typescript
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { notFound } from "next/navigation"
@@ -411,38 +431,38 @@ Run these checks **in order**:
 
 ### Common Build Errors
 
-| Error | Cause | Fix |
-|-------|-------|-----|
-| `Cannot find module '@chatbotx.io/integration-<channel>'` | Package not linked | Run `pnpm install --no-frozen-lockfile` |
-| `Property '<channel>' is missing in type ... Record<ChannelType, ...>` | Enum value added but not all Records updated | Grep `Record<ChannelType` and add missing entry |
-| `The ... variable is undeclared` | Import missing | Read back file to verify import line exists, re-add if missing |
-| `Target signature provides too few arguments` | Action uses `bindArgsSchemas` but form didn't `.bind()` | Use `action.bind(null, workspaceId)` in useHookFormAction |
-| `Type 'string' is not assignable to type ChannelType` | Passing untyped string to InboxIcon | Cast with `as ChannelType` and add import |
-| `Argument of type '{}' ... parameter of type 'void'` | Calling `execute({})` on no-input action | Use `execute()` with no arguments |
+| Error                                                                  | Cause                                                   | Fix                                                            |
+| ---------------------------------------------------------------------- | ------------------------------------------------------- | -------------------------------------------------------------- |
+| `Cannot find module '@chatbotx.io/integration-<channel>'`              | Package not linked                                      | Run `pnpm install --no-frozen-lockfile`                        |
+| `Property '<channel>' is missing in type ... Record<ChannelType, ...>` | Enum value added but not all Records updated            | Grep `Record<ChannelType` and add missing entry                |
+| `The ... variable is undeclared`                                       | Import missing                                          | Read back file to verify import line exists, re-add if missing |
+| `Target signature provides too few arguments`                          | Action uses `bindArgsSchemas` but form didn't `.bind()` | Use `action.bind(null, workspaceId)` in useHookFormAction      |
+| `Type 'string' is not assignable to type ChannelType`                  | Passing untyped string to InboxIcon                     | Cast with `as ChannelType` and add import                      |
+| `Argument of type '{}' ... parameter of type 'void'`                   | Calling `execute({})` on no-input action                | Use `execute()` with no arguments                              |
 
 ## Platform Credentials (only if needed)
 
 If platform credentials ARE needed, also update:
 
-| # | File | What to add |
-|---|------|-------------|
-| 1 | `packages/database/src/partials/credential.ts` | New `<channel>CredentialSchema` + add to `platformCredentialSchema` |
-| 2 | `apps/builder/src/features/platform-settings/` | Settings panel component + action |
-| 3 | `manage-platform-settings.tsx` | Import and render new panel |
-| 4 | `<channel>-manage.tsx` | Gate "Add" button on presence of a verified credential via `platformCredentialService.findForUser({ userId, type: '<channel>' })` |
+| #   | File                                           | What to add                                                                                                                       |
+| --- | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | `packages/database/src/partials/credential.ts` | New `<channel>CredentialSchema` + add to `platformCredentialSchema`                                                               |
+| 2   | `apps/builder/src/features/platform-settings/` | Settings panel component + action                                                                                                 |
+| 3   | `manage-platform-settings.tsx`                 | Import and render new panel                                                                                                       |
+| 4   | `<channel>-manage.tsx`                         | Gate "Add" button on presence of a verified credential via `platformCredentialService.findForUser({ userId, type: '<channel>' })` |
 
 ## Logging
 
 Never use `console` in integration code. Import `@chatbotx.io/logger` for shared packages, or the app-local logger for worker/builder code.
 
 ```typescript
-import logger from "@chatbotx.io/logger"
+import logger from "@chatbotx.io/logger";
 
 // ✅ correct — preserves stack trace
-logger.error({ err: error, channel: "<channel>" }, "Webhook handler failed")
+logger.error({ err: error, channel: "<channel>" }, "Webhook handler failed");
 
 // ❌ wrong — stack trace lost
-logger.error({ error }, "Webhook handler failed")
+logger.error({ error }, "Webhook handler failed");
 ```
 
 Always use `err: error` (not `error: error`) — pino's built-in serializer is registered under the `err` key.
@@ -457,13 +477,14 @@ Always use `err: error` (not `error: error`) — pino's built-in serializer is r
 
 ## Existing Integrations Reference
 
-| Integration | Auth type | Platform credentials? | Notes |
-|-------------|-----------|----------------------|-------|
-| messenger | OAuth2 | YES | clientId/clientSecret as platform credential |
-| whatsapp | OAuth2 | YES | clientId/clientSecret + systemUser as platform credential |
-| zalo | OAuth2 | YES | clientId/clientSecret as platform credential |
-| google-sheets | OAuth2 | YES | clientId/clientSecret as platform credential |
-| email | Custom | NO | SMTP credentials per workspace |
-| smtp | Custom | NO | SMTP with provider presets |
-| webchat | Custom | NO | PartySocket-based |
-| chatbotx | Custom | NO | Internal chatbot |
+| Integration   | Auth type | Platform credentials? | Notes                                                     |
+| ------------- | --------- | --------------------- | --------------------------------------------------------- |
+| messenger     | OAuth2    | YES                   | clientId/clientSecret as platform credential              |
+| whatsapp      | OAuth2    | YES                   | clientId/clientSecret + systemUser as platform credential |
+| zalo          | OAuth2    | YES                   | clientId/clientSecret as platform credential              |
+| tiktok        | OAuth2    | YES                   | clientId/clientSecret as platform credential              |
+| google-sheets | OAuth2    | YES                   | clientId/clientSecret as platform credential              |
+| email         | Custom    | NO                    | SMTP credentials per workspace                            |
+| smtp          | Custom    | NO                    | SMTP with provider presets                                |
+| webchat       | Custom    | NO                    | PartySocket-based                                         |
+| chatbotx      | Custom    | NO                    | Internal chatbot                                          |

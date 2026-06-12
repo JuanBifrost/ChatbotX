@@ -84,6 +84,7 @@ const getChannelMultiSelectOptions = (
   { label: t("fields.whatsapp.label"), value: "whatsapp" },
   { label: t("fields.messenger.label"), value: "messenger" },
   { label: t("fields.zalo.label"), value: "zalo" },
+  { label: t("fields.tiktok.label"), value: "tiktok" },
   { label: t("fields.telegram.label"), value: "telegram" },
 ]
 

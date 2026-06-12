@@ -34,10 +34,12 @@ metadata:
 ## Key Highlights
 
 **Two Critical Rules:**
+
 1. Authenticate before executing any commands — every API call requires a workspace token
 2. Always resolve IDs first — commands like `contacts tag add` require both a `contactId` and a `tagId`; fetch them with `list` commands before using them
 
 **Integration Modes:**
+
 - **CLI** (`chatbotx`) — terminal-based automation and scripting
 - **MCP Server** — gives AI agents (Claude, Cursor, ChatGPT) direct tool access via Model Context Protocol
 
@@ -226,31 +228,31 @@ chatbotx error-logs list                             # [--page --perPage --sort 
 
 Tool names are the OpenAPI `operationId` converted to `snake_case`.
 
-| Category | Tool |
-|---|---|
-| Workspace | `get_workspace` |
-| Channels | `list_channels` |
-| Members | `list_members`, `get_member` |
-| Teams | `list_teams` |
-| Tags | `list_tags`, `create_tag`, `get_tag`, `update_tag`, `delete_tag` |
-| Custom Fields | `list_custom_fields`, `create_custom_field`, `get_custom_field`, `update_custom_field`, `delete_custom_field` |
-| Bot Fields | `list_bot_fields`, `create_bot_field`, `set_bot_fields`, `bulk_update_bot_fields`, `get_bot_field`, `set_bot_field`, `delete_bot_fields` |
-| Contacts | `list_contacts`, `create_contact`, `get_contact`, `upsert_contact`, `update_contact`, `delete_contact`, `filter_contacts`, `import_contacts` |
-| Contact Tags | `list_contact_tags`, `add_contact_tags`, `remove_contact_tags` |
+| Category              | Tool                                                                                                                                                                           |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Workspace             | `get_workspace`                                                                                                                                                                |
+| Channels              | `list_channels`                                                                                                                                                                |
+| Members               | `list_members`, `get_member`                                                                                                                                                   |
+| Teams                 | `list_teams`                                                                                                                                                                   |
+| Tags                  | `list_tags`, `create_tag`, `get_tag`, `update_tag`, `delete_tag`                                                                                                               |
+| Custom Fields         | `list_custom_fields`, `create_custom_field`, `get_custom_field`, `update_custom_field`, `delete_custom_field`                                                                  |
+| Bot Fields            | `list_bot_fields`, `create_bot_field`, `set_bot_fields`, `bulk_update_bot_fields`, `get_bot_field`, `set_bot_field`, `delete_bot_fields`                                       |
+| Contacts              | `list_contacts`, `create_contact`, `get_contact`, `upsert_contact`, `update_contact`, `delete_contact`, `filter_contacts`, `import_contacts`                                   |
+| Contact Tags          | `list_contact_tags`, `add_contact_tags`, `remove_contact_tags`                                                                                                                 |
 | Contact Custom Fields | `list_contact_custom_fields`, `set_contact_custom_fields`, `clear_contact_custom_fields`, `get_contact_custom_field`, `set_contact_custom_field`, `clear_contact_custom_field` |
-| Contact Actions | `block_contact`, `unblock_contact`, `list_contact_messages`, `get_contact_message`, `send_message`, `send_contact_flow`, `trigger_auto_reply` |
-| Conversations | `list_conversations` |
-| Broadcasts | `list_broadcasts`, `get_broadcast`, `get_broadcast_audience` |
-| Flows | `list_flows` |
-| Sequences | `list_sequences`, `get_sequence` |
-| Saved Replies | `list_saved_replies` |
-| Template Messages | `list_template_messages` |
-| AI Agents | `list_aiagents` |
-| Integrations | `list_integrations` |
-| Keywords | `list_keywords` |
-| Triggers | `list_triggers` |
-| Webhooks | `list_webhooks` |
-| Error Logs | `list_error_logs` |
+| Contact Actions       | `block_contact`, `unblock_contact`, `list_contact_messages`, `get_contact_message`, `send_message`, `send_contact_flow`, `trigger_auto_reply`                                  |
+| Conversations         | `list_conversations`                                                                                                                                                           |
+| Broadcasts            | `list_broadcasts`, `get_broadcast`, `get_broadcast_audience`                                                                                                                   |
+| Flows                 | `list_flows`                                                                                                                                                                   |
+| Sequences             | `list_sequences`, `get_sequence`                                                                                                                                               |
+| Saved Replies         | `list_saved_replies`                                                                                                                                                           |
+| Template Messages     | `list_template_messages`                                                                                                                                                       |
+| AI Agents             | `list_aiagents`                                                                                                                                                                |
+| Integrations          | `list_integrations`                                                                                                                                                            |
+| Keywords              | `list_keywords`                                                                                                                                                                |
+| Triggers              | `list_triggers`                                                                                                                                                                |
+| Webhooks              | `list_webhooks`                                                                                                                                                                |
+| Error Logs            | `list_error_logs`                                                                                                                                                              |
 
 Tools are auto-generated from the OpenAPI spec — new API endpoints appear automatically on server restart.
 
@@ -259,18 +261,21 @@ Tools are auto-generated from the OpenAPI spec — new API endpoints appear auto
 ## Common Patterns
 
 **Tag a contact by name (not ID):**
+
 ```bash
 TAG_ID=$(chatbotx tags get "vip" --json | jq -r '.id')
 chatbotx contacts tag add <identifier> --tagIds $TAG_ID
 ```
 
 **Send a flow to a contact:**
+
 ```bash
 FLOW_ID=$(chatbotx flows list --json | jq -r '.[] | select(.name=="Welcome") | .id')
 chatbotx contacts flow add <identifier> --flowId $FLOW_ID
 ```
 
 **Set a custom field value on a contact:**
+
 ```bash
 FIELD_ID=$(chatbotx custom-fields get "plan" --json | jq -r '.id')
 chatbotx contacts custom-field add <identifier> $FIELD_ID --value "premium"

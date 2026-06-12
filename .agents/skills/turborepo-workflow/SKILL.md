@@ -42,6 +42,8 @@ integrations/
   messenger/   → Facebook Messenger
   whatsapp/    → WhatsApp Business
   zalo/        → Zalo OA
+  tiktok/      → TikTok for Business
+  telegram/    → Telegram Bot API
   webchat/     → In-app webchat
   chatbotx/    → Internal chatbot
   google-sheets/ → Google Sheets
@@ -124,6 +126,7 @@ When creating a new package (e.g. `integrations/<channel>/`):
 ## Turbo Pipeline
 
 Defined in `turbo.json`:
+
 - `build` depends on `^build` (builds dependencies first), outputs `.next/**`, `dist/**`
 - `dev`, `https`, `packages:dev` are persistent (long-running)
 - `db:migrate`, `db:setup`, `db:reset`, `db:studio` are non-cached

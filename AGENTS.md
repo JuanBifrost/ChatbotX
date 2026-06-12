@@ -15,15 +15,15 @@ This file summarizes how **ChatbotX** (this repository) is structured and how to
 
 ## Repository layout
 
-| Path | Role |
-|------|------|
-| `apps/builder` | **Next.js** web app (product UI). Default dev URL often `http://localhost:3123` (see `.env.example`). |
-| `apps/worker` | **BullMQ** (and related) background jobs: chat, AI, triggers, webhooks, analytics, sequences. |
-| `apps/realtime` | Realtime server; builder exposes `NEXT_PUBLIC_REALTIME_URL` (e.g. `http://localhost:1999`). |
-| `apps/cli` | Command-line client (`chatbotx-cli`). |
-| `apps/mcp-server` | MCP server exposing public API surfaces. |
-| `packages/*` | Shared libraries: `database` (Drizzle + PostgreSQL), `ui`, `public-apis`, `sdk`, `worker-config`, `ai`, etc. |
-| `integrations/*` | Channel and vendor integrations (WhatsApp, Messenger, Telegram, Zalo, webchat, SMTP, OpenAI, Google Sheets, …). |
+| Path              | Role                                                                                                                    |
+| ----------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `apps/builder`    | **Next.js** web app (product UI). Default dev URL often `http://localhost:3123` (see `.env.example`).                   |
+| `apps/worker`     | **BullMQ** (and related) background jobs: chat, AI, triggers, webhooks, analytics, sequences.                           |
+| `apps/realtime`   | Realtime server; builder exposes `NEXT_PUBLIC_REALTIME_URL` (e.g. `http://localhost:1999`).                             |
+| `apps/cli`        | Command-line client (`chatbotx-cli`).                                                                                   |
+| `apps/mcp-server` | MCP server exposing public API surfaces.                                                                                |
+| `packages/*`      | Shared libraries: `database` (Drizzle + PostgreSQL), `ui`, `public-apis`, `sdk`, `worker-config`, `ai`, etc.            |
+| `integrations/*`  | Channel and vendor integrations (WhatsApp, Messenger, Telegram, Zalo, TikTok, webchat, SMTP, OpenAI, Google Sheets, …). |
 
 ## Stack (high level)
 

@@ -28,6 +28,10 @@ export const allInboxConfigs = {
     label: "Telegram",
     value: "telegram",
   },
+  tiktok: {
+    label: "TikTok",
+    value: "tiktok",
+  },
   webchat: {
     label: "Webchat",
     value: "webchat",

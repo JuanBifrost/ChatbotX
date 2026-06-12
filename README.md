@@ -80,8 +80,8 @@
 - **APIs, CLI, and MCP:** Build advanced agent workflows with MCP-compatible clients
 
 | ![Omnichannel Team Inbox](https://github.com/user-attachments/assets/daa23e91-7ba5-4093-8605-e77cddebe35c) | ![Smart Contact Import](https://github.com/user-attachments/assets/6a4a6c7d-5a77-4f3c-900b-d87cb849e589) |
-| ------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| ![Visual Flow Builder](https://github.com/user-attachments/assets/6f0448ad-0f32-4065-9e2a-f41b5354a68f) | ![Built-in AI Agents](https://github.com/user-attachments/assets/365167c6-b4d9-498a-8b8c-a5079b82edbf) |
+| ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| ![Visual Flow Builder](https://github.com/user-attachments/assets/6f0448ad-0f32-4065-9e2a-f41b5354a68f)    | ![Built-in AI Agents](https://github.com/user-attachments/assets/365167c6-b4d9-498a-8b8c-a5079b82edbf)   |
 
 ## Tech Stack
 
@@ -116,6 +116,7 @@ To have the project up and running, please follow the [Quick Start Guide](https:
 |   |-- instagram/
 |   |-- telegram/
 |   |-- zalo/
+|   |-- tiktok/
 |   |-- webchat/
 |   |-- smtp/
 |   |-- openai/
