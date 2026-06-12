@@ -9,8 +9,8 @@ import { logger } from "../../lib/logger"
 
 const LOCK_KEY = "schedule:finalize-broadcasts"
 const LOCK_TTL_SECONDS = 55
-const MIN_CONTACTS_FOR_THRESHOLD = 100
-const MISSING_RATE_THRESHOLD = 1
+const MAX_MISSING_CONTACTS_FOR_THRESHOLD = 100
+const MISSING_RATE_THRESHOLD = 0.01
 
 export const finalizeBroadcasts = async () =>
   distributedLock.runExclusive({
@@ -52,7 +52,7 @@ export const finalizeBroadcasts = async () =>
 
         const isMissingThreshold =
           total > 0 &&
-          missingCount <= Math.min(missingCount, MIN_CONTACTS_FOR_THRESHOLD) &&
+          missingCount <= MAX_MISSING_CONTACTS_FOR_THRESHOLD &&
           missingRate <= MISSING_RATE_THRESHOLD
 
         const isComplete = completed >= total || isMissingThreshold

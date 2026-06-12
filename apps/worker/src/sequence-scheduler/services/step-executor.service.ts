@@ -7,9 +7,12 @@ type StepQueryResult = Awaited<
 >
 
 export type StepWithFlow = NonNullable<StepQueryResult>
+export type StepWithConfiguredFlow = StepWithFlow & {
+  flow: NonNullable<StepWithFlow["flow"]>
+}
 
 export type StepValidationResult =
-  | { valid: true; step: StepWithFlow }
+  | { valid: true; step: StepWithConfiguredFlow }
   | { valid: false; reason: string }
 
 export class StepExecutorService {
@@ -37,6 +40,6 @@ export class StepExecutorService {
       return { valid: false, reason: "flow_not_configured" }
     }
 
-    return { valid: true, step }
+    return { valid: true, step: step as StepWithConfiguredFlow }
   }
 }

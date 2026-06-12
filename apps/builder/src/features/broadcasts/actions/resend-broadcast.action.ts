@@ -31,7 +31,7 @@ export const resendBroadcast = async (ctx: {
     throw new ChatbotXException("Broadcast is not sent")
   }
 
-  await db.transaction(async (tx) => {
+  const newBroadcast = await db.transaction(async (tx) => {
     const newBroadcast = await tx
       .insert(broadcastModel)
       .values({
@@ -55,5 +55,5 @@ export const resendBroadcast = async (ctx: {
     return newBroadcast
   })
 
-  return broadcast
+  return newBroadcast
 }

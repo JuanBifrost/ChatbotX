@@ -121,6 +121,7 @@ function buildCreateData(
  */
 function shouldRecalculateOnUpdate(
   parsedInput: UpsertSequenceStepRequest,
+  previousOrder: number,
 ): boolean {
   const { delayDays, delayMinutes, delayUnit, isActive, order } = parsedInput
 
@@ -129,7 +130,7 @@ function shouldRecalculateOnUpdate(
     delayMinutes !== undefined ||
     delayUnit !== undefined ||
     isActive !== undefined ||
-    order !== undefined
+    order !== previousOrder
   )
 }
 
@@ -238,10 +239,14 @@ async function handleStepUpdate(
   workspaceId: string,
 ): Promise<{ stepId: string }> {
   const updateData = buildUpdateData(parsedInput)
-  const step = await updateSequenceStep(stepId, updateData, workspaceId)
+  const { previousOrder, step } = await updateSequenceStep(
+    stepId,
+    updateData,
+    workspaceId,
+  )
 
   // Only recalculate if changes affect scheduling
-  if (shouldRecalculateOnUpdate(parsedInput)) {
+  if (shouldRecalculateOnUpdate(parsedInput, previousOrder)) {
     // Use targeted recalculation based on updated step
     // Recalculate for:
     // - GROUP 1: Contacts waiting for this step (nextStepId = stepId)
@@ -288,7 +293,7 @@ async function updateSequenceStep(
     .where(eq(sequenceStepModel.id, stepId))
     .returning()
 
-  return updated
+  return { previousOrder: step.order, step: updated }
 }
 
 async function createSequenceStep(

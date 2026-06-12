@@ -26,7 +26,7 @@ export class DispatchProcessorService {
   validateDispatch(
     dispatch: Awaited<ReturnType<typeof this.fetchDispatch>>,
   ): dispatch is DispatchWithRelations {
-    if (dispatch && dispatch.status !== "pending") {
+    if (dispatch?.status !== "pending") {
       return false
     }
 

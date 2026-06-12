@@ -131,10 +131,6 @@ async function runSendSequenceFlow(data: SendSequenceFlowData): Promise<void> {
   if (completedAt) {
     sentAt = completedAt
   } else {
-    if (!validStep.flow) {
-      throw new Error(`Step ${validStep.id} has no flow configured`)
-    }
-
     await sendFlowDirect({
       flowId: validStep.flow.id,
       workspaceId,

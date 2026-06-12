@@ -99,42 +99,29 @@ export async function enrollContactsInSequenceBulk(
   params: EnrollContactsBulkParams,
 ) {
   const { workspaceId, enrollments, enrolledAt = new Date() } = params
-  const createdEnrollments = await db.transaction(async (tx) => {
-    await tx
-      .insert(contactsOnSequenceModel)
-      .values(
-        enrollments.map((e) => ({
-          id: createId(),
-          workspaceId,
-          contactId: e.contactId,
-          sequenceId: e.sequenceId,
-          currentStep: 0,
-          status: "active" as const,
-          nextRunAt: e.nextRunAt,
-          nextStepId: e.nextStepId,
-          enrolledAt,
-        })),
-      )
-      .onConflictDoNothing()
-
-    const contactIds = enrollments.map((e) => e.contactId)
-    const sequenceIds = enrollments.map((e) => e.sequenceId)
-
-    return await tx.query.contactsOnSequenceModel.findMany({
-      where: {
+  const createdEnrollments = await db
+    .insert(contactsOnSequenceModel)
+    .values(
+      enrollments.map((e) => ({
+        id: createId(),
         workspaceId,
-        contactId: { in: contactIds },
-        sequenceId: { in: sequenceIds },
-      },
-      columns: {
-        id: true,
-        contactId: true,
-        sequenceId: true,
-        nextRunAt: true,
-        nextStepId: true,
-      },
+        contactId: e.contactId,
+        sequenceId: e.sequenceId,
+        currentStep: 0,
+        status: "active" as const,
+        nextRunAt: e.nextRunAt,
+        nextStepId: e.nextStepId,
+        enrolledAt,
+      })),
+    )
+    .onConflictDoNothing()
+    .returning({
+      id: contactsOnSequenceModel.id,
+      contactId: contactsOnSequenceModel.contactId,
+      sequenceId: contactsOnSequenceModel.sequenceId,
+      nextRunAt: contactsOnSequenceModel.nextRunAt,
+      nextStepId: contactsOnSequenceModel.nextStepId,
     })
-  })
   const redisClient = await sequenceConnections.useExisting()
   const scheduler = new SchedulerClient(redisClient)
   for (const enrollment of createdEnrollments) {
