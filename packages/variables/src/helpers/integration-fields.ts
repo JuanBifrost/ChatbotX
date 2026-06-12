@@ -33,7 +33,6 @@ const IG_PROFILE_CACHE_TTL = 300
 
 const EMPTY_IG_PROFILE: InstagramContactProfile = {
   followersCount: null,
-  isVerified: null,
   followsBusiness: null,
   businessFollowUser: null,
 }
@@ -146,7 +145,6 @@ export const getIntegrationField = async (
       return contactInbox.sourceId ?? null
 
     case "ig_followers":
-    case "ig_verified":
     case "ig_follow_business":
     case "ig_business_follow_user": {
       if (!inbox.integrationInstagram) {
@@ -162,8 +160,6 @@ export const getIntegrationField = async (
           return profile.followersCount == null
             ? null
             : String(profile.followersCount)
-        case "ig_verified":
-          return profile.isVerified == null ? null : String(profile.isVerified)
         case "ig_follow_business":
           return profile.followsBusiness == null
             ? null

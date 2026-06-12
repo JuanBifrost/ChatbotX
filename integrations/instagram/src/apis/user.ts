@@ -1,8 +1,7 @@
 import type { Context, IncomingContact } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
-import { API_URL } from "../constants"
 import { rescue } from "../exception"
-import { instagramGraphClient } from "../lib/http-client"
+import { instagramBusinessClient } from "../lib/http-client"
 import { logger } from "../lib/logger"
 import type { InstagramAuthValue, InstagramUserProfile } from "../schemas"
 
@@ -13,14 +12,14 @@ export const getUserProfile = ({
   ctx: Context<InstagramAuthValue>
   psid: string
 }): Promise<IncomingContact> => {
-  const endpoint = `${API_URL}/${ctx.auth.metadata.version}/${psid}`
+  const endpoint = `${ctx.auth.metadata.version}/${psid}`
 
   return rescue(endpoint, async () => {
     const queries = new URLSearchParams({
-      fields: "name,username,profile_pic",
+      fields: "id,name,username,profile_pic",
       access_token: ctx.auth.tokens.accessToken,
     })
-    const response = await instagramGraphClient.get<InstagramUserProfile>(
+    const response = await instagramBusinessClient.get<InstagramUserProfile>(
       `${ctx.auth.metadata.version}/${psid}?${queries.toString()}`,
     )
 

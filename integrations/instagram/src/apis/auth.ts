@@ -1,45 +1,25 @@
-import { DEFAULT_API_VERSION } from "../constants"
-import { rescue } from "../exception"
-import { instagramGraphClient } from "../lib/http-client"
+import { INSTAGRAM_BUSINESS_SCOPES } from "../constants"
+import { InstagramException, rescue } from "../exception"
+import {
+  instagramBusinessClient,
+  instagramOAuthClient,
+} from "../lib/http-client"
+import { logger } from "../lib/logger"
 
-const FACEBOOK_OAUTH_BASE = "https://www.facebook.com"
-
-const INSTAGRAM_SCOPES = [
-  "instagram_basic",
-  "instagram_manage_messages",
-  "pages_manage_metadata",
-  "pages_show_list",
-  "pages_messaging",
-  "pages_read_engagement",
-  "business_management",
-]
+const INSTAGRAM_OAUTH_AUTHORIZE_URL =
+  "https://www.instagram.com/oauth/authorize"
 
 export type InstagramAccount = {
   id: string
   name: string
   username: string
+  userId: string
   profile_picture_url?: string
-  pageId: string
-  pageAccessToken: string
-}
-
-type FacebookPageWithIg = {
-  id: string
-  name: string
-  access_token: string
-  instagram_business_account?: { id: string }
-}
-
-type InstagramUserResponse = {
-  id: string
-  name: string
-  username: string
-  profile_picture_url?: string
+  accessToken: string
 }
 
 export function generateAuthUrl({
   clientId,
-  version = DEFAULT_API_VERSION,
   redirectUrl,
   stateParams,
 }: {
@@ -51,92 +31,111 @@ export function generateAuthUrl({
   const params = new URLSearchParams({
     client_id: clientId,
     redirect_uri: redirectUrl,
-    scope: INSTAGRAM_SCOPES.join(","),
     response_type: "code",
     state: Buffer.from(JSON.stringify(stateParams ?? {})).toString("base64"),
+    scope: INSTAGRAM_BUSINESS_SCOPES.join(","),
   })
-  return `${FACEBOOK_OAUTH_BASE}/${version}/dialog/oauth?${params.toString()}`
+  return `${INSTAGRAM_OAUTH_AUTHORIZE_URL}?${params.toString()}`
 }
 
+// Step 1: exchange authorization code → short-lived user access token + user ID
 export function exchangeCodeForToken(
   settings: { clientId: string; clientSecret: string; version?: string },
   code: string,
   redirectUrl: string,
-): Promise<string> {
-  const { version = DEFAULT_API_VERSION } = settings
-  const endpoint = `${version}/oauth/access_token`
+): Promise<{ accessToken: string; userId: string }> {
+  const endpoint = "oauth/access_token"
 
   return rescue(endpoint, async () => {
-    const res: { access_token: string } = await instagramGraphClient.get(
-      endpoint,
-      {
-        searchParams: {
+    const res: { access_token: string; user_id: string | number } =
+      await instagramOAuthClient.post(endpoint, {
+        body: new URLSearchParams({
           client_id: settings.clientId,
           client_secret: settings.clientSecret,
           redirect_uri: redirectUrl,
           code,
-        },
+          grant_type: "authorization_code",
+        }),
+      })
+    const longLivedToken = await exchangeLongLivedToken(
+      {
+        clientId: settings.clientId,
+        clientSecret: settings.clientSecret,
+        version: settings.version,
       },
+      res.access_token,
     )
+    return { accessToken: longLivedToken, userId: String(res.user_id) }
+  })
+}
+
+export const exchangeLongLivedToken = (
+  settings: {
+    clientId: string
+    clientSecret: string
+    version?: string
+  },
+  accessToken: string,
+): Promise<string> => {
+  const endpoint = "access_token"
+
+  return rescue(endpoint, async () => {
+    const res: { access_token: string; expires_in: number } =
+      await instagramBusinessClient.get(endpoint, {
+        searchParams: {
+          grant_type: "ig_exchange_token",
+          client_secret: settings.clientSecret,
+          access_token: accessToken,
+        },
+      })
+
     return res.access_token
   })
 }
 
-export async function getUserInstagramAccounts(
+export async function getInstagramAccount(
   userAccessToken: string,
-  version: string = DEFAULT_API_VERSION,
-): Promise<InstagramAccount[]> {
-  const pagesEndpoint = `${version}/me/accounts`
+): Promise<InstagramAccount | null> {
+  const endpoint = "me"
 
-  const pagesRes = await rescue(pagesEndpoint, async () => {
-    const res: { data: FacebookPageWithIg[] } = await instagramGraphClient.get(
-      pagesEndpoint,
-      {
+  try {
+    const res = await rescue(endpoint, async () =>
+      instagramBusinessClient.get<{
+        id: string
+        username: string
+        user_id: string
+        name?: string
+        profile_picture_url?: string
+        account_type?: string
+      }>(endpoint, {
         searchParams: {
-          fields: "id,name,access_token,instagram_business_account",
+          fields: "id,user_id,username,name,profile_picture_url,account_type",
           access_token: userAccessToken,
         },
-      },
+      }),
     )
-    return res.data
-  })
 
-  const pagesWithIg = pagesRes.filter((page) => page.instagram_business_account)
+    if (res.account_type !== "BUSINESS" && res.account_type !== "CREATOR") {
+      logger.warn(
+        { account_type: res.account_type },
+        "Instagram account is not a Business or Creator account",
+      )
+      return null
+    }
 
-  const accounts: (InstagramAccount | null)[] = await Promise.all(
-    pagesWithIg.map(async (page): Promise<InstagramAccount | null> => {
-      const igId = page.instagram_business_account?.id
-      if (!igId) {
-        return null
-      }
-
-      const igEndpoint = `${version}/${igId}`
-      try {
-        const igRes: InstagramUserResponse = await rescue(
-          igEndpoint,
-          async () =>
-            instagramGraphClient.get<InstagramUserResponse>(igEndpoint, {
-              searchParams: {
-                fields: "id,name,username,profile_picture_url",
-                access_token: page.access_token,
-              },
-            }),
-        )
-        return {
-          id: igRes.id,
-          name: igRes.name,
-          username: igRes.username,
-          profile_picture_url: igRes.profile_picture_url,
-          pageId: page.id,
-          pageAccessToken: page.access_token,
-        }
-      } catch {
-        return null
-      }
-    }),
-  )
-
-  return accounts.filter(
-    (account): account is InstagramAccount => account !== null,
-  )
+    return {
+      id: res.id,
+      name: res.name ?? res.username,
+      username: res.username,
+      profile_picture_url: res.profile_picture_url,
+      userId: res.user_id,
+      accessToken: userAccessToken,
+    }
+  } catch (error) {
+    if (error instanceof InstagramException) {
+      logger.warn(error, "Failed to fetch Instagram account during connect")
+      return null
+    }
+    throw error
+  }
 }

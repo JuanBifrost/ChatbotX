@@ -1,4 +1,4 @@
-import { getUserInstagramAccounts } from "@chatbotx.io/integration-instagram"
+import { getInstagramAccount } from "@chatbotx.io/integration-instagram"
 import { cookies } from "next/headers"
 import { redirect } from "next/navigation"
 import { SelectAccount } from "@/features/integration-instagram/components/select-accounts"
@@ -19,7 +19,11 @@ export default async function InstagramSelectPage() {
     redirect("/channels/create")
   }
 
-  const accounts = await getUserInstagramAccounts(auth.userToken, auth.version)
+  const account = await getInstagramAccount(auth.userToken)
 
-  return <SelectAccount accounts={accounts} workspaceId={auth.workspaceId} />
+  if (!account) {
+    redirect("/channels/create")
+  }
+
+  return <SelectAccount account={account} workspaceId={auth.workspaceId} />
 }

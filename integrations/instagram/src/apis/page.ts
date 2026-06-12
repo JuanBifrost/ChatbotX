@@ -8,7 +8,7 @@ import fetch from "cross-fetch"
 import imageSize from "image-size"
 import { DEFAULT_API_VERSION } from "../constants"
 import { rescue } from "../exception"
-import { instagramGraphClient } from "../lib/http-client"
+import { instagramBusinessClient } from "../lib/http-client"
 import type {
   InstagramAuthValue,
   InstagramMessageAttachment,
@@ -21,31 +21,20 @@ export const INSTAGRAM_SUBSCRIBE_FIELDS = [
   "messages",
   "messaging_postbacks",
   "messaging_optins",
-  "message_reads",
-  "messaging_referrals",
-  "message_echoes",
+  "messaging_seen",
+  "messaging_referral",
 ]
 
-export const exchangeLongLivedToken = (
-  settings: {
-    clientId: string
-    clientSecret: string
-    version?: string
-  },
-  accessToken: string,
-): Promise<string> => {
-  const { version = DEFAULT_API_VERSION } = settings
-  const endpoint = `${version}/oauth/access_token`
+export const refreshLongLivedToken = (accessToken: string): Promise<string> => {
+  const endpoint = "refresh_access_token"
 
   return rescue(endpoint, async () => {
-    const res: { access_token: string } = await instagramGraphClient.get(
+    const res: { access_token: string } = await instagramBusinessClient.get(
       endpoint,
       {
         searchParams: {
-          grant_type: "fb_exchange_token",
-          client_id: settings.clientId as string,
-          client_secret: settings.clientSecret as string,
-          fb_exchange_token: accessToken,
+          grant_type: "ig_refresh_token",
+          access_token: accessToken,
         },
       },
     )
@@ -58,15 +47,14 @@ export const getInstagramProfilePictureUrl = async (props: {
   ctx: Context<InstagramAuthValue>
 }): Promise<string | undefined> => {
   const { ctx } = props
-  const { version = DEFAULT_API_VERSION } = ctx.auth
-  const igId = ctx.auth.metadata.igId
+  const version = ctx.auth.metadata.version ?? DEFAULT_API_VERSION
   const accessToken = ctx.auth.tokens.accessToken
-  const endpoint = `${version}/${igId}`
+  const endpoint = `${version}/me`
 
   try {
     return await rescue(endpoint, async () => {
       const res: { profile_picture_url?: string } =
-        await instagramGraphClient.get(endpoint, {
+        await instagramBusinessClient.get(endpoint, {
           searchParams: {
             fields: "profile_picture_url",
             access_token: accessToken,
@@ -80,15 +68,15 @@ export const getInstagramProfilePictureUrl = async (props: {
 }
 
 export const subscribePageToInstagramWebhook = (props: {
-  pageId: string
+  igId: string
   accessToken: string
   version?: string
 }): Promise<void> => {
   const { version = DEFAULT_API_VERSION } = props
-  const endpoint = `${version}/${props.pageId}/subscribed_apps`
+  const endpoint = `${version}/${props.igId}/subscribed_apps`
 
   return rescue(endpoint, () =>
-    instagramGraphClient.post(endpoint, {
+    instagramBusinessClient.post(endpoint, {
       headers: {
         Authorization: `Bearer ${props.accessToken}`,
       },
@@ -102,11 +90,11 @@ export const subscribePageToInstagramWebhook = (props: {
 export const unsubscribePageFromInstagramWebhook = (props: {
   auth: InstagramAuthValue
 }): Promise<void> => {
-  const { version = DEFAULT_API_VERSION } = props.auth
+  const version = props.auth.metadata.version ?? DEFAULT_API_VERSION
   const endpoint = `${version}/${props.auth.metadata.pageId}/subscribed_apps`
 
   return rescue(endpoint, () =>
-    instagramGraphClient.delete(endpoint, {
+    instagramBusinessClient.delete(endpoint, {
       headers: {
         Authorization: `Bearer ${props.auth.tokens.accessToken}`,
       },
@@ -118,11 +106,11 @@ export const sendInstagramMessage = (
   auth: InstagramAuthValue,
   payload: InstagramSendMessageRequest,
 ): Promise<InstagramSendMessageResponse> => {
-  const { version = DEFAULT_API_VERSION } = auth
+  const version = auth.metadata.version ?? DEFAULT_API_VERSION
   const endpoint = `${version}/me/messages`
 
   return rescue(endpoint, () =>
-    instagramGraphClient.post<InstagramSendMessageResponse>(endpoint, {
+    instagramBusinessClient.post<InstagramSendMessageResponse>(endpoint, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${auth.tokens.accessToken}`,
@@ -186,11 +174,11 @@ export const deleteInstagramProfileFields = (props: {
   fields: string[]
 }): Promise<void> => {
   const { ctx, fields } = props
-  const { version = DEFAULT_API_VERSION } = ctx.auth
+  const version = ctx.auth.metadata.version ?? DEFAULT_API_VERSION
   const endpoint = `${version}/me/messenger_profile`
 
   return rescue(endpoint, () =>
-    instagramGraphClient.delete(endpoint, {
+    instagramBusinessClient.delete(endpoint, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${ctx.auth.tokens.accessToken}`,
@@ -208,7 +196,7 @@ export const updateInstagramProfile = (props: {
   params: InstagramProfileRequest
 }): Promise<void> => {
   const { ctx, params } = props
-  const { version = DEFAULT_API_VERSION } = ctx.auth
+  const version = ctx.auth.metadata.version ?? DEFAULT_API_VERSION
   const endpoint = `${version}/me/messenger_profile`
 
   return rescue(endpoint, () => {
@@ -217,7 +205,7 @@ export const updateInstagramProfile = (props: {
       access_token: ctx.auth.tokens.accessToken,
     }).toString()
 
-    return instagramGraphClient.post(`${endpoint}?${queries}`, {
+    return instagramBusinessClient.post(`${endpoint}?${queries}`, {
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${ctx.auth.tokens.accessToken}`,
@@ -236,7 +224,7 @@ export const getInstagramPersistentMenu = (props: {
   persistentMenu?: InstagramProfileRequest["persistent_menu"]
 }> => {
   const { ctx } = props
-  const { version = DEFAULT_API_VERSION } = ctx.auth
+  const version = ctx.auth.metadata.version ?? DEFAULT_API_VERSION
   const endpoint = `${version}/me/messenger_profile`
 
   return rescue(endpoint, async () => {
@@ -248,7 +236,7 @@ export const getInstagramPersistentMenu = (props: {
 
     const response: {
       persistent_menu?: InstagramProfileRequest["persistent_menu"]
-    } = await instagramGraphClient.get(`${endpoint}?${queries}`, {
+    } = await instagramBusinessClient.get(`${endpoint}?${queries}`, {
       headers: {
         Authorization: `Bearer ${ctx.auth.tokens.accessToken}`,
       },
@@ -264,7 +252,7 @@ export const addBranding = async (props: {
   url: string
 }): Promise<void> => {
   const { ctx } = props
-  const { version = DEFAULT_API_VERSION } = ctx.auth
+  const version = ctx.auth.metadata.version ?? DEFAULT_API_VERSION
 
   const { persistentMenu } = await getInstagramPersistentMenu({ ctx })
 
@@ -283,7 +271,7 @@ export const addBranding = async (props: {
 
   if (!persistentMenu || persistentMenu.length === 0) {
     await rescue(endpoint, () =>
-      instagramGraphClient.post(`${endpoint}?${queries}`, {
+      instagramBusinessClient.post(`${endpoint}?${queries}`, {
         headers: { "Content-Type": "application/json" },
         json: {
           platform: "instagram",
@@ -323,7 +311,7 @@ export const addBranding = async (props: {
   })
 
   await rescue(endpoint, () =>
-    instagramGraphClient.post(`${endpoint}?${queries}`, {
+    instagramBusinessClient.post(`${endpoint}?${queries}`, {
       headers: { "Content-Type": "application/json" },
       json: {
         platform: "instagram",

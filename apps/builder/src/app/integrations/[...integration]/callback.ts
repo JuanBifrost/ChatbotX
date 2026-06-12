@@ -167,7 +167,7 @@ export const handleCallback = async (
         safeReferer,
       ).toString()
 
-      const userToken = await exchangeInstagramCode(
+      const { accessToken: userToken } = await exchangeInstagramCode(
         instagramCredential.config,
         code,
         callbackUrl,

@@ -2,28 +2,26 @@
 
 import type { InstagramAccount } from "@chatbotx.io/integration-instagram"
 import { InputField } from "@chatbotx.io/ui/components/form/input-field"
-import { RadioGroupField } from "@chatbotx.io/ui/components/form/radio-group-field"
 import { Button } from "@chatbotx.io/ui/components/ui/button"
 import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hooks"
 import { Loader2Icon } from "lucide-react"
+import Image from "next/image"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useEffect } from "react"
-import { useWatch } from "react-hook-form"
 import { toast } from "sonner"
 import { selectAccountAction } from "../actions/select-account.action"
 import { selectAccountRequest } from "../schemas/action"
 
 export function InstagramAccounts({
   workspaceId,
-  accounts,
+  account,
   onSuccess,
 }: {
   workspaceId?: string | null
-  accounts: InstagramAccount[]
+  account: InstagramAccount
   onSuccess?: () => void
 }) {
   const t = useTranslations()
@@ -37,11 +35,11 @@ export function InstagramAccounts({
         mode: "onChange",
         defaultValues: {
           workspaceId,
-          igId: "",
-          igName: "",
-          igUsername: "",
-          pageId: "",
-          accessToken: "",
+          igId: account.userId,
+          igName: account.name,
+          igUsername: account.username,
+          pageId: account.id,
+          accessToken: account.accessToken,
         },
       },
       actionProps: {
@@ -65,39 +63,31 @@ export function InstagramAccounts({
     },
   )
 
-  const { control, setValue } = form
-  const watchedIgId = useWatch({ control, name: "igId" })
-  useEffect(() => {
-    const selectedAccount = accounts.find(
-      (account) => account.id === watchedIgId,
-    )
-
-    setValue("accessToken", selectedAccount?.pageAccessToken ?? "")
-    setValue("igName", selectedAccount?.name ?? "")
-    setValue("igUsername", selectedAccount?.username ?? "")
-    setValue("pageId", selectedAccount?.pageId ?? "")
-  }, [watchedIgId, setValue, accounts])
-
   return (
     <Form {...form}>
       <form className="space-y-6" onSubmit={handleSubmitWithAction}>
         <div className="hidden">
+          <InputField name="igId" type="hidden" />
           <InputField name="accessToken" type="hidden" />
           <InputField name="igName" type="hidden" />
           <InputField name="igUsername" type="hidden" />
           <InputField name="pageId" type="hidden" />
         </div>
 
-        <div className="mt-2">
-          <RadioGroupField
-            label={t("instagram.selectInstagramAccount")}
-            name="igId"
-            options={accounts.map((account) => ({
-              value: account.id,
-              label: `${account.name} (@${account.username})`,
-            }))}
-            required
-          />
+        <div className="flex items-center gap-3 rounded-lg border p-4">
+          {account.profile_picture_url && (
+            <Image
+              alt={account.name}
+              className="size-12 rounded-full object-cover"
+              height={48}
+              src={account.profile_picture_url}
+              width={48}
+            />
+          )}
+          <div>
+            <p className="font-medium">{account.name}</p>
+            <p className="text-muted-foreground text-sm">@{account.username}</p>
+          </div>
         </div>
 
         <div className="flex justify-end gap-2">
@@ -108,10 +98,7 @@ export function InstagramAccounts({
               {t("actions.cancel")}
             </Link>
           </Button>
-          <Button
-            disabled={!form.formState.isValid || form.formState.isSubmitting}
-            type="submit"
-          >
+          <Button disabled={form.formState.isSubmitting} type="submit">
             {form.formState.isSubmitting && (
               <Loader2Icon className="animate-spin" />
             )}

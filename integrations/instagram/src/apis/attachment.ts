@@ -1,6 +1,6 @@
 import type { FileType } from "@chatbotx.io/sdk"
 import { rescue } from "../exception"
-import { instagramAttachmentClient } from "../lib/http-client"
+import { instagramBusinessClient } from "../lib/http-client"
 import type {
   InstagramAuthValue,
   InstagramMessageAttachment,
@@ -15,7 +15,7 @@ export const uploadAttachment = (
   const endpoint = `${auth.metadata.version}/${auth.metadata.pageId}/message_attachments`
 
   return rescue(endpoint, () =>
-    instagramAttachmentClient.post<InstagramSendMessageResponse>(endpoint, {
+    instagramBusinessClient.post<InstagramSendMessageResponse>(endpoint, {
       headers: {
         Authorization: `Bearer ${auth.tokens.accessToken}`,
       },

@@ -13,7 +13,6 @@ import { integrationInstagramModel } from "@chatbotx.io/database/schema"
 import type { UserModel } from "@chatbotx.io/database/types"
 import type { InstagramAuthValue } from "@chatbotx.io/integration-instagram"
 import {
-  exchangeLongLivedToken,
   integration as integrationInstagram,
   subscribePageToInstagramWebhook,
 } from "@chatbotx.io/integration-instagram"
@@ -63,11 +62,6 @@ export const selectAccountAction = authActionClient
         const instagramSettings = instagramCredential.config
 
         const { brandingCtx } = await db.transaction(async (tx) => {
-          const longLivedToken = await exchangeLongLivedToken(
-            instagramSettings,
-            parsedInput.accessToken,
-          )
-
           if (!workspaceId) {
             const workspace = await workspaceService.create({
               tx,
@@ -87,8 +81,8 @@ export const selectAccountAction = authActionClient
           })
 
           await subscribePageToInstagramWebhook({
-            pageId: parsedInput.pageId,
-            accessToken: longLivedToken,
+            igId: parsedInput.pageId,
+            accessToken: parsedInput.accessToken,
             version: instagramSettings.version,
           })
 
@@ -98,7 +92,7 @@ export const selectAccountAction = authActionClient
             clientSecret: instagramSettings.clientSecret,
             redirectUrl: "",
             tokens: {
-              accessToken: longLivedToken,
+              accessToken: parsedInput.accessToken,
             },
             metadata: {
               igId: parsedInput.igId,

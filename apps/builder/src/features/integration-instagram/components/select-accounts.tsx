@@ -10,12 +10,12 @@ import {
 import { useTranslations } from "next-intl"
 import { InstagramAccounts } from "@/features/integration-instagram/components/instagram-accounts"
 
-type SelectAccountProps = {
-  accounts: InstagramAccount[]
+export type SelectAccountProps = {
+  account: InstagramAccount
   workspaceId: string
 }
 
-export function SelectAccount({ accounts, workspaceId }: SelectAccountProps) {
+export function SelectAccount({ account, workspaceId }: SelectAccountProps) {
   const t = useTranslations()
 
   return (
@@ -26,7 +26,7 @@ export function SelectAccount({ accounts, workspaceId }: SelectAccountProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <InstagramAccounts accounts={accounts} workspaceId={workspaceId} />
+        <InstagramAccounts account={account} workspaceId={workspaceId} />
       </CardContent>
     </Card>
   )

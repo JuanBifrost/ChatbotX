@@ -26,7 +26,10 @@ const verifyWebhookSignature = (
       .update(payload)
       .digest("hex")
 
-    return signatureHash === expectedHash
+    return crypto.timingSafeEqual(
+      Buffer.from(signatureHash, "utf8"),
+      Buffer.from(expectedHash, "utf8"),
+    )
   } catch {
     return false
   }

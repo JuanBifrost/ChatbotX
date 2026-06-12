@@ -162,13 +162,6 @@ function mapApiFields(fields: ChannelErrorSource): ChannelError {
   })
 }
 
-// === Revoked / invalidated access token detection ===
-// Instagram messaging does not surface a deterministic revoked-token signal —
-// reconnect flow is driven by upstream FB Page disconnect. Always returns false.
-export function isRevokedTokenError(_error: unknown): boolean {
-  return false
-}
-
 export function mapToChannelError(rawError: unknown): ChannelError {
   if (rawError instanceof ChannelError) {
     return rawError
@@ -179,4 +172,30 @@ export function mapToChannelError(rawError: unknown): ChannelError {
   }
 
   return mapApiFields(parseOriginError(rawError))
+}
+
+// === Revoked / invalidated access token detection ===
+// Instagram Business API signals revoked/expired tokens via OAuthException + code 190.
+// Sub-codes: 458 = app not installed, 460 = password changed,
+//   463 = access token expired, 467 = invalid access token.
+// Code 190 with no subcode is ambiguous and is NOT treated as revoked
+// to avoid false-positive channel disconnects.
+const REVOKED_TOKEN_SUBCODES = new Set([458, 460, 463, 467])
+
+export function isRevokedTokenError(error: unknown): boolean {
+  if (!(error instanceof InstagramException)) {
+    return false
+  }
+
+  const mappedError = mapToChannelError(error)
+  if (mappedError.subCode === null || mappedError.subCode === undefined) {
+    return false
+  }
+  const subCode = Number(mappedError.subCode)
+
+  return (
+    mappedError.category === ChannelErrorCategory.AUTH_FAILED &&
+    mappedError.code === 190 &&
+    REVOKED_TOKEN_SUBCODES.has(subCode)
+  )
 }

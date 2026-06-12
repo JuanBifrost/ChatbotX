@@ -4,7 +4,7 @@ import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
 import { integrationInstagramModel } from "@chatbotx.io/database/schema"
 import type { InstagramAuthValue } from "@chatbotx.io/integration-instagram"
-import { exchangeLongLivedToken } from "@chatbotx.io/integration-instagram"
+import { refreshLongLivedToken } from "@chatbotx.io/integration-instagram"
 import { zodBigintAsString } from "@chatbotx.io/utils"
 import { logger } from "@/lib/log"
 import { workspaceActionClient } from "@/lib/safe-action"
@@ -32,14 +32,7 @@ const refreshInstagramPermissions = async (ctx: {
   const auth = integrationInstagram.auth as InstagramAuthValue
 
   try {
-    const newAccessToken = await exchangeLongLivedToken(
-      {
-        clientId: auth.clientId,
-        clientSecret: auth.clientSecret,
-        version: auth.metadata.version,
-      },
-      auth.tokens.accessToken,
-    )
+    const newAccessToken = await refreshLongLivedToken(auth.tokens.accessToken)
 
     const updatedAuth: InstagramAuthValue = {
       ...auth,

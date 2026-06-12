@@ -56,7 +56,7 @@ export const instagramMessageSchema = z.object({
 export type InstagramMessage = z.infer<typeof instagramMessageSchema>
 
 export const instagramReadSchema = z.object({
-  watermark: z.number(),
+  watermark: z.number().optional(),
 })
 
 export const instagramPostbackSchema = z.object({
@@ -152,6 +152,7 @@ export type InstagramMessageAttachment = z.infer<
 export const instagramSendMessageSchema = z.object({
   text: z.string().optional(),
   attachment: instagramMessageAttachmentSchema.optional(),
+  attachments: z.array(instagramMessageAttachmentSchema).optional(),
   quick_replies: z.array(instagramQuickReplySchema).max(13).optional(),
   metadata: z.string().optional(),
 })
@@ -231,6 +232,7 @@ export const instagramAccessTokenResponseSchema = z.object({
   access_token: z.string(),
   token_type: z.literal("bearer"),
   expires_in: z.number().optional(),
+  user_id: z.coerce.string().optional(),
 })
 export type InstagramAccessTokenResponse = z.infer<
   typeof instagramAccessTokenResponseSchema
@@ -268,3 +270,9 @@ export const instagramProfileRequest = z.object({
   persistent_menu: z.array(persistentMenuSchema),
 })
 export type InstagramProfileRequest = z.infer<typeof instagramProfileRequest>
+
+export type InstagramContactProfile = {
+  followersCount: number | null
+  followsBusiness: boolean | null
+  businessFollowUser: boolean | null
+}

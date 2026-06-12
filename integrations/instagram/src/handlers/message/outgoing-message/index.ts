@@ -141,12 +141,12 @@ export async function* convertFlowStepToInstagramMessage(
       break
     case stepTypes.enum.sendImage:
     case stepTypes.enum.sendVideo:
-      await (yield* convertFlowStepMedia(
+      yield* convertFlowStepMedia(
         props as SendFlowStepProps<
           InstagramAuthValue,
           SendImageStepSchema | SendVideoStepSchema
         >,
-      ))
+      )
       break
     case stepTypes.enum.sendAudio:
     case stepTypes.enum.sendFile:
