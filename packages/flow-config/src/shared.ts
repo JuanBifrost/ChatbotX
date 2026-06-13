@@ -24,6 +24,7 @@ import { formatDateStepSchema } from "./steps/format-date"
 import { generateCodeStepSchema } from "./steps/generate-code"
 import { getDataFromJsonStepSchema } from "./steps/get-data-from-json"
 import { mailchimpAddMemberSchema } from "./steps/mailchimp-add-member"
+import { mailerLiteAddSubscriberSchema } from "./steps/mailer-lite-add-subscriber"
 import { markEmailVerifiedStepSchema } from "./steps/mark-email-verified"
 import { optInEmailStepSchema } from "./steps/opt-in-email"
 import { optOutEmailStepSchema } from "./steps/opt-out-email"
@@ -89,6 +90,7 @@ const emailSteps = [
   optInEmailStepSchema,
   optOutEmailStepSchema,
   mailchimpAddMemberSchema,
+  mailerLiteAddSubscriberSchema,
   dripSubscribeSubscriberSchema,
 ]
 

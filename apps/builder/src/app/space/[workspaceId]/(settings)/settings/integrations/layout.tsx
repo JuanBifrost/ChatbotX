@@ -18,6 +18,7 @@ type SettingIntegrationLayoutProps = {
   deepSeek: ReactNode
   googleSheets: ReactNode
   mailchimp: ReactNode
+  mailerLite: ReactNode
   drip: ReactNode
 }
 
@@ -29,6 +30,7 @@ export default function SettingIntegrationLayout({
   deepSeek,
   googleSheets,
   mailchimp,
+  mailerLite,
   drip,
 }: SettingIntegrationLayoutProps) {
   const t = useTranslations()
@@ -68,6 +70,11 @@ export default function SettingIntegrationLayout({
       keyName: t("mailchimp.title"),
       icon: MailIcon,
       content: mailchimp,
+    },
+    {
+      keyName: t("mailerLite.title"),
+      icon: MailIcon,
+      content: mailerLite,
     },
     {
       keyName: t("drip.title"),

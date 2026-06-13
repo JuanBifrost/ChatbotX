@@ -31,6 +31,7 @@ import { generateCodeStep } from "./generate-code"
 import { getDataFromJsonStep } from "./get-data-from-json"
 import { getUserDataStep } from "./get-user-data"
 import { mailchimpAddMemberStep } from "./mailchimp-add-member"
+import { mailerLiteAddSubscriberStep } from "./mailer-lite-add-subscriber"
 import { markEmailVerifiedStep } from "./mark-email-verified"
 import { openWebsiteStep } from "./open-website"
 import { optInEmailStep } from "./opt-in-email"
@@ -102,6 +103,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.markEmailVerified]: markEmailVerifiedStep,
   [stepTypes.enum.dripSubscribeSubscriber]: dripSubscribeSubscriberStep,
   [stepTypes.enum.mailchimpAddMember]: mailchimpAddMemberStep,
+  [stepTypes.enum.mailerLiteAddSubscriber]: mailerLiteAddSubscriberStep,
   [stepTypes.enum.optInEmail]: optInEmailStep,
   [stepTypes.enum.optOutEmail]: optOutEmailStep,
   [stepTypes.enum.cancelContactInput]: undefined,

@@ -52,6 +52,7 @@ import { handleAIGenerateText } from "./generate-text"
 import { handleAIGenerateTextAgent } from "./generate-text-agent"
 import { getUserData } from "./get-user-data"
 import { addMailchimpMember } from "./mailchimp-handler"
+import { addMailerLiteSubscriber } from "./mailer-lite-handler"
 import { sendEmail } from "./send-email"
 import { handleAISpeechToText } from "./speech-to-text"
 import {
@@ -352,6 +353,7 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.markEmailVerified]: markEmailVerified,
   [stepTypes.enum.dripSubscribeSubscriber]: subscribeDripSubscriber,
   [stepTypes.enum.mailchimpAddMember]: addMailchimpMember,
+  [stepTypes.enum.mailerLiteAddSubscriber]: addMailerLiteSubscriber,
   [stepTypes.enum.notifyAgent]: undefined,
   [stepTypes.enum.openWebsite]: undefined,
   [stepTypes.enum.aiAnalyzeImage]: handleAIAnalyzeImage,

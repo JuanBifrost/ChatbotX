@@ -384,6 +384,11 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         stepType: stepTypes.enum.mailchimpAddMember,
       },
       {
+        label: t("flows.actions.mailerLiteAddSubscriber"),
+        icon: MailIcon,
+        stepType: stepTypes.enum.mailerLiteAddSubscriber,
+      },
+      {
         label: t("flows.actions.dripSubscribeSubscriber"),
         icon: MailIcon,
         stepType: stepTypes.enum.dripSubscribeSubscriber,

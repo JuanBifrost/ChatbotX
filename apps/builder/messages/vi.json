@@ -726,6 +726,9 @@
     "mailchimp": {
       "label": "Mailchimp"
     },
+    "mailerLite": {
+      "label": "MailerLite"
+    },
     "host": {
       "label": "Máy chủ",
       "placeholder": "smtp.example.com"
@@ -1466,6 +1469,7 @@
       "inboxActions": "Hành động hộp thư",
       "markEmailVerified": "Đánh dấu email đã xác minh",
       "mailchimpAddMember": "Thêm liên hệ vào MailChimp",
+      "mailerLiteAddSubscriber": "Thêm liên hệ vào MailerLite",
       "dripSubscribeSubscriber": "Thêm liên hệ vào Drip",
       "openWebsite": "Mở trang web",
       "optInEmail": "Đăng ký nhận email",
@@ -1642,6 +1646,31 @@
       "optional": "Không bắt buộc",
       "tags": "Thẻ",
       "mergeFields": "Trường tùy chỉnh trong MailChimp"
+    }
+  },
+  "mailerLite": {
+    "title": "MailerLite",
+    "setting": {
+      "label": "MailerLite",
+      "description": "Tích hợp này cho phép bạn lưu thông tin liên hệ của khách hàng từ bot vào MailerLite."
+    },
+    "fields": {
+      "apiToken": "API Token",
+      "group": "Nhóm",
+      "groupPlaceholder": "Chưa chọn",
+      "email": "Trường Email",
+      "status": "Loại",
+      "customFields": "Trường tùy chỉnh trong MailerLite (Không bắt buộc)",
+      "emptyField": "---",
+      "providerField": "Chọn trường MailerLite",
+      "addMapping": "Thêm mới"
+    },
+    "status": {
+      "active": "Đã đăng ký",
+      "unconfirmed": "Chưa xác nhận"
+    },
+    "errors": {
+      "invalidApiKey": "API Token không hợp lệ. Vui lòng kiểm tra lại API Token MailerLite và thử lại."
     }
   },
   "drip": {

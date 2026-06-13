@@ -22,6 +22,7 @@ type AiIntegrationApiKeyDialogProps<TForm extends FieldValues> = {
   open: boolean
   onOpenChange: (open: boolean) => void
   title: string
+  credentialLabel?: string
   form: UseFormReturn<TForm>
   onSubmit: (event: FormEvent<HTMLFormElement>) => void | Promise<void>
 }
@@ -35,6 +36,7 @@ export function AiIntegrationApiKeyDialog<TForm extends FieldValues>({
   open,
   onOpenChange,
   title,
+  credentialLabel,
   form,
   onSubmit,
 }: AiIntegrationApiKeyDialogProps<TForm>) {
@@ -57,7 +59,7 @@ export function AiIntegrationApiKeyDialog<TForm extends FieldValues>({
         <Form {...form}>
           <form className="flex-1 space-y-4" onSubmit={onSubmit}>
             <InputField
-              label={t("fields.apiKey.label")}
+              label={credentialLabel ?? t("fields.apiKey.label")}
               name={"apiKey" as Path<TForm>}
               required
             />

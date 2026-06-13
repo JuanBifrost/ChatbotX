@@ -3,6 +3,7 @@ import { integration as integrationDrip } from "@chatbotx.io/integration-drip"
 import { integration as integrationGoogleSheets } from "@chatbotx.io/integration-google-sheets"
 import { integration as integrationInstagram } from "@chatbotx.io/integration-instagram"
 import { integration as integrationMailchimp } from "@chatbotx.io/integration-mailchimp"
+import { integration as integrationMailerLite } from "@chatbotx.io/integration-mailer-lite"
 import { integration as integrationMessenger } from "@chatbotx.io/integration-messenger"
 import { integration as integrationSmtp } from "@chatbotx.io/integration-smtp"
 import { integration as integrationTelegram } from "@chatbotx.io/integration-telegram"
@@ -17,6 +18,7 @@ export const integrations = {
   instagram: integrationInstagram,
   drip: integrationDrip,
   mailchimp: integrationMailchimp,
+  mailerLite: integrationMailerLite,
   googleSheets: integrationGoogleSheets,
   zalo: integrationZalo,
   telegram: integrationTelegram,

@@ -62,6 +62,7 @@ import { integrationGeminiRelations } from "./integration-gemini"
 import { integrationGoogleSheetsRelations } from "./integration-google-sheets"
 import { integrationInstagramRelations } from "./integration-instagram"
 import { integrationMailchimpRelations } from "./integration-mailchimp"
+import { integrationMailerLiteRelations } from "./integration-mailer-lite"
 import { integrationMessengerRelations } from "./integration-messenger"
 import { integrationOpenaiRelations } from "./integration-openai"
 import { integrationSmtpRelations } from "./integration-smtp"
@@ -176,6 +177,7 @@ export const relations = {
   ...integrationTiktokRelations,
   ...integrationInstagramRelations,
   ...integrationMailchimpRelations,
+  ...integrationMailerLiteRelations,
   ...integrationDripRelations,
   ...flowAnalyticsSessionRelations,
   ...flowNodeStatRelations,
