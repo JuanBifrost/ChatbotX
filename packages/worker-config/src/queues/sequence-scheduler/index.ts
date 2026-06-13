@@ -5,6 +5,7 @@ import { queueNames } from "../../lib/types"
 
 export type SequenceSchedulerJobData = {
   dispatchId: string
+  workspaceId: string
   claimedAt: number
   bucket: number
 }

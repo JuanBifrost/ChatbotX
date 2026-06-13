@@ -1,10 +1,10 @@
 import { tagSyncService } from "@chatbotx.io/business"
+import { contactSequenceService } from "@chatbotx.io/business/contact-sequence"
 import { and, db, eq, inArray, isNull } from "@chatbotx.io/database/client"
 import {
   contactCustomFieldModel,
   contactModel,
   contactNoteModel,
-  contactsOnSequenceModel,
   contactsToTagsModel,
   conversationModel,
   tagModel,
@@ -29,10 +29,7 @@ import type {
   UnsubscribeBroadcastStepSchema,
   UnsubscribeSequenceStepSchema,
 } from "@chatbotx.io/flow-config"
-import {
-  cancelPendingDispatches,
-  enrollContactInSequence,
-} from "@chatbotx.io/sequence-scheduler"
+import { enrollContactInSequence } from "@chatbotx.io/sequence-scheduler"
 import { createId } from "@chatbotx.io/utils"
 import type { ExecuteStepProps } from "./flow"
 
@@ -376,38 +373,12 @@ export async function removeContactSequence({
     return
   }
 
-  const enrollments = await db.query.contactsOnSequenceModel.findMany({
-    where: {
-      contactId: conversation.contactId,
-      sequenceId: step.sequenceId,
-      workspaceId: conversation.workspaceId,
-    },
-    columns: {
-      id: true,
-    },
+  await contactSequenceService.removeContactSequencesForContact({
+    workspaceId: conversation.workspaceId,
+    contactId: conversation.contactId,
+    sequenceIds: [step.sequenceId],
+    reason: "unsubscribed_via_flow",
   })
-
-  if (enrollments.length === 0) {
-    return
-  }
-
-  await db.delete(contactsOnSequenceModel).where(
-    and(
-      inArray(
-        contactsOnSequenceModel.id,
-        enrollments.map((e) => e.id),
-      ),
-      eq(contactsOnSequenceModel.workspaceId, conversation.workspaceId),
-    ),
-  )
-
-  for (const enrollment of enrollments) {
-    await cancelPendingDispatches({
-      enrollmentId: enrollment.id,
-      workspaceId: conversation.workspaceId,
-      reason: "unsubscribed_via_flow",
-    })
-  }
 }
 
 export async function subscribeBroadcast({

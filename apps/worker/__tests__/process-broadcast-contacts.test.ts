@@ -315,6 +315,12 @@ describe("processBroadcastContacts", () => {
       )
       expect(cobUpdate).toBeDefined()
       expect(cobUpdate?.values).toMatchObject({ sent: true })
+      expect(cobUpdate?.condition).toEqual({
+        __and: [
+          { __eq: ["cob.broadcastId", BROADCAST_ID] },
+          { __eq: ["cob.contactId", "contact-1"] },
+        ],
+      })
     })
 
     test("processes multiple contacts across multiple broadcasts and returns total count", async () => {

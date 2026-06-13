@@ -6,6 +6,9 @@ const updateSpy = vi.fn()
 const setSpy = vi.fn()
 const whereSpy = vi.fn()
 const returningSpy = vi.fn()
+const { loggerErrorSpy } = vi.hoisted(() => ({
+  loggerErrorSpy: vi.fn(),
+}))
 
 vi.mock("@chatbotx.io/database/client", () => ({
   db: {
@@ -41,6 +44,12 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   },
 }))
 
+vi.mock("../src/lib/logger", () => ({
+  logger: {
+    error: loggerErrorSpy,
+  },
+}))
+
 import { DispatchProcessorService } from "../src/sequence-scheduler/services/dispatch-processor.service"
 
 // ---------- shared fixtures ----------
@@ -59,6 +68,8 @@ function makeDispatch(overrides: Record<string, unknown> = {}) {
 }
 
 beforeEach(() => {
+  vi.restoreAllMocks()
+  loggerErrorSpy.mockReset()
   findFirstSpy.mockResolvedValue(undefined)
   returningSpy.mockResolvedValue([])
 })
@@ -73,7 +84,11 @@ describe("DispatchProcessorService", () => {
       findFirstSpy.mockResolvedValue(dispatch)
 
       // Act
-      const result = await new DispatchProcessorService().fetchDispatch("d1")
+      const result = await new DispatchProcessorService().fetchDispatch(
+        "d1",
+        "pending",
+        "ws1",
+      )
 
       // Assert
       expect(result).toEqual(dispatch)
@@ -86,6 +101,8 @@ describe("DispatchProcessorService", () => {
       // Act
       const result = await new DispatchProcessorService().fetchDispatch(
         "missing",
+        "pending",
+        "ws1",
       )
 
       // Assert
@@ -94,33 +111,44 @@ describe("DispatchProcessorService", () => {
 
     test("returns null and logs error when db throws", async () => {
       // Arrange
-      const consoleSpy = vi
-        .spyOn(console, "error")
-        .mockImplementation(() => undefined)
+      const consoleSpy = vi.spyOn(console, "error")
       findFirstSpy.mockRejectedValue(new Error("connection refused"))
 
       // Act
-      const result = await new DispatchProcessorService().fetchDispatch("d1")
+      const result = await new DispatchProcessorService().fetchDispatch(
+        "d1",
+        "pending",
+        "ws1",
+      )
 
       // Assert
       expect(result).toBeNull()
-      expect(consoleSpy).toHaveBeenCalledWith(
-        expect.stringContaining("[ERROR fetchDispatch]"),
+      expect(consoleSpy).not.toHaveBeenCalled()
+      expect(loggerErrorSpy).toHaveBeenCalledWith(
         expect.any(Error),
+        "Error fetchDispatch query failed",
       )
     })
 
-    test("queries with id and fetches sequence/contact/enrollment relations", async () => {
+    test("queries with id + status + workspaceId and fetches sequence/contact/enrollment relations", async () => {
       // Arrange
       findFirstSpy.mockResolvedValue({ id: "d99" })
 
       // Act
-      await new DispatchProcessorService().fetchDispatch("d99")
+      await new DispatchProcessorService().fetchDispatch(
+        "d99",
+        "pending",
+        "ws1",
+      )
 
       // Assert
       expect(findFirstSpy).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ id: "d99" }),
+          where: expect.objectContaining({
+            id: "d99",
+            status: "pending",
+            workspaceId: "ws1",
+          }),
           with: { sequence: true, contact: true, enrollment: true },
         }),
       )

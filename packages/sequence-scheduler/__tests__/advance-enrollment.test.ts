@@ -7,6 +7,7 @@ const setMock = vi.fn()
 const whereUpdateMock = vi.fn()
 const selectLimitMock = vi.fn()
 const transactionMock = vi.fn()
+const order: string[] = []
 
 // --- module mocks (hoisted) ---
 vi.mock("../src/contacts-on-sequences", () => ({
@@ -131,6 +132,8 @@ const FAKE_DISPATCH = { id: "dispatch-1", bucket: 7, runAtMs: "1700000000000" }
 
 // --- test setup ---
 beforeEach(() => {
+  vi.clearAllMocks()
+  order.length = 0
   // default: active enrollment exists
   findFirstMock.mockResolvedValue(makeActiveEnrollment())
   // default: no next step
@@ -264,7 +267,7 @@ describe("advanceEnrollment", () => {
       txUpdateWhereMock = vi.fn().mockResolvedValue(undefined),
     ) {
       transactionMock.mockImplementation(
-        (cb: (tx: Record<string, unknown>) => Promise<unknown>) => {
+        async (cb: (tx: Record<string, unknown>) => Promise<unknown>) => {
           const tx = {
             update: (_table: unknown) => ({
               set: (_vals: unknown) => ({
@@ -272,7 +275,9 @@ describe("advanceEnrollment", () => {
               }),
             }),
           }
-          return cb(tx)
+          const result = await cb(tx)
+          order.push("tx-done")
+          return result
         },
       )
       return txUpdateWhereMock
@@ -359,6 +364,28 @@ describe("advanceEnrollment", () => {
         FAKE_DISPATCH.id,
         Number(FAKE_DISPATCH.runAtMs),
       )
+    })
+
+    test("schedules only after the advance transaction completes", async () => {
+      selectLimitMock.mockResolvedValue([NEXT_STEP])
+      setUpTransactionWithTxMocks()
+
+      const mockScheduler = {
+        addToSchedule: vi.fn().mockImplementation(() => {
+          order.push("schedule")
+          return Promise.resolve(undefined)
+        }),
+      }
+
+      await advanceEnrollment(
+        makeParams({
+          scheduler: mockScheduler as unknown as Parameters<
+            typeof advanceEnrollment
+          >[0]["scheduler"],
+        }),
+      )
+
+      expect(order).toEqual(["tx-done", "schedule"])
     })
 
     test("does not create dispatches when contact has no inboxes", async () => {

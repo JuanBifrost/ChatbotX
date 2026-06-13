@@ -69,3 +69,20 @@ worker.on("completed", (job) => {
 })
 
 logger.info("Trigger worker started")
+
+let isShuttingDown = false
+async function shutdown() {
+  if (isShuttingDown) {
+    return
+  }
+  isShuttingDown = true
+  try {
+    await worker.close()
+    process.exit(0)
+  } catch (err) {
+    logger.error(err, "[TriggerWorker] Error during shutdown")
+    process.exit(1)
+  }
+}
+process.once("SIGINT", shutdown)
+process.once("SIGTERM", shutdown)

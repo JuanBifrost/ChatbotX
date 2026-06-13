@@ -119,6 +119,29 @@ vi.mock("@chatbotx.io/database/repositories", () => ({
   createMessageRepository: mockCreateMessageRepository,
 }))
 
+vi.mock("@chatbotx.io/analytics", () => ({
+  botMessageFallbackReasons: {
+    enum: {
+      button_not_found: "button_not_found",
+      handler_error_to_fallback: "handler_error_to_fallback",
+      no_content: "no_content",
+      unsupported_message_type: "unsupported_message_type",
+    },
+  },
+  botMessageResults: { enum: { fallback: "fallback", success: "success" } },
+  botMessageRouteTypes: {
+    enum: { agent: "agent", fallback: "fallback", flow: "flow" },
+  },
+  trackingResponseTypes: {
+    enum: {
+      ai_agent: "ai_agent",
+      automated_response: "automated_response",
+      flow: "flow",
+      none: "none",
+    },
+  },
+}))
+
 vi.mock("@chatbotx.io/database/client", () => ({
   db: {
     insert: mockDbInsert,

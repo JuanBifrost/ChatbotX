@@ -34,3 +34,20 @@ worker.on("failed", (job, err) => {
     logger.error(err, `Webhook job ${job.id} has failed`)
   }
 })
+
+let isShuttingDown = false
+async function shutdown() {
+  if (isShuttingDown) {
+    return
+  }
+  isShuttingDown = true
+  try {
+    await worker.close()
+    process.exit(0)
+  } catch (err) {
+    logger.error(err, "[WebhookWorker] Error during shutdown")
+    process.exit(1)
+  }
+}
+process.once("SIGINT", shutdown)
+process.once("SIGTERM", shutdown)

@@ -20,8 +20,11 @@ export const sequenceDispatchRelations = defineRelationsPart(schema, (r) => ({
       optional: false,
     }),
     enrollment: r.one.contactsOnSequenceModel({
-      from: r.sequenceDispatchModel.enrollmentId,
-      to: r.contactsOnSequenceModel.id,
+      from: [
+        r.sequenceDispatchModel.enrollmentId,
+        r.sequenceDispatchModel.workspaceId,
+      ],
+      to: [r.contactsOnSequenceModel.id, r.contactsOnSequenceModel.workspaceId],
       optional: false,
     }),
     step: r.one.sequenceStepModel({

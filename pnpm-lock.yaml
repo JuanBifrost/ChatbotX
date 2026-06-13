@@ -1575,6 +1575,9 @@ importers:
       '@chatbotx.io/sdk':
         specifier: workspace:*
         version: link:../sdk
+      '@chatbotx.io/sequence-scheduler':
+        specifier: workspace:*
+        version: link:../sequence-scheduler
       '@chatbotx.io/utils':
         specifier: workspace:*
         version: link:../utils

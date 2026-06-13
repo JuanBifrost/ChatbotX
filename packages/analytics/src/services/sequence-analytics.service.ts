@@ -28,6 +28,7 @@ type SequenceUpdateItem = {
 async function processSequenceEvents(
   items: SequenceUpdateItem[],
   updateField: "deliveredAt" | "seenAt" | "clickedAt",
+  knownStatus?: "completed",
 ): Promise<void> {
   if (items.length === 0) {
     return
@@ -36,14 +37,23 @@ async function processSequenceEvents(
   const sequenceIds = [...new Set(items.map((i) => i.sequenceId))]
   const stepIds = [...new Set(items.map((i) => i.stepId))]
   const contactInboxIds = [...new Set(items.map((i) => i.contactInboxId))]
+  const workspaceIds = [...new Set(items.map((i) => i.workspaceId))]
 
   const dispatches = await db.query.sequenceDispatchModel.findMany({
     where: {
+      workspaceId: { in: workspaceIds },
       sequenceId: { in: sequenceIds },
       stepId: { in: stepIds },
       contactInboxId: { in: contactInboxIds },
+      ...(knownStatus ? { status: knownStatus } : {}),
     },
-    columns: { id: true, sequenceId: true, stepId: true, contactInboxId: true },
+    columns: {
+      id: true,
+      workspaceId: true,
+      sequenceId: true,
+      stepId: true,
+      contactInboxId: true,
+    },
   })
 
   if (dispatches.length === 0) {
@@ -55,13 +65,18 @@ async function processSequenceEvents(
       const item = items.find(
         (i) =>
           i.sequenceId === d.sequenceId &&
+          i.workspaceId === d.workspaceId &&
           i.stepId === d.stepId &&
           i.contactInboxId === d.contactInboxId,
       )
       if (!item) {
         return null
       }
-      return { id: d.id, timestamp: item.occurredAt }
+      return {
+        id: d.id,
+        workspaceId: d.workspaceId,
+        timestamp: item.occurredAt,
+      }
     })
     .filter((item): item is NonNullable<typeof item> => item !== null)
 
@@ -69,19 +84,20 @@ async function processSequenceEvents(
     return
   }
 
-  const cases = updateItems
-    .map(
-      (item) =>
-        `WHEN "id" = '${item.id}' THEN '${item.timestamp.toISOString()}'`,
-    )
-    .join(" ")
-
-  const ids = updateItems.map((i) => sql`${i.id}`)
+  const cases = updateItems.map(
+    (item) =>
+      sql`WHEN "id" = ${item.id} AND "workspaceId" = ${item.workspaceId} THEN ${item.timestamp.toISOString()}`,
+  )
+  const predicates = updateItems.map((item) =>
+    knownStatus
+      ? sql`("id" = ${item.id} AND "workspaceId" = ${item.workspaceId} AND "status" = ${knownStatus})`
+      : sql`("id" = ${item.id} AND "workspaceId" = ${item.workspaceId})`,
+  )
 
   await db.execute(sql`
     UPDATE "SequenceDispatch"
-    SET "${sql.raw(updateField)}" = CASE ${sql.raw(cases)} ELSE "${sql.raw(updateField)}" END
-    WHERE "id" IN (${sql.join(ids, sql`, `)})
+    SET "${sql.raw(updateField)}" = CASE ${sql.join(cases, sql` `)} ELSE "${sql.raw(updateField)}" END
+    WHERE ${sql.join(predicates, sql` OR `)}
   `)
 }
 
@@ -218,7 +234,7 @@ export class SequenceAnalyticsService {
         })
         .filter((item): item is NonNullable<typeof item> => item !== null)
 
-      await processSequenceEvents(updateItems, "seenAt")
+      await processSequenceEvents(updateItems, "seenAt", "completed")
     }
   }
 

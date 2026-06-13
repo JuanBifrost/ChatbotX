@@ -2,9 +2,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 
 const findManyInboxMock = vi.fn()
 const findManyContactInboxMock = vi.fn()
-const cancelPendingDispatchesMock = vi.fn()
 const findManyContactsOnSeqMock = vi.fn()
-const deleteWhereMock = vi.fn()
 
 vi.mock("@chatbotx.io/database/client", () => ({
   db: {
@@ -13,33 +11,21 @@ vi.mock("@chatbotx.io/database/client", () => ({
       contactInboxModel: { findMany: findManyContactInboxMock },
     },
   },
-  inArray: (c: unknown, v: unknown) => ({ __inArray: [c, v] }),
 }))
 
-vi.mock("@chatbotx.io/database/schema", () => ({
-  contactsOnSequenceModel: { id: "__contactsOnSequenceModel.id" },
-}))
-
-vi.mock("../src/dispatch-manager", () => ({
-  cancelPendingDispatches: cancelPendingDispatchesMock,
-}))
-
-// Reusable mock db client with methods used in bulkRemoveIds and getAllSequenceIds
+// Reusable mock db client with methods used in getAllSequenceIds.
 const mockDbClient = {
   query: {
     contactsOnSequenceModel: {
       findMany: findManyContactsOnSeqMock,
     },
   },
-  delete: () => ({ where: deleteWhereMock }),
 } as never
 
 beforeEach(() => {
   findManyInboxMock.mockResolvedValue([])
   findManyContactInboxMock.mockResolvedValue([])
-  cancelPendingDispatchesMock.mockResolvedValue([])
   findManyContactsOnSeqMock.mockResolvedValue([])
-  deleteWhereMock.mockResolvedValue(undefined)
 })
 
 describe("calculateSequenceDiff", () => {
@@ -173,92 +159,13 @@ describe("getAllSequenceIds", () => {
   })
 })
 
-describe("bulkRemoveIds", () => {
-  test("returns immediately without any db call when sequenceIds is empty", async () => {
+describe("public API", () => {
+  test("does not expose the unused bulkRemoveIds helper", async () => {
     const { contactsOnSequencesUtils } = await import(
       "../src/contacts-on-sequences"
     )
 
-    await contactsOnSequencesUtils.bulkRemoveIds(mockDbClient, "contact-1", [])
-
-    expect(findManyContactsOnSeqMock).not.toHaveBeenCalled()
-    expect(cancelPendingDispatchesMock).not.toHaveBeenCalled()
-    expect(deleteWhereMock).not.toHaveBeenCalled()
-  })
-
-  test("returns without deleting when no enrollments match the sequenceIds", async () => {
-    const { contactsOnSequencesUtils } = await import(
-      "../src/contacts-on-sequences"
-    )
-    findManyContactsOnSeqMock.mockResolvedValue([])
-
-    await contactsOnSequencesUtils.bulkRemoveIds(mockDbClient, "contact-1", [
-      "seq-1",
-    ])
-
-    expect(cancelPendingDispatchesMock).not.toHaveBeenCalled()
-    expect(deleteWhereMock).not.toHaveBeenCalled()
-  })
-
-  test("calls cancelPendingDispatches once per enrollment then deletes all", async () => {
-    const { contactsOnSequencesUtils } = await import(
-      "../src/contacts-on-sequences"
-    )
-    const enrollments = [
-      {
-        id: "enroll-1",
-        workspaceId: "ws-1",
-        sequenceId: "seq-1",
-        contactId: "c-1",
-      },
-      {
-        id: "enroll-2",
-        workspaceId: "ws-1",
-        sequenceId: "seq-2",
-        contactId: "c-1",
-      },
-    ]
-    findManyContactsOnSeqMock.mockResolvedValue(enrollments)
-
-    await contactsOnSequencesUtils.bulkRemoveIds(mockDbClient, "c-1", [
-      "seq-1",
-      "seq-2",
-    ])
-
-    expect(cancelPendingDispatchesMock).toHaveBeenCalledTimes(2)
-    expect(cancelPendingDispatchesMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        enrollmentId: "enroll-1",
-        workspaceId: "ws-1",
-      }),
-    )
-    expect(cancelPendingDispatchesMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        enrollmentId: "enroll-2",
-        workspaceId: "ws-1",
-      }),
-    )
-    expect(deleteWhereMock).toHaveBeenCalledTimes(1)
-  })
-
-  test("passes the reason 'enrollment_removed' to cancelPendingDispatches", async () => {
-    const { contactsOnSequencesUtils } = await import(
-      "../src/contacts-on-sequences"
-    )
-    findManyContactsOnSeqMock.mockResolvedValue([
-      {
-        id: "enroll-1",
-        workspaceId: "ws-1",
-        sequenceId: "seq-1",
-        contactId: "c-1",
-      },
-    ])
-
-    await contactsOnSequencesUtils.bulkRemoveIds(mockDbClient, "c-1", ["seq-1"])
-
-    expect(cancelPendingDispatchesMock).toHaveBeenCalledWith(
-      expect.objectContaining({ reason: "enrollment_removed" }),
-    )
+    expect("bulkRemoveIds" in contactsOnSequencesUtils).toBe(false)
   })
 })
 
@@ -284,6 +191,7 @@ describe("getContactInboxes", () => {
     const result = await getContactInboxes("ws-1", "contact-1")
 
     expect(result).toEqual([])
+    expect(findManyContactInboxMock).not.toHaveBeenCalled()
   })
 
   test("queries inboxModel scoped by workspaceId", async () => {

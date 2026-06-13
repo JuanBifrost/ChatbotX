@@ -38,6 +38,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   sequenceDispatchModel: {
     id: { __col: "id" },
     workspaceId: { __col: "workspaceId" },
+    status: { __col: "status" },
   },
 }))
 

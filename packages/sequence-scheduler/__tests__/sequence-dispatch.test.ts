@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 
 const findManyDispatchMock = vi.fn()
 const returningUpdateMock = vi.fn()
+const whereUpdateMock = vi.fn()
 
 vi.mock("@chatbotx.io/database/client", () => ({
   // db is not used directly in sequence-dispatch.ts; only the helpers are
@@ -15,6 +16,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   sequenceDispatchModel: {
     id: { __col: "sequenceDispatchModel.id" },
     status: { __col: "sequenceDispatchModel.status" },
+    workspaceId: { __col: "sequenceDispatchModel.workspaceId" },
   },
 }))
 
@@ -25,9 +27,10 @@ const mockDbClient = {
   },
   update: () => ({
     set: () => ({
-      where: () => ({
-        returning: returningUpdateMock,
-      }),
+      where: (arg: unknown) => {
+        whereUpdateMock(arg)
+        return { returning: returningUpdateMock }
+      },
     }),
   }),
 } as never
@@ -35,6 +38,7 @@ const mockDbClient = {
 beforeEach(() => {
   findManyDispatchMock.mockResolvedValue([])
   returningUpdateMock.mockResolvedValue([])
+  whereUpdateMock.mockReset()
 })
 
 describe("sequenceDispatchUtils.bulkCancelPendingDispatches", () => {
@@ -117,6 +121,46 @@ describe("sequenceDispatchUtils.bulkCancelPendingDispatches", () => {
       { id: "d-1", bucket: 10 },
       { id: "d-2", bucket: 20 },
     ])
+  })
+
+  // UPDATE WHERE must include workspaceId + status=pending for partition pruning.
+  test("UPDATE WHERE includes workspaceId and status=pending", async () => {
+    const { sequenceDispatchUtils } = await import("../src/sequence-dispatch")
+    findManyDispatchMock.mockResolvedValue([
+      {
+        id: "d-1",
+        bucket: 1,
+        sequenceId: "seq-1",
+        contactId: "c-1",
+        stepId: "s-1",
+      },
+    ])
+    returningUpdateMock.mockResolvedValue([{ id: "d-1", bucket: 1 }])
+
+    await sequenceDispatchUtils.bulkCancelPendingDispatches({
+      dbClient: mockDbClient,
+      workspaceId: "ws-1",
+      enrollmentId: "enroll-1",
+    })
+
+    const where = whereUpdateMock.mock.calls[0][0] as {
+      __and: Array<
+        | { __eq: [{ __col: string }, unknown] }
+        | { __inArray: [{ __col: string }, unknown] }
+      >
+    }
+    const conditions = where.__and ?? []
+    const eqConditions = conditions.filter((c) => "__eq" in c) as Array<{
+      __eq: [{ __col: string }, unknown]
+    }>
+    const colNames = eqConditions.map((c) => c.__eq[0].__col)
+    const colValues = Object.fromEntries(
+      eqConditions.map((c) => [c.__eq[0].__col, c.__eq[1]]),
+    )
+
+    expect(colNames).toContain("sequenceDispatchModel.workspaceId")
+    expect(colNames).toContain("sequenceDispatchModel.status")
+    expect(colValues["sequenceDispatchModel.status"]).toBe("pending")
   })
 
   test("calls update exactly once regardless of how many dispatches are found", async () => {

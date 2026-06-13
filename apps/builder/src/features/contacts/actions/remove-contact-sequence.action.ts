@@ -1,8 +1,6 @@
 "use server"
 
-import { and, db, eq, inArray } from "@chatbotx.io/database/client"
-import { contactsOnSequenceModel } from "@chatbotx.io/database/schema"
-import { cancelPendingDispatches } from "@chatbotx.io/sequence-scheduler"
+import { contactSequenceService } from "@chatbotx.io/business/contact-sequence"
 import {
   type WorkspaceIdRequestParams,
   workspaceIdrequestParams,
@@ -29,38 +27,12 @@ export const removeContactSequenceAction = workspaceActionClient
       for (let i = 0; i < parsedInput.ids.length; i += CHUNK_SIZE) {
         const contactIdChunk = parsedInput.ids.slice(i, i + CHUNK_SIZE)
 
-        const enrollments = await db.query.contactsOnSequenceModel.findMany({
-          where: {
-            contactId: { in: contactIdChunk },
-            sequenceId: { in: parsedInput.sequences },
-            workspaceId,
-          },
-          columns: {
-            id: true,
-          },
+        await contactSequenceService.removeContactSequencesForContacts({
+          workspaceId,
+          contactIds: contactIdChunk,
+          sequenceIds: parsedInput.sequences,
+          reason: "enrollment_removed",
         })
-
-        await Promise.all(
-          enrollments.map((enrollment) =>
-            cancelPendingDispatches({
-              enrollmentId: enrollment.id,
-              workspaceId,
-              reason: "enrollment_removed",
-            }),
-          ),
-        )
-
-        const enrollmentIds = enrollments.map((e) => e.id)
-        if (enrollmentIds.length > 0) {
-          await db
-            .delete(contactsOnSequenceModel)
-            .where(
-              and(
-                inArray(contactsOnSequenceModel.id, enrollmentIds),
-                eq(contactsOnSequenceModel.workspaceId, workspaceId),
-              ),
-            )
-        }
       }
     },
   )

@@ -110,6 +110,23 @@ async function startScheduleWorker() {
       logger.error(err, `Job ${job.id} has failed`)
     }
   })
+
+  let isShuttingDown = false
+  async function shutdown() {
+    if (isShuttingDown) {
+      return
+    }
+    isShuttingDown = true
+    try {
+      await worker.close()
+      process.exit(0)
+    } catch (err) {
+      logger.error(err, "[ScheduleWorker] Error during shutdown")
+      process.exit(1)
+    }
+  }
+  process.once("SIGINT", shutdown)
+  process.once("SIGTERM", shutdown)
 }
 
 startScheduleWorker().catch((err) => {

@@ -201,6 +201,23 @@ async function startIntegrationWorker() {
       logger.error({ err }, `Job ${job.id} has failed`)
     }
   })
+
+  let isShuttingDown = false
+  async function shutdown() {
+    if (isShuttingDown) {
+      return
+    }
+    isShuttingDown = true
+    try {
+      await worker.close()
+      process.exit(0)
+    } catch (err) {
+      logger.error(err, "[IntegrationWorker] Error during shutdown")
+      process.exit(1)
+    }
+  }
+  process.once("SIGINT", shutdown)
+  process.once("SIGTERM", shutdown)
 }
 
 startIntegrationWorker().catch((err) => {

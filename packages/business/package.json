@@ -4,6 +4,7 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
+    "./contact-sequence": "./src/contact-sequence/index.ts",
     "./errors": "./src/errors.ts",
     "./utils": "./src/utils.ts"
   },
@@ -17,6 +18,7 @@
     "@chatbotx.io/logger": "workspace:*",
     "@chatbotx.io/partysocket-config": "workspace:*",
     "@chatbotx.io/redis": "workspace:*",
+    "@chatbotx.io/sequence-scheduler": "workspace:*",
     "@chatbotx.io/sdk": "workspace:*",
     "@chatbotx.io/utils": "workspace:*",
     "@chatbotx.io/worker-config": "workspace:*",

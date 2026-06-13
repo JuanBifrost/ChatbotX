@@ -3,9 +3,12 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 // --- top-level spies (captured by vi.mock factory closures) ---
 const findFirstMock = vi.fn()
 const insertMock = vi.fn()
+const valuesMock = vi.fn()
 const returningMock = vi.fn()
 const bulkReturningMock = vi.fn()
 const addToScheduleMock = vi.fn()
+const transactionMock = vi.fn()
+const order: string[] = []
 
 // --- module mocks (hoisted) ---
 vi.mock("../src/contacts-on-sequences", () => ({
@@ -26,13 +29,42 @@ vi.mock("@chatbotx.io/database/client", () => ({
     insert: (table: unknown) => {
       insertMock(table)
       return {
-        values: (_vals: unknown) => ({
-          returning: (...args: unknown[]) => returningMock(...args),
-          onConflictDoNothing: () => ({
-            returning: (...args: unknown[]) => bulkReturningMock(...args),
-          }),
-        }),
+        values: (vals: unknown) => {
+          valuesMock(vals)
+          return {
+            returning: (...args: unknown[]) => returningMock(...args),
+            onConflictDoNothing: () => ({
+              returning: (...args: unknown[]) => bulkReturningMock(...args),
+            }),
+          }
+        },
       }
+    },
+    transaction: async (cb: (tx: unknown) => unknown) => {
+      transactionMock()
+      const result = await cb({
+        query: {
+          contactsOnSequenceModel: {
+            findFirst: (...args: unknown[]) => findFirstMock(...args),
+          },
+        },
+        insert: (table: unknown) => {
+          insertMock(table)
+          return {
+            values: (vals: unknown) => {
+              valuesMock(vals)
+              return {
+                returning: (...args: unknown[]) => returningMock(...args),
+                onConflictDoNothing: () => ({
+                  returning: (...args: unknown[]) => bulkReturningMock(...args),
+                }),
+              }
+            },
+          }
+        },
+      })
+      order.push("tx-done")
+      return result
     },
   },
 }))
@@ -101,6 +133,9 @@ const FAKE_DISPATCH = { id: "dispatch-1", bucket: 42, runAtMs: "1700000000000" }
 
 // --- test setup ---
 beforeEach(() => {
+  vi.clearAllMocks()
+  valuesMock.mockReset()
+  order.length = 0
   // default: no existing enrollment
   findFirstMock.mockResolvedValue(undefined)
   // default: successful insert returns one row
@@ -111,7 +146,10 @@ beforeEach(() => {
   ] as unknown as Awaited<ReturnType<typeof getContactInboxes>>)
   // default: dispatch created successfully
   vi.mocked(createDispatch).mockResolvedValue(FAKE_DISPATCH)
-  addToScheduleMock.mockResolvedValue(undefined)
+  addToScheduleMock.mockImplementation(() => {
+    order.push("schedule")
+    return Promise.resolve(undefined)
+  })
 })
 
 // ---------------------------------------------------------------------------
@@ -136,11 +174,42 @@ describe("enrollContactInSequence", () => {
   })
 
   describe("when enrollment does not exist and nextStepId is provided", () => {
+    test("uses a transaction when no client is provided", async () => {
+      await enrollContactInSequence(makeEnrollParams())
+
+      expect(transactionMock).toHaveBeenCalledTimes(1)
+      expect(vi.mocked(createDispatch)).toHaveBeenCalledWith(
+        expect.objectContaining({
+          client: expect.objectContaining({
+            query: expect.any(Object),
+            insert: expect.any(Function),
+          }),
+        }),
+      )
+    })
+
+    test("uses the provided root db client without wrapping another transaction", async () => {
+      const { db } = await import("@chatbotx.io/database/client")
+
+      await enrollContactInSequence(makeEnrollParams({ client: db as never }))
+
+      expect(transactionMock).not.toHaveBeenCalled()
+      expect(vi.mocked(createDispatch)).toHaveBeenCalledWith(
+        expect.objectContaining({ client: db }),
+      )
+    })
+
     test("inserts a new enrollment row", async () => {
       await enrollContactInSequence(makeEnrollParams())
 
       expect(insertMock).toHaveBeenCalledTimes(1)
       expect(returningMock).toHaveBeenCalledTimes(1)
+    })
+
+    test("inserted ContactOnSequence carries workspaceId", async () => {
+      await enrollContactInSequence(makeEnrollParams())
+
+      expect(valuesMock.mock.calls[0][0]).toMatchObject({ workspaceId: "ws-1" })
     })
 
     test("creates a dispatch for each contact inbox", async () => {
@@ -166,6 +235,7 @@ describe("enrollContactInSequence", () => {
           stepId: "step-1",
           enrollmentId: "enrollment-1",
           runAt: NOW,
+          client: expect.any(Object),
         }),
       )
     })
@@ -185,6 +255,12 @@ describe("enrollContactInSequence", () => {
         FAKE_DISPATCH.id,
         Number(FAKE_DISPATCH.runAtMs),
       )
+    })
+
+    test("schedules only after the enrollment transaction completes", async () => {
+      await enrollContactInSequence(makeEnrollParams())
+
+      expect(order).toEqual(["tx-done", "schedule"])
     })
 
     test("does not create dispatches when contact has no inboxes", async () => {

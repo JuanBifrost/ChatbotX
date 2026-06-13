@@ -1,16 +1,15 @@
+import { createId } from "@chatbotx.io/utils"
+import { sql } from "drizzle-orm"
 import {
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
-import {
-  bigintAsString,
-  sharedColumns,
-  timestampConfig,
-} from "../partials/shared"
+import { bigintAsString, timestampConfig } from "../partials/shared"
 import { contactModel } from "./contact"
 import { sequenceModel } from "./sequence"
 import { workspaceModel } from "./workspace"
@@ -18,7 +17,14 @@ import { workspaceModel } from "./workspace"
 export const contactsOnSequenceModel = pgTable(
   "ContactOnSequence",
   {
-    ...sharedColumns,
+    id: bigintAsString()
+      .$defaultFn(() => createId())
+      .notNull(),
+    createdAt: timestamp(timestampConfig).defaultNow().notNull(),
+    updatedAt: timestamp(timestampConfig)
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => sql`CURRENT_TIMESTAMP`),
     enrolledAt: timestamp(timestampConfig).notNull().defaultNow(),
     completedAt: timestamp(timestampConfig),
     currentStep: integer().notNull().default(0),
@@ -49,6 +55,10 @@ export const contactsOnSequenceModel = pgTable(
       }),
   },
   (table) => [
+    primaryKey({
+      columns: [table.id, table.workspaceId],
+      name: "ContactOnSequence_pkey",
+    }),
     index("ContactsOnSequence_sequenceId_idx").on(table.sequenceId),
     index("ContactsOnSequence_contactId_idx").on(table.contactId),
     index("ContactsOnSequence_workspaceId_idx").on(table.workspaceId),

@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
 
 const returningInsertMock = vi.fn()
+const transactionMock = vi.fn()
 const findManyMock = vi.fn()
 const updateWhereMock = vi.fn()
 const removeFromScheduleMock = vi.fn()
@@ -8,9 +9,19 @@ const useExistingMock = vi.fn()
 
 vi.mock("@chatbotx.io/database/client", () => ({
   db: {
-    insert: () => ({ values: () => ({ returning: returningInsertMock }) }),
+    insert: () => ({
+      values: () => ({ returning: returningInsertMock }),
+    }),
     query: {
       sequenceDispatchModel: { findMany: findManyMock },
+    },
+    transaction: async (cb: (tx: unknown) => Promise<unknown>) => {
+      transactionMock()
+      return await cb({
+        insert: () => ({
+          values: () => ({ returning: returningInsertMock }),
+        }),
+      })
     },
     update: () => ({ set: () => ({ where: updateWhereMock }) }),
   },
@@ -21,6 +32,7 @@ vi.mock("@chatbotx.io/database/client", () => ({
 
 vi.mock("@chatbotx.io/database/schema", () => ({
   sequenceDispatchModel: {
+    __table: "SequenceDispatch",
     id: { __col: "id" },
     bucket: { __col: "bucket" },
     workspaceId: { __col: "workspaceId" },
@@ -102,6 +114,7 @@ describe("generateIdempotencyKey", () => {
 
 describe("createDispatch", () => {
   beforeEach(() => {
+    transactionMock.mockClear()
     returningInsertMock.mockResolvedValue([
       { id: "test-id", bucket: 77, runAtMs: "1700000000000" },
     ])
@@ -126,6 +139,7 @@ describe("createDispatch", () => {
       bucket: 77,
       runAtMs: "1700000000000",
     })
+    expect(transactionMock).not.toHaveBeenCalled()
   })
 
   test("throws 'Failed to create dispatch' when insert returns empty array", async () => {
@@ -167,7 +181,44 @@ describe("createDispatch", () => {
 
     expect(customReturningMock).toHaveBeenCalledTimes(1)
     expect(returningInsertMock).not.toHaveBeenCalled()
+    expect(transactionMock).not.toHaveBeenCalled()
     expect(result.id).toBe("custom-id")
+  })
+
+  test("uses the provided root db client without wrapping another transaction", async () => {
+    const { createDispatch } = await import("../src/dispatch-manager")
+    const { db } = await import("@chatbotx.io/database/client")
+
+    const result = await createDispatch({
+      workspaceId: "ws-2",
+      contactId: "contact-2",
+      contactInboxId: "inbox-2",
+      enrollmentId: "enroll-2",
+      runAt: new Date(),
+      sequenceId: "seq-2",
+      stepId: "step-2",
+      client: db,
+    })
+
+    expect(transactionMock).not.toHaveBeenCalled()
+    expect(result.id).toBe("test-id")
+  })
+
+  test("throws when SequenceDispatch unique idempotency insert conflicts", async () => {
+    const { createDispatch } = await import("../src/dispatch-manager")
+    returningInsertMock.mockRejectedValue(new Error("duplicate key"))
+
+    await expect(
+      createDispatch({
+        workspaceId: "ws-1",
+        contactId: "contact-1",
+        contactInboxId: "inbox-1",
+        enrollmentId: "enroll-1",
+        runAt: new Date(),
+        sequenceId: "seq-1",
+        stepId: "step-1",
+      }),
+    ).rejects.toThrow("duplicate key")
   })
 })
 

@@ -267,10 +267,14 @@ describe("prepareBroadcast", () => {
       expect(onConflictSpy).toHaveBeenCalledTimes(1)
       const rows = insertCalls[0].values as Record<string, unknown>[]
       expect(rows).toHaveLength(1)
-      expect(rows[0]).toMatchObject({
+      expect(Object.keys(rows[0]).sort()).toEqual(
+        ["broadcastId", "contactId", "contactInboxId", "conversationId"].sort(),
+      )
+      expect(rows[0]).toEqual({
         broadcastId: BROADCAST_ID,
         contactId: "contact-1",
         contactInboxId: "ci-1",
+        conversationId: "conv-1",
       })
     })
 

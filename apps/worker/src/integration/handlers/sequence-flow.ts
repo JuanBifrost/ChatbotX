@@ -27,6 +27,7 @@ async function fetchDispatch(dispatchId: string, workspaceId: string) {
     where: {
       id: dispatchId,
       workspaceId,
+      status: "running",
     },
   })
 }
@@ -47,6 +48,7 @@ async function markDispatchCompleted(
       and(
         eq(sequenceDispatchModel.id, dispatchId),
         eq(sequenceDispatchModel.workspaceId, workspaceId),
+        eq(sequenceDispatchModel.status, "running"),
       ),
     )
 }
@@ -67,6 +69,7 @@ async function markDispatchCanceled(
       and(
         eq(sequenceDispatchModel.id, dispatchId),
         eq(sequenceDispatchModel.workspaceId, workspaceId),
+        eq(sequenceDispatchModel.status, "running"),
       ),
     )
 }
@@ -88,6 +91,7 @@ async function markDispatchFailed(
       and(
         eq(sequenceDispatchModel.id, dispatchId),
         eq(sequenceDispatchModel.workspaceId, workspaceId),
+        eq(sequenceDispatchModel.status, "running"),
       ),
     )
 }

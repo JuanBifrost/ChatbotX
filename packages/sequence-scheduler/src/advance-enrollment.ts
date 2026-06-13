@@ -22,6 +22,8 @@ type NextStepForSchedule = {
   sendDays: string | null
 }
 
+type DispatchToSchedule = { id: string; bucket: number; runAtMs: string }
+
 function calculateNextRunAt(step: NextStepForSchedule, baseTime: Date): Date {
   const calculatedTime = calculateNextRunAtFromStep(
     {
@@ -114,7 +116,7 @@ export async function advanceEnrollment(
     return
   }
 
-  await db.transaction(async (tx) => {
+  const dispatches = await db.transaction(async (tx) => {
     const nextRunAt = calculateNextRunAt(nextStep, sentAt)
 
     await tx
@@ -134,6 +136,7 @@ export async function advanceEnrollment(
       )
 
     const contactInboxes = await getContactInboxes(workspaceId, contactId)
+    const nextDispatches: DispatchToSchedule[] = []
 
     for (const contactInbox of contactInboxes) {
       const nextDispatch = await createDispatch({
@@ -147,11 +150,17 @@ export async function advanceEnrollment(
         contactInboxId: contactInbox.id,
       })
 
-      await scheduler.addToSchedule(
-        nextDispatch.bucket,
-        nextDispatch.id,
-        Number(nextDispatch.runAtMs),
-      )
+      nextDispatches.push(nextDispatch)
     }
+
+    return nextDispatches
   })
+
+  for (const dispatch of dispatches) {
+    await scheduler.addToSchedule(
+      dispatch.bucket,
+      dispatch.id,
+      Number(dispatch.runAtMs),
+    )
+  }
 }

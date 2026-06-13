@@ -45,6 +45,7 @@ export const sequenceDispatchUtils = {
       .where(
         and(
           inArray(sequenceDispatchModel.id, dispatchIds),
+          eq(sequenceDispatchModel.workspaceId, workspaceId),
           eq(sequenceDispatchModel.status, "pending"),
         ),
       )

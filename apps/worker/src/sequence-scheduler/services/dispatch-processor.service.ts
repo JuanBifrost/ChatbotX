@@ -1,13 +1,20 @@
 import { and, db, eq } from "@chatbotx.io/database/client"
 import { sequenceDispatchModel } from "@chatbotx.io/database/schema"
+import { logger } from "../../lib/logger"
 import type { DispatchWithRelations } from "./types"
 
 export class DispatchProcessorService {
-  async fetchDispatch(dispatchId: string) {
+  async fetchDispatch(
+    dispatchId: string,
+    expectedStatus: string,
+    workspaceId: string,
+  ) {
     try {
       const dispatch = await db.query.sequenceDispatchModel.findFirst({
         where: {
           id: dispatchId,
+          status: expectedStatus,
+          workspaceId,
         },
         with: {
           sequence: true,
@@ -18,7 +25,7 @@ export class DispatchProcessorService {
 
       return dispatch ?? null
     } catch (error) {
-      console.error("[ERROR fetchDispatch] Query failed:", error)
+      logger.error(error, "Error fetchDispatch query failed")
       return null
     }
   }

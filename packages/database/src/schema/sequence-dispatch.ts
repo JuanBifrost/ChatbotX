@@ -1,18 +1,17 @@
+import { createId } from "@chatbotx.io/utils"
 import { type SQL, sql } from "drizzle-orm"
 import {
   boolean,
+  foreignKey,
   index,
   integer,
   pgTable,
+  primaryKey,
   text,
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
-import {
-  bigintAsString,
-  sharedColumns,
-  timestampConfig,
-} from "../partials/shared"
+import { bigintAsString, timestampConfig } from "../partials/shared"
 import { contactModel } from "./contact"
 import { contactInboxModel } from "./contact-inbox"
 import { contactsOnSequenceModel } from "./contact-on-sequence"
@@ -23,10 +22,17 @@ import { workspaceModel } from "./workspace"
 export const sequenceDispatchModel = pgTable(
   "SequenceDispatch",
   {
-    ...sharedColumns,
+    id: bigintAsString()
+      .$defaultFn(() => createId())
+      .notNull(),
+    createdAt: timestamp(timestampConfig).defaultNow().notNull(),
+    updatedAt: timestamp(timestampConfig)
+      .notNull()
+      .defaultNow()
+      .$onUpdate(() => sql`CURRENT_TIMESTAMP`),
     runAtMs: bigintAsString().notNull(),
     bucket: integer().notNull().default(0),
-    status: text(),
+    status: text().notNull().default("pending"),
     idempotencyKey: text().notNull(),
     attempt: integer().notNull().default(0),
     lastError: text(),
@@ -68,18 +74,38 @@ export const sequenceDispatchModel = pgTable(
         onDelete: "cascade",
         onUpdate: "cascade",
       }),
-    enrollmentId: bigintAsString()
-      .notNull()
-      .references(() => contactsOnSequenceModel.id, {
-        onDelete: "cascade",
-        onUpdate: "cascade",
-      }),
+    enrollmentId: bigintAsString().notNull(),
     isRead: boolean().generatedAlwaysAs(
       (): SQL =>
         sql`case when "seenAt" is null then false when "deliveredAt" is null then false else "seenAt" >= "deliveredAt" end`,
     ),
   },
   (table) => [
+    primaryKey({
+      columns: [table.id, table.workspaceId],
+      name: "SequenceDispatch_pkey",
+    }),
+    uniqueIndex("SequenceDispatch_idempotencyKey_key").on(
+      table.idempotencyKey,
+      table.workspaceId,
+    ),
+    foreignKey({
+      columns: [table.enrollmentId, table.workspaceId],
+      foreignColumns: [
+        contactsOnSequenceModel.id,
+        contactsOnSequenceModel.workspaceId,
+      ],
+      name: "SequenceDispatch_enrollment_workspace_fkey",
+    })
+      .onDelete("cascade")
+      .onUpdate("cascade"),
+    index("SequenceDispatch_id_idx").on(table.id),
+    index("SequenceDispatch_pending_runAtMs_idx")
+      .on(table.runAtMs)
+      .where(sql`"status" = 'pending'`),
+    index("SequenceDispatch_pending_bucket_runAtMs_idx")
+      .on(table.bucket, table.runAtMs)
+      .where(sql`"status" = 'pending'`),
     index("SequenceDispatch_status_runAtMs_idx").on(
       table.status,
       table.runAtMs,
@@ -89,15 +115,17 @@ export const sequenceDispatchModel = pgTable(
       table.status,
       table.runAtMs,
     ),
-    uniqueIndex("SequenceDispatch_idempotencyKey_key").on(
-      table.idempotencyKey,
+    index("SequenceDispatch_enrollmentId_workspaceId_idx").on(
+      table.enrollmentId,
       table.workspaceId,
     ),
-    index("SequenceDispatch_enrollmentId_idx").on(table.enrollmentId),
     index("SequenceDispatch_bucket_status_runAtMs_idx").on(
       table.bucket,
       table.status,
       table.runAtMs,
     ),
+    index("SequenceDispatch_terminal_updatedAt_idx")
+      .on(table.updatedAt)
+      .where(sql`"status" in ('completed', 'failed', 'canceled')`),
   ],
 )

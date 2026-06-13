@@ -31,6 +31,7 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   sequenceDispatchModel: {
     id: { __col: "id" },
     workspaceId: { __col: "workspaceId" },
+    status: { __col: "status" },
   },
 }))
 
@@ -81,13 +82,13 @@ describe("RetrySchedulerService", () => {
       expect(ts).toBeLessThanOrEqual(after)
     })
 
-    test("WHERE clause includes both dispatchId and workspaceId", async () => {
+    test("WHERE clause includes dispatchId + workspaceId + status=running", async () => {
       // Act
       await new RetrySchedulerService().markDispatchFailed("d1", "ws1", "err")
 
       // Assert
       const whereArg = whereSpy.mock.calls[0][0] as { __and: unknown[] }
-      expect(whereArg.__and).toHaveLength(2)
+      expect(whereArg.__and).toHaveLength(3)
     })
 
     test("calls logger.error with dispatchId and errorMessage", async () => {
@@ -136,7 +137,7 @@ describe("RetrySchedulerService", () => {
       expect(ts).toBeLessThanOrEqual(after)
     })
 
-    test("WHERE clause includes both dispatchId and workspaceId", async () => {
+    test("WHERE clause includes dispatchId + workspaceId + status=running", async () => {
       // Act
       await new RetrySchedulerService().markDispatchCanceled(
         "d1",
@@ -146,7 +147,7 @@ describe("RetrySchedulerService", () => {
 
       // Assert
       const whereArg = whereSpy.mock.calls[0][0] as { __and: unknown[] }
-      expect(whereArg.__and).toHaveLength(2)
+      expect(whereArg.__and).toHaveLength(3)
     })
 
     test("stores the reason string in lastError", async () => {

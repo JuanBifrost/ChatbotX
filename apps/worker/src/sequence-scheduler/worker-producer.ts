@@ -1,3 +1,4 @@
+import { db } from "@chatbotx.io/database/client"
 import { sequenceConnections } from "@chatbotx.io/redis"
 import { SchedulerClient } from "@chatbotx.io/scheduler"
 import {
@@ -19,7 +20,7 @@ interface SchedulerConfig {
   tickIntervalMs: number
 }
 
-class SchedulerWorker {
+export class SchedulerWorker {
   private readonly config: SchedulerConfig
   private _scheduler: SchedulerClient | null = null
   private _producer: MessagingProducer | null = null
@@ -178,14 +179,41 @@ class SchedulerWorker {
   async publishDispatches(
     dispatches: { dispatchId: string; bucket: number }[],
   ) {
-    const messages = dispatches.map((dispatch) => ({
-      key: dispatch.dispatchId,
-      value: JSON.stringify({
-        dispatchId: dispatch.dispatchId,
-        claimedAt: Date.now(),
-        bucket: dispatch.bucket,
-      }),
-    }))
+    const dispatchIds = dispatches.map((dispatch) => dispatch.dispatchId)
+    const pendingDispatches = await db.query.sequenceDispatchModel.findMany({
+      where: {
+        id: { in: dispatchIds },
+        status: "pending",
+      },
+      columns: {
+        id: true,
+        workspaceId: true,
+      },
+    })
+    const workspaceByDispatchId = new Map(
+      pendingDispatches.map((dispatch) => [dispatch.id, dispatch.workspaceId]),
+    )
+
+    const messages = dispatches.flatMap((dispatch) => {
+      const workspaceId = workspaceByDispatchId.get(dispatch.dispatchId)
+      if (!workspaceId) {
+        return []
+      }
+
+      return {
+        key: dispatch.dispatchId,
+        value: JSON.stringify({
+          dispatchId: dispatch.dispatchId,
+          claimedAt: Date.now(),
+          bucket: dispatch.bucket,
+          workspaceId,
+        }),
+      }
+    })
+
+    if (messages.length === 0) {
+      return
+    }
 
     await this.producer.send(messages)
   }
@@ -222,37 +250,40 @@ class SchedulerWorker {
 }
 
 const scheduler = new SchedulerWorker()
+const shouldAutoStart = process.env.NODE_ENV !== "test" && !process.env.VITEST
 
 let isShuttingDown = false
 
 async function startSchedulerWorker() {
-  console.log("Starting scheduler worker...")
+  logger.info("Starting scheduler worker")
 
   try {
     await scheduler.start()
-    console.log("Scheduler worker fully operational")
+    logger.info("Scheduler worker fully operational")
   } catch (error) {
-    console.error("Error starting scheduler worker:", error)
+    logger.error(error, "Error starting scheduler worker")
     throw error
   }
 }
 
 async function stopSchedulerWorker() {
-  console.log("Stopping scheduler worker...")
+  logger.info("Stopping scheduler worker")
 
   try {
     await scheduler.stop()
-    console.log("Scheduler worker stopped")
+    logger.info("Scheduler worker stopped")
   } catch (error) {
-    console.error("Error stopping scheduler worker:", error)
+    logger.error(error, "Error stopping scheduler worker")
     throw error
   }
 }
 
-startSchedulerWorker().catch((error) => {
-  console.error("Error starting scheduler worker:", error)
-  process.exitCode = 1
-})
+if (shouldAutoStart) {
+  startSchedulerWorker().catch((error) => {
+    logger.error(error, "Error starting scheduler worker")
+    process.exitCode = 1
+  })
+}
 
 const handleShutdownSignal = async (signal: "SIGINT" | "SIGTERM") => {
   if (isShuttingDown) {
@@ -260,27 +291,29 @@ const handleShutdownSignal = async (signal: "SIGINT" | "SIGTERM") => {
   }
   isShuttingDown = true
 
-  console.log(`${signal} received, shutting down scheduler worker...`)
+  logger.info({ signal }, "Shutdown signal received")
 
   try {
     await stopSchedulerWorker()
     process.exit(0)
   } catch (error) {
-    console.error("Error during scheduler worker shutdown:", error)
+    logger.error(error, "Error during scheduler worker shutdown")
     process.exit(1)
   }
 }
 
-process.on("SIGINT", () => {
-  handleShutdownSignal("SIGINT").catch((error) => {
-    console.error("Unhandled SIGINT shutdown error:", error)
-    process.exit(1)
+if (shouldAutoStart) {
+  process.on("SIGINT", () => {
+    handleShutdownSignal("SIGINT").catch((error) => {
+      logger.error(error, "Unhandled SIGINT shutdown error")
+      process.exit(1)
+    })
   })
-})
 
-process.on("SIGTERM", () => {
-  handleShutdownSignal("SIGTERM").catch((error) => {
-    console.error("Unhandled SIGTERM shutdown error:", error)
-    process.exit(1)
+  process.on("SIGTERM", () => {
+    handleShutdownSignal("SIGTERM").catch((error) => {
+      logger.error(error, "Unhandled SIGTERM shutdown error")
+      process.exit(1)
+    })
   })
-})
+}

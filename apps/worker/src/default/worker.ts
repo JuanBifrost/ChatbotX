@@ -81,3 +81,20 @@ worker.on("failed", async (job, err) => {
     logger.error(error, `Error sending error log for job ${job.id}`)
   }
 })
+
+let isShuttingDown = false
+async function shutdown() {
+  if (isShuttingDown) {
+    return
+  }
+  isShuttingDown = true
+  try {
+    await worker.close()
+    process.exit(0)
+  } catch (err) {
+    logger.error(err, "[DefaultWorker] Error during shutdown")
+    process.exit(1)
+  }
+}
+process.once("SIGINT", shutdown)
+process.once("SIGTERM", shutdown)

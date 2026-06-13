@@ -19,6 +19,7 @@ export class RetrySchedulerService {
         and(
           eq(sequenceDispatchModel.id, dispatchId),
           eq(sequenceDispatchModel.workspaceId, workspaceId),
+          eq(sequenceDispatchModel.status, "running"),
         ),
       )
 
@@ -41,6 +42,7 @@ export class RetrySchedulerService {
         and(
           eq(sequenceDispatchModel.id, dispatchId),
           eq(sequenceDispatchModel.workspaceId, workspaceId),
+          eq(sequenceDispatchModel.status, "running"),
         ),
       )
   }
