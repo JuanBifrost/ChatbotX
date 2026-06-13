@@ -57,6 +57,7 @@ import { inboxTeamMemberRelations } from "./inbox-team-member"
 import { integrationRelations } from "./integration"
 import { integrationClaudeRelations } from "./integration-claude"
 import { integrationDeepseekRelations } from "./integration-deepseek"
+import { integrationDripRelations } from "./integration-drip"
 import { integrationGeminiRelations } from "./integration-gemini"
 import { integrationGoogleSheetsRelations } from "./integration-google-sheets"
 import { integrationInstagramRelations } from "./integration-instagram"
@@ -175,6 +176,7 @@ export const relations = {
   ...integrationTiktokRelations,
   ...integrationInstagramRelations,
   ...integrationMailchimpRelations,
+  ...integrationDripRelations,
   ...flowAnalyticsSessionRelations,
   ...flowNodeStatRelations,
   ...contactOnSmartDelayRelations,

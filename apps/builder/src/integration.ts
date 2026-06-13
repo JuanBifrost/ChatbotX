@@ -1,4 +1,5 @@
 import { integration as integrationChatbotx } from "@chatbotx.io/integration-chatbotx"
+import { integration as integrationDrip } from "@chatbotx.io/integration-drip"
 import { integration as integrationGoogleSheets } from "@chatbotx.io/integration-google-sheets"
 import { integration as integrationInstagram } from "@chatbotx.io/integration-instagram"
 import { integration as integrationMailchimp } from "@chatbotx.io/integration-mailchimp"
@@ -14,6 +15,7 @@ export const integrations = {
   whatsapp: integrationWhatsapp,
   messenger: integrationMessenger,
   instagram: integrationInstagram,
+  drip: integrationDrip,
   mailchimp: integrationMailchimp,
   googleSheets: integrationGoogleSheets,
   zalo: integrationZalo,

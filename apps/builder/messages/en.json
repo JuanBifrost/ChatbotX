@@ -1404,6 +1404,9 @@
         "step3": "Paste the credentials below to connect."
       }
     },
+    "drip": {
+      "label": "Drip"
+    },
     "currentVersion": "Current"
   },
   "flows": {
@@ -1452,6 +1455,7 @@
       "inboxActions": "Inbox Actions",
       "markEmailVerified": "Mark Email Verified",
       "mailchimpAddMember": "Add Contact to MailChimp",
+      "dripSubscribeSubscriber": "Add Contact to Drip",
       "openWebsite": "Open Website",
       "optInEmail": "Opt In Email",
       "optOutEmail": "Opt Out Email",
@@ -1627,6 +1631,42 @@
       "optional": "Optional",
       "tags": "Tags",
       "mergeFields": "Custom Fields in MailChimp"
+    }
+  },
+  "drip": {
+    "title": "Drip",
+    "setting": {
+      "label": "Drip",
+      "description": "This integration lets you save customers contacts from your bot to Drip."
+    },
+    "fields": {
+      "apiToken": "API Token",
+      "account": "Account",
+      "emailField": "Email Field",
+      "emailTooltip": "Contact field containing the email used to identify the Drip subscriber.",
+      "phone": "Phone",
+      "tags": "Tags",
+      "customFields": "Custom Fields in Drip",
+      "optional": "Optional",
+      "nothingSelected": "Nothing selected",
+      "addCustomField": "Add Custom Field"
+    },
+    "accounts": {
+      "loading": "Loading Drip accounts...",
+      "error": "Failed to load Drip accounts. Check that the integration is connected."
+    },
+    "tags": {
+      "loading": "Loading Drip tags...",
+      "error": "Failed to load Drip tags. Check that the integration is connected.",
+      "empty": "No Drip tags found."
+    },
+    "customFields": {
+      "loading": "Loading Drip custom fields...",
+      "error": "Failed to load Drip custom fields. Check that the integration is connected.",
+      "empty": "No Drip custom fields found."
+    },
+    "errors": {
+      "noAccount": "This API Token does not have access to a Drip account."
     }
   },
   "integrations": {

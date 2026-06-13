@@ -4,6 +4,7 @@ export const integrationTypes = z.enum([
   "chatbotx",
   "claude",
   "deepseek",
+  "drip",
   "gemini",
   "googleSheets",
   "instagram",

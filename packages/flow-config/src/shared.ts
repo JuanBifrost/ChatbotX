@@ -17,6 +17,7 @@ import { clearCustomFieldStepSchema } from "./steps/clear-custom-field"
 import { countCharactersStepSchema } from "./steps/count-characters"
 import { deleteContactStepSchema } from "./steps/delete-contact"
 import { disableBotStepSchema } from "./steps/disable-bot"
+import { dripSubscribeSubscriberSchema } from "./steps/drip-subscribe-subscriber"
 import { enableBotStepSchema } from "./steps/enable-bot"
 import { followConversationStepSchema } from "./steps/follow-conversation"
 import { formatDateStepSchema } from "./steps/format-date"
@@ -88,6 +89,7 @@ const emailSteps = [
   optInEmailStepSchema,
   optOutEmailStepSchema,
   mailchimpAddMemberSchema,
+  dripSubscribeSubscriberSchema,
 ]
 
 const flowSteps = [

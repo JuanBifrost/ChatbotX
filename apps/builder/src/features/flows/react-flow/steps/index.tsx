@@ -22,6 +22,7 @@ import { countCharactersStep } from "./count-characters"
 import type { StepDefinition } from "./definition"
 import { deleteContactStep } from "./delete-contact"
 import { disableBotStep } from "./disable-bot"
+import { dripSubscribeSubscriberStep } from "./drip-subscribe-subscriber"
 import emailStep from "./email"
 import { enableBotStep } from "./enable-bot"
 import { followConversationStep } from "./follow-conversation"
@@ -99,6 +100,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.unarchiveConversation]: unarchiveConversationStep,
   [stepTypes.enum.blockContact]: blockContactStep,
   [stepTypes.enum.markEmailVerified]: markEmailVerifiedStep,
+  [stepTypes.enum.dripSubscribeSubscriber]: dripSubscribeSubscriberStep,
   [stepTypes.enum.mailchimpAddMember]: mailchimpAddMemberStep,
   [stepTypes.enum.optInEmail]: optInEmailStep,
   [stepTypes.enum.optOutEmail]: optOutEmailStep,
