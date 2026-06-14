@@ -10,6 +10,7 @@ export const ScheduleJobData = {
   enqueueBroadcast: "enqueueBroadcast",
   prepareBroadcast: "prepareBroadcast",
   sendBroadcast: "sendBroadcast",
+  reconcileBroadcasts: "reconcileBroadcasts",
   finalizeBroadcasts: "finalizeBroadcasts",
   evaluateTriggers: "evaluateTriggers",
   cleanupTriggers: "cleanupTriggers",
@@ -21,6 +22,9 @@ export const ScheduleJobData = {
   purgeCoexistStaging: "purgeCoexistStaging",
   refreshZaloTokens: "refreshZaloTokens",
 } as const
+
+export const broadcastSendJobId = (broadcastId: string) =>
+  `broadcast-send-${broadcastId}`
 
 export type ScheduleJobBroadcast = {
   type: typeof ScheduleJobData.sendBroadcast
@@ -45,6 +49,11 @@ export type ScheduleJobPrepareBroadcast = {
 
 export type ScheduleJobFinalizeBroadcasts = {
   type: typeof ScheduleJobData.finalizeBroadcasts
+  data: Record<string, never>
+}
+
+export type ScheduleJobReconcileBroadcasts = {
+  type: typeof ScheduleJobData.reconcileBroadcasts
   data: Record<string, never>
 }
 
@@ -98,6 +107,7 @@ export type ScheduleJobData =
   | ScheduleJobEnqueueBroadcast
   | ScheduleJobPrepareBroadcast
   | ScheduleJobFinalizeBroadcasts
+  | ScheduleJobReconcileBroadcasts
   | ScheduleJobEvaluateTriggers
   | ScheduleJobCleanupTriggers
   | ScheduleJobScanSmartDelay

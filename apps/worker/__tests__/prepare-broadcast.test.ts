@@ -102,6 +102,7 @@ vi.mock("@chatbotx.io/database/utils", () => ({
 }))
 
 vi.mock("@chatbotx.io/worker-config", () => ({
+  broadcastSendJobId: (broadcastId: string) => `broadcast-send-${broadcastId}`,
   scheduleQueue: {
     add: (...args: unknown[]) => scheduleAddSpy(...args),
   },
@@ -298,6 +299,12 @@ describe("prepareBroadcast", () => {
           type: "sendBroadcast",
           data: { broadcastId: BROADCAST_ID },
         }),
+        {
+          jobId: `broadcast-send-${BROADCAST_ID}`,
+          attempts: 1,
+          removeOnComplete: true,
+          removeOnFail: true,
+        },
       )
     })
 

@@ -38,6 +38,20 @@ export const registerSchedules = async () => {
   )
 
   await scheduleQueue.upsertJobScheduler(
+    ScheduleJobData.reconcileBroadcasts,
+    {
+      pattern: "* * * * *",
+    },
+    {
+      name: ScheduleJobData.reconcileBroadcasts,
+      data: {
+        type: ScheduleJobData.reconcileBroadcasts,
+        data: {},
+      },
+    },
+  )
+
+  await scheduleQueue.upsertJobScheduler(
     ScheduleJobData.evaluateTriggers,
     {
       pattern: "* * * * *",

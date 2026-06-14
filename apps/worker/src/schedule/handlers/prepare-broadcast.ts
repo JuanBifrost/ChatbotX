@@ -10,7 +10,11 @@ import {
   contactsOnBroadcastsModel,
 } from "@chatbotx.io/database/schema"
 import { chunkById } from "@chatbotx.io/database/utils"
-import { ScheduleJobData, scheduleQueue } from "@chatbotx.io/worker-config"
+import {
+  broadcastSendJobId,
+  ScheduleJobData,
+  scheduleQueue,
+} from "@chatbotx.io/worker-config"
 
 export const prepareBroadcast = async (broadcastId: string) => {
   const broadcast = await db.query.broadcastModel.findFirst({
@@ -129,10 +133,19 @@ export const prepareBroadcast = async (broadcastId: string) => {
     return
   }
 
-  await scheduleQueue.add(ScheduleJobData.sendBroadcast, {
-    type: ScheduleJobData.sendBroadcast,
-    data: {
-      broadcastId,
+  await scheduleQueue.add(
+    ScheduleJobData.sendBroadcast,
+    {
+      type: ScheduleJobData.sendBroadcast,
+      data: {
+        broadcastId,
+      },
     },
-  })
+    {
+      jobId: broadcastSendJobId(broadcastId),
+      attempts: 1,
+      removeOnComplete: true,
+      removeOnFail: true,
+    },
+  )
 }
