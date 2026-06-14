@@ -1410,6 +1410,9 @@
     "drip": {
       "label": "Drip"
     },
+    "sendGrid": {
+      "label": "SendGrid"
+    },
     "currentVersion": "Current"
   },
   "flows": {
@@ -1460,6 +1463,7 @@
       "mailchimpAddMember": "Add Contact to MailChimp",
       "mailerLiteAddSubscriber": "Add Contact to MailerLite",
       "dripSubscribeSubscriber": "Add Contact to Drip",
+      "sendGridAddContact": "Add Contact to SendGrid",
       "openWebsite": "Open Website",
       "optInEmail": "Opt In Email",
       "optOutEmail": "Opt Out Email",
@@ -1696,6 +1700,37 @@
     },
     "errors": {
       "noAccount": "This API Token does not have access to a Drip account."
+    }
+  },
+  "sendGrid": {
+    "title": "SendGrid",
+    "setting": {
+      "label": "SendGrid",
+      "description": "This integration lets you save customer contacts from your bot to SendGrid."
+    },
+    "scopeHelp": "Create a SendGrid API key with Marketing read and write access.",
+    "acceptedLimitation": "SendGrid accepts contact updates for asynchronous processing. Accepted updates may still fail later.",
+    "fields": {
+      "apiKey": "API Key",
+      "list": "List",
+      "emailField": "Email field",
+      "phoneField": "Phone field",
+      "customFields": "Custom Fields in SendGrid",
+      "optional": "Optional",
+      "nothingSelected": "Nothing selected",
+      "addCustomField": "Add custom field"
+    },
+    "lists": {
+      "loading": "Loading SendGrid lists...",
+      "error": "Failed to load SendGrid lists. Check that the integration is connected."
+    },
+    "customFields": {
+      "loading": "Loading SendGrid custom fields...",
+      "error": "Failed to load SendGrid custom fields. Check that the integration is connected."
+    },
+    "errors": {
+      "invalidApiKey": "Invalid API Key. Please check your SendGrid API Key and try again.",
+      "missingScopes": "This API key must have Marketing read access. Please ensure your SendGrid API key includes Marketing permissions."
     }
   },
   "integrations": {

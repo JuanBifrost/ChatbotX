@@ -20,6 +20,7 @@ import { integrationMailchimpAPI } from "@/features/integration-mailchimp/api"
 import { integrationMailerLiteAPI } from "@/features/integration-mailer-lite/api"
 import { integrationMessengerAPIs } from "@/features/integration-messenger/api"
 import { messengerMessageTemplateAPIs } from "@/features/integration-messenger/message-templates/api"
+import { integrationSendGridAPI } from "@/features/integration-sendgrid/api"
 import { integrationSmtpAPI } from "@/features/integration-smtp/api"
 import { integrationWhatsappAPIs } from "@/features/integration-whatsapp/api"
 import { whatsappFlowAPIs } from "@/features/integration-whatsapp/flows/api"
@@ -59,6 +60,7 @@ export const router = {
   integrationMailerLiteAPI,
   integrationMessengerAPIs,
   integrationSmtpAPI,
+  integrationSendGridAPI,
   integrationWhatsappAPIs,
   whatsappMessageTemplateAPIs,
   whatsappFlowAPIs,

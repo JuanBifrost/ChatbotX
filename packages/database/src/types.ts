@@ -45,6 +45,8 @@ export type IntegrationMailerLiteModel =
   typeof schema.integrationMailerLiteModel.$inferSelect
 export type IntegrationDripModel =
   typeof schema.integrationDripModel.$inferSelect
+export type IntegrationSendGridModel =
+  typeof schema.integrationSendGridModel.$inferSelect
 export type IntegrationMessengerModel =
   typeof schema.integrationMessengerModel.$inferSelect
 export type IntegrationOpenAIModel =

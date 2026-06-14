@@ -393,6 +393,11 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         icon: MailIcon,
         stepType: stepTypes.enum.dripSubscribeSubscriber,
       },
+      {
+        label: t("flows.actions.sendGridAddContact"),
+        icon: MailIcon,
+        stepType: stepTypes.enum.sendGridAddContact,
+      },
     ],
   },
   {

@@ -1422,6 +1422,9 @@
     "drip": {
       "label": "Drip"
     },
+    "sendGrid": {
+      "label": "SendGrid"
+    },
     "currentVersion": "Hiện tại"
   },
   "flows": {
@@ -1471,6 +1474,7 @@
       "mailchimpAddMember": "Thêm liên hệ vào MailChimp",
       "mailerLiteAddSubscriber": "Thêm liên hệ vào MailerLite",
       "dripSubscribeSubscriber": "Thêm liên hệ vào Drip",
+      "sendGridAddContact": "Thêm liên hệ vào SendGrid",
       "openWebsite": "Mở trang web",
       "optInEmail": "Đăng ký nhận email",
       "optOutEmail": "Hủy đăng ký email",
@@ -1707,6 +1711,37 @@
     },
     "errors": {
       "noAccount": "API Token này không có quyền truy cập tài khoản Drip."
+    }
+  },
+  "sendGrid": {
+    "title": "SendGrid",
+    "setting": {
+      "label": "SendGrid",
+      "description": "Tích hợp này cho phép bạn lưu thông tin liên hệ của khách hàng từ bot vào SendGrid."
+    },
+    "scopeHelp": "Tạo SendGrid API key có quyền đọc và ghi Marketing.",
+    "acceptedLimitation": "SendGrid chấp nhận cập nhật liên hệ để xử lý bất đồng bộ. Cập nhật đã chấp nhận vẫn có thể thất bại sau đó.",
+    "fields": {
+      "apiKey": "API Key",
+      "list": "Danh sách (không bắt buộc)",
+      "emailField": "Trường email",
+      "phoneField": "Trường số điện thoại (không bắt buộc)",
+      "customFields": "Trường tùy chỉnh (không bắt buộc)",
+      "optional": "Không bắt buộc",
+      "nothingSelected": "Chưa chọn",
+      "addCustomField": "Thêm trường tùy chỉnh"
+    },
+    "lists": {
+      "loading": "Đang tải danh sách SendGrid...",
+      "error": "Không thể tải danh sách SendGrid. Hãy kiểm tra tích hợp đã được kết nối."
+    },
+    "customFields": {
+      "loading": "Đang tải trường tùy chỉnh SendGrid...",
+      "error": "Không thể tải trường tùy chỉnh SendGrid. Hãy kiểm tra tích hợp đã được kết nối."
+    },
+    "errors": {
+      "invalidApiKey": "API Key không hợp lệ. Vui lòng kiểm tra lại API Key SendGrid và thử lại.",
+      "missingScopes": "API key này phải có quyền đọc Marketing. Vui lòng đảm bảo API key SendGrid của bạn bao gồm quyền Marketing."
     }
   },
   "integrations": {

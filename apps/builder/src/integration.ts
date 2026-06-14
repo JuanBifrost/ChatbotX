@@ -5,6 +5,7 @@ import { integration as integrationInstagram } from "@chatbotx.io/integration-in
 import { integration as integrationMailchimp } from "@chatbotx.io/integration-mailchimp"
 import { integration as integrationMailerLite } from "@chatbotx.io/integration-mailer-lite"
 import { integration as integrationMessenger } from "@chatbotx.io/integration-messenger"
+import { integration as integrationSendGrid } from "@chatbotx.io/integration-sendgrid"
 import { integration as integrationSmtp } from "@chatbotx.io/integration-smtp"
 import { integration as integrationTelegram } from "@chatbotx.io/integration-telegram"
 import { integration as integrationTiktok } from "@chatbotx.io/integration-tiktok"
@@ -26,6 +27,7 @@ export const integrations = {
   webchat: integrationWebchat,
   chatbotx: integrationChatbotx,
   smtp: integrationSmtp,
+  sendGrid: integrationSendGrid,
 }
 
 export type IntegrationKey = keyof typeof integrations

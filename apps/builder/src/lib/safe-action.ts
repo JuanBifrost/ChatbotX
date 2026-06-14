@@ -14,17 +14,16 @@ import { logger } from "./log"
 
 export const actionClient = createSafeActionClient({
   handleServerError(error) {
-    logger.error({ err: error }, "Error in actionClient")
+    if (error instanceof ChatbotXException || error instanceof SdkException) {
+      return error.message
+    }
 
     if (isDatabaseError(error)) {
       logger.error({ err: error }, "Database error in actionClient")
       return DEFAULT_SERVER_ERROR_MESSAGE
     }
 
-    if (error instanceof ChatbotXException || error instanceof SdkException) {
-      return error.message
-    }
-
+    logger.error({ err: error }, "Error in actionClient")
     return DEFAULT_SERVER_ERROR_MESSAGE
   },
 })
