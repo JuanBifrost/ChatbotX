@@ -5,6 +5,7 @@ import { integration as integrationInstagram } from "@chatbotx.io/integration-in
 import { integration as integrationMailchimp } from "@chatbotx.io/integration-mailchimp"
 import { integration as integrationMailerLite } from "@chatbotx.io/integration-mailer-lite"
 import { integration as integrationMessenger } from "@chatbotx.io/integration-messenger"
+import { integration as integrationMoosend } from "@chatbotx.io/integration-moosend"
 import { integration as integrationSendGrid } from "@chatbotx.io/integration-sendgrid"
 import { integration as integrationSmtp } from "@chatbotx.io/integration-smtp"
 import { integration as integrationTelegram } from "@chatbotx.io/integration-telegram"
@@ -20,6 +21,7 @@ export const integrations = {
   drip: integrationDrip,
   mailchimp: integrationMailchimp,
   mailerLite: integrationMailerLite,
+  moosend: integrationMoosend,
   googleSheets: integrationGoogleSheets,
   zalo: integrationZalo,
   telegram: integrationTelegram,

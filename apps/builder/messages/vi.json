@@ -729,6 +729,9 @@
     "mailerLite": {
       "label": "MailerLite"
     },
+    "moosend": {
+      "label": "Moosend"
+    },
     "host": {
       "label": "Máy chủ",
       "placeholder": "smtp.example.com"
@@ -1473,6 +1476,7 @@
       "markEmailVerified": "Đánh dấu email đã xác minh",
       "mailchimpAddMember": "Thêm liên hệ vào MailChimp",
       "mailerLiteAddSubscriber": "Thêm liên hệ vào MailerLite",
+      "moosendCreateContact": "Thêm liên hệ vào Moosend",
       "dripSubscribeSubscriber": "Thêm liên hệ vào Drip",
       "sendGridAddContact": "Thêm liên hệ vào SendGrid",
       "openWebsite": "Mở trang web",
@@ -1675,6 +1679,29 @@
     },
     "errors": {
       "invalidApiKey": "API Token không hợp lệ. Vui lòng kiểm tra lại API Token MailerLite và thử lại."
+    }
+  },
+  "moosend": {
+    "title": "Moosend",
+    "setting": {
+      "label": "Moosend",
+      "description": "Tích hợp này cho phép bạn lưu thông tin liên hệ của khách hàng từ bot vào Moosend."
+    },
+    "fields": {
+      "apiKey": "API Key",
+      "list": "Danh sách Moosend",
+      "listPlaceholder": "Chọn danh sách Moosend",
+      "email": "Trường Email"
+    },
+    "lists": {
+      "loading": "Đang tải danh sách gửi thư Moosend...",
+      "empty": "Không tìm thấy danh sách gửi thư Moosend.",
+      "error": "Không thể tải danh sách gửi thư Moosend. Hãy kiểm tra tích hợp đã được kết nối."
+    },
+    "errors": {
+      "invalidApiKey": "API Key không hợp lệ. Vui lòng kiểm tra lại API Key Moosend và thử lại.",
+      "userNotEnabled": "Tài khoản Moosend này chưa được bật quyền truy cập API.",
+      "connectFailed": "Kết nối Moosend thất bại. Vui lòng thử lại sau."
     }
   },
   "drip": {

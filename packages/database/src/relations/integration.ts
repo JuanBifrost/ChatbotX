@@ -24,6 +24,10 @@ export const integrationRelations = defineRelationsPart(schema, (r) => ({
       from: r.integrationModel.id,
       to: r.integrationMailerLiteModel.integrationId,
     }),
+    integrationMoosend: r.one.integrationMoosendModel({
+      from: r.integrationModel.id,
+      to: r.integrationMoosendModel.integrationId,
+    }),
     integrationDrip: r.one.integrationDripModel({
       from: r.integrationModel.id,
       to: r.integrationDripModel.integrationId,

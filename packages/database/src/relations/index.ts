@@ -64,6 +64,7 @@ import { integrationInstagramRelations } from "./integration-instagram"
 import { integrationMailchimpRelations } from "./integration-mailchimp"
 import { integrationMailerLiteRelations } from "./integration-mailer-lite"
 import { integrationMessengerRelations } from "./integration-messenger"
+import { integrationMoosendRelations } from "./integration-moosend"
 import { integrationOpenaiRelations } from "./integration-openai"
 import { integrationSendGridRelations } from "./integration-sendgrid"
 import { integrationSmtpRelations } from "./integration-smtp"
@@ -179,6 +180,7 @@ export const relations = {
   ...integrationInstagramRelations,
   ...integrationMailchimpRelations,
   ...integrationMailerLiteRelations,
+  ...integrationMoosendRelations,
   ...integrationDripRelations,
   ...integrationSendGridRelations,
   ...flowAnalyticsSessionRelations,

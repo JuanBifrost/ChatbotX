@@ -19,6 +19,7 @@ type SettingIntegrationLayoutProps = {
   googleSheets: ReactNode
   mailchimp: ReactNode
   mailerLite: ReactNode
+  moosend: ReactNode
   drip: ReactNode
   sendGrid: ReactNode
 }
@@ -32,6 +33,7 @@ export default function SettingIntegrationLayout({
   googleSheets,
   mailchimp,
   mailerLite,
+  moosend,
   drip,
   sendGrid,
 }: SettingIntegrationLayoutProps) {
@@ -77,6 +79,11 @@ export default function SettingIntegrationLayout({
       keyName: t("mailerLite.title"),
       icon: MailIcon,
       content: mailerLite,
+    },
+    {
+      keyName: t("moosend.title"),
+      icon: MailIcon,
+      content: moosend,
     },
     {
       keyName: t("drip.title"),

@@ -11,6 +11,7 @@ export const integrationTypes = z.enum([
   "mailchimp",
   "mailerLite",
   "messenger",
+  "moosend",
   "openai",
   "sendGrid",
   "smtp",

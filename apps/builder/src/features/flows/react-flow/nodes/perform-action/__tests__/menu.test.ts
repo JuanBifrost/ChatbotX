@@ -29,3 +29,15 @@ describe("perform action MailerLite menu", () => {
     ).toBe(true)
   })
 })
+
+describe("perform action Moosend menu", () => {
+  test("includes the exact translated Moosend action", () => {
+    const items = performActionMenus(t).flatMap((item) => item.children ?? [])
+    expect(items).toContainEqual(
+      expect.objectContaining({
+        label: "flows.actions.moosendCreateContact",
+        stepType: stepTypes.enum.moosendCreateContact,
+      }),
+    )
+  })
+})

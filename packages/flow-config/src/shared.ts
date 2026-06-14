@@ -26,6 +26,7 @@ import { getDataFromJsonStepSchema } from "./steps/get-data-from-json"
 import { mailchimpAddMemberSchema } from "./steps/mailchimp-add-member"
 import { mailerLiteAddSubscriberSchema } from "./steps/mailer-lite-add-subscriber"
 import { markEmailVerifiedStepSchema } from "./steps/mark-email-verified"
+import { moosendCreateContactSchema } from "./steps/moosend-create-contact"
 import { optInEmailStepSchema } from "./steps/opt-in-email"
 import { optOutEmailStepSchema } from "./steps/opt-out-email"
 import { removeContactTagStepSchema } from "./steps/remove-contact-tag"
@@ -92,6 +93,7 @@ const emailSteps = [
   optOutEmailStepSchema,
   mailchimpAddMemberSchema,
   mailerLiteAddSubscriberSchema,
+  moosendCreateContactSchema,
   dripSubscribeSubscriberSchema,
   sendGridAddContactSchema,
 ]
