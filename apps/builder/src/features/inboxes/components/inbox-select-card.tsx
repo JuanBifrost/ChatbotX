@@ -24,7 +24,15 @@ function InboxSelectCard({ configuredChannels }: InboxSelectCardProps) {
   const searchParams = useSearchParams()
 
   const inboxOptions: ChannelType[] = useMemo(
-    () => ["whatsapp", "messenger", "instagram", "zalo", "telegram", "webchat"],
+    () => [
+      "whatsapp",
+      "messenger",
+      "instagram",
+      "zalo",
+      "tiktok",
+      "telegram",
+      "webchat",
+    ],
     [],
   )
 

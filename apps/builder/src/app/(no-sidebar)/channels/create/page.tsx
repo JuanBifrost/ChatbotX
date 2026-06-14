@@ -124,6 +124,9 @@ export default async function CreateChannelPage(props: CreateChannelPageProps) {
   if (zalo) {
     configuredChannels.push("zalo")
   }
+  if (tiktok) {
+    configuredChannels.push("tiktok")
+  }
 
   return <InboxSelectCard configuredChannels={configuredChannels} />
 }
