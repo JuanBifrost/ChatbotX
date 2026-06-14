@@ -99,6 +99,7 @@ export const stepTypes = z.enum([
   "moosendCreateContact",
   "dripSubscribeSubscriber",
   "sendGridAddContact",
+  "klaviyoSyncProfile",
 
   // Sequence Operations (Q_)
   "subscribeSequence",

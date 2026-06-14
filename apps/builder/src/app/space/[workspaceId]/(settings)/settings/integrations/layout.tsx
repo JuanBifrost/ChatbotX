@@ -22,6 +22,7 @@ type SettingIntegrationLayoutProps = {
   moosend: ReactNode
   drip: ReactNode
   sendGrid: ReactNode
+  klaviyo: ReactNode
 }
 
 export default function SettingIntegrationLayout({
@@ -36,6 +37,7 @@ export default function SettingIntegrationLayout({
   moosend,
   drip,
   sendGrid,
+  klaviyo,
 }: SettingIntegrationLayoutProps) {
   const t = useTranslations()
 
@@ -94,6 +96,11 @@ export default function SettingIntegrationLayout({
       keyName: t("sendGrid.title"),
       icon: MailIcon,
       content: sendGrid,
+    },
+    {
+      keyName: t("klaviyo.title"),
+      icon: MailIcon,
+      content: klaviyo,
     },
   ]
 

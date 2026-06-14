@@ -403,6 +403,11 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         icon: MailIcon,
         stepType: stepTypes.enum.sendGridAddContact,
       },
+      {
+        label: t("flows.actions.klaviyoSyncProfile"),
+        icon: MailIcon,
+        stepType: stepTypes.enum.klaviyoSyncProfile,
+      },
     ],
   },
   {

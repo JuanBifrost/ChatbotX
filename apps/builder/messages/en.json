@@ -722,6 +722,9 @@
     "mailerLite": {
       "label": "MailerLite"
     },
+    "klaviyo": {
+      "label": "Klaviyo"
+    },
     "moosend": {
       "label": "Moosend"
     },
@@ -1465,6 +1468,7 @@
       "markEmailVerified": "Mark Email Verified",
       "mailchimpAddMember": "Add Contact to MailChimp",
       "mailerLiteAddSubscriber": "Add Contact to MailerLite",
+      "klaviyoSyncProfile": "Add Contact to Klaviyo",
       "moosendCreateContact": "Add Contact to Moosend",
       "dripSubscribeSubscriber": "Add Contact to Drip",
       "sendGridAddContact": "Add Contact to SendGrid",
@@ -1668,6 +1672,33 @@
     },
     "errors": {
       "invalidApiKey": "Invalid API Token. Please check your MailerLite API Token and try again."
+    }
+  },
+  "klaviyo": {
+    "title": "Klaviyo",
+    "setting": {
+      "label": "Klaviyo",
+      "description": "This integration lets you sync customer profiles from your bot to Klaviyo."
+    },
+    "fields": {
+      "apiKey": "API Key",
+      "list": "Klaviyo List",
+      "listPlaceholder": "Select a Klaviyo list",
+      "email": "Email Field",
+      "titleField": "Title Field",
+      "titlePlaceholder": "Select a field",
+      "orgField": "Organization Field",
+      "orgPlaceholder": "Select a field",
+      "customProperties": "Custom Fields in Klaviyo",
+      "emptyField": "Select a contact field",
+      "propertyKey": "Klaviyo property key",
+      "addMapping": "Add mapping"
+    },
+    "lists": {
+      "error": "Unable to load Klaviyo lists. Check that the integration is connected."
+    },
+    "errors": {
+      "invalidApiKey": "Invalid API Key. Please check your Klaviyo API Key and try again."
     }
   },
   "moosend": {

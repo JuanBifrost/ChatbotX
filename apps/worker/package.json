@@ -46,6 +46,7 @@
     "@chatbotx.io/integration-drip": "workspace:*",
     "@chatbotx.io/integration-instagram": "workspace:*",
     "@chatbotx.io/integration-mailchimp": "workspace:*",
+    "@chatbotx.io/integration-klaviyo": "workspace:*",
     "@chatbotx.io/integration-mailer-lite": "workspace:*",
     "@chatbotx.io/integration-moosend": "workspace:*",
     "@chatbotx.io/integration-sendgrid": "workspace:*",

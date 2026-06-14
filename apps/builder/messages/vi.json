@@ -729,6 +729,9 @@
     "mailerLite": {
       "label": "MailerLite"
     },
+    "klaviyo": {
+      "label": "Klaviyo"
+    },
     "moosend": {
       "label": "Moosend"
     },
@@ -1476,6 +1479,7 @@
       "markEmailVerified": "Đánh dấu email đã xác minh",
       "mailchimpAddMember": "Thêm liên hệ vào MailChimp",
       "mailerLiteAddSubscriber": "Thêm liên hệ vào MailerLite",
+      "klaviyoSyncProfile": "Thêm liên hệ vào Klaviyo",
       "moosendCreateContact": "Thêm liên hệ vào Moosend",
       "dripSubscribeSubscriber": "Thêm liên hệ vào Drip",
       "sendGridAddContact": "Thêm liên hệ vào SendGrid",
@@ -1679,6 +1683,33 @@
     },
     "errors": {
       "invalidApiKey": "API Token không hợp lệ. Vui lòng kiểm tra lại API Token MailerLite và thử lại."
+    }
+  },
+  "klaviyo": {
+    "title": "Klaviyo",
+    "setting": {
+      "label": "Klaviyo",
+      "description": "Tích hợp này cho phép bạn đồng bộ hồ sơ khách hàng từ bot vào Klaviyo."
+    },
+    "fields": {
+      "apiKey": "API Key",
+      "list": "Danh sách Klaviyo",
+      "listPlaceholder": "Chọn danh sách Klaviyo",
+      "email": "Trường Email",
+      "titleField": "Trường Chức danh",
+      "titlePlaceholder": "Chọn một trường",
+      "orgField": "Trường Tổ chức",
+      "orgPlaceholder": "Chọn một trường",
+      "customProperties": "Trường tùy chỉnh trong Klaviyo",
+      "emptyField": "Chọn trường liên hệ",
+      "propertyKey": "Tên thuộc tính Klaviyo",
+      "addMapping": "Thêm ánh xạ"
+    },
+    "lists": {
+      "error": "Không thể tải danh sách Klaviyo. Hãy kiểm tra tích hợp đã được kết nối."
+    },
+    "errors": {
+      "invalidApiKey": "API Key không hợp lệ. Vui lòng kiểm tra lại API Key Klaviyo và thử lại."
     }
   },
   "moosend": {

@@ -1,0 +1,124 @@
+import {
+  Integration,
+  type IntegrationDefinition,
+  SdkException,
+} from "@chatbotx.io/sdk"
+import { z } from "zod"
+import { klaviyoRequest } from "./client"
+import {
+  KLAVIYO_LISTS_PATH,
+  KLAVIYO_PROFILE_IMPORT_PATH,
+  klaviyoListProfilesPath,
+} from "./constants"
+import {
+  createKlaviyoAuth,
+  type KlaviyoActions,
+  type KlaviyoAuthValue,
+  type KlaviyoConfig,
+  klaviyoListPageInputSchema,
+  klaviyoListsResponseSchema,
+  klaviyoProfileImportResponseSchema,
+  klaviyoSyncProfilePropsSchema,
+} from "./schemas"
+
+const noContentResponseSchema = z.undefined()
+
+const pageSearchParams = (props: { cursor?: string; size: number }) => {
+  const searchParams = new URLSearchParams({ "page[size]": String(props.size) })
+  if (props.cursor) {
+    searchParams.set("page[cursor]", props.cursor)
+  }
+  return searchParams
+}
+
+const extractNextCursor = (next: string | null | undefined) =>
+  next ? new URL(next).searchParams.get("page[cursor]") : null
+
+const config: IntegrationDefinition<
+  KlaviyoConfig,
+  KlaviyoAuthValue,
+  KlaviyoActions
+> = {
+  name: "klaviyo",
+  actions: {
+    validateCredentials: async ({ props }) => {
+      const auth = createKlaviyoAuth(props.apiKey)
+      await klaviyoRequest(
+        auth,
+        KLAVIYO_LISTS_PATH,
+        klaviyoListsResponseSchema,
+        { searchParams: pageSearchParams({ size: 1 }) },
+        [200],
+      )
+      return auth
+    },
+    listLists: async ({ ctx, props }) => {
+      const page = klaviyoListPageInputSchema.parse(props)
+      const response = await klaviyoRequest(
+        ctx.auth,
+        KLAVIYO_LISTS_PATH,
+        klaviyoListsResponseSchema,
+        { searchParams: pageSearchParams(page) },
+        [200],
+      )
+      return {
+        data: response.data,
+        nextCursor: extractNextCursor(response.links.next),
+      }
+    },
+    syncProfile: async ({ ctx, props }) => {
+      const parsed = klaviyoSyncProfilePropsSchema.parse(props)
+      const {
+        listId,
+        email,
+        first_name,
+        last_name,
+        phone_number,
+        title,
+        organization,
+        properties,
+      } = parsed
+      const attributes = {
+        email,
+        ...(first_name ? { first_name } : {}),
+        ...(last_name ? { last_name } : {}),
+        ...(phone_number ? { phone_number } : {}),
+        ...(title ? { title } : {}),
+        ...(organization ? { organization } : {}),
+        ...(properties ? { properties } : {}),
+      }
+      const profile = await klaviyoRequest(
+        ctx.auth,
+        KLAVIYO_PROFILE_IMPORT_PATH,
+        klaviyoProfileImportResponseSchema,
+        { method: "post", json: { data: { type: "profile", attributes } } },
+        [200, 201],
+      )
+
+      if (listId) {
+        await klaviyoRequest(
+          ctx.auth,
+          klaviyoListProfilesPath(listId),
+          noContentResponseSchema,
+          {
+            method: "post",
+            json: { data: [{ type: "profile", id: profile.data.id }] },
+          },
+          [204],
+        )
+      }
+
+      return {
+        profileId: profile.data.id,
+        email: profile.data.attributes.email,
+      }
+    },
+  },
+  disconnect: async () => undefined,
+  handleRequest: () =>
+    Promise.reject(
+      new SdkException("Klaviyo does not expose request handlers"),
+    ),
+}
+
+export const integration = new Integration(config)

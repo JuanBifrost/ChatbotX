@@ -6,6 +6,7 @@ export const integrationTypes = z.enum([
   "deepseek",
   "drip",
   "gemini",
+  "klaviyo",
   "googleSheets",
   "instagram",
   "mailchimp",
