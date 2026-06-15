@@ -36,20 +36,35 @@ export const buttonPayloadSchema = z
   }))
 export type ButtonPayload = z.infer<typeof buttonPayloadSchema>
 
-export const encodeButtonPayload = (props: ButtonPayload) =>
-  btoa(
-    JSON.stringify({
-      f: props.flowId,
-      fv: props.flowVersionId,
-      b: props.buttonId,
-      br: props.broadcastId,
-      ss: props.sequenceStepId,
-      cid: props.contactInboxId,
-    }),
-  )
+export const encodeButtonPayload = (props: ButtonPayload): string => {
+  const parts = [
+    props.flowId,
+    props.flowVersionId ?? "",
+    props.buttonId ?? "",
+    props.broadcastId ?? "",
+    props.sequenceStepId ?? "",
+    props.contactInboxId ?? "",
+  ]
+  while (parts.length > 2 && parts.at(-1) === "") {
+    parts.pop()
+  }
+  return parts.join(":")
+}
 
 export const decodeButtonPayload = (payload: string): ButtonPayload | null => {
   try {
+    if (payload.includes(":")) {
+      const [f, fv, b, br, ss, cid] = payload.split(":")
+      return buttonPayloadSchema.parse({
+        f,
+        fv: fv || undefined,
+        b: b || undefined,
+        br: br || undefined,
+        ss: ss || undefined,
+        cid: cid || undefined,
+      })
+    }
+    // Legacy format: base64+JSON (payloads encoded before the colon format)
     return buttonPayloadSchema.parse(JSON.parse(atob(payload)))
   } catch {
     return null
