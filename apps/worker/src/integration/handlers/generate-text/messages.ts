@@ -1,7 +1,11 @@
-import { MAX_CONVERSATION_HISTORY } from "@chatbotx.io/ai"
+import {
+  AI_MESSAGE_HISTORY_LOOKBACK_MS,
+  MAX_CONVERSATION_HISTORY,
+} from "@chatbotx.io/ai"
 import { aiMessageRoles } from "@chatbotx.io/database/partials"
 import {
   createMessageRepository,
+  findConversationAIContextState,
   getSafeSinceTime,
 } from "@chatbotx.io/database/repositories"
 import type {
@@ -19,22 +23,31 @@ export async function buildAIMessages(
   const messages: ModelMessage[] = []
 
   if (step.remember) {
+    const contextState = await findConversationAIContextState({
+      conversationId: conversation.id,
+      workspaceId: conversation.workspaceId,
+    })
     const messageRepository = await createMessageRepository()
-    const lastMessages = await messageRepository.findManyByConversation(
-      conversation.id,
-      {
-        limit: MAX_CONVERSATION_HISTORY,
-        messageTypes: ["incoming", "outgoing"],
-        textNotNull: true,
-        sinceTime: getSafeSinceTime(
-          contactInbox.lastMessageAt,
-          365 * 24 * 60 * 60 * 1000, // 1 year
-        ),
-      },
-    )
+    const lastMessages = await messageRepository.findAIContextMessages({
+      conversationId: conversation.id,
+      limit: MAX_CONVERSATION_HISTORY,
+      markerMessageId: contextState?.aiContextLastMessageId ?? null,
+      messageTypes: ["incoming", "outgoing"],
+      sinceTime:
+        getSafeSinceTime(
+          contactInbox.lastMessageAt ?? conversation.lastActivityAt,
+          AI_MESSAGE_HISTORY_LOOKBACK_MS,
+        ) ?? new Date(0),
+      textNotNull: true,
+      workspaceId: conversation.workspaceId,
+    })
 
     for (const message of lastMessages) {
-      if (!message.text) {
+      if (
+        !message.text ||
+        (message.messageType !== "incoming" &&
+          message.messageType !== "outgoing")
+      ) {
         continue
       }
 
@@ -50,8 +63,6 @@ export async function buildAIMessages(
         })
       }
     }
-
-    messages.reverse()
   }
 
   if (step.text) {

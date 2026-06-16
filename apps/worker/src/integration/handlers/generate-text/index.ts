@@ -6,6 +6,7 @@ import {
   McpClient,
   normalizeMcpContent,
 } from "@chatbotx.io/ai/server"
+import { isMessageStorageError } from "@chatbotx.io/database/errors"
 import type { AIGenerateTextSchema } from "@chatbotx.io/flow-config"
 import { streamText } from "ai"
 import { normalizeError } from "universal-error-normalizer"
@@ -105,7 +106,10 @@ export async function handleAIGenerateText({
     return { status: "success", result: null }
   } catch (err) {
     const error = normalizeError(err)
-    logger.error(error, "An error occurred while generating text")
+    logger.error({ err: error }, "An error occurred while generating text")
+    if (isMessageStorageError(err)) {
+      throw err
+    }
     return { status: "error", errorMessage: error.message, result: null }
   } finally {
     clearTimeout(timeoutId)

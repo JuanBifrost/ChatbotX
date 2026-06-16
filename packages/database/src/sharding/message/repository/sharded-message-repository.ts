@@ -3,7 +3,11 @@ import {
   distributedLock as redisDistributedLock,
   withCache,
 } from "@chatbotx.io/redis"
-import { and, desc, eq, gte, inArray, isNotNull, lt, or } from "drizzle-orm"
+import { and, desc, eq, gt, gte, inArray, isNotNull, lt, or } from "drizzle-orm"
+import {
+  isMessageStorageError,
+  MessageShardUnavailableError,
+} from "../../../errors"
 import { logger } from "../../../logger"
 import type {
   BulkCreateAttachmentInput,
@@ -11,14 +15,16 @@ import type {
   CreateMessageInput,
   CreateMessageResult,
   DistributedLock,
+  FindAIContextMessagesOptions,
   FindLastByConversationOptions,
   FindManyByConversationOptions,
+  FindTriggerMessageOptions,
   IMessageRepository,
   ListMessagesQuery,
   MessageWithAttachments,
   PaginatedMessages,
   PaginationCursor,
-} from "../../../repositories/message"
+} from "../../../repositories/message/message-repository"
 import type { AttachmentModel, MessageModel } from "../../../types"
 import {
   endOfHour,
@@ -26,18 +32,37 @@ import {
   startOfHour,
   withShardRetry,
 } from "../../shared"
-import {
-  attachmentModel,
-  type MessageShardConnectionManager,
-  type MessageShardDatabaseClient,
-  type MessageShardTimeRangeInfo,
-  messageModel,
-} from ".."
+import type { MessageShardDatabaseClient } from "../client"
+import type { MessageShardConnectionManager } from "../connection-manager"
+import type { MessageShardTimeRangeInfo } from "../registry"
+import { attachmentModel, messageModel } from "../shard-schema"
 
 export { getSafeSinceTime } from "../../../repositories"
 
 const SHARD_RANGE_CACHE_TAG = "message-shard-range"
 const SHARD_RANGE_CACHE_TTL_S = 30
+
+function compareMessageDesc(
+  a: { id: string; createdAt: Date },
+  b: { id: string; createdAt: Date },
+): number {
+  const timeDiff = b.createdAt.getTime() - a.createdAt.getTime()
+  if (timeDiff !== 0) {
+    return timeDiff
+  }
+  try {
+    const diff = BigInt(b.id) - BigInt(a.id)
+    if (diff > 0n) {
+      return 1
+    }
+    if (diff < 0n) {
+      return -1
+    }
+    return 0
+  } catch {
+    return b.id.localeCompare(a.id)
+  }
+}
 
 export class ShardedMessageRepository implements IMessageRepository {
   private readonly shardManager: MessageShardConnectionManager
@@ -108,6 +133,17 @@ export class ShardedMessageRepository implements IMessageRepository {
     return [...timeRangeShards, writeShard]
   }
 
+  private async getConversationReadShards(
+    sinceTime: Date,
+    workspaceId?: string,
+  ): Promise<MessageShardTimeRangeInfo[]> {
+    const timeRangeShards = await this.getShardsForRange(sinceTime, new Date())
+    const writeShard = workspaceId
+      ? await this.shardManager.getWriteShardInfo(workspaceId)
+      : null
+    return this.mergeWriteShard(timeRangeShards, writeShard)
+  }
+
   private executeWithLock<T>(
     lockKey: string,
     fn: () => Promise<T>,
@@ -117,6 +153,15 @@ export class ShardedMessageRepository implements IMessageRepository {
       timeoutInSeconds: ShardedMessageRepository.LOCK_TIMEOUT_SECONDS,
       fn,
     })
+  }
+
+  private toStorageError(action: string, error: unknown): Error {
+    if (isMessageStorageError(error)) {
+      return error
+    }
+    return new MessageShardUnavailableError(
+      `Message shard operation failed: ${action}`,
+    )
   }
 
   private groupAttachmentsByMessageId(
@@ -478,6 +523,212 @@ export class ShardedMessageRepository implements IMessageRepository {
     return null
   }
 
+  async findAIContextMessages(
+    options: FindAIContextMessagesOptions,
+  ): Promise<MessageModel[]> {
+    if (!options.sinceTime) {
+      throw new MessageShardUnavailableError(
+        "sinceTime is required for sharded AI context reads",
+      )
+    }
+
+    let shards: MessageShardTimeRangeInfo[]
+    try {
+      shards = await this.getConversationReadShards(
+        options.sinceTime,
+        options.workspaceId,
+      )
+    } catch (error) {
+      throw this.toStorageError("select shards for AI context read", error)
+    }
+
+    if (shards.length === 0) {
+      throw new MessageShardUnavailableError(
+        "No message shards are available for AI context read",
+      )
+    }
+
+    let marker: Pick<MessageModel, "createdAt" | "id"> | null = null
+    if (options.markerMessageId) {
+      const markerResults = await Promise.all(
+        shards.map(async (shardInfo) => {
+          try {
+            return await this.shardManager.withShardClientForRead(
+              shardInfo.shard,
+              async (shardClient) => {
+                const [result] = await shardClient
+                  .select({
+                    createdAt: messageModel.createdAt,
+                    id: messageModel.id,
+                  })
+                  .from(messageModel)
+                  .where(
+                    and(
+                      eq(messageModel.id, options.markerMessageId as string),
+                      eq(messageModel.conversationId, options.conversationId),
+                      eq(messageModel.workspaceId, options.workspaceId),
+                    ),
+                  )
+                  .limit(1)
+                return result ?? null
+              },
+            )
+          } catch (error) {
+            throw this.toStorageError("find AI context marker", error)
+          }
+        }),
+      )
+
+      marker = markerResults.find((result) => result !== null) ?? null
+    }
+
+    const shardResults = await Promise.all(
+      shards.map(async (shardInfo): Promise<MessageModel[]> => {
+        try {
+          return await this.shardManager.withShardClientForRead(
+            shardInfo.shard,
+            async (shardClient) => {
+              const whereConditions = [
+                eq(messageModel.conversationId, options.conversationId),
+                eq(messageModel.workspaceId, options.workspaceId),
+                gte(messageModel.createdAt, options.sinceTime as Date),
+              ]
+              if (options.messageTypes && options.messageTypes.length > 0) {
+                whereConditions.push(
+                  inArray(messageModel.messageType, options.messageTypes),
+                )
+              }
+              if (options.textNotNull) {
+                whereConditions.push(isNotNull(messageModel.text))
+              }
+
+              if (marker) {
+                const afterMarker = or(
+                  gt(messageModel.createdAt, marker.createdAt),
+                  and(
+                    eq(messageModel.createdAt, marker.createdAt),
+                    gt(messageModel.id, marker.id),
+                  ),
+                )
+                if (afterMarker) {
+                  whereConditions.push(afterMarker)
+                }
+              }
+
+              return (await shardClient
+                .select()
+                .from(messageModel)
+                .where(and(...whereConditions))
+                .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
+                .limit(options.limit)) as MessageModel[]
+            },
+          )
+        } catch (error) {
+          throw this.toStorageError("find AI context messages", error)
+        }
+      }),
+    )
+
+    return shardResults
+      .flat()
+      .sort(compareMessageDesc)
+      .slice(0, options.limit)
+      .reverse()
+  }
+
+  findTriggerMessage(
+    options: FindTriggerMessageOptions,
+  ): Promise<MessageWithAttachments | null> {
+    return this.findByIdInConversation(
+      options.id,
+      options.conversationId,
+      options.sinceTime,
+      options.requireCompleteResults,
+      options.workspaceId,
+    )
+  }
+
+  private async findByIdInConversation(
+    id: string,
+    conversationId: string,
+    sinceTime: Date,
+    requireCompleteResults: boolean | undefined,
+    workspaceId: string,
+  ): Promise<MessageWithAttachments | null> {
+    let shards: MessageShardTimeRangeInfo[]
+    try {
+      shards = await this.getConversationReadShards(sinceTime, workspaceId)
+    } catch (error) {
+      if (requireCompleteResults) {
+        throw this.toStorageError(
+          "select shards for message by id in conversation",
+          error,
+        )
+      }
+      logger.warn(
+        { err: error },
+        "Shard selection failed in findByIdInConversation",
+      )
+      return null
+    }
+    if (shards.length === 0) {
+      if (requireCompleteResults) {
+        throw new MessageShardUnavailableError(
+          "No message shards are available for message lookup",
+        )
+      }
+      return null
+    }
+
+    for (const shardInfo of shards) {
+      try {
+        const found = await this.shardManager.withShardClientForRead(
+          shardInfo.shard,
+          async (shardClient) => {
+            const [message] = await shardClient
+              .select()
+              .from(messageModel)
+              .where(
+                and(
+                  eq(messageModel.id, id),
+                  eq(messageModel.conversationId, conversationId),
+                  eq(messageModel.workspaceId, workspaceId),
+                  gte(messageModel.createdAt, sinceTime),
+                ),
+              )
+              .limit(1)
+
+            if (!message) {
+              return null
+            }
+
+            const attachmentsByMessageId = await this.fetchAndGroupAttachments(
+              shardClient,
+              [message],
+            )
+            return {
+              ...message,
+              attachments: attachmentsByMessageId[message.id] ?? [],
+            } as MessageWithAttachments
+          },
+        )
+        if (found) {
+          return found
+        }
+      } catch (error) {
+        if (requireCompleteResults) {
+          throw this.toStorageError("find message by id in conversation", error)
+        }
+        logger.warn(
+          { err: error, shardId: shardInfo.shard.id },
+          "Shard query failed in findByIdInConversation",
+        )
+      }
+    }
+
+    return null
+  }
+
   async findBySourceId(
     sourceId: string,
     conversationId: string,
@@ -548,8 +799,31 @@ export class ShardedMessageRepository implements IMessageRepository {
       )
     }
 
-    const shards = await this.getShardsForRange(sinceTime, new Date())
+    let shards: MessageShardTimeRangeInfo[]
+    try {
+      shards = await this.getConversationReadShards(
+        sinceTime,
+        options?.workspaceId,
+      )
+    } catch (error) {
+      if (options?.requireCompleteResults) {
+        throw this.toStorageError(
+          "select shards for last messages by conversation",
+          error,
+        )
+      }
+      logger.warn(
+        { err: error },
+        "Shard selection failed in findLastByConversation",
+      )
+      return []
+    }
     if (shards.length === 0) {
+      if (options?.requireCompleteResults) {
+        throw new MessageShardUnavailableError(
+          "No message shards are available for last-message read",
+        )
+      }
       return []
     }
 
@@ -564,6 +838,11 @@ export class ShardedMessageRepository implements IMessageRepository {
                 eq(messageModel.conversationId, conversationId),
                 gte(messageModel.createdAt, sinceTime),
               ]
+              if (options?.workspaceId) {
+                whereConditions.push(
+                  eq(messageModel.workspaceId, options.workspaceId),
+                )
+              }
 
               if (options?.messageTypes && options.messageTypes.length > 0) {
                 whereConditions.push(
@@ -575,7 +854,7 @@ export class ShardedMessageRepository implements IMessageRepository {
                 .select()
                 .from(messageModel)
                 .where(and(...whereConditions))
-                .orderBy(desc(messageModel.createdAt))
+                .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
                 .limit(limit)
 
               if (messages.length === 0) {
@@ -597,6 +876,12 @@ export class ShardedMessageRepository implements IMessageRepository {
             },
           )
         } catch (error) {
+          if (options?.requireCompleteResults) {
+            throw this.toStorageError(
+              "find last messages by conversation",
+              error,
+            )
+          }
           logger.warn(
             { err: error, shardId: shardInfo.shard.id },
             "Shard query failed in findLastByConversation",
@@ -606,10 +891,7 @@ export class ShardedMessageRepository implements IMessageRepository {
       }),
     )
 
-    return shardResults
-      .flat()
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, limit)
+    return shardResults.flat().sort(compareMessageDesc).slice(0, limit)
   }
 
   async findManyByConversation(
@@ -624,8 +906,31 @@ export class ShardedMessageRepository implements IMessageRepository {
       )
     }
 
-    const shards = await this.getShardsForRange(sinceTime, new Date())
+    let shards: MessageShardTimeRangeInfo[]
+    try {
+      shards = await this.getConversationReadShards(
+        sinceTime,
+        options.workspaceId,
+      )
+    } catch (error) {
+      if (options.requireCompleteResults) {
+        throw this.toStorageError(
+          "select shards for messages by conversation",
+          error,
+        )
+      }
+      logger.warn(
+        { err: error },
+        "Shard selection failed in findManyByConversation",
+      )
+      return []
+    }
     if (shards.length === 0) {
+      if (options.requireCompleteResults) {
+        throw new MessageShardUnavailableError(
+          "No message shards are available for conversation read",
+        )
+      }
       return []
     }
 
@@ -640,6 +945,11 @@ export class ShardedMessageRepository implements IMessageRepository {
                 eq(messageModel.conversationId, conversationId),
                 gte(messageModel.createdAt, sinceTime),
               ]
+              if (options.workspaceId) {
+                whereConditions.push(
+                  eq(messageModel.workspaceId, options.workspaceId),
+                )
+              }
 
               if (options.messageTypes && options.messageTypes.length > 0) {
                 whereConditions.push(
@@ -655,13 +965,16 @@ export class ShardedMessageRepository implements IMessageRepository {
                 .select()
                 .from(messageModel)
                 .where(and(...whereConditions))
-                .orderBy(desc(messageModel.createdAt))
+                .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
                 .limit(options.limit)
 
               return messages as MessageModel[]
             },
           )
         } catch (error) {
+          if (options.requireCompleteResults) {
+            throw this.toStorageError("find messages by conversation", error)
+          }
           logger.warn(
             { err: error, shardId: shardInfo.shard.id },
             "Shard query failed in findManyByConversation",
@@ -671,10 +984,7 @@ export class ShardedMessageRepository implements IMessageRepository {
       }),
     )
 
-    return shardResults
-      .flat()
-      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
-      .slice(0, options.limit)
+    return shardResults.flat().sort(compareMessageDesc).slice(0, options.limit)
   }
 
   async findManyByIds(

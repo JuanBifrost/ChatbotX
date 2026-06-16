@@ -1,9 +1,18 @@
-import { systemFunctionNames } from "@chatbotx.io/ai"
+import {
+  AI_MESSAGE_HISTORY_LOOKBACK_MS,
+  MAX_CONVERSATION_HISTORY,
+  systemFunctionNames,
+} from "@chatbotx.io/ai"
 import { aiContextService } from "@chatbotx.io/ai/server"
 import { automatedResponseService } from "@chatbotx.io/automated-response"
-import { and, asc, db, eq, gt } from "@chatbotx.io/database/client"
+import { db } from "@chatbotx.io/database/client"
+import { isMessageStorageError } from "@chatbotx.io/database/errors"
 import { aiMessageRoles } from "@chatbotx.io/database/partials"
-import { messageModel } from "@chatbotx.io/database/schema"
+import {
+  createMessageRepository,
+  findConversationAIContextState,
+  getSafeSinceTime,
+} from "@chatbotx.io/database/repositories"
 import { emit } from "@chatbotx.io/event-bus"
 import {
   DOCX_MIME_TYPES,
@@ -16,6 +25,8 @@ import { normalizeError } from "universal-error-normalizer"
 import { detectConversationAndContactInbox } from "../../../lib/db"
 import { logger } from "../../../lib/logger"
 import { replyByAI } from "./replies"
+
+const TRIGGER_MESSAGE_LOOKBACK_MS = 7 * 24 * 60 * 60 * 1000
 
 const SUPPORTED_DOCUMENT_MIME_TYPES = new Set<string>([
   ...PDF_MIME_TYPES,
@@ -45,26 +56,29 @@ export async function processAutomatedResponse(
       contactInboxId,
     })
 
-  const triggerMessage = await db.query.messageModel.findFirst({
-    where: {
-      id: messageId,
-      conversationId: conversation.id,
-    },
-    columns: {
-      id: true,
-      text: true,
-      senderType: true,
-    },
-    with: {
-      attachments: {
-        columns: {
-          id: true,
-          fileType: true,
-          mimeType: true,
-        },
-      },
-    },
+  const repo = await createMessageRepository()
+  const triggerMessage = await repo.findTriggerMessage({
+    id: messageId,
+    conversationId: conversation.id,
+    workspaceId: conversation.workspaceId,
+    sinceTime:
+      getSafeSinceTime(
+        contactInbox.lastMessageAt ?? contactInbox.createdAt,
+        TRIGGER_MESSAGE_LOOKBACK_MS,
+      ) ?? new Date(0),
+    requireCompleteResults: true,
   })
+  if (!triggerMessage) {
+    logger.warn(
+      {
+        contactInboxId: contactInbox.id,
+        conversationId: conversation.id,
+        messageId,
+        workspaceId: conversation.workspaceId,
+      },
+      "Automated response trigger message was not found",
+    )
+  }
   const triggerAttachments = triggerMessage?.attachments ?? []
   const isFileOnlyTrigger =
     triggerMessage?.senderType === "contact" &&
@@ -127,29 +141,32 @@ export async function processAutomatedResponse(
       workspaceId: conversation.workspaceId,
       conversationId: conversation.id,
     })
+    const markerMessageId =
+      aiContext?.markerMessageId ??
+      (
+        await findConversationAIContextState({
+          conversationId: conversation.id,
+          workspaceId: conversation.workspaceId,
+        })
+      )?.aiContextLastMessageId ??
+      null
 
     let messages: ModelMessage[] = []
     let summary = ""
 
     if (aiContext) {
-      const latestInContext = aiContext.history.at(-1)
-      const sinceTime = latestInContext?.createdAt ?? 0
-
-      const newDbMessages = await db
-        .select({
-          id: messageModel.id,
-          text: messageModel.text,
-          senderType: messageModel.senderType,
-          createdAt: messageModel.createdAt,
-        })
-        .from(messageModel)
-        .where(
-          and(
-            eq(messageModel.conversationId, conversation.id),
-            gt(messageModel.createdAt, new Date(sinceTime)),
-          ),
-        )
-        .orderBy(asc(messageModel.createdAt), asc(messageModel.id))
+      const contextSinceTime =
+        getSafeSinceTime(
+          contactInbox.lastMessageAt ?? contactInbox.createdAt,
+          AI_MESSAGE_HISTORY_LOOKBACK_MS,
+        ) ?? new Date(0)
+      const newDbMessages = await repo.findAIContextMessages({
+        conversationId: conversation.id,
+        limit: MAX_CONVERSATION_HISTORY,
+        markerMessageId,
+        sinceTime: contextSinceTime,
+        workspaceId: conversation.workspaceId,
+      })
 
       const newMessages = newDbMessages.flatMap((msg) => {
         if (!msg.text) {
@@ -190,12 +207,17 @@ export async function processAutomatedResponse(
     }
 
     if (messages.length === 0) {
-      const last100Messages = await db.query.messageModel.findMany({
-        where: { conversationId: conversation.id },
-        orderBy: (table, { desc }) => [desc(table.createdAt), desc(table.id)],
+      const dbMessages = await repo.findAIContextMessages({
+        conversationId: conversation.id,
         limit: 100,
+        markerMessageId,
+        sinceTime:
+          getSafeSinceTime(
+            contactInbox.lastMessageAt ?? contactInbox.createdAt,
+            AI_MESSAGE_HISTORY_LOOKBACK_MS,
+          ) ?? new Date(0),
+        workspaceId: conversation.workspaceId,
       })
-      const dbMessages = [...last100Messages].reverse()
       const aiHistory = aiContextService.mapDbMessagesToContext(dbMessages)
       messages = aiContextService.mapContextToModelMessages(aiHistory)
     }
@@ -287,12 +309,15 @@ export async function processAutomatedResponse(
     const normalizedError = normalizeError(error)
     logger.error(
       {
-        error: normalizedError,
+        err: normalizedError,
         conversationId: conversation.id,
         workspaceId: conversation.workspaceId,
       },
       "[automated-response] triggerAutomatedResponse failed",
     )
+    if (isMessageStorageError(error)) {
+      throw error
+    }
   }
 }
 

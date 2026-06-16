@@ -19,7 +19,6 @@ export interface ShardManagerLike {
 
 const repositoryCache = new WeakMap<DatabaseClient, RepositoryCacheEntry>()
 const shardManagerCache = new WeakMap<DatabaseClient, ShardManagerLike>()
-
 let shardModuleCache: {
   createShardRepository: typeof import("../../sharding/message").createShardRepository
 } | null = null
@@ -54,7 +53,6 @@ async function buildRepository(
     if (!result) {
       return new MessageRepository(client)
     }
-
     shardManagerCache.set(client, result.manager)
     return result.repository
   } catch (error) {

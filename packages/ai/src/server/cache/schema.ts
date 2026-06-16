@@ -20,6 +20,7 @@ export const aiMessageSchema = z.object({
 })
 
 export const aiContextSchema = z.object({
+  markerMessageId: z.string().nullable().default(null),
   summary: z.string().max(1000).default(""),
   history: z.array(aiMessageSchema).default([]),
   summarizing: z.boolean().default(false),

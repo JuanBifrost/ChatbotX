@@ -1,4 +1,4 @@
-import { and, desc, eq, gte, inArray, isNotNull, lt, or } from "drizzle-orm"
+import { and, desc, eq, gt, gte, inArray, isNotNull, lt, or } from "drizzle-orm"
 import type { DatabaseClient } from "../../client"
 import { attachmentModel, messageModel } from "../../schema"
 import type { AttachmentModel, MessageModel } from "../../types"
@@ -74,15 +74,37 @@ export interface ListMessagesQuery {
 export interface FindLastByConversationOptions {
   limit?: number
   messageTypes?: ("incoming" | "outgoing" | "activity")[]
+  requireCompleteResults?: boolean
   sinceTime?: Date
   withAttachments?: boolean
+  workspaceId?: string
 }
 
 export interface FindManyByConversationOptions {
   limit: number
   messageTypes?: ("incoming" | "outgoing" | "activity")[]
+  requireCompleteResults?: boolean
   sinceTime?: Date
   textNotNull?: boolean
+  workspaceId?: string
+}
+
+export interface FindAIContextMessagesOptions {
+  conversationId: string
+  limit: number
+  markerMessageId: string | null
+  messageTypes?: ("incoming" | "outgoing" | "activity")[]
+  sinceTime?: Date
+  textNotNull?: boolean
+  workspaceId: string
+}
+
+export interface FindTriggerMessageOptions {
+  conversationId: string
+  id: string
+  requireCompleteResults?: boolean
+  sinceTime: Date
+  workspaceId: string
 }
 
 export interface DistributedLock {
@@ -122,6 +144,10 @@ export interface IMessageRepository {
     >[],
   ): Promise<MessageWithAttachments>
 
+  findAIContextMessages(
+    options: FindAIContextMessagesOptions,
+  ): Promise<MessageModel[]>
+
   findById(id: string, createdAt?: Date): Promise<MessageWithAttachments | null>
 
   findBySourceId(
@@ -146,6 +172,10 @@ export interface IMessageRepository {
     contactInboxId: string,
     sinceTime?: Date,
   ): Promise<Pick<MessageModel, "id" | "text">[]>
+
+  findTriggerMessage(
+    options: FindTriggerMessageOptions,
+  ): Promise<MessageWithAttachments | null>
 
   listByConversation(query: ListMessagesQuery): Promise<PaginatedMessages>
 
@@ -305,6 +335,104 @@ export class MessageRepository implements IMessageRepository {
     } as MessageWithAttachments
   }
 
+  async findAIContextMessages(
+    options: FindAIContextMessagesOptions,
+  ): Promise<MessageModel[]> {
+    const baseConditions = [
+      eq(messageModel.conversationId, options.conversationId),
+      eq(messageModel.workspaceId, options.workspaceId),
+    ]
+    if (options.sinceTime) {
+      baseConditions.push(gte(messageModel.createdAt, options.sinceTime))
+    }
+    if (options.messageTypes && options.messageTypes.length > 0) {
+      baseConditions.push(
+        inArray(messageModel.messageType, options.messageTypes),
+      )
+    }
+    if (options.textNotNull) {
+      baseConditions.push(isNotNull(messageModel.text))
+    }
+
+    const latestMessages = async () => {
+      const messages = await this.db
+        .select()
+        .from(messageModel)
+        .where(and(...baseConditions))
+        .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
+        .limit(options.limit)
+
+      return [...messages].reverse() as MessageModel[]
+    }
+
+    if (!options.markerMessageId) {
+      return latestMessages()
+    }
+
+    const [marker] = await this.db
+      .select({
+        createdAt: messageModel.createdAt,
+        id: messageModel.id,
+      })
+      .from(messageModel)
+      .where(
+        and(
+          eq(messageModel.id, options.markerMessageId),
+          eq(messageModel.conversationId, options.conversationId),
+          eq(messageModel.workspaceId, options.workspaceId),
+        ),
+      )
+      .limit(1)
+
+    if (!marker) {
+      return latestMessages()
+    }
+
+    const messages = await this.db
+      .select()
+      .from(messageModel)
+      .where(
+        and(
+          ...baseConditions,
+          or(
+            gt(messageModel.createdAt, marker.createdAt),
+            and(
+              eq(messageModel.createdAt, marker.createdAt),
+              gt(messageModel.id, marker.id),
+            ),
+          ),
+        ),
+      )
+      .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
+      .limit(options.limit)
+
+    return [...messages].reverse() as MessageModel[]
+  }
+
+  async findTriggerMessage(
+    options: FindTriggerMessageOptions,
+  ): Promise<MessageWithAttachments | null> {
+    const [message] = await this.db
+      .select()
+      .from(messageModel)
+      .where(
+        and(
+          eq(messageModel.id, options.id),
+          eq(messageModel.conversationId, options.conversationId),
+          eq(messageModel.workspaceId, options.workspaceId),
+          gte(messageModel.createdAt, options.sinceTime),
+        ),
+      )
+      .limit(1)
+
+    if (!message) {
+      return null
+    }
+
+    const attachments = await this.queryAttachmentsForMessages([message.id])
+    return { ...message, attachments } as MessageWithAttachments
+  }
+
   async findBySourceId(
     sourceId: string,
     conversationId: string,
@@ -352,7 +480,7 @@ export class MessageRepository implements IMessageRepository {
       .select()
       .from(messageModel)
       .where(and(...whereConditions))
-      .orderBy(desc(messageModel.createdAt))
+      .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
       .limit(limit)
 
     if (messages.length === 0) {
@@ -401,7 +529,7 @@ export class MessageRepository implements IMessageRepository {
       .select()
       .from(messageModel)
       .where(and(...whereConditions))
-      .orderBy(desc(messageModel.createdAt))
+      .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
       .limit(options.limit)
 
     return messages as MessageModel[]

@@ -106,3 +106,4 @@ export const toolPrefixes = z.enum(["file", "fn", "mcp", "sys"])
 
 export const MAX_CONVERSATION_HISTORY = 100
 export const MAX_SUMMARY_LENGTH = 1000
+export const AI_MESSAGE_HISTORY_LOOKBACK_MS = 365 * 24 * 60 * 60 * 1000

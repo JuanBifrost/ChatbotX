@@ -1,4 +1,5 @@
 import { db, eq, findOrFail } from "@chatbotx.io/database/client"
+import { isMessageStorageError } from "@chatbotx.io/database/errors"
 import type { ConversationAttributes } from "@chatbotx.io/database/partials"
 import {
   createMessageRepository,
@@ -42,7 +43,10 @@ export async function getUserData(
     return await firstSendMessage(props)
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error)
-    logger.error(error, "getUserData: error")
+    logger.error({ err: error }, "getUserData: error")
+    if (isMessageStorageError(error)) {
+      throw error
+    }
 
     return { result: undefined, status: "error", errorMessage }
   }
@@ -146,11 +150,13 @@ async function validateUserData(
     {
       messageTypes: ["incoming"],
       limit: 1,
+      requireCompleteResults: true,
       withAttachments: true,
       sinceTime: getSafeSinceTime(
         contactInbox.lastMessageAt ?? contactInbox.createdAt,
         365 * 24 * 60 * 60 * 1000, // 1 year
       ),
+      workspaceId: props.conversation.workspaceId,
     },
   )
   const lastUserMessage = lastMessages[0]

@@ -1,3 +1,4 @@
+import { MessageShardUnavailableError } from "@chatbotx.io/database/errors"
 import type { GetUserDataStepSchema } from "@chatbotx.io/flow-config"
 import { ReplyFormat } from "@chatbotx.io/flow-config"
 import { beforeEach, describe, expect, test, vi } from "vitest"
@@ -25,6 +26,7 @@ const lastMessage: {
     attachments: { fileType: string; originPath: string }[]
   } | null
 } = { current: null }
+const repositoryError: { current: Error | null } = { current: null }
 
 const findOrFailResult: { current: unknown } = { current: { id: "field-1" } }
 
@@ -54,9 +56,12 @@ vi.mock("@chatbotx.io/database/client", () => ({
 // array (findLastByConversation's contract).
 vi.mock("@chatbotx.io/database/repositories", () => ({
   createMessageRepository: vi.fn(async () => ({
-    findLastByConversation: vi.fn(async () =>
-      lastMessage.current ? [lastMessage.current] : [],
-    ),
+    findLastByConversation: vi.fn(() => {
+      if (repositoryError.current) {
+        throw repositoryError.current
+      }
+      return lastMessage.current ? [lastMessage.current] : []
+    }),
   })),
   getSafeSinceTime: vi.fn(() => new Date(0)),
 }))
@@ -92,6 +97,10 @@ vi.mock("../src/lib/logger", () => ({
 const { getUserData } = await import(
   "../src/integration/handlers/get-user-data"
 )
+
+beforeEach(() => {
+  repositoryError.current = null
+})
 
 type StepOverride = Partial<GetUserDataStepSchema>
 
@@ -259,6 +268,14 @@ describe("getUserData — validation logic", () => {
       const result = await getUserData(makeProps(ReplyFormat.email))
       expect(result.status).toBe("retry")
     })
+  })
+
+  test("rethrows typed message storage errors for worker retry", async () => {
+    repositoryError.current = new MessageShardUnavailableError("shard down")
+
+    await expect(getUserData(makeProps(ReplyFormat.email))).rejects.toBe(
+      repositoryError.current,
+    )
   })
 })
 

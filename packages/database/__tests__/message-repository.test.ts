@@ -173,3 +173,155 @@ describe("MessageRepository.bulkCreate", () => {
     expect(insert).toHaveBeenCalledTimes(0)
   })
 })
+
+describe("MessageRepository conversation ordering", () => {
+  test.each([
+    "findLastByConversation",
+    "findManyByConversation",
+  ] as const)("%s orders equal timestamps by descending id", async (method) => {
+    const chain = {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue([]),
+    }
+    const repo = new MessageRepository({
+      select: vi.fn().mockReturnValue(chain),
+    } as never)
+
+    if (method === "findLastByConversation") {
+      await repo.findLastByConversation("conv-1")
+    } else {
+      await repo.findManyByConversation("conv-1", { limit: 10 })
+    }
+
+    expect(chain.orderBy).toHaveBeenCalledTimes(1)
+    expect(chain.orderBy.mock.calls[0]).toHaveLength(2)
+  })
+})
+
+function makeSelectChain(rows: unknown[]) {
+  return {
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(rows),
+  }
+}
+
+function collectSqlValues(
+  node: unknown,
+  seen = new WeakSet<object>(),
+  out: unknown[] = [],
+): unknown[] {
+  if (!node || typeof node !== "object" || seen.has(node)) {
+    return out
+  }
+  seen.add(node)
+  if (Array.isArray(node)) {
+    for (const item of node) {
+      collectSqlValues(item, seen, out)
+    }
+    return out
+  }
+  for (const [key, value] of Object.entries(node)) {
+    if (
+      key === "value" &&
+      (typeof value === "string" || typeof value === "number")
+    ) {
+      out.push(value)
+    } else {
+      collectSqlValues(value, seen, out)
+    }
+  }
+  return out
+}
+
+describe("MessageRepository.findAIContextMessages", () => {
+  const latest = [
+    { id: "10", createdAt: new Date("2026-06-01T00:00:00Z") },
+    { id: "9", createdAt: new Date("2026-05-31T00:00:00Z") },
+  ]
+  const options = {
+    conversationId: "conv-1",
+    workspaceId: "ws-1",
+    markerMessageId: "8",
+    limit: 100,
+    sinceTime: new Date("2026-01-01T00:00:00Z"),
+  }
+
+  test("returns latest messages in chronological order without a marker", async () => {
+    const select = vi.fn().mockReturnValue(makeSelectChain(latest))
+    const repo = new MessageRepository({ select } as never)
+
+    const result = await repo.findAIContextMessages({
+      ...options,
+      markerMessageId: null,
+    })
+
+    expect(result.map((message) => message.id)).toEqual(["9", "10"])
+  })
+
+  test("applies message filters before limiting context history", async () => {
+    const chain = makeSelectChain(latest)
+    const repo = new MessageRepository({
+      select: vi.fn().mockReturnValue(chain),
+    } as never)
+
+    await repo.findAIContextMessages({
+      ...options,
+      markerMessageId: null,
+      messageTypes: ["incoming", "outgoing"],
+      textNotNull: true,
+    })
+
+    const whereValues = collectSqlValues(chain.where.mock.calls[0])
+    expect(whereValues).toContain("incoming")
+    expect(whereValues).toContain("outgoing")
+  })
+
+  test("returns only messages after an existing marker", async () => {
+    const select = vi
+      .fn()
+      .mockReturnValueOnce(
+        makeSelectChain([
+          { id: "8", createdAt: new Date("2026-05-30T00:00:00Z") },
+        ]),
+      )
+      .mockReturnValueOnce(makeSelectChain(latest))
+    const repo = new MessageRepository({ select } as never)
+
+    const result = await repo.findAIContextMessages(options)
+
+    expect(result.map((message) => message.id)).toEqual(["9", "10"])
+    expect(select).toHaveBeenCalledTimes(2)
+  })
+
+  test("falls back to latest history when marker is missing", async () => {
+    const select = vi
+      .fn()
+      .mockReturnValueOnce(makeSelectChain([]))
+      .mockReturnValueOnce(makeSelectChain(latest))
+    const repo = new MessageRepository({ select } as never)
+
+    const result = await repo.findAIContextMessages(options)
+
+    expect(result.map((message) => message.id)).toEqual(["9", "10"])
+  })
+
+  test("returns empty history when marker is latest", async () => {
+    const select = vi
+      .fn()
+      .mockReturnValueOnce(
+        makeSelectChain([
+          { id: "10", createdAt: new Date("2026-06-01T00:00:00Z") },
+        ]),
+      )
+      .mockReturnValueOnce(makeSelectChain([]))
+    const repo = new MessageRepository({ select } as never)
+
+    const result = await repo.findAIContextMessages(options)
+
+    expect(result).toEqual([])
+  })
+})

@@ -1,6 +1,7 @@
 import { aiTimeouts } from "@chatbotx.io/ai"
 import { aiContextService } from "@chatbotx.io/ai/server"
 import { db } from "@chatbotx.io/database/client"
+import { isMessageStorageError } from "@chatbotx.io/database/errors"
 import { aiAgentProviders } from "@chatbotx.io/database/partials"
 import type { AIGenerateTextAgentSchema } from "@chatbotx.io/flow-config"
 import { normalizeError } from "universal-error-normalizer"
@@ -13,6 +14,7 @@ import { buildAIAgentMessages } from "./messages"
 
 export async function handleAIGenerateTextAgent({
   conversation,
+  contactInbox,
   step,
 }: ExecuteStepProps<AIGenerateTextAgentSchema>): Promise<ExecuteStepResult> {
   const controller = new AbortController()
@@ -43,7 +45,11 @@ export async function handleAIGenerateTextAgent({
       conversationId: conversation.id,
     })
 
-    const messages = await buildAIAgentMessages(conversation, step)
+    const messages = await buildAIAgentMessages(
+      conversation,
+      contactInbox,
+      step,
+    )
     const summary = aiContext?.summary || ""
     const preferredProvider = aiAgentProviders.safeParse(step.provider)
 
@@ -93,6 +99,9 @@ export async function handleAIGenerateTextAgent({
       },
       "[ai-generate-text-agent] Step failed",
     )
+    if (isMessageStorageError(err)) {
+      throw err
+    }
     return { status: "error", errorMessage: error.message, result: null }
   } finally {
     clearTimeout(timeoutId)

@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
+import { MessageShardUnavailableError } from "../src/errors"
 import type {
   BulkCreateAttachmentInput,
   CreateMessageInput,
@@ -404,5 +405,197 @@ describe("ShardedMessageRepository.listByConversation — write-shard union", ()
 
     expect(result).toEqual({ data: [], nextCursor: null })
     expect(shardManager.withShardClientForRead).not.toHaveBeenCalled()
+  })
+})
+
+function makeConversationReadClient(messages: ReadMessage[]) {
+  const chain = {
+    from: vi.fn().mockReturnThis(),
+    where: vi.fn().mockReturnThis(),
+    orderBy: vi.fn().mockReturnThis(),
+    limit: vi.fn().mockResolvedValue(messages),
+  }
+  return { select: vi.fn().mockReturnValue(chain), chain }
+}
+
+describe("ShardedMessageRepository complete conversation reads", () => {
+  const sinceTime = new Date("2026-01-01T00:00:00Z")
+  const shardA = makeShardInfo("tr:a", "a")
+  const shardB = makeShardInfo("tr:b", "b")
+
+  test("merges equal timestamps by numeric bigint id", async () => {
+    const createdAt = new Date("2026-06-01T00:00:00Z")
+    const clients = new Map([
+      [
+        "a",
+        makeConversationReadClient([{ id: "9", createdAt } as ReadMessage]),
+      ],
+      [
+        "b",
+        makeConversationReadClient([{ id: "10", createdAt } as ReadMessage]),
+      ],
+    ])
+    const shardManager = {
+      getShardsForTimeRange: vi.fn().mockResolvedValue([shardA, shardB]),
+      withShardClientForRead: vi.fn(
+        (shard: { id: string }, fn: (client: unknown) => Promise<unknown>) =>
+          fn(clients.get(shard.id)),
+      ),
+    }
+    const repo = new ShardedMessageRepository(shardManager as never)
+
+    const result = await repo.findManyByConversation("conv-1", {
+      limit: 10,
+      sinceTime,
+    })
+
+    expect(result.map((message) => message.id)).toEqual(["10", "9"])
+  })
+
+  test.each([
+    "findLastByConversation",
+    "findManyByConversation",
+  ] as const)("%s returns partial results by default and rejects when completeness is required", async (method) => {
+    const client = makeConversationReadClient([
+      {
+        id: "10",
+        createdAt: new Date("2026-06-01T00:00:00Z"),
+      } as ReadMessage,
+    ])
+    const shardManager = {
+      getShardsForTimeRange: vi.fn().mockResolvedValue([shardA, shardB]),
+      withShardClientForRead: vi.fn(
+        (shard: { id: string }, fn: (value: unknown) => Promise<unknown>) => {
+          if (shard.id === "b") {
+            throw new Error("shard unavailable")
+          }
+          return fn(client)
+        },
+      ),
+    }
+    const repo = new ShardedMessageRepository(shardManager as never)
+    const call = (requireCompleteResults?: boolean) =>
+      method === "findLastByConversation"
+        ? repo.findLastByConversation("conv-1", {
+            limit: 10,
+            requireCompleteResults,
+            sinceTime,
+          })
+        : repo.findManyByConversation("conv-1", {
+            limit: 10,
+            requireCompleteResults,
+            sinceTime,
+          })
+
+    await expect(call()).resolves.toHaveLength(1)
+    await expect(call(true)).rejects.toBeInstanceOf(
+      MessageShardUnavailableError,
+    )
+  })
+})
+
+function makeAIContextReadClient(results: ReadMessage[][]) {
+  const select = vi.fn(() => {
+    const rows = results.shift() ?? []
+    return {
+      from: vi.fn().mockReturnThis(),
+      where: vi.fn().mockReturnThis(),
+      orderBy: vi.fn().mockReturnThis(),
+      limit: vi.fn().mockResolvedValue(rows),
+    }
+  })
+  return { select }
+}
+
+describe("ShardedMessageRepository.findAIContextMessages", () => {
+  const sinceTime = new Date("2026-01-01T00:00:00Z")
+  const shard = makeShardInfo("tr:s1", "s1")
+  const marker = {
+    id: "8",
+    conversationId: "conv-1",
+    workspaceId: "ws-1",
+    createdAt: new Date("2026-05-30T00:00:00Z"),
+    text: "marker",
+  }
+  const newer = [
+    {
+      ...marker,
+      id: "10",
+      createdAt: new Date("2026-06-01T00:00:00Z"),
+      text: "newest",
+    },
+    {
+      ...marker,
+      id: "9",
+      createdAt: new Date("2026-05-31T00:00:00Z"),
+      text: "new",
+    },
+  ]
+  const options = {
+    conversationId: "conv-1",
+    workspaceId: "ws-1",
+    markerMessageId: marker.id,
+    limit: 100,
+    sinceTime,
+  }
+
+  function makeRepo(client: { select: ReturnType<typeof vi.fn> }) {
+    const shardManager = {
+      getShardsForTimeRange: vi.fn().mockResolvedValue([shard]),
+      getWriteShardInfo: vi.fn().mockResolvedValue(shard),
+      withShardClientForRead: vi.fn(
+        (_shard: unknown, fn: (value: unknown) => Promise<unknown>) =>
+          fn(client),
+      ),
+    }
+    return new ShardedMessageRepository(shardManager as never)
+  }
+
+  test("finds the marker before limiting messages and returns chronological history", async () => {
+    const client = makeAIContextReadClient([[marker], newer])
+    const shardManager = {
+      getShardsForTimeRange: vi.fn().mockResolvedValue([shard]),
+      getWriteShardInfo: vi.fn().mockResolvedValue(shard),
+      withShardClientForRead: vi.fn(
+        (_shard: unknown, fn: (value: unknown) => Promise<unknown>) =>
+          fn(client),
+      ),
+    }
+    const repo = new ShardedMessageRepository(shardManager as never)
+
+    const result = await repo.findAIContextMessages(options)
+
+    expect(result.map((message) => message.id)).toEqual(["9", "10"])
+    expect(shardManager.getShardsForTimeRange).toHaveBeenCalledWith(
+      sinceTime,
+      expect.any(Date),
+    )
+  })
+
+  test("returns empty history when the marker is latest", async () => {
+    const repo = makeRepo(makeAIContextReadClient([[marker], []]))
+
+    await expect(repo.findAIContextMessages(options)).resolves.toEqual([])
+  })
+
+  test("falls back to latest history when the marker is outside the shard window", async () => {
+    const repo = makeRepo(makeAIContextReadClient([[], newer]))
+
+    const result = await repo.findAIContextMessages(options)
+
+    expect(result.map((message) => message.id)).toEqual(["9", "10"])
+  })
+
+  test("wraps shard failures and never returns partial AI history", async () => {
+    const shardManager = {
+      getShardsForTimeRange: vi.fn().mockResolvedValue([shard]),
+      getWriteShardInfo: vi.fn().mockResolvedValue(shard),
+      withShardClientForRead: vi.fn().mockRejectedValue(new Error("down")),
+    }
+    const repo = new ShardedMessageRepository(shardManager as never)
+
+    await expect(repo.findAIContextMessages(options)).rejects.toBeInstanceOf(
+      MessageShardUnavailableError,
+    )
   })
 })

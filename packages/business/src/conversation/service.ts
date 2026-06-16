@@ -449,6 +449,25 @@ class ConversationService extends BaseService {
     await this.invalidate({ workspaceId, ids: [id] })
   }
 
+  async updateAIContextLastMessageId(props: {
+    workspaceId: string
+    conversationId: string
+    messageId: string | null
+    tx?: DatabaseClient
+  }): Promise<void> {
+    const { workspaceId, conversationId, messageId, tx = db } = props
+    await tx
+      .update(conversationModel)
+      .set({ aiContextLastMessageId: messageId })
+      .where(
+        and(
+          eq(conversationModel.id, conversationId),
+          eq(conversationModel.workspaceId, workspaceId),
+        ),
+      )
+    await this.invalidate({ workspaceId, ids: [conversationId] })
+  }
+
   // ─── Bot state helpers ───────────────────────────────────────────────────
 
   async disableBotState(props: {

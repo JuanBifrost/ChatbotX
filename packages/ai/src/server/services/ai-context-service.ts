@@ -1,10 +1,19 @@
 import { createHash } from "node:crypto"
-import { and, db, desc, eq, gt, or, sql } from "@chatbotx.io/database/client"
+import { isMessageStorageError } from "@chatbotx.io/database/errors"
 import { aiMessageRoles, senderTypes } from "@chatbotx.io/database/partials"
-import { messageModel } from "@chatbotx.io/database/schema"
+import {
+  createMessageRepository,
+  findConversationAIContextState,
+  getSafeSinceTime,
+} from "@chatbotx.io/database/repositories"
 import { AIJobAction, aiAgentQueue } from "@chatbotx.io/worker-config"
 import type { ModelMessage } from "ai"
-import { MAX_CONVERSATION_HISTORY, MAX_SUMMARY_LENGTH } from "../../constants"
+import { normalizeError } from "universal-error-normalizer"
+import {
+  AI_MESSAGE_HISTORY_LOOKBACK_MS,
+  MAX_CONVERSATION_HISTORY,
+  MAX_SUMMARY_LENGTH,
+} from "../../constants"
 import { logger } from "../../logger"
 import { aiContextStore } from "../cache/ai-context-store"
 import {
@@ -68,50 +77,6 @@ function isSameContextMessage(
     serializeMessageContent(existing.content) ===
       serializeMessageContent(incoming.content)
   )
-}
-
-async function getLatestConversationMessages(
-  conversationId: string,
-): Promise<DBConversationMessage[]> {
-  const lastMessages = await db.query.messageModel.findMany({
-    where: { conversationId },
-    orderBy: (table, { desc }) => [desc(table.createdAt), desc(table.id)],
-    limit: MAX_CONVERSATION_HISTORY,
-  })
-
-  return [...lastMessages].reverse()
-}
-
-async function getConversationMessagesAfterMarker(
-  conversationId: string,
-  markerMessageId: string,
-): Promise<DBConversationMessage[]> {
-  const markerCreatedAt = sql`(SELECT "createdAt" FROM ${messageModel} WHERE ${messageModel.id} = ${markerMessageId} AND ${messageModel.conversationId} = ${conversationId})`
-
-  const rows = await db
-    .select({
-      id: messageModel.id,
-      text: messageModel.text,
-      senderType: messageModel.senderType,
-      createdAt: messageModel.createdAt,
-    })
-    .from(messageModel)
-    .where(
-      and(
-        eq(messageModel.conversationId, conversationId),
-        or(
-          sql`${messageModel.createdAt} > ${markerCreatedAt}`,
-          and(
-            sql`${messageModel.createdAt} = ${markerCreatedAt}`,
-            gt(messageModel.id, markerMessageId),
-          ),
-        ),
-      ),
-    )
-    .orderBy(desc(messageModel.createdAt), desc(messageModel.id))
-    .limit(MAX_CONVERSATION_HISTORY)
-
-  return [...rows].reverse()
 }
 
 export const aiContextService = {
@@ -264,43 +229,51 @@ export const aiContextService = {
       .runExclusive(conversationId, async () => {
         let context = await aiContextStore.get(conversationId)
 
+        const conversation = await findConversationAIContextState({
+          conversationId,
+          workspaceId,
+        })
+        if (!conversation) {
+          return null
+        }
+
+        if (
+          context &&
+          context.markerMessageId !== conversation.aiContextLastMessageId
+        ) {
+          await aiContextStore.delete(conversationId)
+          context = null
+        }
+
         if (!context) {
-          const conversation = await db.query.conversationModel.findFirst({
-            where: {
-              id: conversationId,
-              workspaceId,
-            },
-            columns: {
-              aiContextLastMessageId: true,
-            },
+          const sinceTime =
+            getSafeSinceTime(
+              conversation.lastActivityAt,
+              AI_MESSAGE_HISTORY_LOOKBACK_MS,
+            ) ?? new Date(0)
+
+          const repo = await createMessageRepository()
+          const dbMessages = await repo.findAIContextMessages({
+            conversationId,
+            workspaceId,
+            markerMessageId: conversation.aiContextLastMessageId,
+            limit: MAX_CONVERSATION_HISTORY,
+            sinceTime,
           })
-
-          let dbMessages: DBConversationMessage[] = []
-
-          if (conversation?.aiContextLastMessageId) {
-            const messagesAfterMarker =
-              await getConversationMessagesAfterMarker(
-                conversationId,
-                conversation.aiContextLastMessageId,
-              )
-
-            dbMessages =
-              messagesAfterMarker.length > 0
-                ? messagesAfterMarker
-                : await getLatestConversationMessages(conversationId)
-          } else {
-            dbMessages = await getLatestConversationMessages(conversationId)
-          }
 
           const aiHistory = this.mapDbMessagesToContext(dbMessages)
           const modelMessages = this.mapContextToModelMessages(aiHistory)
 
-          const summary = await summarizeConversation({
-            workspaceId,
-            messages: modelMessages,
-          })
+          const summary =
+            modelMessages.length > 0
+              ? await summarizeConversation({
+                  workspaceId,
+                  messages: modelMessages,
+                })
+              : ""
 
           const nextContext = aiContextSchema.parse({
+            markerMessageId: conversation.aiContextLastMessageId,
             summary: summary.slice(0, MAX_SUMMARY_LENGTH),
             history: aiHistory,
             summarizing: false,
@@ -315,10 +288,19 @@ export const aiContextService = {
         return context
       })
       .catch((err) => {
+        const error = normalizeError(err)
         logger.error(
-          { err, conversationId },
+          {
+            err: error,
+            workspaceId,
+            conversationId,
+            action: "getOrInitContext",
+          },
           "[ai-context-service] Failed to get or init AI context",
         )
+        if (isMessageStorageError(err)) {
+          throw err
+        }
         return null
       })
   },

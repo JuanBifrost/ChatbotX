@@ -1,5 +1,6 @@
 import { db, eq } from "@chatbotx.io/database/client"
-import { messageModel, whatsappFlowModel } from "@chatbotx.io/database/schema"
+import { createMessageRepository } from "@chatbotx.io/database/repositories"
+import { whatsappFlowModel } from "@chatbotx.io/database/schema"
 import type {
   ContactInboxModel,
   ConversationModel,
@@ -95,14 +96,13 @@ export async function sendTypingToChannel(data: ChatJobSendTyping["data"]) {
 async function updateMessageSourceId(
   messageId: string | undefined,
   result: { messageIds: string[] },
+  workspaceId: string,
 ) {
   try {
     const firstMessageId = result?.messageIds?.[0]
     if (messageId && firstMessageId) {
-      await db
-        .update(messageModel)
-        .set({ sourceId: firstMessageId })
-        .where(eq(messageModel.id, messageId))
+      const repo = await createMessageRepository()
+      await repo.updateSourceId(messageId, firstMessageId, workspaceId)
     }
   } catch (err) {
     logger.error(err, "Failed to update message sourceId with provider id")
@@ -170,7 +170,7 @@ export async function sendFlowStepToChannel({
     },
   )
 
-  await updateMessageSourceId(messageId, result)
+  await updateMessageSourceId(messageId, result, conversation.workspaceId)
 
   return result
 }
