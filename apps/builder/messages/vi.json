@@ -726,6 +726,9 @@
     "activeCampaign": {
       "label": "ActiveCampaign"
     },
+    "getResponse": {
+      "label": "GetResponse"
+    },
     "mailchimp": {
       "label": "Mailchimp"
     },
@@ -1486,6 +1489,7 @@
       "klaviyoSyncProfile": "Thêm liên hệ vào Klaviyo",
       "moosendCreateContact": "Thêm liên hệ vào Moosend",
       "dripSubscribeSubscriber": "Thêm liên hệ vào Drip",
+      "getResponseAddContact": "Thêm liên hệ vào GetResponse",
       "sendGridAddContact": "Thêm liên hệ vào SendGrid",
       "openWebsite": "Mở trang web",
       "optInEmail": "Đăng ký nhận email",
@@ -1661,8 +1665,6 @@
       "operation": "Thao tác",
       "emailField": "Trường email",
       "emailTooltip": "Trường liên hệ chứa email dùng để định danh liên hệ trong ActiveCampaign.",
-      "firstNameField": "Trường tên",
-      "lastNameField": "Trường họ",
       "phoneField": "Trường số điện thoại",
       "phone": "Số điện thoại",
       "list": "Danh sách",
@@ -1701,6 +1703,42 @@
     },
     "errors": {
       "invalidCredentials": "API URL hoặc API Key ActiveCampaign không hợp lệ. Vui lòng kiểm tra thông tin và thử lại."
+    }
+  },
+  "getResponse": {
+    "title": "GetResponse",
+    "setting": {
+      "label": "GetResponse",
+      "description": "Tích hợp này cho phép bạn lưu thông tin liên hệ của khách hàng từ bot vào GetResponse."
+    },
+    "fields": {
+      "apiKey": "API Key",
+      "list": "List",
+      "listPlaceholder": "Chọn list",
+      "email": "Trường Email",
+      "emailPlaceholder": "Chọn trường email",
+      "emailTooltip": "Trường liên hệ chứa email để nhận diện contacts trong GetResponse.",
+      "tags": "Tags",
+      "tagsPlaceholder": "Chọn tags",
+      "dayOfCycle": "Ngày trong chu kỳ autoresponder",
+      "dayOfCyclePlaceholder": "0",
+      "dayOfCycleTooltip": "Di chuyển liên hệ đến ngày cụ thể trong chu kỳ autoresponder. Nhập 0 để bắt đầu từ ngày 0.",
+      "optional": "Không bắt buộc"
+    },
+    "campaigns": {
+      "loading": "Đang tải list GetResponse...",
+      "error": "Không thể tải list GetResponse. Hãy kiểm tra tích hợp đã được kết nối.",
+      "empty": "Không tìm thấy list GetResponse.",
+      "limited": "Chỉ hiển thị trang đầu tiên của list GetResponse."
+    },
+    "tags": {
+      "loading": "Đang tải tags GetResponse...",
+      "error": "Không thể tải tags GetResponse. Hãy kiểm tra tích hợp đã được kết nối.",
+      "empty": "Không tìm thấy tags GetResponse.",
+      "limited": "Chỉ hiển thị trang đầu tiên của tags GetResponse."
+    },
+    "errors": {
+      "invalidApiKey": "API Key không hợp lệ. Vui lòng kiểm tra lại API Key GetResponse và thử lại."
     }
   },
   "mailchimp": {

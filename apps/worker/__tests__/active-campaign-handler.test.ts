@@ -73,8 +73,6 @@ const createProps = () =>
     step: {
       id: "step-1",
       emailField: "email",
-      firstNameField: "firstName",
-      lastNameField: "lastName",
       phoneField: "phone",
       listIds: ["list-1"],
       tagIds: ["tag-1"],
@@ -87,8 +85,6 @@ const createProps = () =>
 beforeEach(() => {
   state.fields = {
     email: " Person@Example.COM ",
-    firstName: " Ada ",
-    lastName: " Lovelace ",
     phone: " 123 ",
     company: " Analytical Engines ",
   }
@@ -110,9 +106,8 @@ describe("syncActiveCampaignContact", () => {
       ctx: expect.any(Object),
       props: {
         email: "person@example.com",
-        firstName: "Ada",
-        lastName: "Lovelace",
         phone: "123",
+        fieldValues: [{ fieldId: "field-1", value: "Analytical Engines" }],
       },
     })
     expect(runAction).toHaveBeenNthCalledWith(2, "addContactToList", {
@@ -122,14 +117,6 @@ describe("syncActiveCampaignContact", () => {
     expect(runAction).toHaveBeenNthCalledWith(3, "addTagToContact", {
       ctx: expect.any(Object),
       props: { contactId: "contact-123", tagId: "tag-1" },
-    })
-    expect(runAction).toHaveBeenNthCalledWith(4, "setContactFieldValue", {
-      ctx: expect.any(Object),
-      props: {
-        contactId: "contact-123",
-        fieldId: "field-1",
-        value: "Analytical Engines",
-      },
     })
 
     const lockKey = runExclusive.mock.calls[0]?.[0].key

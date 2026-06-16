@@ -51,6 +51,7 @@ import { type ExecuteStepProps, seekConnectedNode } from "./flow-utils"
 import { handleAIGenerateImage } from "./generate-image"
 import { handleAIGenerateText } from "./generate-text"
 import { handleAIGenerateTextAgent } from "./generate-text-agent"
+import { addGetResponseContact } from "./get-response-handler"
 import { getUserData } from "./get-user-data"
 import { syncKlaviyoProfile } from "./klaviyo-handler"
 import { addMailchimpMember } from "./mailchimp-handler"
@@ -356,6 +357,7 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.landingPage]: undefined,
   [stepTypes.enum.markEmailVerified]: markEmailVerified,
   [stepTypes.enum.activeCampaignSyncContact]: syncActiveCampaignContact,
+  [stepTypes.enum.getResponseAddContact]: addGetResponseContact,
   [stepTypes.enum.dripSubscribeSubscriber]: subscribeDripSubscriber,
   [stepTypes.enum.mailchimpAddMember]: addMailchimpMember,
   [stepTypes.enum.mailerLiteAddSubscriber]: addMailerLiteSubscriber,

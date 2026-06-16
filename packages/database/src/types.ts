@@ -36,6 +36,8 @@ export type IntegrationDeepseekModel =
   typeof schema.integrationDeepseekModel.$inferSelect
 export type IntegrationGeminiModel =
   typeof schema.integrationGeminiModel.$inferSelect
+export type IntegrationGetResponseModel =
+  typeof schema.integrationGetResponseModel.$inferSelect
 export type IntegrationModel = typeof schema.integrationModel.$inferSelect
 export type IntegrationActiveCampaignModel =
   typeof schema.integrationActiveCampaignModel.$inferSelect

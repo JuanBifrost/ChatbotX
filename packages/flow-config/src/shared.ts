@@ -24,6 +24,7 @@ import { followConversationStepSchema } from "./steps/follow-conversation"
 import { formatDateStepSchema } from "./steps/format-date"
 import { generateCodeStepSchema } from "./steps/generate-code"
 import { getDataFromJsonStepSchema } from "./steps/get-data-from-json"
+import { getResponseAddContactSchema } from "./steps/get-response-add-contact"
 import { klaviyoSyncProfileSchema } from "./steps/klaviyo-sync-profile"
 import { mailchimpAddMemberSchema } from "./steps/mailchimp-add-member"
 import { mailerLiteAddSubscriberSchema } from "./steps/mailer-lite-add-subscriber"
@@ -94,6 +95,7 @@ const emailSteps = [
   optInEmailStepSchema,
   optOutEmailStepSchema,
   activeCampaignSyncContactSchema,
+  getResponseAddContactSchema,
   mailchimpAddMemberSchema,
   mailerLiteAddSubscriberSchema,
   moosendCreateContactSchema,

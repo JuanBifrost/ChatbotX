@@ -18,6 +18,7 @@ type SettingIntegrationLayoutProps = {
   deepSeek?: ReactNode
   googleSheets?: ReactNode
   activeCampaign?: ReactNode
+  getResponse?: ReactNode
   mailchimp?: ReactNode
   mailerLite?: ReactNode
   moosend?: ReactNode
@@ -34,6 +35,7 @@ export default function SettingIntegrationLayout({
   deepSeek,
   googleSheets,
   activeCampaign,
+  getResponse,
   mailchimp,
   mailerLite,
   moosend,
@@ -78,6 +80,11 @@ export default function SettingIntegrationLayout({
       keyName: t("activeCampaign.title"),
       icon: MailIcon,
       content: activeCampaign,
+    },
+    {
+      keyName: t("getResponse.title"),
+      icon: MailIcon,
+      content: getResponse,
     },
     {
       keyName: t("mailchimp.title"),

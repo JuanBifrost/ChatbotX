@@ -30,5 +30,3 @@ export const activeCampaignContactTagsPath = () =>
   activeCampaignPath("contactTags")
 export const activeCampaignContactListsPath = () =>
   activeCampaignPath("contactLists")
-export const activeCampaignFieldValuesPath = () =>
-  activeCampaignPath("fieldValues")

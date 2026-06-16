@@ -70,8 +70,6 @@ export const syncActiveCampaignContact = async (
       }
     }
 
-    const firstName = readOptionalField(fields, step.firstNameField)
-    const lastName = readOptionalField(fields, step.lastNameField)
     const phone = readOptionalField(fields, step.phoneField)
 
     const fieldValues = step.fieldValues
@@ -121,8 +119,6 @@ export const syncActiveCampaignContact = async (
             ctx,
             props: {
               email,
-              firstName,
-              lastName,
               phone,
               fieldValues,
             },

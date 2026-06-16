@@ -30,6 +30,7 @@ import { followConversationStep } from "./follow-conversation"
 import { formatDateStep } from "./format-date"
 import { generateCodeStep } from "./generate-code"
 import { getDataFromJsonStep } from "./get-data-from-json"
+import { getResponseAddContactStep } from "./get-response-add-contact"
 import { getUserDataStep } from "./get-user-data"
 import { klaviyoSyncProfileStep } from "./klaviyo-sync-profile"
 import { mailchimpAddMemberStep } from "./mailchimp-add-member"
@@ -106,6 +107,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.blockContact]: blockContactStep,
   [stepTypes.enum.markEmailVerified]: markEmailVerifiedStep,
   [stepTypes.enum.activeCampaignSyncContact]: activeCampaignSyncContactStep,
+  [stepTypes.enum.getResponseAddContact]: getResponseAddContactStep,
   [stepTypes.enum.dripSubscribeSubscriber]: dripSubscribeSubscriberStep,
   [stepTypes.enum.mailchimpAddMember]: mailchimpAddMemberStep,
   [stepTypes.enum.mailerLiteAddSubscriber]: mailerLiteAddSubscriberStep,

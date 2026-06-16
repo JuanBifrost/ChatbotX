@@ -60,6 +60,7 @@ import { integrationClaudeRelations } from "./integration-claude"
 import { integrationDeepseekRelations } from "./integration-deepseek"
 import { integrationDripRelations } from "./integration-drip"
 import { integrationGeminiRelations } from "./integration-gemini"
+import { integrationGetResponseRelations } from "./integration-get-response"
 import { integrationGoogleSheetsRelations } from "./integration-google-sheets"
 import { integrationInstagramRelations } from "./integration-instagram"
 import { integrationKlaviyoRelations } from "./integration-klaviyo"
@@ -186,6 +187,7 @@ export const relations = {
   ...integrationMailerLiteRelations,
   ...integrationMoosendRelations,
   ...integrationDripRelations,
+  ...integrationGetResponseRelations,
   ...integrationSendGridRelations,
   ...flowAnalyticsSessionRelations,
   ...flowNodeStatRelations,

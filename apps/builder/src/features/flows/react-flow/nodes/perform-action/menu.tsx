@@ -384,6 +384,11 @@ export const performActionMenus = (t: TranslationFn): MenuItem[] => [
         stepType: stepTypes.enum.activeCampaignSyncContact,
       },
       {
+        label: t("flows.actions.getResponseAddContact"),
+        icon: MailIcon,
+        stepType: stepTypes.enum.getResponseAddContact,
+      },
+      {
         label: t("flows.actions.mailchimpAddMember"),
         icon: MailIcon,
         stepType: stepTypes.enum.mailchimpAddMember,

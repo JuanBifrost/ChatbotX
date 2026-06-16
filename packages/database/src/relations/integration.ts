@@ -36,6 +36,10 @@ export const integrationRelations = defineRelationsPart(schema, (r) => ({
       from: r.integrationModel.id,
       to: r.integrationDripModel.integrationId,
     }),
+    integrationGetResponse: r.one.integrationGetResponseModel({
+      from: r.integrationModel.id,
+      to: r.integrationGetResponseModel.integrationId,
+    }),
     integrationSendGrid: r.one.integrationSendGridModel({
       from: r.integrationModel.id,
       to: r.integrationSendGridModel.integrationId,

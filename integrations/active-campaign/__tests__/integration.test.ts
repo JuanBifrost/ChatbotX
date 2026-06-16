@@ -120,7 +120,7 @@ describe("ActiveCampaign integration", () => {
     })
   })
 
-  test("posts list, tag and custom field mutations with provider IDs", async () => {
+  test("posts list and tag mutations with provider IDs", async () => {
     const requestBodies: unknown[] = []
     const fetchMock = vi.fn(async (request: Request) => {
       requestBodies.push(await request.clone().json())
@@ -142,15 +142,10 @@ describe("ActiveCampaign integration", () => {
       ctx,
       props: { contactId: "123", tagId: "7" },
     })
-    await integration.runAction("setContactFieldValue", {
-      ctx,
-      props: { contactId: "123", fieldId: "9", value: "Gold" },
-    })
 
     expect(requestBodies).toEqual([
       { contactList: { contact: "123", list: "5", status: "1" } },
       { contactTag: { contact: "123", tag: "7" } },
-      { fieldValue: { contact: "123", field: "9", value: "Gold" } },
     ])
   })
 

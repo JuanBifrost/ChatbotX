@@ -99,33 +99,43 @@ const ActiveCampaignDialog = ({ parentName }: { parentName: string }) => {
     name: "fieldValues",
   })
 
+  const isAutomationMode = operation === "addContactToAutomation"
+
   const {
     data: listsResponse,
     error: listsError,
     isLoading: listsLoading,
   } = callAPI<{ data: ActiveCampaignList[] }>(
-    `/api/workspaces/${workspaceId}/active-campaign/lists`,
+    isAutomationMode
+      ? null
+      : `/api/workspaces/${workspaceId}/active-campaign/lists`,
   )
   const {
     data: automationsResponse,
     error: automationsError,
     isLoading: automationsLoading,
   } = callAPI<{ data: ActiveCampaignAutomation[] }>(
-    `/api/workspaces/${workspaceId}/active-campaign/automations`,
+    isAutomationMode
+      ? `/api/workspaces/${workspaceId}/active-campaign/automations`
+      : null,
   )
   const {
     data: tagsResponse,
     error: tagsError,
     isLoading: tagsLoading,
   } = callAPI<{ data: ActiveCampaignTag[] }>(
-    `/api/workspaces/${workspaceId}/active-campaign/tags`,
+    isAutomationMode
+      ? null
+      : `/api/workspaces/${workspaceId}/active-campaign/tags`,
   )
   const {
     data: customFieldsResponse,
     error: customFieldsError,
     isLoading: customFieldsLoading,
   } = callAPI<{ data: ActiveCampaignCustomField[] }>(
-    `/api/workspaces/${workspaceId}/active-campaign/custom-fields`,
+    isAutomationMode
+      ? null
+      : `/api/workspaces/${workspaceId}/active-campaign/custom-fields`,
   )
 
   const listOptions = useMemo(

@@ -13,7 +13,6 @@ import {
   activeCampaignContactSyncPath,
   activeCampaignContactTagsPath,
   activeCampaignFieldsPath,
-  activeCampaignFieldValuesPath,
   activeCampaignListsPath,
   activeCampaignTagsPath,
 } from "./constants"
@@ -34,7 +33,6 @@ import {
   activeCampaignCredentialSchema,
   activeCampaignEmptyResponseSchema,
   activeCampaignFieldsResponseSchema,
-  activeCampaignFieldValuePayloadSchema,
   activeCampaignListsResponseSchema,
   activeCampaignTagsResponseSchema,
   createActiveCampaignAuth,
@@ -205,24 +203,6 @@ const config: IntegrationDefinition<
             contactTag: {
               contact: payload.contactId,
               tag: payload.tagId,
-            },
-          },
-        },
-      )
-    },
-    setContactFieldValue: async ({ ctx, props }) => {
-      const payload = activeCampaignFieldValuePayloadSchema.parse(props)
-      await activeCampaignRequest(
-        ctx.auth,
-        activeCampaignFieldValuesPath(),
-        activeCampaignEmptyResponseSchema,
-        {
-          method: "post",
-          json: {
-            fieldValue: {
-              contact: payload.contactId,
-              field: payload.fieldId,
-              value: payload.value,
             },
           },
         },

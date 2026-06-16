@@ -184,15 +184,6 @@ export type ActiveCampaignContactTagPayload = z.infer<
   typeof activeCampaignContactTagPayloadSchema
 >
 
-export const activeCampaignFieldValuePayloadSchema = z.object({
-  contactId: z.string().trim().min(1),
-  fieldId: z.string().trim().min(1),
-  value: z.string().trim().min(1),
-})
-export type ActiveCampaignFieldValuePayload = z.infer<
-  typeof activeCampaignFieldValuePayloadSchema
->
-
 export const activeCampaignErrorSchema = z
   .object({
     message: z.string().optional(),
@@ -246,13 +237,6 @@ export type ActiveCampaignActions = {
     {
       ctx: Context<ActiveCampaignAuthValue>
       props: ActiveCampaignContactTagPayload
-    },
-    void
-  >
-  setContactFieldValue: Handler<
-    {
-      ctx: Context<ActiveCampaignAuthValue>
-      props: ActiveCampaignFieldValuePayload
     },
     void
   >

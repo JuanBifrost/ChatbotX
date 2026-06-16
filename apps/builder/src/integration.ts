@@ -1,6 +1,7 @@
 import { integration as integrationActiveCampaign } from "@chatbotx.io/integration-active-campaign"
 import { integration as integrationChatbotx } from "@chatbotx.io/integration-chatbotx"
 import { integration as integrationDrip } from "@chatbotx.io/integration-drip"
+import { integration as integrationGetResponse } from "@chatbotx.io/integration-get-response"
 import { integration as integrationGoogleSheets } from "@chatbotx.io/integration-google-sheets"
 import { integration as integrationInstagram } from "@chatbotx.io/integration-instagram"
 import { integration as integrationKlaviyo } from "@chatbotx.io/integration-klaviyo"
@@ -22,6 +23,7 @@ export const integrations = {
   instagram: integrationInstagram,
   activeCampaign: integrationActiveCampaign,
   drip: integrationDrip,
+  getResponse: integrationGetResponse,
   klaviyo: integrationKlaviyo,
   mailchimp: integrationMailchimp,
   mailerLite: integrationMailerLite,

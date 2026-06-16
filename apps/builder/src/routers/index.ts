@@ -17,6 +17,7 @@ import { foldersAPI } from "@/features/folders/api"
 import { inboxesAPI } from "@/features/inboxes/api"
 import { integrationActiveCampaignAPI } from "@/features/integration-active-campaign/api"
 import { integrationDripAPI } from "@/features/integration-drip/api"
+import { integrationGetResponseAPI } from "@/features/integration-get-response/api"
 import { integrationKlaviyoAPI } from "@/features/integration-klaviyo/api"
 import { integrationMailchimpAPI } from "@/features/integration-mailchimp/api"
 import { integrationMailerLiteAPI } from "@/features/integration-mailer-lite/api"
@@ -60,6 +61,7 @@ export const router = {
     .router(analyticsRoutes),
   integrationActiveCampaignAPI,
   integrationDripAPI,
+  integrationGetResponseAPI,
   integrationKlaviyoAPI,
   integrationMailchimpAPI,
   integrationMailerLiteAPI,

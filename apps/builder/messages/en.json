@@ -719,6 +719,9 @@
     "activeCampaign": {
       "label": "ActiveCampaign"
     },
+    "getResponse": {
+      "label": "GetResponse"
+    },
     "mailchimp": {
       "label": "Mailchimp"
     },
@@ -1479,6 +1482,7 @@
       "klaviyoSyncProfile": "Add Contact to Klaviyo",
       "moosendCreateContact": "Add Contact to Moosend",
       "dripSubscribeSubscriber": "Add Contact to Drip",
+      "getResponseAddContact": "Add Contact to GetResponse",
       "sendGridAddContact": "Add Contact to SendGrid",
       "openWebsite": "Open Website",
       "optInEmail": "Opt In Email",
@@ -1654,8 +1658,6 @@
       "operation": "Operation",
       "emailField": "Email Field",
       "emailTooltip": "Contact field containing the email used to identify the ActiveCampaign contact.",
-      "firstNameField": "First name field",
-      "lastNameField": "Last name field",
       "phoneField": "Phone field",
       "phone": "Phone",
       "list": "List",
@@ -1694,6 +1696,42 @@
     },
     "errors": {
       "invalidCredentials": "Invalid ActiveCampaign API URL or API Key. Please check your credentials and try again."
+    }
+  },
+  "getResponse": {
+    "title": "GetResponse",
+    "setting": {
+      "label": "GetResponse",
+      "description": "This integration lets you save customers contacts from your bot to GetResponse."
+    },
+    "fields": {
+      "apiKey": "API Key",
+      "list": "List",
+      "listPlaceholder": "Select a list",
+      "email": "Email Field",
+      "emailPlaceholder": "Select an email field",
+      "emailTooltip": "Contact field that contains the email to identify contacts in GetResponse.",
+      "tags": "Tags",
+      "tagsPlaceholder": "Select tags",
+      "dayOfCycle": "Day of Autoresponder Cycle",
+      "dayOfCyclePlaceholder": "0",
+      "dayOfCycleTooltip": "Move a contact to a specific day in your autoresponder cycle. Enter 0 to start at day 0.",
+      "optional": "Optional"
+    },
+    "campaigns": {
+      "loading": "Loading GetResponse lists...",
+      "error": "Failed to load GetResponse lists. Check that the integration is connected.",
+      "empty": "No GetResponse lists found.",
+      "limited": "Only the first page of GetResponse lists is shown."
+    },
+    "tags": {
+      "loading": "Loading GetResponse tags...",
+      "error": "Failed to load GetResponse tags. Check that the integration is connected.",
+      "empty": "No GetResponse tags found.",
+      "limited": "Only the first page of GetResponse tags is shown."
+    },
+    "errors": {
+      "invalidApiKey": "Invalid API Key. Please check your GetResponse API Key and try again."
     }
   },
   "mailchimp": {

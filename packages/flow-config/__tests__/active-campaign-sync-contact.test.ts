@@ -12,8 +12,6 @@ describe("activeCampaignSyncContactSchema", () => {
     expect(value).toMatchObject({
       operation: "createOrUpdateContact",
       emailField: "email",
-      firstNameField: undefined,
-      lastNameField: undefined,
       phoneField: undefined,
       automationId: undefined,
       listIds: [],
