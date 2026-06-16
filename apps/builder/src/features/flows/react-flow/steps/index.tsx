@@ -1,5 +1,6 @@
 import { type StepType, stepTypes } from "@chatbotx.io/flow-config"
 import { memo } from "react"
+import { activeCampaignSyncContactStep } from "./active-campaign-sync-contact"
 import { addContactNotesStep } from "./add-contact-notes"
 import { addContactTagStep } from "./add-contact-tag"
 import { addNotesStep } from "./add-notes"
@@ -104,6 +105,7 @@ export const allSteps: Record<StepType, StepDefinition<any> | undefined> = {
   [stepTypes.enum.unarchiveConversation]: unarchiveConversationStep,
   [stepTypes.enum.blockContact]: blockContactStep,
   [stepTypes.enum.markEmailVerified]: markEmailVerifiedStep,
+  [stepTypes.enum.activeCampaignSyncContact]: activeCampaignSyncContactStep,
   [stepTypes.enum.dripSubscribeSubscriber]: dripSubscribeSubscriberStep,
   [stepTypes.enum.mailchimpAddMember]: mailchimpAddMemberStep,
   [stepTypes.enum.mailerLiteAddSubscriber]: mailerLiteAddSubscriberStep,

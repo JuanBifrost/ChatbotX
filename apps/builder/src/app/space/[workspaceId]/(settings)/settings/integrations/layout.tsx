@@ -11,18 +11,19 @@ import { useTranslations } from "next-intl"
 import type { ReactNode } from "react"
 
 type SettingIntegrationLayoutProps = {
-  workspaceToken: ReactNode
-  openAI: ReactNode
-  gemini: ReactNode
-  claude: ReactNode
-  deepSeek: ReactNode
-  googleSheets: ReactNode
-  mailchimp: ReactNode
-  mailerLite: ReactNode
-  moosend: ReactNode
-  drip: ReactNode
-  sendGrid: ReactNode
-  klaviyo: ReactNode
+  workspaceToken?: ReactNode
+  openAI?: ReactNode
+  gemini?: ReactNode
+  claude?: ReactNode
+  deepSeek?: ReactNode
+  googleSheets?: ReactNode
+  activeCampaign?: ReactNode
+  mailchimp?: ReactNode
+  mailerLite?: ReactNode
+  moosend?: ReactNode
+  drip?: ReactNode
+  sendGrid?: ReactNode
+  klaviyo?: ReactNode
 }
 
 export default function SettingIntegrationLayout({
@@ -32,6 +33,7 @@ export default function SettingIntegrationLayout({
   claude,
   deepSeek,
   googleSheets,
+  activeCampaign,
   mailchimp,
   mailerLite,
   moosend,
@@ -71,6 +73,11 @@ export default function SettingIntegrationLayout({
       keyName: t("googleSheets.title"),
       icon: TableIcon,
       content: googleSheets,
+    },
+    {
+      keyName: t("activeCampaign.title"),
+      icon: MailIcon,
+      content: activeCampaign,
     },
     {
       keyName: t("mailchimp.title"),

@@ -723,6 +723,9 @@
     "googleSheets": {
       "label": "Google Sheets"
     },
+    "activeCampaign": {
+      "label": "ActiveCampaign"
+    },
     "mailchimp": {
       "label": "Mailchimp"
     },
@@ -1477,6 +1480,7 @@
       "getDataFromJson": "Lấy dữ liệu từ JSON",
       "inboxActions": "Hành động hộp thư",
       "markEmailVerified": "Đánh dấu email đã xác minh",
+      "activeCampaignSyncContact": "Thêm liên hệ vào ActiveCampaign",
       "mailchimpAddMember": "Thêm liên hệ vào MailChimp",
       "mailerLiteAddSubscriber": "Thêm liên hệ vào MailerLite",
       "klaviyoSyncProfile": "Thêm liên hệ vào Klaviyo",
@@ -1640,6 +1644,64 @@
     },
     "header": "Tiêu đề cột",
     "title": "Google"
+  },
+  "activeCampaign": {
+    "title": "ActiveCampaign",
+    "setting": {
+      "label": "ActiveCampaign",
+      "description": "Tích hợp này cho phép bạn lưu thông tin liên hệ của khách hàng từ bot vào ActiveCampaign."
+    },
+    "dialog": {
+      "description": "Nhập API URL và API Key từ phần cài đặt tài khoản ActiveCampaign của bạn."
+    },
+    "fields": {
+      "apiUrl": "API URL",
+      "apiUrlPlaceholder": "https://youraccount.api-us1.com",
+      "apiKey": "API Key",
+      "operation": "Thao tác",
+      "emailField": "Trường email",
+      "emailTooltip": "Trường liên hệ chứa email dùng để định danh liên hệ trong ActiveCampaign.",
+      "firstNameField": "Trường tên",
+      "lastNameField": "Trường họ",
+      "phoneField": "Trường số điện thoại",
+      "phone": "Số điện thoại",
+      "list": "Danh sách",
+      "lists": "Danh sách",
+      "tags": "Thẻ",
+      "automation": "Automation",
+      "customFields": "Trường tùy chỉnh trong ActiveCampaign",
+      "optional": "Không bắt buộc",
+      "nothingSelected": "Chưa chọn",
+      "emptyField": "---",
+      "addCustomField": "Thêm trường tùy chỉnh"
+    },
+    "operations": {
+      "createOrUpdateContact": "Tạo hoặc cập nhật liên hệ",
+      "addContactToAutomation": "Thêm liên hệ vào Automation"
+    },
+    "lists": {
+      "loading": "Đang tải danh sách ActiveCampaign...",
+      "error": "Không thể tải danh sách ActiveCampaign. Hãy kiểm tra tích hợp đã được kết nối.",
+      "empty": "Không tìm thấy danh sách ActiveCampaign."
+    },
+    "automations": {
+      "loading": "Đang tải automation ActiveCampaign...",
+      "error": "Không thể tải automation ActiveCampaign. Hãy kiểm tra tích hợp đã được kết nối.",
+      "empty": "Không tìm thấy automation ActiveCampaign."
+    },
+    "tags": {
+      "loading": "Đang tải thẻ ActiveCampaign...",
+      "error": "Không thể tải thẻ ActiveCampaign. Hãy kiểm tra tích hợp đã được kết nối.",
+      "empty": "Không tìm thấy thẻ ActiveCampaign."
+    },
+    "customFields": {
+      "loading": "Đang tải trường tùy chỉnh ActiveCampaign...",
+      "error": "Không thể tải trường tùy chỉnh ActiveCampaign. Hãy kiểm tra tích hợp đã được kết nối.",
+      "empty": "Không tìm thấy trường tùy chỉnh ActiveCampaign."
+    },
+    "errors": {
+      "invalidCredentials": "API URL hoặc API Key ActiveCampaign không hợp lệ. Vui lòng kiểm tra thông tin và thử lại."
+    }
   },
   "mailchimp": {
     "title": "Mailchimp",

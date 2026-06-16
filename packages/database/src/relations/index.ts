@@ -55,6 +55,7 @@ import { inboxContactStatsRelations } from "./inbox-contact-stats"
 import { inboxTeamRelations } from "./inbox-team"
 import { inboxTeamMemberRelations } from "./inbox-team-member"
 import { integrationRelations } from "./integration"
+import { integrationActiveCampaignRelations } from "./integration-active-campaign"
 import { integrationClaudeRelations } from "./integration-claude"
 import { integrationDeepseekRelations } from "./integration-deepseek"
 import { integrationDripRelations } from "./integration-drip"
@@ -179,6 +180,7 @@ export const relations = {
   ...integrationTelegramRelations,
   ...integrationTiktokRelations,
   ...integrationInstagramRelations,
+  ...integrationActiveCampaignRelations,
   ...integrationKlaviyoRelations,
   ...integrationMailchimpRelations,
   ...integrationMailerLiteRelations,

@@ -26,6 +26,7 @@ import {
   integrationQueue,
 } from "@chatbotx.io/worker-config"
 import { logger } from "../../lib/logger"
+import { syncActiveCampaignContact } from "./active-campaign-handler"
 import { handleAIAnalyzeImage } from "./analyze-image"
 import {
   addContactNotes,
@@ -354,6 +355,7 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.getDataFromJson]: getDataFromJSON,
   [stepTypes.enum.landingPage]: undefined,
   [stepTypes.enum.markEmailVerified]: markEmailVerified,
+  [stepTypes.enum.activeCampaignSyncContact]: syncActiveCampaignContact,
   [stepTypes.enum.dripSubscribeSubscriber]: subscribeDripSubscriber,
   [stepTypes.enum.mailchimpAddMember]: addMailchimpMember,
   [stepTypes.enum.mailerLiteAddSubscriber]: addMailerLiteSubscriber,

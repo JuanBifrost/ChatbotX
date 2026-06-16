@@ -1,3 +1,4 @@
+import { activeCampaignSyncContactSchema } from "./steps/active-campaign-sync-contact"
 import { addContactNotesStepSchema } from "./steps/add-contact-notes"
 import { addContactTagStepSchema } from "./steps/add-contact-tag"
 import { aiAnalyzeImageSchema } from "./steps/ai-analyze-image"
@@ -92,6 +93,7 @@ const emailSteps = [
   markEmailVerifiedStepSchema,
   optInEmailStepSchema,
   optOutEmailStepSchema,
+  activeCampaignSyncContactSchema,
   mailchimpAddMemberSchema,
   mailerLiteAddSubscriberSchema,
   moosendCreateContactSchema,

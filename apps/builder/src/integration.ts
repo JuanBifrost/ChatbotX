@@ -1,3 +1,4 @@
+import { integration as integrationActiveCampaign } from "@chatbotx.io/integration-active-campaign"
 import { integration as integrationChatbotx } from "@chatbotx.io/integration-chatbotx"
 import { integration as integrationDrip } from "@chatbotx.io/integration-drip"
 import { integration as integrationGoogleSheets } from "@chatbotx.io/integration-google-sheets"
@@ -19,6 +20,7 @@ export const integrations = {
   whatsapp: integrationWhatsapp,
   messenger: integrationMessenger,
   instagram: integrationInstagram,
+  activeCampaign: integrationActiveCampaign,
   drip: integrationDrip,
   klaviyo: integrationKlaviyo,
   mailchimp: integrationMailchimp,
