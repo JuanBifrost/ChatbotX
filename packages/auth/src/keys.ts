@@ -5,11 +5,13 @@ export const keys = () =>
   createEnv({
     server: {
       NEXT_PUBLIC_BUILDER_URL: z.url(),
-      // The dedicated, brand-neutral OAuth broker host registered as the single
-      // redirect_uri with every provider (Google, Facebook, …). All white-label
-      // callbacks land here, then relay back to the originating domain. Optional:
-      // falls back to NEXT_PUBLIC_BUILDER_URL so single-domain deploys keep working.
-      NEXT_PUBLIC_OAUTH_BROKER_URL: z.url().optional(),
+      // The dedicated, brand-neutral broker host — the canonical provider-facing
+      // origin for both OAuth redirect_uris (Google, Facebook, …) and host-validated
+      // webhooks (WhatsApp/Meta, TikTok). It is registered as the single redirect_uri
+      // with every provider; all white-label callbacks land here, then relay back to
+      // the originating domain. Optional: falls back to NEXT_PUBLIC_BUILDER_URL so
+      // single-domain deploys keep working.
+      NEXT_PUBLIC_BROKER_URL: z.url().optional(),
       BETTER_AUTH_SECRET: z.string(),
     },
     runtimeEnv: process.env,
@@ -25,4 +27,4 @@ export const env = keys()
  * configured, so existing single-domain deployments are unaffected.
  */
 export const getBrokerUrl = (): string =>
-  env.NEXT_PUBLIC_OAUTH_BROKER_URL ?? env.NEXT_PUBLIC_BUILDER_URL
+  env.NEXT_PUBLIC_BROKER_URL ?? env.NEXT_PUBLIC_BUILDER_URL

@@ -72,11 +72,14 @@ export function GoogleSettings({
               <div className="font-bold">Client ID:</div>
               <div className="flex items-center gap-2">
                 <span className="truncate">{publicConfig.clientId}</span>
-                <Button className="flex-none" size="icon" variant="outline">
-                  <CopyIcon
-                    className="size-4"
-                    onClick={() => handleCopy(publicConfig.clientId)}
-                  />
+                <Button
+                  className="flex-none"
+                  onClick={() => handleCopy(publicConfig.clientId)}
+                  size="icon"
+                  type="button"
+                  variant="outline"
+                >
+                  <CopyIcon className="size-4" />
                 </Button>
               </div>
             </div>

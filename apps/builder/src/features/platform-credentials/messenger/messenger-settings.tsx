@@ -27,7 +27,7 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { CopyIcon, Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { useClipboard } from "@/hooks/use-clipboard"
 import { buildBrokerCallbackUrl } from "@/lib/oauth-broker"
@@ -44,17 +44,10 @@ export function MessengerSettings({
 }) {
   const t = useTranslations()
   const { handleCopy } = useClipboard()
-  const [webhookUrl, setWebhookUrl] = useState<string>("")
-  useEffect(() => {
-    setWebhookUrl(
-      new URL(
-        "/integrations/messenger/webhook",
-        window.location.origin,
-      ).toString(),
-    )
-  }, [])
-  // OAuth always redirects to the fixed broker callback (not the reseller's
-  // branded domain). Resellers using their own Facebook app whitelist this URI.
+  // Webhook + OAuth callback URLs must live on the fixed, provider-registered
+  // broker host — never the reseller's white-label custom domain, which Meta
+  // cannot reach. Resellers using their own Facebook app whitelist these URIs.
+  const webhookUrl = buildBrokerCallbackUrl("/integrations/messenger/webhook")
   const authCallbackUrl = buildBrokerCallbackUrl(
     "/integrations/messenger/callback",
   )

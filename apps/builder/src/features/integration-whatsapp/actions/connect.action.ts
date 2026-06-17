@@ -21,10 +21,7 @@ import {
   shareCreditLine,
   type WhatsappAuthValue,
 } from "@chatbotx.io/integration-whatsapp"
-import {
-  debugToken,
-  exchangeAccessToken,
-} from "@chatbotx.io/integration-whatsapp/api/auth"
+import { exchangeAccessToken } from "@chatbotx.io/integration-whatsapp/api/auth"
 import {
   getCoexistEligibility,
   normalizeWhatsappDisplayPhoneNumber,
@@ -33,17 +30,18 @@ import {
 } from "@chatbotx.io/integration-whatsapp/api/phone-number"
 import { subscribeWebhook } from "@chatbotx.io/integration-whatsapp/api/webhook"
 import { invalidateCacheByTags } from "@chatbotx.io/redis"
-import { AuthType, SdkException } from "@chatbotx.io/sdk"
+import { SdkException } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
 import { updateWorkspaceLogo } from "@/features/workspaces/actions/upload-logo"
-import { getOriginUrlFromHeader } from "@/lib/domain"
 import { logger } from "@/lib/log"
+import { getBrokerOrigin } from "@/lib/oauth-broker"
 import { authActionClient } from "@/lib/safe-action"
 import {
   type ConnectWhatsappResult,
   type ConnectWhatsappSchema,
   connectWhatsappSchema,
 } from "../schemas"
+import { buildAuthValue, buildWebhookConfig } from "./webhook-url"
 
 async function resolveAccessToken(
   input: ConnectWhatsappSchema,
@@ -102,89 +100,6 @@ async function ensurePhoneNumberNotConnected(
 
   if (existedPhoneNumber) {
     throw new ChatbotXException("Phone number is already connected")
-  }
-}
-
-function buildWebhookConfig(params: {
-  isManual: boolean
-  integrationId: string
-  originUrl: string
-  whatsappSettings: WhatsappCredential
-}): { webhookUrl: string; verifyToken: string } {
-  const { isManual, integrationId, originUrl, whatsappSettings } = params
-
-  if (isManual) {
-    return {
-      verifyToken: crypto.randomUUID(),
-      webhookUrl: new URL(
-        `/integrations/whatsapp/webhook/${integrationId}`,
-        originUrl,
-      ).toString(),
-    }
-  }
-
-  return {
-    verifyToken: whatsappSettings.verifyToken,
-    webhookUrl: new URL("/integrations/whatsapp/webhook", originUrl).toString(),
-  }
-}
-
-async function buildAuthValue(params: {
-  whatsappSettings: WhatsappCredential
-  accessToken: string
-  verifyToken: string
-  webhookUrl: string
-  originUrl: string
-  wabaId: string
-  phoneNumber: WhatsappPhoneNumber
-  businessId: string
-  isManual: boolean
-}): Promise<WhatsappAuthValue> {
-  const {
-    whatsappSettings,
-    accessToken,
-    verifyToken,
-    webhookUrl,
-    originUrl,
-    wabaId,
-    phoneNumber,
-    businessId,
-    isManual,
-  } = params
-
-  let redirectUrl = webhookUrl
-
-  if (!isManual) {
-    redirectUrl = new URL(
-      "integrations/whatsapp/callback",
-      originUrl,
-    ).toString()
-  }
-
-  const metadata: WhatsappAuthValue["metadata"] = {
-    wabaId,
-    phoneNumber,
-    businessId,
-    webhookUrl,
-  }
-
-  if (isManual) {
-    metadata.isManual = true
-
-    whatsappSettings.clientSecret = ""
-
-    const tokenData = await debugToken(accessToken)
-    whatsappSettings.clientId = tokenData?.app_id ?? ""
-  }
-
-  return {
-    clientId: whatsappSettings.clientId,
-    clientSecret: whatsappSettings.clientSecret,
-    verifyToken,
-    redirectUrl,
-    authType: AuthType.oauth2,
-    tokens: { accessToken },
-    metadata,
   }
 }
 
@@ -405,7 +320,12 @@ export const connectWhatsappAction = authActionClient
 
         await ensurePhoneNumberNotConnected(phoneNumber.id)
 
-        const originUrl = await getOriginUrlFromHeader()
+        // Provider-facing URLs (the webhook override_callback_uri sent to Meta on
+        // manual connect, and the stored OAuth redirectUrl) must live on the fixed
+        // broker / canonical host registered with Meta — never the white-label
+        // custom domain the request arrived on, which Meta cannot reach or trust.
+        // Mirrors the broker pattern used by messenger/instagram (lib/oauth-broker.ts).
+        const originUrl = getBrokerOrigin()
         const integrationId = createId()
         const isManual = parsedInput.manualConnect
         const businessId = parsedInput.businessId ?? ""

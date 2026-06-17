@@ -99,7 +99,7 @@ host — the **broker** — which then relays the callback back to the originati
 reseller domain. This is the same pattern GoHighLevel uses with
 `marketplace.leadconnectorhq.com`.
 
-- **Config** — `NEXT_PUBLIC_OAUTH_BROKER_URL` (env). Optional; defaults to
+- **Config** — `NEXT_PUBLIC_BROKER_URL` (env). Optional; defaults to
   `NEXT_PUBLIC_BUILDER_URL` so single-domain deployments are unaffected. Resolved via
   `getBrokerUrl()` (`packages/auth/src/keys.ts`) and `getBrokerOrigin()` /
   `buildBrokerCallbackUrl()` (`apps/builder/src/lib/oauth-broker.ts`).
@@ -119,9 +119,9 @@ reseller domain. This is the same pattern GoHighLevel uses with
 ### Provider-console registration runbook
 
 Register these exact URIs in each provider's developer console (platform-owned app,
-and any reseller-owned app). `{broker}` = `NEXT_PUBLIC_OAUTH_BROKER_URL`:
+and any reseller-owned app). `{broker}` = `NEXT_PUBLIC_BROKER_URL`:
 
-| Provider | Redirect URI to register |
+| Provider | URI to register |
 |----------|--------------------------|
 | Google SSO | `{broker}/api/auth/callback/google` |
 | Facebook SSO | `{broker}/api/auth/callback/facebook` |
@@ -130,10 +130,19 @@ and any reseller-owned app). `{broker}` = `NEXT_PUBLIC_OAUTH_BROKER_URL`:
 | Messenger | `{broker}/integrations/messenger/callback` |
 | Instagram | `{broker}/integrations/instagram/callback` |
 | Zalo | `{broker}/integrations/zalo/callback` |
+| WhatsApp webhook | `{broker}/integrations/whatsapp/webhook` |
+| TikTok webhook | `{broker}/integrations/tiktok/webhook` |
 
-The platform-credential settings UI surfaces the broker callback URL per provider so
-resellers can copy the exact value into their own console. Webhook URLs are a
-separate, receive-side concern and stay on the reseller's own domain.
+(The WhatsApp manual-connect flow registers a per-integration variant,
+`{broker}/integrations/whatsapp/webhook/{integrationId}`, sent to Meta as
+`override_callback_uri`.)
+
+The platform-credential settings UI surfaces these URLs per provider so resellers can
+copy the exact value into their own console. Receive-side webhook URLs for providers
+that validate the registered host (e.g. WhatsApp/Meta, TikTok) **also use the broker
+host** — the provider cannot reach an unregistered white-label custom domain. Only
+purely internal receive endpoints (no provider-side host validation) stay on the
+reseller's own domain.
 
 ## Branding
 

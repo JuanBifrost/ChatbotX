@@ -22,7 +22,7 @@ import { resolveRelayTarget } from "@/lib/oauth-referer"
  * findOne reseller-owner fallback in `@chatbotx.io/auth` `server.ts`.
  *
  * OAuth is the exception: the provider redirects to a fixed, pre-registered
- * redirect URI (the broker host — `NEXT_PUBLIC_OAUTH_BROKER_URL`, defaulting to
+ * redirect URI (the broker host — `NEXT_PUBLIC_BROKER_URL`, defaulting to
  * the builder URL), so on the `/callback/*` leg `x-domain` is the broker host.
  * There we recover the tenant from the persisted OAuth `state` instead — its
  * `callbackURL` carries the originating reseller origin. Without this, a social

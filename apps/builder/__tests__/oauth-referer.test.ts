@@ -135,7 +135,7 @@ describe("with a dedicated broker host", () => {
     vi.doMock("@/env", () => ({
       env: {
         NEXT_PUBLIC_BUILDER_URL: PLATFORM_URL,
-        NEXT_PUBLIC_OAUTH_BROKER_URL: BROKER_URL,
+        NEXT_PUBLIC_BROKER_URL: BROKER_URL,
       },
     }))
     return await import("@/lib/oauth-referer")

@@ -1401,14 +1401,16 @@
       "placeholder": "Enter code"
     },
     "authCallbackUrl": {
-      "label": "Auth Callback URL"
+      "label": "Auth Callback URL",
+      "hint": "Register this exact URL as the OAuth redirect URI in your provider app. It must use this host, not your custom domain — the provider cannot reach a custom domain."
     },
     "signInCallbackUrl": {
       "label": "Sign-in Callback URL",
       "hint": "Add this to your Google app's authorized redirect URIs to enable Google sign-in."
     },
     "webhookUrl": {
-      "label": "Webhook URL"
+      "label": "Webhook URL",
+      "hint": "Register this exact Webhook URL in your provider app. It must use this host, not your custom domain — the provider cannot reach a custom domain."
     },
     "tiktok": {
       "label": "TikTok",

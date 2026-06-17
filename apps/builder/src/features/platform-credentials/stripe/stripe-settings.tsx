@@ -26,9 +26,10 @@ import { useHookFormAction } from "@next-safe-action/adapter-react-hook-form/hoo
 import { CopyIcon, Loader2Icon } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { toast } from "sonner"
 import { useClipboard } from "@/hooks/use-clipboard"
+import { buildBrokerCallbackUrl } from "@/lib/oauth-broker"
 import { updateStripeSettingsAction } from "./update-stripe-settings.action"
 
 export function StripeSettings({
@@ -39,15 +40,10 @@ export function StripeSettings({
   const t = useTranslations()
   const { handleCopy } = useClipboard()
 
-  const [webhookUrl, setWebhookUrl] = useState<string>("")
-  useEffect(() => {
-    setWebhookUrl(
-      new URL(
-        "/integrations/stripe/webhook",
-        window.location.origin,
-      ).toString(),
-    )
-  }, [])
+  // Webhook URL must live on the fixed, canonical broker host — never the
+  // reseller's white-label custom domain. Stripe signature verification is
+  // host-independent, so the broker host receives and validates events.
+  const webhookUrl = buildBrokerCallbackUrl("/integrations/stripe/webhook")
 
   return (
     <Card>

@@ -1413,14 +1413,16 @@
       "placeholder": "Nhập mã"
     },
     "authCallbackUrl": {
-      "label": "URL xác thực"
+      "label": "URL xác thực",
+      "hint": "Đăng ký chính xác URL này làm URI chuyển hướng OAuth trong ứng dụng nhà cung cấp của bạn. URL phải dùng host này, không phải tên miền tùy chỉnh của bạn — nhà cung cấp không thể truy cập tên miền tùy chỉnh."
     },
     "signInCallbackUrl": {
       "label": "URL callback đăng nhập",
       "hint": "Thêm URL này vào danh sách URI chuyển hướng được phép trong ứng dụng Google của bạn để bật đăng nhập bằng Google."
     },
     "webhookUrl": {
-      "label": "URL webhook"
+      "label": "URL webhook",
+      "hint": "Đăng ký chính xác URL Webhook này trong ứng dụng nhà cung cấp của bạn. URL phải dùng host này, không phải tên miền tùy chỉnh của bạn — nhà cung cấp không thể truy cập tên miền tùy chỉnh."
     },
     "tiktok": {
       "label": "TikTok",
