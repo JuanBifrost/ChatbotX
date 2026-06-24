@@ -6,6 +6,7 @@ import { notFound, redirect } from "next/navigation"
 import { isCloud } from "@/env"
 import { AccountRail } from "@/features/workspaces/components/account-rail"
 import WorkspacesList from "@/features/workspaces/components/workspaces-list"
+import { enforcePasswordCurrent } from "@/lib/auth/require-password-current"
 import { getCurrentUserAndAllLinkedWorkspaces } from "@/lib/auth/utils"
 import { buildQuotaMetrics, resolveTrialEndsAt } from "@/lib/quota-metrics"
 
@@ -16,6 +17,10 @@ export default async function MainPage() {
   }
 
   const { user, allWorkspaces, allWorkspaceMembers } = userAndWorkspaces
+
+  // Reseller-provisioned accounts must set their own password before anything
+  // else. Enforced in every protected layout/page, not just here.
+  enforcePasswordCurrent(user)
 
   // Plan + usage limits only apply to the hosted cloud edition. Self-hosted
   // community/enterprise installs use every feature freely — no quota gating.
