@@ -1,9 +1,10 @@
 import { db, eq, sql } from "@chatbotx.io/database/client"
 import { planStatuses } from "@chatbotx.io/database/partials"
-import { userQuotaModel } from "@chatbotx.io/database/schema"
+import { ROOT_TENANT_ID, userQuotaModel } from "@chatbotx.io/database/schema"
 import type { UserQuotaModel } from "@chatbotx.io/database/types"
 import { distributedStore } from "@chatbotx.io/redis"
 import { BaseService } from "../base.service"
+import { isCloud } from "../keys"
 import { logger } from "../logger"
 import {
   LiveCounterStore,
@@ -15,11 +16,28 @@ export type { QuotaMetric } from "../quota-shared/live-counter-store"
 
 /**
  * Cross-repo contract key (read-only here). The enterprise billing layer writes
- * the platform default plan's entitlements to this key; we read it as the
- * free-tier fallback for users with no per-user UserQuota row. Absent in pure
- * OSS installs → no fallback (unlimited), preserving prior behavior.
+ * the platform default plan's entitlements to this key; cloud sign-up uses it
+ * to stamp the initial bootstrap row. Reseller tenants read only their
+ * per-tenant variant `entitlements:default-plan:{tenantId}`. Absent snapshots
+ * in pure OSS installs still mean no overlay fallback (unlimited), preserving
+ * prior behavior.
  */
 const DEFAULT_PLAN_ENTITLEMENT_KEY = "entitlements:default-plan"
+
+// Last-resort fallback used only when the default-plan snapshot is unreadable
+// (cold/flushed Redis). A 1-day `trial` keeps the user signed in but every
+// limit is `0`, so they cannot create anything until the authoritative
+// quota-worker re-anchors the row — a deliberate fail-closed-on-capacity stance
+// for the snapshot-absent window (the user can log in, but not act).
+const BOOTSTRAP_TRIAL_FALLBACK = {
+  planName: "Trial",
+  trialDays: 1,
+  workspacesLimit: 0,
+  macLimit: 0,
+  channelsLimit: 0,
+  teamMembersLimit: 0,
+  contactsLimit: 0,
+} as const
 
 interface DefaultPlanSnapshot {
   channelsLimit: number | null
@@ -33,6 +51,17 @@ interface DefaultPlanSnapshot {
   whiteLabel: boolean
   workspacesLimit: number | null
 }
+
+type BootstrapPlanSnapshot = Pick<
+  DefaultPlanSnapshot,
+  | "channelsLimit"
+  | "contactsLimit"
+  | "macLimit"
+  | "planName"
+  | "teamMembersLimit"
+  | "trialDays"
+  | "workspacesLimit"
+>
 
 /**
  * Result of evaluating whether a user may access the app. `blocked` is the only
@@ -123,6 +152,117 @@ class UserQuotaService extends BaseService {
     return null
   }
 
+  private async readDefaultPlanSnapshot(
+    tenantId?: string | null,
+  ): Promise<DefaultPlanSnapshot | null> {
+    try {
+      if (tenantId && tenantId !== ROOT_TENANT_ID) {
+        return await distributedStore.get<DefaultPlanSnapshot>(
+          `${DEFAULT_PLAN_ENTITLEMENT_KEY}:${tenantId}`,
+        )
+      }
+      return await distributedStore.get<DefaultPlanSnapshot>(
+        DEFAULT_PLAN_ENTITLEMENT_KEY,
+      )
+    } catch (err) {
+      logger.warn({ err }, "user-quota: default-plan snapshot read failed")
+      return null
+    }
+  }
+
+  /**
+   * Stamp a real cloud sign-up quota row before the private quota-worker runs.
+   * Idempotent by `UserQuota.userId`; the worker remains authoritative and may
+   * overwrite this bootstrap row on its next `publishEntitlements` sync.
+   * Surfaces failures to the caller — the sign-up hook swallows them so a stamp
+   * failure never blocks sign-up; the worker re-anchors the row regardless.
+   */
+  async ensureBootstrapPlan(input: {
+    tenantId?: string | null
+    userId: string
+  }): Promise<void> {
+    if (!isCloud()) {
+      return
+    }
+
+    const { tenantId, userId } = input
+
+    const snapshot: BootstrapPlanSnapshot =
+      (await this.readDefaultPlanSnapshot(tenantId)) ?? BOOTSTRAP_TRIAL_FALLBACK
+    const now = new Date()
+    // Distinguish a malformed snapshot (NaN → 1-day lockdown) from an
+    // explicit `0`/negative trial length (a free-forever default plan →
+    // `active`, never expires). Only the malformed case falls back.
+    const rawTrialDays = Number(snapshot.trialDays)
+    const trialDays = Number.isFinite(rawTrialDays)
+      ? Math.max(0, rawTrialDays)
+      : BOOTSTRAP_TRIAL_FALLBACK.trialDays
+    const isTrial = trialDays > 0
+    const periodEnd = isTrial
+      ? new Date(now.getTime() + trialDays * 24 * 60 * 60 * 1000)
+      : null
+
+    const inserted = await db
+      .insert(userQuotaModel)
+      .values({
+        userId,
+        contactsLimit: snapshot.contactsLimit,
+        workspacesLimit: snapshot.workspacesLimit,
+        channelsLimit: snapshot.channelsLimit,
+        teamMembersLimit: snapshot.teamMembersLimit,
+        macLimit: snapshot.macLimit,
+        whiteLabel: false,
+        ssoSaml: false,
+        saasMode: false,
+        planName: snapshot.planName,
+        planStatus: isTrial
+          ? planStatuses.enum.trial
+          : planStatuses.enum.active,
+        periodStart: now,
+        periodEnd,
+        syncedAt: now,
+      })
+      .onConflictDoNothing({ target: userQuotaModel.userId })
+      .returning({ userId: userQuotaModel.userId })
+
+    // Only bust the cache when we actually wrote a row. On a no-op conflict
+    // (hook retry, re-signup, or the worker winning the race) there is
+    // nothing new to invalidate — and skipping it preserves any freshly
+    // cached authoritative row the worker just wrote.
+    if (inserted.length > 0) {
+      await this.store.invalidate(userId)
+    }
+  }
+
+  /**
+   * Read the default-plan snapshot that governs this user, resolved by tenant. A
+   * sub-account (non-root `tenantId`) reads only its reseller's per-tenant
+   * snapshot `entitlements:default-plan:{tenantId}`; root-tenant users read the
+   * global key directly. Returns null on Redis failure or when nothing is published
+   * (pure OSS install) — the caller then leaves the user unconstrained.
+   */
+  private async resolveDefaultPlanSnapshot(
+    userId: string,
+  ): Promise<DefaultPlanSnapshot | null> {
+    let tenantId: string | null = null
+    try {
+      const user = await db.query.userModel.findFirst({
+        where: { id: userId },
+        columns: { tenantId: true },
+      })
+      tenantId = user?.tenantId ?? null
+    } catch (err) {
+      logger.warn(
+        { err, userId },
+        "user-quota: tenant lookup for default-plan failed",
+      )
+      return null
+    }
+
+    // Self-guarded (logs + returns null on its own Redis failure).
+    return this.readDefaultPlanSnapshot(tenantId)
+  }
+
   /**
    * Overlay the shared default-plan entitlement snapshot onto a free-tier user.
    * Fills only unset (null) limit fields and the plan identity, preserving any
@@ -132,15 +272,7 @@ class UserQuotaService extends BaseService {
     userId: string,
     quota: UserQuotaModel | null,
   ): Promise<UserQuotaModel | null> {
-    let snapshot: DefaultPlanSnapshot | null = null
-    try {
-      snapshot = await distributedStore.get<DefaultPlanSnapshot>(
-        DEFAULT_PLAN_ENTITLEMENT_KEY,
-      )
-    } catch (err) {
-      logger.warn({ err }, "user-quota: default-plan snapshot read failed")
-      return null
-    }
+    const snapshot = await this.resolveDefaultPlanSnapshot(userId)
     if (!snapshot) {
       return null
     }
@@ -185,9 +317,9 @@ class UserQuotaService extends BaseService {
       ssoSaml: base.ssoSaml || snapshot.ssoSaml,
       saasMode: base.saasMode || snapshot.saasMode,
       planName: base.planName ?? snapshot.planName,
-      // Fail-open: a user with no per-user row yet (gap between sign-up and the
-      // quota-worker) is never blocked. The worker later writes the real status
-      // ("trial" + periodEnd, etc.), which getAccessState then enforces.
+      // Secondary fail-open fallback: normally cloud sign-up stamps a real
+      // bootstrap row first. If that stamp failed, or for legacy usage-only rows,
+      // the overlay still avoids blocking while the worker writes real status.
       planStatus: base.planStatus ?? planStatuses.enum.active,
     }
   }
