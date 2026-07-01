@@ -6,19 +6,29 @@ import {
   SidebarFooter,
   SidebarHeader,
 } from "@chatbotx.io/ui/components/ui/sidebar"
-import { CircleHelpIcon, Grid2x2PlusIcon } from "lucide-react"
+import {
+  CircleHelpIcon,
+  Grid2x2PlusIcon,
+  MailIcon,
+  PaletteIcon,
+} from "lucide-react"
 import Link from "next/link"
 import { useTranslations } from "next-intl"
 import { BrandIcon } from "@/components/brand-icon"
 import { NavMain } from "@/components/nav-main"
 import { NavUser } from "@/components/nav-user"
+import { isCloud } from "@/env"
 import { authClient } from "@/lib/auth/auth-client"
 
 /**
- * Cloud super-admin sidebar for the `/admin` console.
+ * Super-admin sidebar for the `/admin` console.
  * Gated by `isSuperAdmin` in the parent layout; no auth check needed here.
  */
-export function AdminSidebar() {
+export function AdminSidebar({
+  showEnterpriseItems,
+}: {
+  showEnterpriseItems: boolean
+}) {
   const t = useTranslations()
   const tManage = useTranslations("manageSidebar")
   const { data: session } = authClient.useSession()
@@ -35,11 +45,29 @@ export function AdminSidebar() {
       url: "/admin/platform-credentials",
       icon: Grid2x2PlusIcon,
     },
-    {
-      title: t("platformAdmin.helpItems.title"),
-      url: "/admin/help-items",
-      icon: CircleHelpIcon,
-    },
+    ...(showEnterpriseItems && !isCloud()
+      ? [
+          {
+            title: t("platformBranding.title"),
+            url: "/admin/branding",
+            icon: PaletteIcon,
+          },
+          {
+            title: t("platformEmailTemplates.title"),
+            url: "/admin/email-templates",
+            icon: MailIcon,
+          },
+        ]
+      : []),
+    ...(showEnterpriseItems
+      ? [
+          {
+            title: t("platformAdmin.helpItems.title"),
+            url: "/admin/help-items",
+            icon: CircleHelpIcon,
+          },
+        ]
+      : []),
   ]
 
   return (
