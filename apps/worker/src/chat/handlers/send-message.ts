@@ -23,6 +23,7 @@ import type {
   ChatJobDeleteChannelMessage,
   ChatJobEditChannelMessage,
   ChatJobSendChannelMessage,
+  ChatJobSendFlowStep,
   ChatJobSendTyping,
 } from "@chatbotx.io/worker-config"
 import { ChatJobAction, chatQueue } from "@chatbotx.io/worker-config"
@@ -326,6 +327,7 @@ export async function sendFlowStepToChannel({
   flowVersionId,
   step,
   metadata,
+  richResponse,
   messageId,
   sendFrom,
 }: {
@@ -335,6 +337,7 @@ export async function sendFlowStepToChannel({
   flowVersionId?: string
   step: SendFlowStepData
   metadata?: MetadataPayload
+  richResponse?: ChatJobSendFlowStep["data"]["richResponse"]
   messageId?: string
   sendFrom?: "inbox"
 }): Promise<{ messageIds: string[] }> {
@@ -378,6 +381,7 @@ export async function sendFlowStepToChannel({
         flowVersionId,
         step: resolvedStep,
         metadata,
+        richResponse,
         sendFrom,
       },
     },

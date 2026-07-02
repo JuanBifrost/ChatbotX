@@ -147,6 +147,21 @@ export class WorkspaceMemberService extends BaseService {
       },
     )
   }
+
+  async findByWorkspaceIdAndUserId(input: {
+    tx?: DatabaseClient
+    workspaceId: string
+    userId: string
+  }): Promise<WorkspaceMemberModel | undefined> {
+    const { tx = db, workspaceId, userId } = input
+
+    return await tx.query.workspaceMemberModel.findFirst({
+      where: {
+        workspaceId,
+        userId,
+      },
+    })
+  }
 }
 
 export const workspaceMemberService = new WorkspaceMemberService()
