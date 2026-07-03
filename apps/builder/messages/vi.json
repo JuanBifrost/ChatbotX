@@ -1521,6 +1521,12 @@
   },
   "flows": {
     "title": "Luồng",
+    "quickReplies": {
+      "limitReached": "Đã đạt giới hạn trả lời nhanh ({max})."
+    },
+    "buttons": {
+      "limitReached": "Đã đạt giới hạn nút ({max})."
+    },
     "aiGenerateText": {
       "label": "{name}: Tạo văn bản"
     },

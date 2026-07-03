@@ -18,8 +18,8 @@ import {
   type FlowNode,
   flowEventTypeSchema,
   getNodeFromButton,
+  isQuickReplyCarrierStep,
   type MetadataPayload,
-  type SendQuickReplyStepSchema,
   type StepType,
   stepTypes,
 } from "@chatbotx.io/flow-config"
@@ -56,6 +56,18 @@ const ROUTING_STATUSES = new Set<StepRoutingStatus>([
   "error",
   "skip",
 ])
+
+function findQuickReplyCarrierStep(props: {
+  channel: string | null | undefined
+  steps: BaseStepSchema[]
+}) {
+  for (let index = props.steps.length - 1; index >= 0; index--) {
+    const step = props.steps[index]
+    if (step && isQuickReplyCarrierStep(props.channel, step)) {
+      return step
+    }
+  }
+}
 
 /**
  * Max times a single node may execute within one uninterrupted run.
@@ -182,6 +194,30 @@ export async function runStepsAndQuickReplies(
     flowVersion,
     triggerNextNode = true,
   } = props
+  const quickReplies =
+    "quickReplies" in details && details.quickReplies
+      ? details.quickReplies
+      : []
+  const quickReplyCarrier = details.steps
+    ? findQuickReplyCarrierStep({
+        channel: props.contactInbox.channel,
+        steps: details.steps,
+      })
+    : undefined
+
+  if (quickReplies.length > 0 && !quickReplyCarrier && !props.startFromStepId) {
+    logger.warn(
+      {
+        flowId: flowVersion.flowId,
+        flowVersionId: flowVersion.id,
+        conversationId: props.conversation.id,
+        contactInboxId: props.contactInbox.id,
+        channel: props.contactInbox.channel,
+        targetNodeId: props.targetNodeId,
+      },
+      "Flow node has quick replies but no attachable carrier step for this channel; skipping quick replies",
+    )
+  }
 
   // Loop guard: cap how many times a single node runs within one uninterrupted pass.
   // Only a real node entry is counted (no startFromStepId — mid-node re-dispatches reuse
@@ -248,6 +284,8 @@ export async function runStepsAndQuickReplies(
     const result = await executeMultipleSteps({
       ...props,
       nodeVisits,
+      quickReplies:
+        quickReplyCarrier?.id === currentStep.id ? quickReplies : undefined,
       steps: [currentStep],
     })
 
@@ -282,24 +320,6 @@ export async function runStepsAndQuickReplies(
       return
     }
     // Last step — fall through to quickReplies + next-node dispatch
-  }
-
-  if (
-    "quickReplies" in details &&
-    details.quickReplies &&
-    details.quickReplies.length > 0
-  ) {
-    await executeMultipleSteps({
-      ...props,
-      nodeVisits,
-      steps: [
-        {
-          stepType: stepTypes.enum.sendQuickReply,
-          message: "Please select an option",
-          buttons: details.quickReplies,
-        } as SendQuickReplyStepSchema,
-      ],
-    })
   }
 
   if (!triggerNextNode) {

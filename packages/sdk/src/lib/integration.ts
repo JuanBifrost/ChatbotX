@@ -13,6 +13,7 @@ import type {
   HandleRequestProps,
   Handler,
   IncomingContact,
+  MessageButtonTemplate,
   OutgoingContact,
   OutgoingMessage,
   ReceivedMessageResult,
@@ -64,6 +65,7 @@ export type ChannelSendFlowStepProps<IAuth extends AuthValue> = {
     flowId: string
     flowVersionId?: string
     step: SendFlowStepData
+    quickReplies?: MessageButtonTemplate[]
     metadata?: MetadataPayload
     richResponse?: RichResponseContentAttributes
     sendFrom?: "inbox"
@@ -107,6 +109,7 @@ export type MessageHandlers<
         flowId: string
         flowVersionId?: string
         step: TStep
+        quickReplies?: MessageButtonTemplate[]
         metadata?: MetadataPayload
         richResponse?: RichResponseContentAttributes
         sendFrom?: "inbox"

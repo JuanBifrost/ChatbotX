@@ -6,6 +6,7 @@ import type {
   InstagramSendMessage,
 } from "../../../schemas"
 import { convertInstagramButtons } from "./send-button"
+import { convertCanonicalInstagramQuickReplies } from "./send-quick-replies"
 
 export function* convertFlowStepText(
   props: SendFlowStepProps<InstagramAuthValue, SendTextStepSchema>,
@@ -13,7 +14,16 @@ export function* convertFlowStepText(
   const {
     data: { step },
   } = props
+  const quickReplies = props.data.quickReplies ?? []
+
   if (step.buttons.length === 0) {
+    if (quickReplies.length > 0) {
+      yield {
+        text: step.text,
+        quick_replies: convertCanonicalInstagramQuickReplies(quickReplies),
+      }
+      return
+    }
     yield {
       text: step.text,
     }
@@ -33,6 +43,11 @@ export function* convertFlowStepText(
           buttons,
         },
       },
+      ...(quickReplies.length > 0
+        ? {
+            quick_replies: convertCanonicalInstagramQuickReplies(quickReplies),
+          }
+        : {}),
     }
   }
 }

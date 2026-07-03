@@ -84,6 +84,7 @@ export const convertButtonsToTemplate = (props: {
         label: button.label,
         buttonType: "url",
         url: appendCodeToMagicLink(button.beforeStep.url, buttonPayload),
+        postback: buttonPayload,
       }
     }
 
@@ -131,6 +132,7 @@ export async function sendFlowStep({
   trackingContext,
   metadata,
   richResponse,
+  quickReplies,
   sendFrom,
 }: ChatJobSendFlowStep["data"]) {
   const conversation = await db.query.conversationModel.findFirst({
@@ -263,18 +265,39 @@ export async function sendFlowStep({
         flowVersionId,
       }
 
-    if ("buttons" in resolvedStep && resolvedStep.buttons.length > 0) {
-      contentAttributes = {
-        type: "template",
-        payload: {
-          templateType: "button",
-          buttons: convertButtonsToTemplate({
+    const canonicalQuickReplies =
+      quickReplies && quickReplies.length > 0
+        ? convertButtonsToTemplate({
+            flowId,
+            flowVersionId,
+            buttons: quickReplies,
+            metadata,
+            contactInboxId: targetContactInbox.id,
+          })
+        : undefined
+
+    const canonicalStepButtons =
+      "buttons" in resolvedStep && resolvedStep.buttons.length > 0
+        ? convertButtonsToTemplate({
             flowId,
             flowVersionId,
             buttons: resolvedStep.buttons,
             metadata,
             contactInboxId: targetContactInbox.id,
-          }),
+          })
+        : []
+
+    const displayButtons = [
+      ...canonicalStepButtons,
+      ...(canonicalQuickReplies ?? []),
+    ]
+
+    if (displayButtons.length > 0) {
+      contentAttributes = {
+        type: "template",
+        payload: {
+          templateType: "button",
+          buttons: displayButtons,
         },
         ...contentAttributes,
       }
@@ -363,6 +386,7 @@ export async function sendFlowStep({
         step: resolvedStep as SendFlowStepData,
         metadata,
         richResponse,
+        quickReplies: canonicalQuickReplies,
         messageId: message?.id,
         sendFrom,
       }),

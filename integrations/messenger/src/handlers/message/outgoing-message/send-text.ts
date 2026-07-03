@@ -6,6 +6,7 @@ import type {
   MessengerAuthValue,
 } from "../../../schema"
 import { convertFacebookButtons } from "./send-button"
+import { convertCanonicalFacebookQuickReplies } from "./send-quick-replies"
 
 export function* convertFlowStepText(
   props: SendFlowStepProps<MessengerAuthValue, SendTextStepSchema>,
@@ -13,7 +14,16 @@ export function* convertFlowStepText(
   const {
     data: { step },
   } = props
+  const quickReplies = props.data.quickReplies ?? []
+
   if (step.buttons.length === 0) {
+    if (quickReplies.length > 0) {
+      yield {
+        text: step.text,
+        quick_replies: convertCanonicalFacebookQuickReplies(quickReplies),
+      }
+      return
+    }
     yield {
       text: step.text,
     }
@@ -35,6 +45,9 @@ export function* convertFlowStepText(
           buttons,
         },
       },
+      ...(quickReplies.length > 0
+        ? { quick_replies: convertCanonicalFacebookQuickReplies(quickReplies) }
+        : {}),
     }
   }
 }

@@ -121,7 +121,11 @@ const NodeEditorQuickReplies = () => {
           <PlusIcon />
           {t("fields.quickReply.label")}
         </Button>
-      ) : null}
+      ) : (
+        <p className="text-muted-foreground text-sm">
+          {t("flows.quickReplies.limitReached", { max: MAX_QUICK_REPLIES })}
+        </p>
+      )}
     </div>
   )
 }
@@ -428,7 +432,18 @@ export const NodeEditor = memo((props: NodeEditorProps) => {
       </div>
 
       {"quickReplies" in nodeDetails && nodeDetails.quickReplies && (
-        <NodeEditorQuickReplies />
+        <>
+          {(() => {
+            const messages = collectErrorMessages(
+              // biome-ignore lint/suspicious/noExplicitAny: wip - dynamic form errors
+              (form.formState.errors as any).quickReplies,
+            )
+            return messages.length > 0 ? (
+              <ErrorAlert message={messages.join(", ")} />
+            ) : null
+          })()}
+          <NodeEditorQuickReplies />
+        </>
       )}
 
       <NodeEditorMenu nodeType={nodeType} onClick={onAddStep} />
