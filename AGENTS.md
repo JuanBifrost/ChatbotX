@@ -186,6 +186,7 @@ See **`.agents/rules/git.md`** for the full canonical rules (commit format, bran
 ## Docs and support links
 
 - Human-facing docs: [chatbotx.io/docs](https://chatbotx.io/docs) (including Quick Start).
+- **BIFROST fork (IRIS VPS):** `docs/bifrost/README.md` — deploy guide, fork workflow, reset plan; skill `.agents/skills/bifrost-deployment/SKILL.md`
 - Tech stack details: `docs/tech-stack.md`
 - Request flow diagrams: `docs/request-workflow.md`
 - White-label tenancy model: `docs/tenancy.md`
