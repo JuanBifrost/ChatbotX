@@ -8,6 +8,7 @@ Use this skill when working on **BIFROST production** (`iris.bifrost.com.co`) or
 |---|---|
 | `docs/bifrost/README.md` | Index |
 | `docs/bifrost/GUIA_CHATBOTX_VPS_WHATSAPP.md` | Full VPS + WhatsApp + Meta guide |
+| `docs/bifrost/Caddyfile.iris.example` | Production Caddy template (`/ws/*` → realtime required for live Inbox) |
 | `docs/bifrost/DESARROLLO_Y_FORK.md` | Monorepo map, login customization, code paths |
 | `docs/bifrost/PLAN_RESET_VPS.md` | Reset VPS workflow checklist |
 
@@ -24,7 +25,8 @@ Use this skill when working on **BIFROST production** (`iris.bifrost.com.co`) or
 3. **Sign-up:** keep blocked at Caddy (403) in production; manual user creation only.
 4. **Community edition:** max 1 workspace per `ownerId`; second operator = second user (Timanco pattern).
 5. **WhatsApp webhook URL** includes channel ID — changes after channel recreation.
-6. **Never commit** production `.env`, secrets, or backup dumps.
+6. **Realtime Inbox:** Caddy must proxy `handle_path /ws/*` → `localhost:1999` on `iris` domain (§4.1). Browser does not use `ws.iris` subdomain.
+7. **Never commit** production `.env`, secrets, or backup dumps.
 
 ## Related skills
 

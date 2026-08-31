@@ -1,0 +1,66 @@
+# Plantilla Caddy — BIFROST IRIS (ChatbotX)
+# Copiar a /etc/caddy/Caddyfile en el VPS
+# Validar: caddy validate --config /etc/caddy/Caddyfile && systemctl reload caddy
+#
+# Referencia: docs/bifrost/GUIA_CHATBOTX_VPS_WHATSAPP.md §4, §4.1, §5.6.3
+
+iris.bifrost.com.co {
+    # Lectura pública de archivos — ChatbotX genera URLs en /storage/public/...
+    handle_path /storage/* {
+        rewrite * /chatbotx{path}
+        reverse_proxy localhost:9000
+    }
+
+    # Subidas S3/RustFS (presigned PUT) — mismo dominio que la UI (evita CORS)
+    handle /chatbotx/* {
+        reverse_proxy localhost:9000
+    }
+
+    # Registro cerrado (§5.5) — quitar si instalación laboratorio
+    @signup path /auth/sign-up /auth/sign-up/*
+    handle @signup {
+        respond "Registro cerrado. Contacte al administrador BIFROST." 403
+    }
+    @signup_api path /api/auth/sign-up/*
+    handle @signup_api {
+        respond "Registro cerrado" 403
+    }
+
+    # BIFROST: CSS override login (hashes pueden cambiar tras rebuild — §5.6.7)
+    handle /_next/static/chunks/401zonfix2f3_.css {
+        rewrite * /401zonfix2f3_.css
+        root * /opt/chatbotx-brand/css-override
+        header Cache-Control "public, max-age=300"
+        file_server
+    }
+    handle /_next/static/chunks/1emqrgmppqmo4.css {
+        rewrite * /1emqrgmppqmo4.css
+        root * /opt/chatbotx-brand/css-override
+        header Cache-Control "public, max-age=300"
+        file_server
+    }
+
+    # BIFROST: branding estático (logo, favicon)
+    handle /brand/* {
+        root * /opt/chatbotx-brand
+        header Cache-Control "public, max-age=3600"
+        file_server
+    }
+
+    # OBLIGATORIO — Inbox en tiempo real (§4.1)
+    # Sin esto: mensajes solo visibles tras refrescar F5
+    handle_path /ws/* {
+        reverse_proxy localhost:1999
+    }
+
+    reverse_proxy localhost:3123
+}
+
+# Opcional — el navegador usa iris.bifrost.com.co/ws/ (no este subdominio)
+ws.iris.bifrost.com.co {
+    reverse_proxy localhost:1999
+}
+
+cdn.iris.bifrost.com.co {
+    reverse_proxy localhost:9000
+}

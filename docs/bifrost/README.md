@@ -11,6 +11,7 @@
 | Documento | Para qué |
 |---|---|
 | [**GUIA_CHATBOTX_VPS_WHATSAPP.md**](./GUIA_CHATBOTX_VPS_WHATSAPP.md) | Guía completa: VPS, Caddy, DNS, usuarios, Meta, WhatsApp, RustFS, flujos, troubleshooting |
+| [**Caddyfile.iris.example**](./Caddyfile.iris.example) | Plantilla `/etc/caddy/Caddyfile` (incluye `/ws/*` para Inbox en tiempo real) |
 | [**DESARROLLO_Y_FORK.md**](./DESARROLLO_Y_FORK.md) | Mapa del monorepo, skills, rutas de código, personalización login en rama `bifrost` |
 | [**PLAN_RESET_VPS.md**](./PLAN_RESET_VPS.md) | Orden de trabajo: reset VPS limpio + deploy desde fork |
 

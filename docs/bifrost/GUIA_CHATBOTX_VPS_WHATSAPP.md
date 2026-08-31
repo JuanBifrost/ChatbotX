@@ -59,8 +59,8 @@
 
 | Subdominio | Servicio Docker | Puerto interno | Uso |
 |---|---|---|---|
-| `iris.bifrost.com.co` | `builder` (UI Next.js) | `3123` → `3000` | UI + **subida de archivos** (`/chatbotx/*` → RustFS) |
-| `ws.iris.bifrost.com.co` | `realtime` (WebSocket) | `1999` | WebSocket tiempo real |
+| `iris.bifrost.com.co` | `builder` (UI Next.js) | `3123` → `3000` | UI + **subida de archivos** (`/chatbotx/*` → RustFS) + **WebSocket Inbox** (`/ws/*` → realtime) |
+| `ws.iris.bifrost.com.co` | `realtime` (WebSocket) | `1999` | Opcional — el navegador usa `iris…/ws/` (ver §4.1) |
 | `cdn.iris.bifrost.com.co` | `filesystem` (RustFS) | `9000` | Opcional — lectura directa de assets |
 
 > **Importante (Ago-2026):** las subidas de imágenes en flujos deben ir por **el mismo dominio** `iris.bifrost.com.co` (ruta `/chatbotx/*`), no por `cdn.iris`, para evitar errores CORS en el navegador. Ver §13.
@@ -234,6 +234,10 @@ iris.bifrost.com.co {
     handle /chatbotx/* {
         reverse_proxy localhost:9000
     }
+    # WebSocket tiempo real — Inbox sin refrescar (§4.1). OBLIGATORIO.
+    handle_path /ws/* {
+        reverse_proxy localhost:1999
+    }
     reverse_proxy localhost:3123
 }
 
@@ -256,6 +260,39 @@ ufw --force enable
 ```
 
 Verificar: `curl -I https://iris.bifrost.com.co` → `307` a `/auth/sign-in`.
+
+Plantilla completa (con registro cerrado y branding): `docs/bifrost/Caddyfile.iris.example`.
+
+### 4.1 WebSocket tiempo real (Inbox sin refrescar)
+
+El navegador **no** conecta a `ws.iris.bifrost.com.co`. ChatbotX deriva la URL desde `NEXT_PUBLIC_BUILDER_URL`:
+
+```
+wss://iris.bifrost.com.co/ws/parties/workspaces/<workspaceId>
+```
+
+Caddy debe enviar `/ws/*` al contenedor `realtime` (`localhost:1999`). Sin este bloque, las peticiones van al `builder` (Next.js) → **404 HTML** → hay que refrescar el Inbox para ver mensajes nuevos.
+
+**Verificar en VPS:**
+
+```bash
+# Mal: content-type text/html (Next.js)
+# Bien: respuesta del servicio realtime (401/405, no HTML)
+curl -sI "https://iris.bifrost.com.co/ws/parties/workspaces/test" | head -5
+
+docker compose -p chatbotx ps realtime
+```
+
+**DevTools (Chrome):** pestaña **Red → WS** → la conexión a `iris…/ws/…` debe permanecer **abierta** (no "Finished" a los pocos segundos).
+
+**Variables relacionadas** (mismo valor en `builder`, `worker` y `realtime`):
+
+| Variable | Uso |
+|---|---|
+| `REALTIME_BROADCAST_SECRET` | JWT worker → realtime (mín. 32 caracteres) |
+| `REALTIME_API_KEY` | API interna realtime |
+
+> `NEXT_PUBLIC_REALTIME_URL` en compose legado **no** es la URL que usa el navegador; la ruta pública es `<BUILDER_URL>/ws/`.
 
 ---
 
@@ -320,6 +357,11 @@ iris.bifrost.com.co {
         respond "Registro cerrado" 403
     }
     # --- fin registro cerrado ---
+
+    # WebSocket tiempo real — §4.1
+    handle_path /ws/* {
+        reverse_proxy localhost:1999
+    }
 
     reverse_proxy localhost:3123
 }
@@ -538,6 +580,11 @@ iris.bifrost.com.co {
         root * /opt/chatbotx-brand
         header Cache-Control "public, max-age=3600"
         file_server
+    }
+
+    # WebSocket tiempo real — Inbox sin refrescar (§4.1)
+    handle_path /ws/* {
+        reverse_proxy localhost:1999
     }
 
     reverse_proxy localhost:3123
@@ -1944,6 +1991,14 @@ docker compose -p chatbotx logs worker --since=30m | grep -iE "error|whatsapp"
 | Mensaje en Inbox pero sin respuesta del bot | Conversación en modo **Human** | §14.4 — Transfer to Bot |
 | Solo funciona con "Send Flow" manual | Falta keyword o default reply | §14.3 |
 | Default Reply no dispara | Flujo inactivo o no publicado | Publish + toggle Status ON |
+
+### Inbox / tiempo real
+
+| Problema | Causa | Solución |
+|---|---|---|
+| Mensajes nuevos solo al **refrescar** F5 | Falta `handle_path /ws/*` en Caddy → WS va a Next.js (404) | §4.1 — proxy `/ws/*` → `localhost:1999` |
+| DevTools WS **"Finished"** en ~3 s | Misma causa o `REALTIME_BROADCAST_SECRET` distinto entre servicios | §4.1 + unificar secreto en compose |
+| `curl …/ws/parties/…` devuelve **HTML** | Caddy no enruta `/ws` al realtime | Añadir bloque §4.1 y `systemctl reload caddy` |
 
 ### Subida de imágenes / Storage
 
