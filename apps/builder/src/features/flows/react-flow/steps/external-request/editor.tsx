@@ -155,7 +155,7 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
           </div>
         }
       />
-      <DialogContent className={"max-h-screen max-w-md overflow-y-scroll"}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t("flows.actions.callApi")}</DialogTitle>
           <DialogDescription />
@@ -268,7 +268,7 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
                     >
                       <CrosshairIcon className="h-4 w-4" />
                     </Button>
-                    <div className="w-[40%]">
+                    <div className="min-w-0 flex-1">
                       <InputField
                         name={`mapping.${index}.jsonPath`}
                         onFocus={() => setActiveTargetIndex(index)}
@@ -278,10 +278,11 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
                     <div className="flex h-[36px] items-center justify-center">
                       <ArrowRight className="rtl:rotate-180" size={24} />
                     </div>
-                    <div className="w-[40%]">
+                    <div className="min-w-0 flex-1">
                       <CustomFieldSelect
                         label=""
                         name={`mapping.${index}.outputFieldId`}
+                        popoverClassName="w-72"
                       />
                     </div>
                     <Button

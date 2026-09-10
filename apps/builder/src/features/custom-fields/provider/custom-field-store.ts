@@ -2,7 +2,6 @@ import { createStore } from "zustand/vanilla"
 import type { BotFieldResource } from "@/features/bot-fields/schema/resource"
 import { getClientErrorMessage } from "@/lib/orpc/client-error"
 import { client } from "@/lib/orpc/orpc"
-import { maxPerPage } from "@/lib/shared-request"
 import type { CustomFieldResource } from "../schema/resource"
 
 export type CustomFieldState = {
@@ -79,10 +78,12 @@ export const createCustomFieldStore = (props: Partial<CustomFieldState>) =>
       set({ loading: true, error: null })
 
       try {
+        // Do not pass `perPage`: parsePagination clamps it to 50, so the
+        // picker would hide field #51+ (e.g. capacitiesEnabled_*). Omitting
+        // pagination returns the full workspace list.
         const { data } =
           await client.customFieldsAPI.privateListCustomFieldsAPI({
             workspaceId,
-            perPage: maxPerPage,
           })
         set({ customFields: data })
       } catch (error: unknown) {
@@ -108,7 +109,6 @@ export const createCustomFieldStore = (props: Partial<CustomFieldState>) =>
       try {
         const { data } = await client.botFieldAPIs.privateListBotFieldsAPI({
           workspaceId,
-          perPage: maxPerPage,
         })
         set({ botFields: data, botFieldsInitialized: true })
       } catch (error: unknown) {

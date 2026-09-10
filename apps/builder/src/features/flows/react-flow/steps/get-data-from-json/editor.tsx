@@ -70,7 +70,7 @@ const GetDataFromJsonDialog = ({ parentName }: { parentName: string }) => {
           </div>
         }
       />
-      <DialogContent className={"max-h-screen max-w-md overflow-y-scroll"}>
+      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle>{t("flows.actions.getDataFromJson")}</DialogTitle>
           <DialogDescription />
@@ -95,7 +95,7 @@ const GetDataFromJsonDialog = ({ parentName }: { parentName: string }) => {
               <div className="flex w-full flex-col gap-y-4">
                 {fields.map((field, index) => (
                   <div className="flex w-full gap-x-2" key={field.id}>
-                    <div className="w-[45%]">
+                    <div className="min-w-0 flex-1">
                       <InputField
                         name={`mapping.${index}.jsonPath`}
                         placeholder={t("fields.jsonPath.placeholder")}
@@ -104,11 +104,12 @@ const GetDataFromJsonDialog = ({ parentName }: { parentName: string }) => {
                     <div className="flex h-[36px] items-center justify-center">
                       <ArrowRight className="rtl:rotate-180" size={24} />
                     </div>
-                    <div className="w-[45%]">
+                    <div className="min-w-0 flex-1">
                       <CustomFieldSelect
                         includeBotFields
                         label=""
                         name={`mapping.${index}.outputFieldId`}
+                        popoverClassName="w-72"
                       />
                     </div>
                     <Button

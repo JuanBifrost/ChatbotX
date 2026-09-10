@@ -105,7 +105,7 @@ describe("ensureBotFieldsLoaded", () => {
 })
 
 describe("getAllCustomFields", () => {
-  test("fetches custom fields for the store's workspaceId with maxPerPage", async () => {
+  test("fetches every custom field without the 50-row list clamp", async () => {
     mocks.privateListCustomFieldsAPI.mockResolvedValueOnce({
       data: [{ id: "1", name: "Loyalty Points" }],
     })
@@ -116,7 +116,6 @@ describe("getAllCustomFields", () => {
 
     expect(mocks.privateListCustomFieldsAPI).toHaveBeenCalledWith({
       workspaceId: "workspace-1",
-      perPage: 999_999_999,
     })
     expect(store.getState().customFields).toEqual([
       { id: "1", name: "Loyalty Points" },

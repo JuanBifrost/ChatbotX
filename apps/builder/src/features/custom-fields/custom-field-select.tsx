@@ -43,6 +43,7 @@ type CustomFieldSelectProps = {
    * v1 surfaces only — see `useCustomFieldSelectOptions`.
    */
   includeBotFields?: boolean
+  popoverClassName?: string
 }
 
 // Language-neutral marker for the "no selection" option.
@@ -65,6 +66,7 @@ export const CustomFieldSelect = (props: CustomFieldSelectProps) => {
     createDefaultType,
     clearable,
     includeBotFields,
+    popoverClassName,
   } = props
 
   const workspaceId = useWorkspaceId()
@@ -133,6 +135,7 @@ export const CustomFieldSelect = (props: CustomFieldSelectProps) => {
         name={name}
         options={options}
         placeholder={placeholder || t("actions.pleaseSelect")}
+        popoverClassName={popoverClassName}
         portal={portal}
         triggerValueChange={onValueChange}
       />
