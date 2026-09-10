@@ -61,3 +61,9 @@ CLAUDE.md
 
 .pnpm-store/
 .plans/
+
+# Local fork operations (runbooks, Caddy, test flows). Keep these on
+# disk outside git — e.g. Desktop/bifrost-docs-privado — never force-add.
+/docs/bifrost/
+/scripts/bifrost/
+/.bifrost-local/
