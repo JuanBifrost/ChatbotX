@@ -10,15 +10,34 @@ export const WHATSAPP_FLOW_PARAM_KEY_MAX = 64
 
 const UNRESOLVED_VARIABLE_PLACEHOLDER = /^\{\{[^}]+\}\}$/
 
+/** Maps Flow `needs_*` flags to the sibling field that would prefill them. */
+const NEEDS_FLAG_SOURCE_FIELD: Record<string, string> = {
+  needs_nombre: "nombre",
+  needs_telefono: "customer_phone",
+}
+
 const isPlainObject = (value: unknown): value is Record<string, unknown> =>
   typeof value === "object" && value !== null && !Array.isArray(value)
+
+const isUnresolvedVariablePlaceholder = (value: string): boolean =>
+  UNRESOLVED_VARIABLE_PLACEHOLDER.test(value.trim())
 
 const isEmptyDropdownId = (id: unknown): boolean => {
   if (typeof id !== "string") {
     return id === null || id === undefined
   }
   const trimmed = id.trim()
-  return trimmed.length === 0 || UNRESOLVED_VARIABLE_PLACEHOLDER.test(trimmed)
+  return trimmed.length === 0 || isUnresolvedVariablePlaceholder(trimmed)
+}
+
+const isMissingTextValue = (value: unknown): boolean => {
+  if (value === null || value === undefined) {
+    return true
+  }
+  if (typeof value !== "string") {
+    return false
+  }
+  return value.trim().length === 0
 }
 
 const sanitizeActionDataValue = (value: unknown): unknown => {
@@ -42,10 +61,31 @@ const sanitizeActionDataValue = (value: unknown): unknown => {
     }
     return next
   }
+  if (typeof value === "string" && isUnresolvedVariablePlaceholder(value)) {
+    return ""
+  }
   return value
 }
 
-/** Drops dropdown rows whose `id` is blank or still a `{{variable}}` token. */
+const applyNeedsFlags = (
+  actionData: Record<string, unknown>,
+): Record<string, unknown> => {
+  const next = { ...actionData }
+  for (const [flagKey, sourceKey] of Object.entries(NEEDS_FLAG_SOURCE_FIELD)) {
+    if (!(flagKey in next)) {
+      continue
+    }
+    next[flagKey] = isMissingTextValue(next[sourceKey])
+  }
+  return next
+}
+
+/**
+ * Drops dropdown rows whose `id` is blank or still a `{{variable}}` token.
+ * Unresolved `{{variable}}` string leaves become `""` so Meta does not render
+ * the token. `needs_nombre` / `needs_telefono` become booleans from whether
+ * `nombre` / `customer_phone` are empty.
+ */
 export const sanitizeWhatsappFlowActionData = (
   actionData: Record<string, unknown> | null | undefined,
 ): Record<string, unknown> | undefined => {
@@ -53,7 +93,10 @@ export const sanitizeWhatsappFlowActionData = (
     return
   }
   const sanitized = sanitizeActionDataValue(actionData)
-  return isPlainObject(sanitized) ? sanitized : undefined
+  if (!isPlainObject(sanitized)) {
+    return
+  }
+  return applyNeedsFlags(sanitized)
 }
 
 export const stringifyWhatsappFlowActionData = (actionData: unknown): string => {

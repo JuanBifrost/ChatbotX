@@ -91,6 +91,9 @@ type FlowActionParameters = {
     data?: {
       direcciones?: Array<{ id: string; title: string }>
       nombre?: string
+      customer_phone?: string
+      needs_nombre?: boolean
+      needs_telefono?: boolean
     }
   }
 }
@@ -169,6 +172,28 @@ describe("WhatsApp sendFlowStep — whatsappFlow action data", () => {
       lastInteractive().action?.parameters?.flow_action_payload?.data
         ?.direcciones,
     ).toEqual([gpsCurrent])
+  })
+
+  test("sends empty required name when Heimdall has not registered the customer", async () => {
+    await sendWhatsappFlow({
+      nombre: "{{userName}}",
+      customer_phone: "{{phoneUser}}",
+      needs_nombre: false,
+      needs_telefono: false,
+      direcciones: [
+        { id: "{{address_id_0}}", title: "{{address_text_0}}" },
+        gpsCurrent,
+      ],
+    })
+
+    const payload = lastInteractive().action?.parameters?.flow_action_payload
+    expect(payload?.data).toEqual({
+      nombre: "",
+      customer_phone: "",
+      needs_nombre: true,
+      needs_telefono: true,
+      direcciones: [gpsCurrent],
+    })
   })
 
   test("uses a ChatbotX-encoded flow_token, not a free-form string", async () => {

@@ -100,6 +100,49 @@ describe("sanitizeWhatsappFlowActionData", () => {
     })
     expect(result?.direcciones).toEqual([gpsCurrent])
   })
+
+  test("clears unresolved Heimdall name/phone and asks the Flow to collect them", () => {
+    const result = sanitizeWhatsappFlowActionData({
+      nombre: "{{userName}}",
+      customer_phone: "{{phoneUser}}",
+      needs_nombre: false,
+      needs_telefono: false,
+      direcciones: [
+        { id: "{{address_id_0}}", title: "{{address_text_0}}" },
+        gpsCurrent,
+      ],
+    })
+    expect(result).toMatchObject({
+      nombre: "",
+      customer_phone: "",
+      needs_nombre: true,
+      needs_telefono: true,
+      direcciones: [gpsCurrent],
+    })
+  })
+
+  test("keeps a known Heimdall customer and does not ask for name or phone", () => {
+    const result = sanitizeWhatsappFlowActionData({
+      nombre: "Juan",
+      customer_phone: "573212301648",
+      needs_nombre: true,
+      needs_telefono: true,
+    })
+    expect(result).toMatchObject({
+      nombre: "Juan",
+      customer_phone: "573212301648",
+      needs_nombre: false,
+      needs_telefono: false,
+    })
+  })
+
+  test("does not invent needs_* flags when the payload omitted them", () => {
+    const result = sanitizeWhatsappFlowActionData({
+      nombre: "{{userName}}",
+    })
+    expect(result).toEqual({ nombre: "" })
+    expect(result).not.toHaveProperty("needs_nombre")
+  })
 })
 
 describe("whatsappFlow actionData JSON helpers", () => {
