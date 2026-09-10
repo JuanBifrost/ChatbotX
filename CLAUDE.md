@@ -30,6 +30,7 @@
 | Security-sensitive change (auth, scoping, webhooks, AI tools, permissions) | `security-review` |
 | Writing tests / verifying a change is done | `testing-workflow` |
 | Concurrent code (worker jobs, migrations, replace-writes) | `reliability-concurrency` |
+| This fork: push, ChatbotXIO PR, or “where are the runbooks?” | `bifrost-deployment` |
 
 ### Specialist agents (`.claude/agents/`)
 
