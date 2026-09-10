@@ -3172,6 +3172,10 @@
       "selectFlow": "WhatsApp-flöde",
       "selectFlowPlaceholder": "Välj ett flöde",
       "selectScreenPlaceholder": "Välj en skärm",
+      "actionData": "Startdata",
+      "actionDataPlaceholder": "{\n  \"nombre\": \"{{userName}}\"\n}",
+      "actionDataDescription": "JSON-objekt som skickas när flödet öppnas. Använd {{variables}}. Listradsposter med tomt id utelämnas.",
+      "actionDataInvalidJson": "Startdata måste vara ett JSON-objekt eller tomt.",
       "startScreen": "Startskärm"
     },
     "whatsappOptionList": {

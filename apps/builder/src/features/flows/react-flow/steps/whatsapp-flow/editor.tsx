@@ -55,6 +55,7 @@ const WhatsappFlowStepEditor = ({
   const handleFlowSelected = useCallback(() => {
     setValue(`${parentName}.flow.startScreenId`, null)
     setValue(`${parentName}.flow.fieldMappings`, [])
+    setValue(`${parentName}.flow.actionData`, null)
   }, [parentName, setValue])
 
   useEffect(() => {
@@ -65,6 +66,7 @@ const WhatsappFlowStepEditor = ({
       setValue(`${parentName}.flow.id`, null)
       setValue(`${parentName}.flow.startScreenId`, null)
       setValue(`${parentName}.flow.fieldMappings`, [])
+      setValue(`${parentName}.flow.actionData`, null)
     }
     prevInboxIdRef.current = integrationInboxId
   }, [integrationInboxId, parentName, setValue])

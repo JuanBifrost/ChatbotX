@@ -1,6 +1,8 @@
 "use client"
 
 import {
+  parseWhatsappFlowActionDataJson,
+  stringifyWhatsappFlowActionData,
   WHATSAPP_FLOW_BUTTON_MAX,
   type WhatsappFlowDialogFormValues,
   type WhatsappFlowFieldMapping,
@@ -22,9 +24,18 @@ import {
   DialogTitle,
 } from "@chatbotx.io/ui/components/ui/dialog"
 import { Input } from "@chatbotx.io/ui/components/ui/input"
+import { Label } from "@chatbotx.io/ui/components/ui/label"
+import { Textarea } from "@chatbotx.io/ui/components/ui/textarea"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useTranslations } from "next-intl"
-import { memo, useCallback, useEffect, useMemo, useState } from "react"
+import {
+  type ChangeEvent,
+  memo,
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+} from "react"
 import {
   FormProvider,
   useFieldArray,
@@ -84,6 +95,8 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
   const currentFieldMappings = parentForm.watch(
     `${parentName}.flow.fieldMappings`,
   ) as WhatsappFlowFieldMapping[]
+  const [actionDataJson, setActionDataJson] = useState("")
+  const [actionDataError, setActionDataError] = useState<string | null>(null)
 
   const whatsappFlows = useMemo(() => {
     const published = whatsappFlowsAll.filter(
@@ -138,6 +151,29 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
   const handleCustomFieldCreated = useCallback(() => {
     getAllCustomFields()
   }, [getAllCustomFields])
+
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    const currentActionData = parentForm.getValues(
+      `${parentName}.flow.actionData`,
+    )
+    setActionDataJson(stringifyWhatsappFlowActionData(currentActionData))
+    setActionDataError(null)
+  }, [open, parentForm, parentName])
+
+  const handleActionDataChange = useCallback(
+    (event: ChangeEvent<HTMLTextAreaElement>) => {
+      const nextValue = event.target.value
+      setActionDataJson(nextValue)
+      const parsed = parseWhatsappFlowActionDataJson(nextValue)
+      setActionDataError(
+        parsed.success ? null : t("flows.whatsappFlow.actionDataInvalidJson"),
+      )
+    },
+    [t],
+  )
 
   useEffect(() => {
     if (!(open && selectedFlowId)) {
@@ -241,6 +277,8 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
         })
         form.setValue("flow.startScreenId", "", { shouldDirty: true })
         replace([])
+        setActionDataJson("")
+        setActionDataError(null)
       }
     },
     [whatsappFlows, form, replace],
@@ -248,6 +286,11 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
 
   const onSubmit = useCallback(
     (values: WhatsappFlowDialogFormValues) => {
+      const parsedActionData = parseWhatsappFlowActionDataJson(actionDataJson)
+      if (!parsedActionData.success) {
+        setActionDataError(t("flows.whatsappFlow.actionDataInvalidJson"))
+        return
+      }
       const selectedScreen = screens.find(
         (screen) => screen.id === values.flow.startScreenId,
       )
@@ -281,13 +324,18 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
         setOptions,
       )
       parentForm.setValue(
+        `${parentName}.flow.actionData`,
+        parsedActionData.data,
+        setOptions,
+      )
+      parentForm.setValue(
         `${parentName}.flow.fieldMappings`,
         fieldMappings,
         setOptions,
       )
       onOpenChange(false)
     },
-    [parentForm, parentName, onOpenChange, screens],
+    [actionDataJson, parentForm, parentName, onOpenChange, screens, t],
   )
 
   return (
@@ -345,6 +393,32 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
                   required
                 />
               ))}
+
+            {selectedStartScreenId && (
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="whatsapp-flow-action-data">
+                  {t("flows.whatsappFlow.actionData")}
+                </Label>
+                <p
+                  className="text-muted-foreground text-sm"
+                  id="whatsapp-flow-action-data-desc"
+                >
+                  {t("flows.whatsappFlow.actionDataDescription")}
+                </p>
+                <Textarea
+                  aria-describedby="whatsapp-flow-action-data-desc"
+                  aria-invalid={Boolean(actionDataError)}
+                  className="min-h-40 font-mono text-sm"
+                  id="whatsapp-flow-action-data"
+                  onChange={handleActionDataChange}
+                  placeholder={t("flows.whatsappFlow.actionDataPlaceholder")}
+                  value={actionDataJson}
+                />
+                {actionDataError ? (
+                  <p className="text-destructive text-sm">{actionDataError}</p>
+                ) : null}
+              </div>
+            )}
 
             {selectedStartScreenId && fields.length > 0 && (
               <div className="mt-6 flex flex-col gap-2 space-y-4">
@@ -408,7 +482,7 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
                 }
               />
               <Button
-                disabled={!form.formState.isValid}
+                disabled={!form.formState.isValid || Boolean(actionDataError)}
                 size="sm"
                 type="submit"
               >

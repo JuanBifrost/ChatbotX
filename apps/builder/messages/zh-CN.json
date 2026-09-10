@@ -3175,6 +3175,10 @@
       "selectFlow": "WhatsApp流程",
       "selectFlowPlaceholder": "选择流",
       "selectScreenPlaceholder": "选择一个屏幕",
+      "actionData": "起始数据",
+      "actionDataPlaceholder": "{\n  \"nombre\": \"{{userName}}\"\n}",
+      "actionDataDescription": "打开 Flow 时发送的 JSON 对象。可使用 {{variables}}。id 为空的下拉项会被省略。",
+      "actionDataInvalidJson": "起始数据必须是 JSON 对象或留空。",
       "startScreen": "开始画面"
     },
     "whatsappOptionList": {
