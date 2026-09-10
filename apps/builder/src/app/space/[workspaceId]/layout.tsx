@@ -4,10 +4,12 @@ import {
   isSuperAdmin,
   isWorkspaceScheduledForDeletion,
   quotaEnforcementService,
+  resolveWorkspaceAccess,
   workspaceMemberService,
 } from "@chatbotx.io/business"
 import {
   SidebarInset,
+  SidebarMobileHandle,
   SidebarProvider,
   SidebarTrigger,
 } from "@chatbotx.io/ui/components/ui/sidebar"
@@ -19,9 +21,11 @@ import { ExpiredBanner } from "@/components/expired-banner"
 import type { QuotaSummary } from "@/components/nav-usage"
 import { RefreshOnNavigation } from "@/components/refresh-on-navigation"
 import { ScheduledDeletionBanner } from "@/components/scheduled-deletion-banner"
+import { SupportAccessBanner } from "@/components/support-access-banner"
 import { TokenRefreshErrorDialog } from "@/components/token-refresh-error-dialog"
 import { WorkspaceDeletionTabSync } from "@/components/workspace-deletion-tab-sync"
 import { isCloud } from "@/env"
+import { AnalyticsApiProvider } from "@/features/analytics/components/analytics-api-provider"
 import { CouponTopicStoreProvider } from "@/features/coupons/provider/coupon-topic-store-context"
 import { getTenantSettings } from "@/features/tenant/utils"
 import { hasWorkspacePermission } from "@/lib/auth/permission-routes"
@@ -61,22 +65,28 @@ export default async function WorkspaceLayout({
       getTenantSettings(),
       isPlatformAdmin(user),
     ])
-  const targetWorkspaceMember = allWorkspaceMembers.find(
+  const realMember = allWorkspaceMembers.find(
     (workspaceMember) => workspaceMember.workspace.id === workspaceId,
   )
-  if (!targetWorkspaceMember) {
+  const access = await resolveWorkspaceAccess({ realMember, workspaceId, user })
+  if (!access) {
     return notFound()
   }
+  const {
+    workspace: targetWorkspace,
+    member: targetWorkspaceMember,
+    isSupportSession,
+  } = access
 
   const [
     { blocked, blockReason, quota, trialEndsAt },
     usage,
     tokenRefreshErrors,
   ] = await Promise.all([
-    resolveWorkspaceBlockState(targetWorkspaceMember.workspace.ownerId),
+    resolveWorkspaceBlockState(targetWorkspace.ownerId),
     cloud
       ? quotaEnforcementService.getWorkspaceUsageSummary({
-          userId: targetWorkspaceMember.workspace.ownerId,
+          userId: targetWorkspace.ownerId,
           workspaceId,
         })
       : null,
@@ -84,16 +94,26 @@ export default async function WorkspaceLayout({
   ])
 
   await enforceWorkspaceNotScheduledForDeletionFromRequest(
-    targetWorkspaceMember.workspace,
+    targetWorkspace,
     hasWorkspacePermission(targetWorkspaceMember.permissions, "superAdmin"),
   )
 
-  const allWorkspaces = allWorkspaceMembers.map((workspaceMember) => ({
+  const resolveLogoUrl = (logo: string | null) =>
+    logo ? new URL(logo, storageUrl).toString() : null
+
+  const memberWorkspaces = allWorkspaceMembers.map((workspaceMember) => ({
     ...workspaceMember.workspace,
-    logo: workspaceMember.workspace.logo
-      ? new URL(workspaceMember.workspace.logo, storageUrl).toString()
-      : null,
+    logo: resolveLogoUrl(workspaceMember.workspace.logo),
   }))
+  // A support session's workspace has no real membership row, so it is never
+  // in `allWorkspaceMembers` — append it so the sidebar switcher still shows
+  // the workspace currently being viewed.
+  const allWorkspaces = isSupportSession
+    ? [
+        ...memberWorkspaces,
+        { ...targetWorkspace, logo: resolveLogoUrl(targetWorkspace.logo) },
+      ]
+    : memberWorkspaces
 
   const quotaSummary: QuotaSummary = {
     planName: quota?.planName ?? null,
@@ -105,12 +125,20 @@ export default async function WorkspaceLayout({
   const cookieStore = await cookies()
   const defaultOpen = cookieStore.get("sidebar_state")?.value === "true"
 
-  const scheduledForDeletion = isWorkspaceScheduledForDeletion(
-    targetWorkspaceMember.workspace,
-  )
+  const scheduledForDeletion = isWorkspaceScheduledForDeletion(targetWorkspace)
 
   return (
-    <SidebarProvider defaultOpen={defaultOpen}>
+    // `has-data-full-bleed:h-svh` caps the shell at the viewport for pages
+    // that own the whole screen (the inbox — see `components/full-bleed.tsx`).
+    // The wrapper's own `min-h-svh` is only a floor, so without this a
+    // full-bleed page's `flex-1` has no definite height to resolve against and
+    // grows with its content instead: the inbox composer ends up below the fold
+    // on a short viewport. Scoping it to `:has()` keeps every ordinary page
+    // scrolling the body exactly as before.
+    <SidebarProvider
+      className="has-data-full-bleed:h-svh"
+      defaultOpen={defaultOpen}
+    >
       <AppSidebar
         allWorkspaces={allWorkspaces}
         isPlatformAdmin={platformAdmin}
@@ -121,12 +149,22 @@ export default async function WorkspaceLayout({
         workspaceId={workspaceId}
       />
       <SidebarInset>
-        <main className="flex min-w-0 flex-1 flex-col gap-4 p-6">
+        {/*
+          `min-h-0` lets this column shrink to the capped shell above instead of
+          being floored at its content height — without it the cap is inert and
+          a full-bleed page still overflows.
+        */}
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-4 p-4 md:p-6">
           <WorkspaceDeletionTabSync
             scheduledForDeletion={scheduledForDeletion}
             workspaceId={workspaceId}
           />
           <ScheduledDeletionBanner scheduled={scheduledForDeletion} />
+          {isSupportSession && targetWorkspace.supportAccessUntil && (
+            <SupportAccessBanner
+              supportAccessUntil={targetWorkspace.supportAccessUntil}
+            />
+          )}
           {!scheduledForDeletion && (
             <RefreshOnNavigation workspaceId={workspaceId} />
           )}
@@ -135,14 +173,23 @@ export default async function WorkspaceLayout({
             errors={tokenRefreshErrors}
             workspaceId={workspaceId}
           />
-          <CouponTopicStoreProvider
-            autoInitialize={false}
-            workspaceId={workspaceId}
-          >
-            {children}
-          </CouponTopicStoreProvider>
+          <AnalyticsApiProvider>
+            <CouponTopicStoreProvider
+              autoInitialize={false}
+              workspaceId={workspaceId}
+            >
+              {children}
+            </CouponTopicStoreProvider>
+          </AnalyticsApiProvider>
         </main>
-        <SidebarTrigger className="absolute -inset-s-2 top-3 z-10 border" />
+        <SidebarTrigger className="absolute -inset-s-2 top-3 z-10 hidden border md:inline-flex" />
+        {/*
+          Below `md` the sidebar collapses into a Sheet and `SidebarTrigger`
+          above is hidden, so this handle is the only way in on a phone. It
+          floats on the screen edge rather than sitting in a top bar: the
+          viewport belongs to the page content.
+        */}
+        <SidebarMobileHandle />
       </SidebarInset>
     </SidebarProvider>
   )

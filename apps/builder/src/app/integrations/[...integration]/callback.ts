@@ -1,5 +1,6 @@
 import {
   appointmentExternalCalendarService,
+  hasWorkspaceAccess,
   instagramIntegrationService,
   integrationFacebookAdsService,
   integrationMetaCatalogService,
@@ -7,7 +8,6 @@ import {
   messagingAdsConnectionService,
   messengerIntegrationService,
   platformCredentialService,
-  workspaceMemberService,
   workspaceService,
 } from "@chatbotx.io/business"
 import { auditService, withAuditContext } from "@chatbotx.io/business/audit"
@@ -65,7 +65,7 @@ import { connectZaloHandler } from "@/features/integration-zalo/actions/connect-
 import { reconnectZaloHandler } from "@/features/integration-zalo/actions/reconnect-callback"
 import { integrations } from "@/integration"
 import { assertWorkspaceSuperAdmin } from "@/lib/auth/assert-workspace-super-admin"
-import { getCurrentUserId } from "@/lib/auth/utils"
+import { getCurrentUser } from "@/lib/auth/utils"
 import { buildReconnectRedirectUrl } from "@/lib/channel-reconnect"
 import {
   encryptAuth,
@@ -73,12 +73,14 @@ import {
   FB_INSTAGRAM_PENDING_AUTH_COOKIE,
   FB_MESSENGER_PENDING_AUTH_COOKIE,
   FB_PENDING_AUTH_MAX_AGE,
+  writePendingAuth,
 } from "@/lib/facebook-pending-auth"
 import { logger } from "@/lib/log"
 import { resolveRelayTarget, sanitizeReferer } from "@/lib/oauth-referer"
 import { resolveOwnerForWorkspace } from "@/lib/platform-credential-owner"
 import { buildProviderCallbackUrl } from "@/lib/provider-origin"
 import { getGuestClientIp } from "@/lib/rate-limit/guest-rate-limit"
+import { createFirstWorkspace } from "@/lib/workspace/create-first-workspace"
 
 const stateValidationSchema = z.object({
   workspaceId: zodBigintAsString().optional(),
@@ -310,26 +312,21 @@ export const handleCallback = async (
     return redirect(cancelReferer)
   }
 
-  const userId = await getCurrentUserId()
-  if (!userId) {
+  const user = await getCurrentUser()
+  if (!user) {
     return notFound()
   }
+  const userId = user.id
 
   const workspace = stateParams.workspaceId
     ? await workspaceService.findById({ id: stateParams.workspaceId })
-    : await workspaceService.create({
-        data: {
-          name: "New Workspace",
-          ownerId: userId,
-        },
-        createdBy: userId,
-      })
+    : await createFirstWorkspace(userId)
 
   if (
     stateParams.workspaceId &&
-    !(await workspaceMemberService.isMember({
+    !(await hasWorkspaceAccess({
       workspaceId: stateParams.workspaceId,
-      userId,
+      user,
     }))
   ) {
     logger.info(
@@ -429,7 +426,7 @@ export const handleCallback = async (
         // asserts it too). The OAuth `state` is attacker-forgeable, so a bare
         // workspace member could otherwise round-trip a crafted state and bind
         // their own Facebook token to a workspace integration — re-assert
-        // super-admin here at the storage boundary (Codex impl-review).
+        // super-admin here at the storage boundary.
         try {
           await assertWorkspaceSuperAdmin(workspace.id)
         } catch {
@@ -531,13 +528,7 @@ export const handleCallback = async (
       })
 
       const cookieStore = await cookies()
-      cookieStore.set(FB_MESSENGER_PENDING_AUTH_COOKIE, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: FB_PENDING_AUTH_MAX_AGE,
-        path: "/channels/messenger/select",
-      })
+      writePendingAuth(cookieStore, FB_MESSENGER_PENDING_AUTH_COOKIE, token)
       return redirect(
         new URL("/channels/messenger/select", safeReferer).toString(),
       )
@@ -594,13 +585,7 @@ export const handleCallback = async (
         expiresAt: Date.now() + FB_PENDING_AUTH_MAX_AGE * 1000,
       })
       const cookieStore = await cookies()
-      cookieStore.set(FB_INSTAGRAM_PENDING_AUTH_COOKIE, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: FB_PENDING_AUTH_MAX_AGE,
-        path: "/channels/instagram/select",
-      })
+      writePendingAuth(cookieStore, FB_INSTAGRAM_PENDING_AUTH_COOKIE, token)
       return redirect(
         new URL("/channels/instagram/select", safeReferer).toString(),
       )
@@ -666,13 +651,11 @@ export const handleCallback = async (
         expiresAt: Date.now() + FB_PENDING_AUTH_MAX_AGE * 1000,
       })
       const cookieStore = await cookies()
-      cookieStore.set(FB_INSTAGRAM_FACEBOOK_PENDING_AUTH_COOKIE, token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: FB_PENDING_AUTH_MAX_AGE,
-        path: "/channels/instagram-facebook/select",
-      })
+      writePendingAuth(
+        cookieStore,
+        FB_INSTAGRAM_FACEBOOK_PENDING_AUTH_COOKIE,
+        token,
+      )
       return redirect(
         new URL("/channels/instagram-facebook/select", safeReferer).toString(),
       )

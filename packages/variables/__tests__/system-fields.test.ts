@@ -24,6 +24,7 @@ const {
   mockMessengerGetPostDetails,
   mockAppointmentFindBy,
   mockAppointmentFindLatestForContact,
+  mockResolveDefaultTokenPlaintext,
   testEncryptionKey,
 } = vi.hoisted(() => ({
   mockConversationFindBy: vi.fn().mockResolvedValue({
@@ -46,6 +47,7 @@ const {
   mockMessengerGetPostDetails: vi.fn(),
   mockAppointmentFindBy: vi.fn(),
   mockAppointmentFindLatestForContact: vi.fn(),
+  mockResolveDefaultTokenPlaintext: vi.fn(),
   testEncryptionKey:
     "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
 }))
@@ -78,6 +80,9 @@ vi.mock("@chatbotx.io/business", () => ({
   workspaceMemberService: {
     findWithUserByWorkspaceIdAndUserId:
       mockFindMemberWithUserByWorkspaceIdAndUserId,
+  },
+  workspaceApiTokenService: {
+    resolveDefaultTokenPlaintext: mockResolveDefaultTokenPlaintext,
   },
 }))
 
@@ -161,7 +166,6 @@ const workspace = {
   name: "Workspace One",
   logo: null,
   timezone: "UTC",
-  token: "workspace-token",
 } as WorkspaceModel
 
 const conversation = {
@@ -235,6 +239,7 @@ describe("getSystemFieldValue", () => {
       ),
     ).resolves.toBe("Webchat")
     expect(mockFindRecentByContactId).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
       contactId: "contact-1",
     })
   })
@@ -1384,13 +1389,17 @@ describe("getSystemFieldValue — contact profile columns", () => {
     ).resolves.toBe("")
   })
 
-  test("gender is localised through the workspace language", async () => {
+  test("gender is localised through the workspace language even when the contact speaks another", async () => {
     mockResolveGenderLabel.mockReturnValue("Chị")
 
     await expect(
       getSystemFieldValue(
         createContext({
-          contact: profileContact,
+          contact: { ...profileContact, locale: "en_US" } as ContactModel,
+          contactInbox: {
+            ...contactInbox,
+            language: "en",
+          } as ContactInboxModel,
           workspace: { ...workspace, language: "vi" } as WorkspaceModel,
         }),
         systemFieldTypes.enum.gender,
@@ -1400,14 +1409,21 @@ describe("getSystemFieldValue — contact profile columns", () => {
   })
 
   test("gender passes an undefined language when there is no workspace", async () => {
-    mockResolveGenderLabel.mockReturnValue("Anh/Chị")
+    mockResolveGenderLabel.mockReturnValue("Male/Female")
 
     await expect(
       getSystemFieldValue(
-        createContext({ contact: profileContact, workspace: null }),
+        createContext({
+          contact: { ...profileContact, locale: "vi_VN" } as ContactModel,
+          contactInbox: {
+            ...contactInbox,
+            language: "vi",
+          } as ContactInboxModel,
+          workspace: null,
+        }),
         systemFieldTypes.enum.gender,
       ),
-    ).resolves.toBe("Anh/Chị")
+    ).resolves.toBe("Male/Female")
     expect(mockResolveGenderLabel).toHaveBeenCalledWith(undefined, "female")
   })
 
@@ -1464,6 +1480,7 @@ describe("getSystemFieldValue — workspace and account fields", () => {
   })
 
   test("workspace and account aliases resolve from the same sources", async () => {
+    mockResolveDefaultTokenPlaintext.mockResolvedValue("cbx_ws_plaintext")
     const context = createContext()
 
     await expect(
@@ -1478,12 +1495,44 @@ describe("getSystemFieldValue — workspace and account fields", () => {
     await expect(
       getSystemFieldValue(context, systemFieldTypes.enum.account_name),
     ).resolves.toBe("Workspace One")
+    // {{api_key}} resolves the workspace's default token, minted/recovered
+    // by workspaceApiTokenService.resolveDefaultTokenPlaintext.
     await expect(
       getSystemFieldValue(context, systemFieldTypes.enum.api_key),
-    ).resolves.toBe("workspace-token")
+    ).resolves.toBe("cbx_ws_plaintext")
+    expect(mockResolveDefaultTokenPlaintext).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+    })
   })
 
-  test("workspace-backed fields are null without a workspace, but ids survive", async () => {
+  test("api_key resolves null when the workspace is scheduled for deletion", async () => {
+    mockResolveDefaultTokenPlaintext.mockResolvedValue("cbx_ws_plaintext")
+    const context = createContext({
+      workspace: {
+        ...workspace,
+        scheduledDeletionAt: new Date("2026-01-01T00:00:00.000Z"),
+      } as WorkspaceModel,
+    })
+
+    await expect(
+      getSystemFieldValue(context, systemFieldTypes.enum.api_key),
+    ).resolves.toBeNull()
+    expect(mockResolveDefaultTokenPlaintext).not.toHaveBeenCalled()
+  })
+
+  test("api_key resolves null when resolveDefaultTokenPlaintext throws, instead of failing the render", async () => {
+    mockResolveDefaultTokenPlaintext.mockRejectedValue(
+      new Error("decrypt failed: AAD mismatch"),
+    )
+    const context = createContext()
+
+    await expect(
+      getSystemFieldValue(context, systemFieldTypes.enum.api_key),
+    ).resolves.toBeNull()
+  })
+
+  test("workspace-backed fields are null without a workspace, but ids and api_key survive", async () => {
+    mockResolveDefaultTokenPlaintext.mockResolvedValue("cbx_ws_plaintext")
     const context = createContext({ workspace: null })
 
     await expect(
@@ -1492,9 +1541,11 @@ describe("getSystemFieldValue — workspace and account fields", () => {
     await expect(
       getSystemFieldValue(context, systemFieldTypes.enum.account_name),
     ).resolves.toBeNull()
+    // api_key is resolved off contact.workspaceId, not the workspace row, so
+    // it survives even when `workspace` itself is null.
     await expect(
       getSystemFieldValue(context, systemFieldTypes.enum.api_key),
-    ).resolves.toBeNull()
+    ).resolves.toBe("cbx_ws_plaintext")
     // Both ids come off the contact, so they hold even without the workspace row.
     await expect(
       getSystemFieldValue(context, systemFieldTypes.enum.workspace_id),

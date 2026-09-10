@@ -1,4 +1,5 @@
 import { automatedResponseService } from "@chatbotx.io/automated-response"
+import { broadcastService } from "@chatbotx.io/business"
 import { and, db, eq } from "@chatbotx.io/database/client"
 import { createMessageRepository } from "@chatbotx.io/database/repositories"
 import { contactsOnBroadcastsModel } from "@chatbotx.io/database/schema"
@@ -12,7 +13,6 @@ import { webhookChannelOrigin } from "@chatbotx.io/events/context"
 import {
   type BaseStepSchema,
   BROADCAST_PAYLOAD_TYPE,
-  type BroadcastMetadataPayload,
   type ButtonStepProps,
   decodeButtonPayload,
   type EdgeSchema,
@@ -32,6 +32,7 @@ import {
   SdkException,
   type Variables,
 } from "@chatbotx.io/sdk"
+import { createId } from "@chatbotx.io/utils"
 import {
   type BotResponseTrackingContext,
   IntegrationJobAction,
@@ -120,6 +121,7 @@ type ExecuteStepsAndQuickRepliesProps = {
   triggerMessageCreatedAt?: Date
   commentAnchor?: CommentAnchor
   appointmentId?: string
+  flowExecutionKey?: string
 }
 
 /** A job carries either an entity ID or the already-loaded entity. */
@@ -129,6 +131,26 @@ type FlowJobEntityRef =
 
 const getFlowJobEntityId = (value: FlowJobEntityRef): string =>
   typeof value === "string" ? value : value.id
+
+type FlowExecutionOptions = {
+  flowExecutionKey?: string
+}
+
+function resolveFlowExecutionKey(
+  options: FlowExecutionOptions | undefined,
+  context: Record<string, unknown>,
+): string {
+  if (options?.flowExecutionKey) {
+    return options.flowExecutionKey
+  }
+
+  const flowExecutionKey = `flow-inline-${createId()}`
+  logger.warn(
+    { ...context, flowExecutionKey },
+    "Flow execution is missing parent job id; generated fallback key",
+  )
+  return flowExecutionKey
+}
 
 const createFlowActionWarningContext = (data: {
   conversationId: FlowJobEntityRef
@@ -140,13 +162,70 @@ const createFlowActionWarningContext = (data: {
   action: data.action,
 })
 
-export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
+export const runFlowNode = async (
+  props: IntegrationJobRunFlowNode["data"],
+  options?: FlowExecutionOptions,
+) => {
   if (!props.flowId) {
     logger.debug({ props }, "runFlowNode is called without flowId")
     return
   }
 
+  // Stop/resume guard: a broadcast-dispatched flow job already in the queue
+  // when the broadcast was stopped (or resumed under a new epoch) must not
+  // continue running the flow.
+  //
+  // Accepted attribution-loss boundary — WEBVIEW re-entry: the webview
+  // submission actions (apps/builder/src/app/{booking,extensions}/**/actions)
+  // resume a flow mid-node but build a brand-new `metadata` payload of their
+  // own type (the webview token has no slot for broadcast metadata), so this
+  // guard's type check never matches and the flow remainder runs unguarded
+  // after that user-driven action. Never a duplicate (no marker → no reset).
+  // Flow-internal re-dispatches (next-node hops, button/quick-reply chains,
+  // split traffic) DO propagate `metadata`, so they stay guarded. Closing the
+  // webview gap would require threading broadcast metadata through the
+  // webview token schema — future round.
+  if (props.metadata?.type === BROADCAST_PAYLOAD_TYPE) {
+    const broadcastMeta = props.metadata
+    const sendable = await broadcastService.findSendableBroadcast(
+      broadcastMeta.broadcastId,
+    )
+
+    if (!sendable) {
+      // Reset only on the producer's own first dispatch. `initialBroadcastDispatch`
+      // is an EXPLICIT marker (see its doc comment in worker-config) — never
+      // inferred from job-data field absence. Every re-dispatch (splitTraffic,
+      // startAnotherNode, startExternalFlow/Node, condition routing,
+      // per-step continuation, smart-delay/wait resume, …) leaves it unset,
+      // so a missing marker always fails toward skip-without-reset
+      // (under-delivery, never a duplicate send) instead of replaying the
+      // flow head on Resume.
+      if (props.initialBroadcastDispatch === true) {
+        await broadcastService.resetContactForResume({
+          broadcastId: broadcastMeta.broadcastId,
+          contactKey: {
+            contactInboxId: getFlowJobEntityId(props.contactInboxId),
+          },
+        })
+      }
+
+      logger.debug(
+        {
+          broadcastId: broadcastMeta.broadcastId,
+          initialBroadcastDispatch: props.initialBroadcastDispatch === true,
+        },
+        "runFlowNode: broadcast no longer sendable, skipping",
+      )
+      return
+    }
+  }
+
   const { trackingContext, metadata, sendFrom, commentAnchor } = props
+  const flowExecutionKey = resolveFlowExecutionKey(options, {
+    conversationId: getFlowJobEntityId(props.conversationId),
+    contactInboxId: getFlowJobEntityId(props.contactInboxId),
+    flowId: props.flowId,
+  })
   const { conversation, contactInbox } =
     await detectConversationAndContactInbox({
       conversationId: props.conversationId,
@@ -220,10 +299,11 @@ export const runFlowNode = async (props: IntegrationJobRunFlowNode["data"]) => {
       nodeVisits: props.nodeVisits,
       commentAnchor,
       appointmentId: props.appointmentId,
+      flowExecutionKey,
     })
   } catch (error) {
     if (props.metadata?.type === BROADCAST_PAYLOAD_TYPE) {
-      const broadcastMeta = props.metadata as BroadcastMetadataPayload
+      const broadcastMeta = props.metadata
       await db
         .update(contactsOnBroadcastsModel)
         .set({ failedAt: new Date() })
@@ -690,12 +770,17 @@ const flowActionClickTypes = {
 async function runFlowAction(
   data: IntegrationJobSendFlowPostback["data"],
   handler: FlowActionHandler,
+  options?: FlowExecutionOptions,
 ) {
   const { conversation, contactInbox } =
     await detectConversationAndContactInbox({
       conversationId: data.conversationId,
       contactInboxId: data.contactInboxId,
     })
+  const flowExecutionKey = resolveFlowExecutionKey(options, {
+    ...createFlowActionWarningContext(data),
+    handler: handler.name,
+  })
 
   // Bare flow IDs (Messenger ad payloads) are only honored for Messenger
   // conversations. The channel is read from the persisted contactInbox, not
@@ -733,12 +818,15 @@ async function runFlowAction(
       }
       throw error
     }
-    await runFlowNode({
-      conversationId: data.conversationId,
-      contactInboxId: data.contactInboxId,
-      flowId: parsedAction.flowId,
-      flowVersionId: parsedAction.flowVersionId,
-    })
+    await runFlowNode(
+      {
+        conversationId: data.conversationId,
+        contactInboxId: data.contactInboxId,
+        flowId: parsedAction.flowId,
+        flowVersionId: parsedAction.flowVersionId,
+      },
+      { flowExecutionKey },
+    )
     return
   }
 
@@ -860,6 +948,7 @@ async function runFlowAction(
       ctx: {
         variables: initVariables(),
       },
+      flowExecutionKey,
     })
     if (data.messageId) {
       emit("analytics:dashboard", {
@@ -913,12 +1002,16 @@ async function runFlowAction(
   }
 }
 
-export function runFlowPostback(data: IntegrationJobSendFlowPostback["data"]) {
-  return runFlowAction(data, flowActionHandlers.postback)
+export function runFlowPostback(
+  data: IntegrationJobSendFlowPostback["data"],
+  options?: FlowExecutionOptions,
+) {
+  return runFlowAction(data, flowActionHandlers.postback, options)
 }
 
 export function runFlowQuickReply(
   data: IntegrationJobSendFlowQuickReply["data"],
+  options?: FlowExecutionOptions,
 ) {
-  return runFlowAction(data, flowActionHandlers.quickReply)
+  return runFlowAction(data, flowActionHandlers.quickReply, options)
 }

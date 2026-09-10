@@ -148,7 +148,12 @@
     "clone": "שכפול",
     "remove": "הסרה",
     "restore": "שחזור",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "saveAsDraft": "Save as draft",
+    "schedule": "Schedule",
+    "moveToDraft": "Move to draft",
+    "stop": "Stop",
+    "resume": "Resume"
   },
   "errors": {
     "superAdminRequired": "עליכם להיות מנהל-על של סביבת העבודה כדי לבצע פעולה זו."
@@ -413,8 +418,7 @@
       "import": "ייבוא זרימה",
       "export": "ייצוא",
       "importStarted": "הזרימה בתהליך ייבוא. בדקו את היסטוריית הייבוא לתוצאות.",
-      "importJsonOnly": "קבצי JSON בלבד",
-      "adsConversions": "מודעות ו-Meta Conversions"
+      "importJsonOnly": "קבצי JSON בלבד"
     },
     "splitTraffic": {
       "balanceHint": "הסכום הכולל חייב להיות 100%.",
@@ -1028,9 +1032,8 @@
     "title": "Make",
     "setting": {
       "label": "Make",
-      "description": "חברו את חשבון Make.com שלכם כדי לשלוח אירועים מהתהליכים ולקבל נתוני אנשי קשר באמצעות תרחישי Make. אסימון הגישה למפתחים של סביבת העבודה מועתק ללוח כאשר לוחצים על חיבור — הדביקו אותו בעת יצירת החיבור ב-Make.",
-      "notConfigured": "לא נמצא קישור הזמנה ל-Make. הוסיפו קישור בהגדרות הפלטפורמה.",
-      "noWorkspaceToken": "לא נמצא אסימון גישה למפתחים עבור סביבת עבודה זו. צרו אסימון במקטע אסימון סביבת העבודה שלמעלה, ולאחר מכן לחצו שוב על חיבור."
+      "description": "חברו את חשבון Make.com שלכם כדי לשלוח אירועים מהתהליכים ולקבל נתוני אנשי קשר באמצעות תרחישי Make.",
+      "notConfigured": "לא נמצא קישור הזמנה ל-Make. הוסיפו קישור בהגדרות הפלטפורמה."
     }
   },
   "integrations": {
@@ -1087,6 +1090,58 @@
       "button": "רענון כל ההרשאות",
       "resultSuccess": "רוענן {refreshed} ערוצים.",
       "resultWithFailures": "רוענן {refreshed} ערוצים, {failed} נכשלו."
+    },
+    "connectMany": {
+      "coexist": {
+        "running": "מתחיל סנכרון היסטוריה…",
+        "done": "סנכרון ההיסטוריה התחיל",
+        "failed": "סנכרון ההיסטוריה נכשל"
+      },
+      "selectAll": "בחר הכול",
+      "selected": "{count}/{max} נבחרו",
+      "dialogTitleRunning": "מחבר {count} {feature}…",
+      "dialogTitleDone": "חוברו {connected} מתוך {total}",
+      "progress": "{done}/{total}",
+      "progressAnnouncement": "{done} מתוך {total} הושלמו",
+      "status": {
+        "waiting": "ממתין",
+        "connecting": "מתחבר…",
+        "connected": "מחובר",
+        "duplicated": "כבר מחובר",
+        "limitReached": "המגבלה הושגה",
+        "failed": "נכשל",
+        "timedOut": "פג הזמן הקצוב",
+        "cancelled": "בוטל"
+      },
+      "reason": {
+        "notSelectable": "לא ניתן לבחור פריט זה.",
+        "channelLimit": "המגבלה של הערוצים הושגה.",
+        "workspaceLimit": "המגבלה של סביבת העבודה הושגה.",
+        "providerRejected": "הספק דחה את הבקשה הזו.",
+        "unknown": "משהו השתבש.",
+        "followUpFailed": "ההגדרה לא הושלמה — סיים אותה מהגדרות הערוץ."
+      },
+      "sessionError": {
+        "sessionExpired": "פג תוקף ההפעלה שלך. יש להתחבר שוב.",
+        "notMember": "אינך עוד חבר בסביבת עבודה זו.",
+        "trialExpired": "תקופת הניסיון שלך הסתיימה.",
+        "macLimitReached": "הגעת למגבלת החשבון שלך.",
+        "credentialMissing": "חסרים פרטי גישה. יש להתחבר שוב."
+      },
+      "cancelRemaining": "בטל את השאר",
+      "retryFailed": "נסה שוב ({count})",
+      "retry": "נסה שוב",
+      "goToChannels": "עבור לערוצים",
+      "close": "סגור",
+      "leaveNotice": "אפשר לצאת; החשבונות המחוברים יישמרו",
+      "stepConnecting": "מתחבר",
+      "stepCoexist": "סנכרון היסטוריה",
+      "validation": {
+        "min": "בחר לפחות פריט אחד",
+        "max": "ניתן לבחור עד {max}",
+        "duplicate": "בחירה כפולה"
+      },
+      "progressLabel": "התקדמות"
     }
   },
   "workspace": {
@@ -1118,6 +1173,17 @@
       "pendingBlockedToast": "סביבת עבודה זו מתוזמנת למחיקה. פנו למנהל סביבת העבודה כדי לשחזר את הגישה.",
       "navDisabledTooltip": "לא זמין כאשר מחיקת סביבת העבודה מתוזמנת",
       "badge": "מחיקה מתוזמנת"
+    },
+    "supportAccess": {
+      "bannerTitle": "הפעלת תמיכה של הפלטפורמה",
+      "bannerDescription": "לנציג תמיכה של הפלטפורמה יש גישה זמנית לסביבת עבודה זו עד {time}.",
+      "cardTitle": "גישת תמיכה של הפלטפורמה",
+      "cardDescription": "אפשר לצוות התמיכה של הפלטפורמה לפתוח סביבת עבודה זו עם גישה מלאה למשך 7 ימים. ניתן לכבות זאת בכל עת.",
+      "enabledUntil": "מופעל עד {time}",
+      "permissionRequired": "עליך להיות מנהל-על כדי לשנות את גישת התמיכה של הפלטפורמה.",
+      "enabledToast": "גישת תמיכה של הפלטפורמה הופעלה.",
+      "disabledToast": "גישת תמיכה של הפלטפורמה כובתה.",
+      "toggleError": "משהו השתבש. נסה שוב."
     }
   },
   "workspaces": {
@@ -1268,6 +1334,12 @@
     "tabs": {
       "generalSettings": "הגדרות כלליות",
       "conversionsApi": "אופטימיזציית מודעות"
+    },
+    "selectPage": {
+      "noAccountsTitle": "לא נמצאו חשבונות אינסטגרם",
+      "noAccountsDescription": "לא נמצאו חשבונות עסקיים באינסטגרם בדפי הפייסבוק שאתה מנהל. חבר מחדש את אינסטגרם ואשר את כל ההרשאות המבוקשות.",
+      "alreadyConnectedNote": "חשבון זה כבר מחובר",
+      "tryAgain": "ניסיון חיבור מחדש"
     }
   },
   "messenger": {
@@ -1287,7 +1359,6 @@
     "defaultPersona": "פרסונת ברירת מחדל",
     "reconnect": "חיבור מחדש",
     "reconnectDescription": "חברו מחדש את הבוט בכל פעם שבוט Messenger אינו מגיב או כאשר מופיעה שגיאת הרשאה ביומן השגיאות.",
-    "selectFacebookPage": "בחירת דף Facebook",
     "selectPage": {
       "noPagesTitle": "לא נמצאו דפי Facebook",
       "noPagesDescription": "דפים בתוך Business Manager דורשים גישה ל-Business Manager במהלך החיבור. חברו מחדש את Messenger והעניקו את כל ההרשאות המבוקשות.",
@@ -1528,6 +1599,7 @@
   "validation": {
     "maxSize": "גודל הקובץ חורג מהמגבלה המרבית",
     "maxItemsReached": "מותר לכל היותר {max} {feature} בכל סביבת עבודה",
+    "maxCharacters": "מקסימום {max} תווים.",
     "invalidApiKey": "מפתח API לא תקין",
     "maxMustBeGreaterThanMin": "{maxField} חייב להיות גדול או שווה ל-{minField}"
   },
@@ -1577,7 +1649,8 @@
       "verifyToken": "אסימון אימות Webhook",
       "qrCodeHint": "סרקו את קוד ה-QR כדי לפתוח את כתובת ה-Webhook",
       "moreSettings": "הגדרות נוספות",
-      "goToInbox": "מעבר לתיבת הדואר הנכנס"
+      "goToInbox": "מעבר לתיבת הדואר הנכנס",
+      "multipleTitle": "תיבות ה-WhatsApp שלך מוכנות!"
     },
     "phoneVerification": {
       "title": "אימות מספר טלפון WhatsApp",
@@ -1590,7 +1663,8 @@
       "actions": {
         "sendCode": "שליחת קוד",
         "resendIn": "שליחה מחדש בעוד {seconds} שניות",
-        "verify": "אימות ורישום"
+        "verify": "רישום",
+        "skip": "דלג"
       },
       "fields": {
         "code": {
@@ -1608,18 +1682,12 @@
         "codeNotSent": "לא ניתן היה לשלוח את קוד האימות של WhatsApp.",
         "codeNotVerified": "לא ניתן היה לאמת את קוד האימות של WhatsApp.",
         "registrationFailed": "אימות מספר הטלפון של WhatsApp נכשל."
-      }
+      },
+      "queueProgress": "מאמת {current} מתוך {total}"
     },
     "connect": {
       "errors": {
-        "accessTokenRequired": "נדרש אסימון גישה של WhatsApp.",
         "appSettingsNotFound": "הגדרות אפליקציית WhatsApp לא נמצאו.",
-        "failedToPersistIntegration": "שמירת השילוב עם WhatsApp נכשלה.",
-        "noPhoneNumberFound": "לא נמצא מספר טלפון של WhatsApp.",
-        "noPhoneNumbersFound": "לא נמצאו מספרי טלפון עבור חשבון WhatsApp Business זה.",
-        "phoneNumberNotFound": "מספר הטלפון שנבחר ב-WhatsApp לא נמצא.",
-        "unableToVerifyToken": "לא ניתן לאמת את אסימון WhatsApp.",
-        "wabaMismatch": "חשבון WhatsApp Business שנבחר אינו תואם להרשאה.",
         "wabaResolveFailed": "לא ניתן היה לזהות את חשבון WhatsApp Business מתוך ההרשאה."
       }
     },
@@ -1850,12 +1918,14 @@
       "label": "כותרת התבנית"
     },
     "transferPhoneNumber": "העברת מספר טלפון מספק WhatsApp אחר",
-    "signupSessionExpired": "פג תוקף הפעלת ההרשמה ל-WhatsApp. התחילו את החיבור מחדש.",
     "capi": {
       "automaticEvents": {
         "title": "אירועים אוטומטיים",
         "description": "שלח אירועי המרה ממספר וואטסאפ זה אל Meta באופן אוטומטי. אם ההרשאה חסרה, חבר מחדש את החשבון כדי להעניק אותה."
       }
+    },
+    "selectPage": {
+      "tryAgain": "ניסיון חיבור מחדש"
     }
   },
   "zalo": {
@@ -2032,7 +2102,12 @@
   },
   "developerAccessToken": {
     "title": "אסימון גישה ל-API",
-    "description": "צרו אסימון שיאפשר לסביבת העבודה לגשת לממשקי ה-API הציבוריים. שמרו את האסימון בסוד ואל תשתפו אותו עם אף אחד."
+    "description": "צרו אסימון שיאפשר לסביבת העבודה לגשת לממשקי ה-API הציבוריים. שמרו את האסימון בסוד ואל תשתפו אותו עם אף אחד.",
+    "createDialogTitle": "יצירת אסימון API",
+    "namePlaceholder": "לדוגמה: אינטגרציית Zapier",
+    "empty": "אין עדיין אסימוני API.",
+    "defaultBadge": "ברירת מחדל",
+    "allScopes": "כל ההיקפים"
   },
   "contacts": {
     "title": "אנשי קשר",
@@ -2557,6 +2632,16 @@
     "duplicateError": "כבר קיימת אוטומציה עבור דף וטופס אלה.",
     "subscribeError": "לא ניתן היה לרשום דף זה להתראות לידים של Facebook, ולכן האוטומציה לא נוצרה. חברו מחדש את הדף באמצעות \"הוספת חדש\" ונסו שוב."
   },
+  "clickToMessageAds": {
+    "title": "מודעות Click-to-Message",
+    "description": "המודעות שולחות אנשים ישירות לשיחה ב-Messenger, Instagram או WhatsApp.",
+    "empty": {
+      "title": "לא מחובר חשבון לערוץ הזה",
+      "description": "חברו תחילה חשבון ערוץ, ולאחר מכן חזרו לכאן כדי ליצור מודעות.",
+      "cta": "מעבר להגדרות הערוץ"
+    },
+    "dashboardCta": "צפייה בלוח הבקרה של המודעות"
+  },
   "ecommerce": {
     "title": "מסחר אלקטרוני",
     "description": "יצירה וניהול של חנות המסחר האלקטרוני שלכם."
@@ -2658,6 +2743,17 @@
     },
     "queues": {
       "title": "תורים"
+    },
+    "workspaces": {
+      "title": "סביבות עבודה",
+      "description": "ניתן לפתוח כאן סביבות עבודה שהבעלים שלהן הפעיל גישת תמיכה של הפלטפורמה.",
+      "owner": "בעלים",
+      "tenant": "שוכר",
+      "supportStatus": "סטטוס תמיכה",
+      "openAsSupport": "פתח כתמיכה",
+      "supportEnabledUntil": "מופעל עד {time}",
+      "supportOff": "כבוי",
+      "searchPlaceholder": "חפש לפי שם, אימייל של הבעלים או מזהה"
     }
   },
   "platformCredentials": {
@@ -3347,7 +3443,8 @@
       "label": "סוכן"
     },
     "aiAgent": {
-      "label": "סוכן AI"
+      "label": "סוכן AI",
+      "loadError": "טעינת סוכני ה-AI נכשלה. אנא נסה שוב."
     },
     "aiQueuedMessages": {
       "label": "הודעות AI בתור"
@@ -4642,6 +4739,26 @@
         "done": "בוצע"
       }
     },
+    "tokenPermission": {
+      "label": "הרשאה",
+      "full": "גישה מלאה",
+      "readOnly": "קריאה בלבד"
+    },
+    "tokenScopes": {
+      "label": "היקפים",
+      "contacts": "אנשי קשר",
+      "inbox": "תיבת דואר נכנס",
+      "automation": "אוטומציה",
+      "broadcasts": "שידורים",
+      "analytics": "אנליטיקה",
+      "ecommerce": "מסחר אלקטרוני",
+      "integrations": "אינטגרציות",
+      "channels": "ערוצים",
+      "minigames": "משחונים",
+      "appointments": "פגישות",
+      "media": "מדיה",
+      "ads": "מודעות"
+    },
     "adReferral": {
       "label": "Ads",
       "ctwa": "CTWA",
@@ -4706,7 +4823,9 @@
       "scheduled": "מתוזמן",
       "sent": "נשלח",
       "sending": "נשלח כעת",
-      "cancelled": "בוטל"
+      "cancelled": "בוטל",
+      "draft": "Draft",
+      "failed": "Failed"
     },
     "stats": {
       "sent": "נשלח",
@@ -4792,6 +4911,63 @@
       "template": "תבנית",
       "noTemplate": "ללא תבנית",
       "integration": "שילוב"
+    },
+    "filters": {
+      "all": "All"
+    },
+    "views": {
+      "table": "Table",
+      "calendar": "Calendar"
+    },
+    "panel": {
+      "collapse": "Collapse panel",
+      "expand": "Expand panel"
+    },
+    "empty": {
+      "title": "No broadcasts yet",
+      "description": "Create your first broadcast to reach your contacts.",
+      "filteredTitle": "No broadcasts match",
+      "filteredDescription": "Try another status or clear the search."
+    },
+    "scheduleDialog": {
+      "title": "Schedule broadcast",
+      "description": "Choose when \"{name}\" should be sent."
+    },
+    "deleteDialog": {
+      "title": "{count, plural, one {Delete broadcast} other {Delete broadcasts}}",
+      "description": "{count, plural, one {\"{name}\" will be removed. Its data is deleted in the background.} other {# broadcasts will be removed. Their data is deleted in the background.}}",
+      "partial": "{deleted} of {requested} deleted — the rest changed status"
+    },
+    "calendar": {
+      "today": "Today",
+      "apply": "Apply",
+      "more": "+{count} more",
+      "ranges": {
+        "month": "Month",
+        "week": "Week",
+        "day": "Day",
+        "custom": "Custom"
+      },
+      "previous": "Previous",
+      "next": "Next",
+      "emptyDay": "No broadcasts on this day",
+      "emptyRange": "No broadcasts in this range",
+      "jumpToDate": "Jump to date"
+    },
+    "fields": {
+      "id": "ID"
+    },
+    "moveToDraftDialog": {
+      "title": "Move to draft",
+      "description": "\"{name}\" will be unscheduled and moved back to drafts."
+    },
+    "stopDialog": {
+      "title": "Stop broadcast",
+      "description": "Remaining messages for \"{name}\" stop within about a minute. A few already handed to the channel may still deliver. You can resume later — only unsent recipients will receive."
+    },
+    "resumeDialog": {
+      "title": "Resume broadcast",
+      "description": "\"{name}\" will continue sending to recipients who have not received it yet."
     }
   },
   "condition": {
@@ -5261,13 +5437,12 @@
   },
   "metaConversions": {
     "title": "Conversions API",
-    "description": "שליחת אירועי LeadSubmitted משיחות Messenger, Instagram ו-WhatsApp אל Meta.",
+    "description": "שליחת אירועי המרה משיחות Messenger, Instagram ו-WhatsApp אל Meta.",
     "datasetId": "מזהה Dataset",
     "reconnect": "חיבור מחדש להרשאות",
     "connectViaFacebook": "חיבור דרך Facebook",
     "unsupportedExplanation": "חשבון Instagram זה חובר באמצעות Instagram Business Login. חברו את החשבון דרך Facebook כדי להשתמש ב-Meta Conversions API.",
     "flowStep": {
-      "description": "הוסיפו לתור אירוע LeadSubmitted עבור Messenger, Instagram או WhatsApp.",
       "whatsappNote": "אירועי WhatsApp נשלחים רק עבור שיחות שהתחילו ממודעת click-to-WhatsApp."
     },
     "status": {
@@ -5294,12 +5469,50 @@
       "datasetRequired": "שמרו מזהה Dataset לפני הוספת אסימון גישה.",
       "invalidToken": "האסימון הזה לא הצליח לגשת למאגר הנתונים.",
       "invalidDatasetId": "הזן Dataset ID תקין (ספרות בלבד).",
-      "whatsappNotFound": "שילוב WhatsApp לא נמצא."
+      "whatsappNotFound": "שילוב WhatsApp לא נמצא.",
+      "testEventCodeRequired": "שמור קוד אירוע בדיקה לפני שליחת אירוע בדיקה.",
+      "noContactForTest": "אין עדיין איש קשר מתאים בערוץ זה. אירוע בדיקה זקוק לאיש קשר אמיתי לשיוך (ב-WhatsApp, כזה שהגיע ממודעת click-to-WhatsApp).",
+      "invalidTestEventCode": "קוד אירוע הבדיקה יכול להכיל רק אותיות, ספרות, מקפים או קווים תחתונים (עד 64 תווים)."
     },
     "fields": {
       "eventType": {
         "label": "סוג אירוע",
-        "leadSubmitted": "ליד נשלח"
+        "leadSubmitted": "ליד נשלח",
+        "purchase": "רכישה",
+        "initiateCheckout": "התחלת תשלום",
+        "addToCart": "הוספה לעגלה",
+        "viewContent": "צפייה בתוכן",
+        "orderCreated": "הזמנה נוצרה",
+        "orderShipped": "ההזמנה נשלחה",
+        "orderDelivered": "ההזמנה נמסרה",
+        "orderCanceled": "ההזמנה בוטלה",
+        "orderReturned": "ההזמנה הוחזרה",
+        "cartAbandoned": "עגלה ננטשה",
+        "qualifiedLead": "ליד מוסמך",
+        "ratingProvided": "דירוג ניתן",
+        "reviewProvided": "ביקורת ניתנה",
+        "addPaymentInfo": "הוספת פרטי תשלום",
+        "addToWishlist": "הוספה לרשימת המשאלות",
+        "completeRegistration": "השלמת הרשמה",
+        "contact": "יצירת קשר",
+        "customizeProduct": "התאמה אישית של מוצר",
+        "donate": "תרומה",
+        "findLocation": "איתור מיקום",
+        "lead": "ליד",
+        "schedule": "קביעת פגישה",
+        "search": "חיפוש",
+        "startTrial": "התחלת ניסיון",
+        "submitApplication": "הגשת בקשה",
+        "subscribe": "הרשמה למנוי",
+        "custom": "אירוע מותאם אישית…",
+        "groups": {
+          "commerce": "מסחר",
+          "leads": "לידים",
+          "orders": "הזמנות",
+          "feedback": "משוב",
+          "leadsAndSignups": "לידים והרשמות",
+          "other": "אחר"
+        }
       },
       "value": "ערך",
       "valuePlaceholder": "לדוגמה: 250",
@@ -5317,7 +5530,16 @@
         "id": "Product ID",
         "quantity": "Quantity",
         "itemPrice": "Item price"
-      }
+      },
+      "customEventName": "שם האירוע המותאם אישית",
+      "customEventNamePlaceholder": "לדוגמה: MyCustomEvent",
+      "contentType": {
+        "label": "סוג תוכן",
+        "product": "מוצר",
+        "product_group": "קבוצת מוצרים"
+      },
+      "contentIds": "מזהי תוכן",
+      "contentIdsPlaceholder": "לדוגמה: 123,456"
     },
     "datasetIdPlaceholder": "הדביקו את מזהה ה-Dataset מ-Events Manager",
     "saveDataset": "שמור",
@@ -5368,6 +5590,36 @@
     "limitedDataUse": {
       "label": "Limited Data Use (US privacy)",
       "description": "Restrict Meta's use of event data for users in applicable US states. Meta auto-detects the user's location from this event; no location data is sent by ChatbotX."
+    },
+    "actionSource": {
+      "label": "מקור הפעולה",
+      "help": "היכן התרחש האירוע. עיינו בתיעוד של Meta בנושא מקור הפעולה.",
+      "business_messaging": "הודעות עסקיות",
+      "email": "אימייל",
+      "phone_call": "שיחת טלפון",
+      "chat": "צ'אט",
+      "physical_store": "חנות פיזית",
+      "system_generated": "נוצר על ידי המערכת",
+      "other": "אחר"
+    },
+    "dialog": {
+      "title": "Meta CAPI",
+      "advanced": "מתקדם"
+    },
+    "testEvents": {
+      "title": "אירועי בדיקה",
+      "description": "הדבק את test_event_code מתוך Events Manager ← Test events. כל עוד הוא מוגדר, כל אירוע מהערוץ הזה מנותב אל תצוגת Test events עם כל המטען שלו (ערך, מטבע, מזהי תוכן) ואינו נספר בדוחות. נקה אותו כשתסיים.",
+      "codeLabel": "קוד אירוע בדיקה",
+      "codePlaceholder": "למשל: TEST12345",
+      "save": "שמור קוד",
+      "clear": "נקה",
+      "saved": "קוד אירוע הבדיקה נשמר.",
+      "cleared": "קוד אירוע הבדיקה נוקה. האירועים חזרו להיות פעילים.",
+      "send": "שלח אירוע בדיקה",
+      "sent": "אירוע הבדיקה נכנס לתור. הוא יופיע תחת Test events ב-Events Manager תוך דקה.",
+      "sendHint": "שולח אירוע Purchase לדוגמה אחד (100 USD) לאיש הקשר האחרון בערוץ זה.",
+      "activeNotice": "מצב בדיקה פעיל: אירועים מהערוץ הזה לא נספרים בדוחות עד שהקוד ינוקה.",
+      "openTestEvents": "פתח את Test events"
     }
   },
   "minigames": {
@@ -5429,13 +5681,17 @@
       "jackpotBanner": "ג'קפוט",
       "luckyWheelHeader": "גלגל המזל",
       "gashaponHeader": "גשאפון",
+      "drawLotsHeader": "הגרלת גורל",
+      "scratchOffHeader": "גרד ונצח",
+      "scratchOffCardTitle": "כרטיסי גירוד כוכב בר מזל",
       "comingSoon": "תצוגה מקדימה מפורטת תגיע בקרוב עבור סוג משחק זה"
     },
     "form": {
       "generalSettingsTitle": "הגדרות כלליות",
       "appearanceTitle": "מראה",
       "playerSettingsTitle": "הגדרות שחקן",
-      "prizeSettingsTitle": "הגדרות פרסים"
+      "prizeSettingsTitle": "הגדרות פרסים",
+      "validationFailed": "יש לתקן את השדות המסומנים לפני השמירה."
     },
     "generalSettings": {
       "showName": "גלוי",
@@ -5443,10 +5699,7 @@
       "rulesDescription": "תיאור החוקים",
       "openerTags": "תיוג אנשי קשר שפותחים את קישור המשחק",
       "playerTags": "תיוג שחקנים",
-      "newFriendTags": "תיוג חברים חדשים",
-      "shareEnabled": "אפשרו שיתוף עם חברים",
-      "shareMessage": "הודעת שיתוף",
-      "shareMessageHint": "השתמשו ב-'{{shareUrl}}' כדי להוסיף את קישור המשחק בפועל — נא לא להסיר אותו."
+      "newFriendTags": "תיוג חברים חדשים"
     },
     "appearance": {
       "backgroundColor": "צבע רקע",
@@ -5462,6 +5715,10 @@
     },
     "playerSettings": {
       "drawsPerPerson": "מספר הזדמנויות הגרלה לכל אדם",
+      "maxSharesPerPerson": "מקסימום הגרלות בונוס מהפניות",
+      "maxSharesPerPersonHint": "כל חבר שמצטרף דרך קישור ההזמנה של השחקן הזה ושולח לך הודעה מזכה אותו בהגרלה נוספת אחת, עד למגבלה הזו. הגדר 0 כדי לכבות בונוסי הפניה. יש להשתמש בהגרלות הבונוס לפני האיפוס הבא.",
+      "sharingNode": "שלב שיתוף",
+      "sharingNodeHint": "שלב התהליך שרץ כאשר חבר פותח את קישור השיתוף של שחקן זה. השאר ריק כדי להסתיר את כפתור השיתוף.",
       "resetPolicyLabel": "איפוס הגרלות",
       "resetNever": "אין לאפס את מספר ההגרלות",
       "resetEveryNDays": "איפוס מספר ההגרלות כל",
@@ -5480,15 +5737,25 @@
       "forbiddenTitle": "הגישה נדחתה",
       "forbiddenDescription": "קישור זה אינו תקף או שפג תוקפו.",
       "comingSoonTitle": "בקרוב",
-      "comingSoonDescription": "לא ניתן עדיין לשחק בסוג מיני-משחק זה."
+      "comingSoonDescription": "לא ניתן עדיין לשחק בסוג מיני-משחק זה.",
+      "rateLimited": "יותר מדי בקשות. המתן רגע ונסה שוב."
+    },
+    "list": {
+      "gamesPlayed": "משחקים ששוחקו",
+      "participants": "משתתפים",
+      "winners": "זוכים",
+      "shares": "הפניות"
     },
     "history": {
       "title": "היסטוריה",
       "played": "משחקים",
       "remaining": "הגרלות שנותרו",
+      "shares": "הפניות",
       "openedAt": "נפתח לראשונה",
       "lastPlayedAt": "שוחק לאחרונה",
       "unknownContact": "איש קשר לא ידוע",
+      "conversationNotFound": "לא נמצאה שיחה עבור איש קשר זה",
+      "popupBlocked": "אפשרו חלונות קופצים באתר זה ונסו שוב.",
       "record": "רשומה",
       "recordDialog": {
         "title": "רשומת משחקים",

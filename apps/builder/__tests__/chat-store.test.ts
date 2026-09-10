@@ -1,21 +1,25 @@
 import { beforeEach, describe, expect, test, vi } from "vitest"
 
-const { mockFindConversationAuthenticatedAPI, mockKyPost } = vi.hoisted(() => ({
+const {
+  mockFindConversationAuthenticatedAPI,
+  mockListConversationsByPOSTAuthenticatedAPI,
+  mockListMessagesAuthenticatedAPI,
+} = vi.hoisted(() => ({
   mockFindConversationAuthenticatedAPI: vi.fn(),
-  mockKyPost: vi.fn(),
+  mockListConversationsByPOSTAuthenticatedAPI: vi.fn(),
+  mockListMessagesAuthenticatedAPI: vi.fn(),
 }))
 
 vi.mock("@/lib/orpc/orpc", () => ({
   client: {
     conversationsAPI: {
       findConversationAuthenticatedAPI: mockFindConversationAuthenticatedAPI,
+      listConversationsByPOSTAuthenticatedAPI:
+        mockListConversationsByPOSTAuthenticatedAPI,
     },
-  },
-}))
-
-vi.mock("ky", () => ({
-  default: {
-    post: mockKyPost,
+    messagesAPI: {
+      listMessagesAuthenticatedAPI: mockListMessagesAuthenticatedAPI,
+    },
   },
 }))
 
@@ -29,7 +33,8 @@ type TestConversation = {
   contactId: string
   messages: unknown[]
   lastActivityAt: Date | null
-  agentLastReadAt?: Date
+  agentLastReadAt?: Date | null
+  adminRepliedAt?: Date | null
 }
 
 type TestMessage = {
@@ -38,6 +43,8 @@ type TestMessage = {
   conversationId: string
   createdAt: Date
   messageType: string
+  senderType?: string
+  senderId?: string | null
 }
 
 const makeConversation = (id: string, lastActivityAt: Date) =>
@@ -58,6 +65,22 @@ const makeMessage = (conversationId: string, createdAt: Date) =>
     messageType: "incoming",
   }) as TestMessage
 
+const makeOutgoingMessage = (
+  conversationId: string,
+  createdAt: Date,
+  senderType: "user" | "api" | "bot" | "system",
+  // `received-message` stamps a channel echo senderType "user" with a null
+  // senderId; `createOutgoing` always carries the acting user's id.
+  senderId: string | null = senderType === "user" ? "user-1" : null,
+) =>
+  ({
+    ...makeMessage(conversationId, createdAt),
+    id: `msg-${conversationId}-${senderType}`,
+    messageType: "outgoing",
+    senderType,
+    senderId,
+  }) as TestMessage
+
 const setConversationUrl = (conversationId: string | null) => {
   window.history.replaceState(
     {},
@@ -70,11 +93,9 @@ const mockConversationPage = (
   conversations: TestConversation[],
   nextCursor: string | null = null,
 ) => {
-  mockKyPost.mockReturnValue({
-    json: vi.fn().mockResolvedValue({
-      data: conversations,
-      nextCursor,
-    }),
+  mockListConversationsByPOSTAuthenticatedAPI.mockResolvedValue({
+    data: conversations,
+    nextCursor,
   })
 }
 
@@ -245,9 +266,7 @@ describe("chat store conversation updates", () => {
       resolvePage = resolve
     })
     setConversationUrl("conv-deep-link")
-    mockKyPost.mockReturnValue({
-      json: vi.fn().mockReturnValue(pageResponse),
-    })
+    mockListConversationsByPOSTAuthenticatedAPI.mockReturnValue(pageResponse)
 
     const loadPromise = store.getState().loadMoreConversations("ws-1")
     const bootstrapPromise = store
@@ -268,9 +287,9 @@ describe("chat store conversation updates", () => {
       new Date("2026-01-01T01:00:00Z"),
     )
     setConversationUrl("conv-deep-link")
-    mockKyPost.mockReturnValue({
-      json: vi.fn().mockRejectedValue(new Error("list failed")),
-    })
+    mockListConversationsByPOSTAuthenticatedAPI.mockRejectedValue(
+      new Error("list failed"),
+    )
     mockFindConversationAuthenticatedAPI.mockResolvedValue({ data: deepLinked })
 
     const loadPromise = store
@@ -312,9 +331,7 @@ describe("chat store conversation updates", () => {
     const pageResponse = new Promise<PageResponse>((resolve) => {
       resolvePage = resolve
     })
-    mockKyPost.mockReturnValue({
-      json: vi.fn().mockReturnValue(pageResponse),
-    })
+    mockListConversationsByPOSTAuthenticatedAPI.mockReturnValue(pageResponse)
 
     const loadPromise = store.getState().loadMoreConversations("ws-1")
     store.getState().prependConversation(deepLinked as never)
@@ -390,5 +407,183 @@ describe("chat store conversation updates", () => {
       ...second,
       agentLastReadAt: new Date("2026-01-02T00:00:00Z"),
     })
+  })
+})
+
+describe("chat store handleNewMessage read state", () => {
+  const AGENT_LAST_READ_AT = new Date("2026-01-01T00:00:00Z")
+
+  const makeUnreadStore = (activeConversationId: string | null = null) => {
+    const store = createChatStore()
+    const conversation = {
+      ...makeConversation("conv-1", new Date("2026-01-01T01:00:00Z")),
+      agentLastReadAt: AGENT_LAST_READ_AT,
+      adminRepliedAt: null,
+    }
+    store.setState({
+      conversations: [conversation] as never,
+      activeConversationId,
+    })
+    return store
+  }
+
+  const readStateOf = (store: ReturnType<typeof createChatStore>) => {
+    const conversation = store
+      .getState()
+      .conversations.find((c) => c.id === "conv-1") as TestConversation
+    return {
+      agentLastReadAt: conversation.agentLastReadAt,
+      adminRepliedAt: conversation.adminRepliedAt,
+    }
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks()
+    setConversationUrl(null)
+  })
+
+  test.each([
+    "bot",
+    "system",
+  ] as const)("a %s outgoing message leaves the conversation unread", async (senderType) => {
+    const store = makeUnreadStore()
+
+    await store
+      .getState()
+      .handleNewMessage(
+        makeOutgoingMessage(
+          "conv-1",
+          new Date("2026-01-01T02:00:00Z"),
+          senderType,
+        ) as never,
+      )
+
+    expect(readStateOf(store)).toEqual({
+      agentLastReadAt: AGENT_LAST_READ_AT,
+      adminRepliedAt: null,
+    })
+  })
+
+  test.each([
+    "user",
+    "api",
+  ] as const)("a %s outgoing message marks the conversation read and replied", async (senderType) => {
+    const store = makeUnreadStore()
+
+    await store
+      .getState()
+      .handleNewMessage(
+        makeOutgoingMessage(
+          "conv-1",
+          new Date("2026-01-01T02:00:00Z"),
+          senderType,
+        ) as never,
+      )
+
+    const { agentLastReadAt, adminRepliedAt } = readStateOf(store)
+    expect(agentLastReadAt).not.toEqual(AGENT_LAST_READ_AT)
+    expect(agentLastReadAt).toEqual(adminRepliedAt)
+  })
+
+  test("a channel echo (senderType user, no senderId) leaves the conversation unread", async () => {
+    const store = makeUnreadStore()
+
+    await store
+      .getState()
+      .handleNewMessage(
+        makeOutgoingMessage(
+          "conv-1",
+          new Date("2026-01-01T02:00:00Z"),
+          "user",
+          null,
+        ) as never,
+      )
+
+    expect(readStateOf(store)).toEqual({
+      agentLastReadAt: AGENT_LAST_READ_AT,
+      adminRepliedAt: null,
+    })
+  })
+
+  test("an incoming message on the open conversation marks it read without an admin reply", async () => {
+    const store = makeUnreadStore("conv-1")
+
+    await store
+      .getState()
+      .handleNewMessage(
+        makeMessage("conv-1", new Date("2026-01-01T02:00:00Z")) as never,
+      )
+
+    const { agentLastReadAt, adminRepliedAt } = readStateOf(store)
+    expect(agentLastReadAt).not.toEqual(AGENT_LAST_READ_AT)
+    expect(adminRepliedAt).toBeNull()
+  })
+
+  test("an incoming message on a background conversation stays unread", async () => {
+    const store = makeUnreadStore("conv-other")
+
+    await store
+      .getState()
+      .handleNewMessage(
+        makeMessage("conv-1", new Date("2026-01-01T02:00:00Z")) as never,
+      )
+
+    expect(readStateOf(store)).toEqual({
+      agentLastReadAt: AGENT_LAST_READ_AT,
+      adminRepliedAt: null,
+    })
+  })
+})
+
+describe("chat store loadMoreMessages", () => {
+  test("prepends the older page and advances the message cursor", async () => {
+    const store = createChatStore()
+    const existing = makeMessage("conv-1", new Date("2026-01-01T02:00:00Z"))
+    store.setState({
+      activeConversationId: "conv-1",
+      messages: [existing] as never,
+      nextCursorMessage: "cursor-1",
+    })
+    const older = makeMessage("conv-1", new Date("2026-01-01T01:00:00Z"))
+    const oldest = makeMessage("conv-1", new Date("2026-01-01T00:00:00Z"))
+    // The API returns newest-first; the store reverses into display order.
+    mockListMessagesAuthenticatedAPI.mockResolvedValue({
+      data: [older, oldest],
+      nextCursor: null,
+    })
+
+    await store.getState().loadMoreMessages("ws-1", 20)
+
+    expect(mockListMessagesAuthenticatedAPI).toHaveBeenCalledWith({
+      workspaceId: "ws-1",
+      perPage: 20,
+      cursor: "cursor-1",
+      conversationId: "conv-1",
+    })
+    expect(store.getState().messages).toEqual([oldest, older, existing])
+    expect(store.getState().hasNextMessagePage).toBe(false)
+    expect(store.getState().isLoadMoreMessage).toBe(false)
+  })
+
+  test("resets the in-flight flag when the request fails so a retry is possible", async () => {
+    const store = createChatStore()
+    store.setState({ activeConversationId: "conv-1" })
+    mockListMessagesAuthenticatedAPI.mockRejectedValueOnce(
+      new Error("network down"),
+    )
+
+    await expect(store.getState().loadMoreMessages("ws-1", 20)).rejects.toThrow(
+      "network down",
+    )
+    expect(store.getState().isLoadMoreMessage).toBe(false)
+    expect(store.getState().hasNextMessagePage).toBe(true)
+
+    mockListMessagesAuthenticatedAPI.mockResolvedValueOnce({
+      data: [],
+      nextCursor: null,
+    })
+    await store.getState().loadMoreMessages("ws-1", 20)
+
+    expect(mockListMessagesAuthenticatedAPI).toHaveBeenCalledTimes(2)
   })
 })

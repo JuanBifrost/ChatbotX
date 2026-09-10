@@ -34,7 +34,7 @@ import {
 } from "../workspace-member/service"
 import { nextScheduledDeletionAt } from "./deletion-schedule"
 
-type WorkspaceWhere = Partial<{ id: string; ownerId: string; token: string }>
+type WorkspaceWhere = Partial<{ id: string; ownerId: string }>
 type DueWorkspace = Pick<WorkspaceModel, "id" | "ownerId" | "tenantId">
 
 const stableKey = (where: WorkspaceWhere) =>
@@ -80,6 +80,20 @@ class WorkspaceService extends BaseService {
           result ? [`workspaces:${result.id}`] : undefined,
       },
     )
+  }
+
+  // Auth gate — membership must take effect immediately on removal, so this
+  // intentionally skips withCache (unlike find() above), matching
+  // WorkspaceMemberService.findMembership. Used to fetch the workspace for a
+  // platform-support caller with no real WorkspaceMember row, so a revoke
+  // (disable()) ends the session on the very next request even if cache
+  // invalidation failed.
+  async findForAuth(props: {
+    id: string
+    tx?: DatabaseClient
+  }): Promise<WorkspaceModel | undefined> {
+    const { id, tx = db } = props
+    return await tx.query.workspaceModel.findFirst({ where: { id } })
   }
 
   isActiveNow(workspace: {
@@ -150,16 +164,12 @@ class WorkspaceService extends BaseService {
       changedKeys.length === 1 && changedKeys[0] === "scheduledDeletionAt"
     if (!props.tx && changedKeys.length > 0 && !onlyScheduledDeletionChanged) {
       const nameChanged = data.name !== undefined && data.name !== previousName
-      let detail: string
-      if (data.token !== undefined) {
-        // Never include the raw token value in the audit trail.
-        detail = "created/regenerated workspace API key"
-      } else if (nameChanged) {
-        detail = "changed the workspace name"
-      } else {
-        detail = "updated the workspace configuration"
-      }
-      await this.audit("update", detail)
+      await this.audit(
+        "update",
+        nameChanged
+          ? "changed the workspace name"
+          : "updated the workspace configuration",
+      )
     }
 
     return updated

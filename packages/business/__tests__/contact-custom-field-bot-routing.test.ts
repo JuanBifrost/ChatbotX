@@ -8,7 +8,7 @@ import { beforeEach, describe, expect, test, vi } from "vitest"
 // is true AND the keyword is a well-formed `bot_field:<id>` token does the
 // call delegate to `botFieldService`; every other combination (flag off, or
 // a plain id/name even with the flag on) must run the EXISTING contact-scoped
-// path untouched. See docs/plans/2026-08-28-account-fields-custom-fields-page.md §3.2.
+// path untouched.
 // ---------------------------------------------------------------------------
 
 const mocks = vi.hoisted(() => ({
@@ -34,7 +34,8 @@ vi.mock("@chatbotx.io/events", () => ({
   emitCustomFieldChanged: mocks.emitCustomFieldChanged,
 }))
 
-vi.mock("@chatbotx.io/redis", () => ({
+vi.mock("@chatbotx.io/redis", async (importOriginal) => ({
+  ...(await importOriginal<Record<string, unknown>>()),
   invalidateCacheByTags: mocks.invalidateCacheByTags,
 }))
 
@@ -219,18 +220,17 @@ describe("contactCustomFieldService.deleteByKey — bot-field routing", () => {
   })
 
   /**
-   * PUBLIC-API GUARANTEE: `clearContactCustomFieldWorkspaceTokenAPI`
-   * (`apps/builder/src/features/contacts/api/workspace-token.ts`, DELETE
+   * PUBLIC-API GUARANTEE: `contactsPublicRouter.clearCustomField`
+   * (`apps/builder/src/features/contacts/api/public.ts`, DELETE
    * `/v1/contacts/{identifier}/custom-fields/{idOrName}`) calls
    * `deleteByKey({ workspaceId, contactId, keyword })` — it never sets
    * `allowBotFields`. This test pins that exact call shape (mirroring the
    * handler byte for byte, not just relying on the default-parameter
    * behavior above) so a public API token can never reach Account Fields,
    * which have no per-token scoping. A colocated route-level test would
-   * require mocking the ~15 other modules `workspace-token.ts` imports
-   * (message actions, contact-import service, tag queries, ...) for no
-   * additional coverage over pinning the exact input shape here — see
-   * plan §3.2.
+   * require mocking the ~15 other modules `public.ts` imports (message
+   * actions, contact-import service, tag queries, ...) for no additional
+   * coverage over pinning the exact input shape here — see plan §3.2.
    */
   test("PUBLIC API GUARANTEE: the workspace-token contact custom-field DELETE handler's exact call shape (no allowBotFields) never clears a bot field for a bot_field:<id> token", async () => {
     mocks.customFieldFindFirst.mockResolvedValue(undefined)

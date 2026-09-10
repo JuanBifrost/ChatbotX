@@ -11,9 +11,9 @@ import {
 } from "@chatbotx.io/ui/components/ui/card"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { useTranslations } from "next-intl"
-import { MessagingAdsBox } from "@/features/ads-campaign/components/messaging-ads-box"
 import { CapiConnectedCard } from "@/features/meta-conversions/components/capi-connected-card"
 import { CapiMethodChooser } from "@/features/meta-conversions/components/capi-method-chooser"
+import { CapiTestEventCard } from "@/features/meta-conversions/components/capi-test-event-card"
 import {
   type CapiConnectionState,
   getCapiConnectionState,
@@ -32,17 +32,17 @@ import { setMessengerCapiDatasetAction } from "../actions/set-capi-dataset.actio
 type MessengerCapiTabProps = {
   integrationMessenger: Pick<
     IntegrationMessengerModel,
-    "id" | "hasCapiScope" | "datasetId"
+    "id" | "hasCapiScope" | "datasetId" | "capiTestEventCode"
   >
   hasManualCapiAccessToken: boolean
   capiDisconnected: boolean
   credentialAvailable: boolean
-  messagingAdsConnectionState: { connected: boolean; reconnectNeeded: boolean }
 }
 
 const statusDescriptionKey = {
   ready: "metaConversions.statusDescriptions.ready",
   notConnected: "metaConversions.statusDescriptions.notConnected",
+  missingPermission: "metaConversions.statusDescriptions.missingPermission",
   unverified: "metaConversions.statusDescriptions.unverified",
   unsupported: "metaConversions.statusDescriptions.unsupported",
 } as const satisfies Record<CapiStatus, string>
@@ -51,10 +51,12 @@ function renderConnectionContent({
   connectionState,
   integrationMessenger,
   workspaceId,
+  notice,
 }: {
   connectionState: CapiConnectionState
   integrationMessenger: MessengerCapiTabProps["integrationMessenger"]
   workspaceId: string
+  notice: string
 }) {
   if (connectionState === "disconnected") {
     return (
@@ -71,12 +73,26 @@ function renderConnectionContent({
     )
   }
   return (
-    <CapiConnectedCard
-      datasetId={integrationMessenger.datasetId}
-      disconnectAction={disconnectMessengerCapiAction}
-      integrationId={integrationMessenger.id}
-      workspaceId={workspaceId}
-    />
+    <>
+      <CapiConnectedCard
+        datasetId={integrationMessenger.datasetId}
+        disconnectAction={disconnectMessengerCapiAction}
+        integrationId={integrationMessenger.id}
+        notice={connectionState === "awaitingScope" ? notice : undefined}
+        workspaceId={workspaceId}
+      />
+      {/* Sending needs the Meta scope or a manual token; while the scope is
+          still missing a test would only be skipped, so hide the card. */}
+      {connectionState === "awaitingScope" ? null : (
+        <CapiTestEventCard
+          channel="messenger"
+          datasetId={integrationMessenger.datasetId}
+          integrationId={integrationMessenger.id}
+          testEventCode={integrationMessenger.capiTestEventCode}
+          workspaceId={workspaceId}
+        />
+      )}
+    </>
   )
 }
 
@@ -85,7 +101,6 @@ export function MessengerCapiTab({
   hasManualCapiAccessToken,
   capiDisconnected,
   credentialAvailable,
-  messagingAdsConnectionState,
 }: MessengerCapiTabProps) {
   const t = useTranslations()
   const workspaceId = useWorkspaceId()
@@ -96,7 +111,8 @@ export function MessengerCapiTab({
     hasDatasetId: Boolean(integrationMessenger.datasetId),
   })
   const status = getCapiStatus({
-    hasCapiScope: !capiDisconnected && integrationMessenger.hasCapiScope,
+    hasCapiScope: integrationMessenger.hasCapiScope,
+    capiDisconnected,
     hasManualCapiAccessToken,
     hasDatasetId: Boolean(integrationMessenger.datasetId),
     credentialAvailable,
@@ -127,15 +143,10 @@ export function MessengerCapiTab({
             connectionState,
             integrationMessenger,
             workspaceId,
+            notice: t("metaConversions.statusDescriptions.missingPermission"),
           })}
         </CardContent>
       </Card>
-      <MessagingAdsBox
-        channel="messenger"
-        initialConnectionState={messagingAdsConnectionState}
-        integrationId={integrationMessenger.id}
-        workspaceId={workspaceId}
-      />
     </div>
   )
 }

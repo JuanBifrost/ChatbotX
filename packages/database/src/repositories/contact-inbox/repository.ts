@@ -3,7 +3,6 @@ import {
   and,
   type DatabaseClient,
   db,
-  desc,
   eq,
   inArray,
   type SQL,
@@ -72,13 +71,18 @@ type AdEligibleInboxChannelConfig = {
  * reference) so a mocked `@chatbotx.io/database/schema` missing one of the
  * three tables in tests doesn't fail to import this module.
  */
+const ctwaReferralCondition = (): SQL =>
+  sql`${contactInboxModel.referral}->>'ctwaClid' IS NOT NULL`
+
+/** Most recent first; rows that never had a message sort last. */
+const mostRecentMessageFirst = (): SQL =>
+  sql`${contactInboxModel.lastMessageAt} DESC NULLS LAST`
+
 const adEligibleInboxChannelConfigs = {
   whatsapp: {
     model: () => integrationWhatsappModel,
     channel: "whatsapp",
-    referralConditions: () => [
-      sql`${contactInboxModel.referral}->>'ctwaClid' IS NOT NULL`,
-    ],
+    referralConditions: () => [ctwaReferralCondition()],
   },
   messenger: {
     model: () => integrationMessengerModel,
@@ -97,7 +101,78 @@ export type ContactInboxWorkspaceRow = Pick<
   "id" | "channel" | "inboxId"
 >
 
+/**
+ * The columns a coexist history patch needs to decide (a) which ContactInbox a
+ * `wa_id` belongs to and (b) how far back it may safely read messages.
+ */
+export type ContactInboxBySourceIdRow = Pick<
+  ContactInboxModel,
+  "id" | "sourceId" | "lastIncomingMessageAt" | "createdAt"
+>
+
 export const contactInboxRepository = {
+  listWithInboxNameByContactId(
+    input: { contactId: string; workspaceId: string },
+    tx: DatabaseClient = db,
+  ) {
+    return tx.query.contactInboxModel.findMany({
+      where: {
+        contactId: input.contactId,
+        inbox: { workspaceId: input.workspaceId },
+      },
+      orderBy: { id: "asc" },
+      columns: {
+        id: true,
+        contactId: true,
+        inboxId: true,
+        channel: true,
+        source: true,
+        sourceId: true,
+        sourceUserId: true,
+        sourceUsername: true,
+        language: true,
+        lastIncomingMessageAt: true,
+        contactLastReadAt: true,
+      },
+      with: { inbox: { columns: { name: true } } },
+    })
+  },
+  /**
+   * Resolves a batch of channel-side ids (`sourceId` — a WhatsApp `wa_id`, a
+   * Messenger PSID, …) to their ContactInbox rows within ONE inbox, in a single
+   * round trip. Rows with a null `sourceId` cannot be addressed this way and
+   * are dropped.
+   *
+   * A missing key is meaningful to the caller, not an error: the WhatsApp
+   * coexist flush uses it to tell "Meta delivered a patch before the message it
+   * targets" (carry the patch, retry next flush) from "resolved".
+   */
+  async findByInboxAndSourceIds(
+    input: { inboxId: string; sourceIds: string[] },
+    tx: DatabaseClient = db,
+  ): Promise<ContactInboxBySourceIdRow[]> {
+    const sourceIds = Array.from(new Set(input.sourceIds))
+    if (sourceIds.length === 0) {
+      return []
+    }
+    const rows = await tx
+      .select({
+        id: contactInboxModel.id,
+        sourceId: contactInboxModel.sourceId,
+        lastIncomingMessageAt: contactInboxModel.lastIncomingMessageAt,
+        createdAt: contactInboxModel.createdAt,
+      })
+      .from(contactInboxModel)
+      .where(
+        and(
+          eq(contactInboxModel.inboxId, input.inboxId),
+          inArray(contactInboxModel.sourceId, sourceIds),
+        ),
+      )
+
+    return rows.filter((row) => Boolean(row.sourceId))
+  },
+
   /**
    * Single-row, workspace-scoped load of a contact inbox by id — the cheap
    * "does this contact inbox even exist / what channel is it" lookup, so a
@@ -173,11 +248,11 @@ export const contactInboxRepository = {
    * Workspace-scoped "most recently active inbox" for a contact — the
    * fallback `resolveActionContactInbox` uses when no producer threaded a
    * `contactInboxId` (schema-precludes-attribution events like
-   * `dateTimeBasedTrigger`, or a stale/foreign threaded id). Mirrors the
-   * ordering of the `db.query.contactInboxModel.findFirst({ orderBy:
-   * { lastMessageAt: "desc" } })` call it replaces (NULLS LAST is Postgres's
-   * default `desc` behavior, so ties/no-messages-yet inboxes sort last, same
-   * as before).
+   * `dateTimeBasedTrigger`, or a stale/foreign threaded id). Replaces a
+   * `db.query.contactInboxModel.findFirst({ orderBy: { lastMessageAt:
+   * "desc" } })` call; `NULLS LAST` is explicit because Postgres sorts nulls
+   * FIRST on `DESC` by default, which would prefer an inbox that never had a
+   * message.
    */
   async findMostRecentByContact(
     input: { contactId: string; workspaceId: string },
@@ -198,7 +273,44 @@ export const contactInboxRepository = {
         ),
       )
       .where(eq(contactInboxModel.contactId, input.contactId))
-      .orderBy(desc(contactInboxModel.lastMessageAt))
+      .orderBy(mostRecentMessageFirst())
+      .limit(1)
+
+    return row ?? null
+  },
+
+  /**
+   * The most recently active contact-inbox in one inbox — the recipient a
+   * "Send test event" CAPI check is attributed to, since Meta requires a real
+   * page-scoped id / phone number even for test events. `requireCtwaClid`
+   * narrows to click-to-WhatsApp-attributed rows, the only ones Meta accepts
+   * for a WhatsApp business-messaging event.
+   */
+  async findMostRecentByInbox(
+    input: { inboxId: string; workspaceId: string; requireCtwaClid?: boolean },
+    tx: DatabaseClient = db,
+  ): Promise<ContactInboxWorkspaceRow | null> {
+    const [row] = await tx
+      .select({
+        id: contactInboxModel.id,
+        channel: contactInboxModel.channel,
+        inboxId: contactInboxModel.inboxId,
+      })
+      .from(contactInboxModel)
+      .innerJoin(
+        inboxModel,
+        and(
+          eq(inboxModel.id, contactInboxModel.inboxId),
+          eq(inboxModel.workspaceId, input.workspaceId),
+        ),
+      )
+      .where(
+        and(
+          eq(contactInboxModel.inboxId, input.inboxId),
+          input.requireCtwaClid ? ctwaReferralCondition() : undefined,
+        ),
+      )
+      .orderBy(mostRecentMessageFirst())
       .limit(1)
 
     return row ?? null

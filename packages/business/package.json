@@ -5,6 +5,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./ads-conversion/channel-fields": "./src/ads-conversion/channel-fields.ts",
+    "./ads-conversion/schema": "./src/ads-conversion/schema.ts",
     "./audit": "./src/audit/index.ts",
     "./branding": "./src/platform/branding.ts",
     "./contact-custom-field": "./src/contact-custom-field/index.ts",
@@ -12,11 +13,17 @@
     "./contact-inbox": "./src/contact-inbox/index.ts",
     "./contact-locale": "./src/contact-locale/index.ts",
     "./contact-profile-rules": "./src/contact/profile-refresh/rules.ts",
+    "./contact-utils": "./src/contact/utils.ts",
     "./contact-sequence": "./src/contact-sequence/index.ts",
+    "./coexist": "./src/coexist/index.ts",
+    "./coexist/history": "./src/coexist/history-window.ts",
     "./coupon": "./src/coupon/index.ts",
     "./dynamic-image": "./src/dynamic-image/index.ts",
     "./error-log": "./src/error-log/index.ts",
     "./get-user-data": "./src/get-user-data/index.ts",
+    "./inbox/connect-outcome": "./src/inbox/connect-outcome.ts",
+    "./inbox/connect-outcome-types": "./src/inbox/connect-outcome-types.ts",
+    "./inbox/schema": "./src/inbox/schema.ts",
     "./license-startup": "./src/enterprise/license/startup.ts",
     "./javascript-execution": "./src/javascript-execution/index.ts",
     "./minigame": "./src/minigame/index.ts",
@@ -25,7 +32,10 @@
     "./referral": "./src/referral/index.ts",
     "./system-field": "./src/system-field/index.ts",
     "./utils": "./src/utils.ts",
-    "./workspace-lifecycle/predicates": "./src/workspace-lifecycle/predicates.ts"
+    "./workspace-api-token/credentials": "./src/workspace-api-token/credentials.ts",
+    "./workspace-lifecycle/predicates": "./src/workspace-lifecycle/predicates.ts",
+    "./workspace-member/predicates": "./src/workspace-member/predicates.ts",
+    "./workspace-member/permissions": "./src/workspace-member/permissions.ts"
   },
   "dependencies": {
     "@chatbotx.io/analytics": "workspace:*",
@@ -56,6 +66,7 @@
     "jose": "^6.2.3",
     "libphonenumber-js": "^1.12.42",
     "qrcode": "^1.5.4",
+    "remeda": "^2.37.0",
     "universal-error-normalizer": "^1.0.0",
     "zod": "^4.3.6"
   },

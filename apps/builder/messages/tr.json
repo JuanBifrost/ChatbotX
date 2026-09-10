@@ -148,7 +148,12 @@
     "clone": "Klonla",
     "remove": "Kaldır",
     "restore": "Geri Yükle",
-    "loadMore": "Load more"
+    "loadMore": "Load more",
+    "saveAsDraft": "Save as draft",
+    "schedule": "Schedule",
+    "moveToDraft": "Move to draft",
+    "stop": "Stop",
+    "resume": "Resume"
   },
   "errors": {
     "superAdminRequired": "Bunu yapmak için çalışma alanı süper yöneticisi olmanız gerekir."
@@ -347,7 +352,9 @@
       "scheduled": "Planlandı",
       "sent": "Gönderildi",
       "sending": "Gönderiliyor",
-      "cancelled": "İptal Edildi"
+      "cancelled": "İptal Edildi",
+      "draft": "Draft",
+      "failed": "Failed"
     },
     "stats": {
       "sent": "Gönderildi",
@@ -433,6 +440,63 @@
       "template": "Şablon",
       "noTemplate": "Şablon yok",
       "integration": "Entegrasyon"
+    },
+    "filters": {
+      "all": "All"
+    },
+    "views": {
+      "table": "Table",
+      "calendar": "Calendar"
+    },
+    "panel": {
+      "collapse": "Collapse panel",
+      "expand": "Expand panel"
+    },
+    "empty": {
+      "title": "No broadcasts yet",
+      "description": "Create your first broadcast to reach your contacts.",
+      "filteredTitle": "No broadcasts match",
+      "filteredDescription": "Try another status or clear the search."
+    },
+    "scheduleDialog": {
+      "title": "Schedule broadcast",
+      "description": "Choose when \"{name}\" should be sent."
+    },
+    "deleteDialog": {
+      "title": "{count, plural, one {Delete broadcast} other {Delete broadcasts}}",
+      "description": "{count, plural, one {\"{name}\" will be removed. Its data is deleted in the background.} other {# broadcasts will be removed. Their data is deleted in the background.}}",
+      "partial": "{deleted} of {requested} deleted — the rest changed status"
+    },
+    "calendar": {
+      "today": "Today",
+      "apply": "Apply",
+      "more": "+{count} more",
+      "ranges": {
+        "month": "Month",
+        "week": "Week",
+        "day": "Day",
+        "custom": "Custom"
+      },
+      "previous": "Previous",
+      "next": "Next",
+      "emptyDay": "No broadcasts on this day",
+      "emptyRange": "No broadcasts in this range",
+      "jumpToDate": "Jump to date"
+    },
+    "fields": {
+      "id": "ID"
+    },
+    "moveToDraftDialog": {
+      "title": "Move to draft",
+      "description": "\"{name}\" will be unscheduled and moved back to drafts."
+    },
+    "stopDialog": {
+      "title": "Stop broadcast",
+      "description": "Remaining messages for \"{name}\" stop within about a minute. A few already handed to the channel may still deliver. You can resume later — only unsent recipients will receive."
+    },
+    "resumeDialog": {
+      "title": "Resume broadcast",
+      "description": "\"{name}\" will continue sending to recipients who have not received it yet."
     }
   },
   "condition": {
@@ -652,6 +716,58 @@
       "button": "Tüm izinleri yenile",
       "resultSuccess": "{refreshed} kanal yenilendi.",
       "resultWithFailures": "{refreshed} kanal yenilendi, {failed} başarısız oldu."
+    },
+    "connectMany": {
+      "coexist": {
+        "running": "Geçmiş senkronizasyonu başlatılıyor…",
+        "done": "Geçmiş senkronizasyonu başlatıldı",
+        "failed": "Geçmiş senkronizasyonu başarısız oldu"
+      },
+      "selectAll": "Tümünü seç",
+      "selected": "{count}/{max} seçildi",
+      "dialogTitleRunning": "{count} {feature} bağlanıyor…",
+      "dialogTitleDone": "{total} üzerinden {connected} bağlandı",
+      "progress": "{done}/{total}",
+      "progressAnnouncement": "{total} üzerinden {done} tamamlandı",
+      "status": {
+        "waiting": "Bekliyor",
+        "connecting": "Bağlanıyor…",
+        "connected": "Bağlandı",
+        "duplicated": "Zaten bağlı",
+        "limitReached": "Sınıra ulaşıldı",
+        "failed": "Başarısız oldu",
+        "timedOut": "Zaman aşımına uğradı",
+        "cancelled": "İptal edildi"
+      },
+      "reason": {
+        "notSelectable": "Bu öğe seçilemez.",
+        "channelLimit": "Kanal sınırına ulaşıldı.",
+        "workspaceLimit": "Çalışma alanı sınırına ulaşıldı.",
+        "providerRejected": "Sağlayıcı bu isteği reddetti.",
+        "unknown": "Bir şeyler ters gitti.",
+        "followUpFailed": "Kurulum tamamlanmadı — kanal ayarlarından tamamlayın."
+      },
+      "sessionError": {
+        "sessionExpired": "Oturumunuzun süresi doldu. Lütfen yeniden bağlanın.",
+        "notMember": "Artık bu çalışma alanının üyesi değilsiniz.",
+        "trialExpired": "Deneme süreniz doldu.",
+        "macLimitReached": "Hesap sınırınıza ulaştınız.",
+        "credentialMissing": "Kimlik bilgileri eksik. Lütfen yeniden bağlanın."
+      },
+      "cancelRemaining": "Kalanları iptal et",
+      "retryFailed": "Yeniden dene ({count})",
+      "retry": "Yeniden dene",
+      "goToChannels": "Kanallara git",
+      "close": "Kapat",
+      "leaveNotice": "Sayfadan ayrılabilirsiniz; bağlanan hesaplar korunur",
+      "stepConnecting": "Bağlanıyor",
+      "stepCoexist": "Geçmişi senkronize et",
+      "validation": {
+        "min": "En az 1 tane seçin",
+        "max": "En fazla {max} tane seçebilirsiniz",
+        "duplicate": "Yinelenen seçim"
+      },
+      "progressLabel": "İlerleme"
     }
   },
   "workspace": {
@@ -683,6 +799,17 @@
       "pendingBlockedToast": "Bu çalışma alanının silinmesi planlandı. Erişimi geri yüklemek için bir çalışma alanı yöneticisiyle iletişime geçin.",
       "navDisabledTooltip": "Çalışma alanı silme işlemi planlıyken kullanılamaz",
       "badge": "Silme planlandı"
+    },
+    "supportAccess": {
+      "bannerTitle": "Platform destek oturumu",
+      "bannerDescription": "Bir platform destek temsilcisinin bu çalışma alanına {time} tarihine kadar geçici erişimi var.",
+      "cardTitle": "Platform destek erişimi",
+      "cardDescription": "Platform destek ekibinin bu çalışma alanını 7 gün boyunca tam erişimle açmasına izin verin. Bunu istediğiniz zaman kapatabilirsiniz.",
+      "enabledUntil": "{time} tarihine kadar etkin",
+      "permissionRequired": "Platform destek erişimini değiştirmek için süper yönetici olmanız gerekir.",
+      "enabledToast": "Platform destek erişimi etkinleştirildi.",
+      "disabledToast": "Platform destek erişimi devre dışı bırakıldı.",
+      "toggleError": "Bir şeyler ters gitti. Lütfen tekrar deneyin."
     }
   },
   "workspaces": {
@@ -821,7 +948,8 @@
       "label": "Temsilci"
     },
     "aiAgent": {
-      "label": "Yapay Zekâ Temsilcisi"
+      "label": "Yapay Zekâ Temsilcisi",
+      "loadError": "Yapay zeka temsilcileri yüklenemedi. Lütfen tekrar deneyin."
     },
     "aiQueuedMessages": {
       "label": "Kuyruğa Alınmış Yapay Zekâ Mesajları"
@@ -2116,6 +2244,26 @@
         "done": "Tamamlandı"
       }
     },
+    "tokenPermission": {
+      "label": "İzin",
+      "full": "Tam erişim",
+      "readOnly": "Salt okunur"
+    },
+    "tokenScopes": {
+      "label": "Kapsamlar",
+      "contacts": "Kişiler",
+      "inbox": "Gelen Kutusu",
+      "automation": "Otomasyon",
+      "broadcasts": "Yayınlar",
+      "analytics": "Analitik",
+      "ecommerce": "E-ticaret",
+      "integrations": "Entegrasyonlar",
+      "channels": "Kanallar",
+      "minigames": "Mini Oyunlar",
+      "appointments": "Randevular",
+      "media": "Medya",
+      "ads": "Reklamlar"
+    },
     "adReferral": {
       "label": "Ads",
       "ctwa": "CTWA",
@@ -2264,8 +2412,7 @@
       "import": "Akışı içe aktar",
       "export": "Dışa aktar",
       "importStarted": "Akış içe aktarılıyor. Sonuçlar için içe aktarma geçmişini kontrol edin.",
-      "importJsonOnly": "Yalnızca JSON dosyaları",
-      "adsConversions": "Reklamlar ve Meta Conversions"
+      "importJsonOnly": "Yalnızca JSON dosyaları"
     },
     "splitTraffic": {
       "balanceHint": "Toplam %100 olmalıdır.",
@@ -2879,9 +3026,8 @@
     "title": "Make",
     "setting": {
       "label": "Make",
-      "description": "Akışlarınızdan olay göndermek ve Make senaryoları aracılığıyla kişi verileri almak için Make.com hesabınızı bağlayın. Bağlan'a tıkladığınızda çalışma alanınızın Geliştirici Erişim Belirteci panonuza kopyalanır — Make'te bağlantıyı oluştururken bu belirteci yapıştırın.",
-      "notConfigured": "Make davet bağlantısı bulunamadı. Lütfen Platform Ayarları'na bir tane ekleyin.",
-      "noWorkspaceToken": "Bu çalışma alanı için Geliştirici Erişim Belirteci bulunamadı. Yukarıdaki Çalışma Alanı belirteci bölümünden bir tane oluşturun, ardından tekrar Bağlan'a tıklayın."
+      "description": "Akışlarınızdan olay göndermek ve Make senaryoları aracılığıyla kişi verileri almak için Make.com hesabınızı bağlayın.",
+      "notConfigured": "Make davet bağlantısı bulunamadı. Lütfen Platform Ayarları'na bir tane ekleyin."
     }
   },
   "integrations": {
@@ -3045,6 +3191,12 @@
     "tabs": {
       "generalSettings": "Genel Ayarlar",
       "conversionsApi": "Reklam Optimizasyonu"
+    },
+    "selectPage": {
+      "noAccountsTitle": "Instagram hesabı bulunamadı",
+      "noAccountsDescription": "Yönettiğiniz Facebook Sayfalarında Instagram İşletme hesabı bulunamadı. Instagram'ı yeniden bağlayın ve istenen tüm izinleri verin.",
+      "alreadyConnectedNote": "Bu hesap zaten bağlı",
+      "tryAgain": "Yeniden bağlanmayı dene"
     }
   },
   "coexist": {
@@ -3090,7 +3242,6 @@
     "defaultPersona": "Varsayılan Persona",
     "reconnect": "Yeniden Bağlan",
     "reconnectDescription": "Messenger botunuz yanıt vermiyorsa veya hata günlüğünde herhangi bir izin hatası görüyorsanız botunuzu her zaman yeniden bağlayın.",
-    "selectFacebookPage": "Facebook Sayfası Seç",
     "selectPage": {
       "noPagesTitle": "Facebook Sayfası bulunamadı",
       "noPagesDescription": "Bir İşletme Yöneticisi içindeki sayfalar, bağlantı sırasında İşletme Yöneticisi erişimi gerektirir. Messenger'ı yeniden bağlayın ve istenen tüm izinleri verin.",
@@ -3305,6 +3456,7 @@
   "validation": {
     "maxSize": "Dosya boyutu izin verilen maksimum sınırı aşıyor",
     "maxItemsReached": "Çalışma alanı başına en fazla {max} {feature} izin verilir",
+    "maxCharacters": "En fazla {max} karakter.",
     "invalidApiKey": "Geçersiz API anahtarı",
     "maxMustBeGreaterThanMin": "{maxField}, {minField} değerinden büyük veya ona eşit olmalıdır"
   },
@@ -3354,7 +3506,8 @@
       "verifyToken": "Webhook doğrulama token'ı",
       "qrCodeHint": "Webhook URL'sini açmak için QR kodu tarayın",
       "moreSettings": "Daha fazla ayar",
-      "goToInbox": "Beni oraya götür"
+      "goToInbox": "Beni oraya götür",
+      "multipleTitle": "WhatsApp gelen kutularınız hazır!"
     },
     "phoneVerification": {
       "title": "WhatsApp telefon numarasını doğrula",
@@ -3367,7 +3520,8 @@
       "actions": {
         "sendCode": "Kodu gönder",
         "resendIn": "{seconds}sn içinde yeniden gönder",
-        "verify": "Doğrula ve kaydet"
+        "verify": "Kaydet",
+        "skip": "Atla"
       },
       "fields": {
         "code": {
@@ -3385,18 +3539,12 @@
         "codeNotSent": "WhatsApp doğrulama kodu gönderilemedi.",
         "codeNotVerified": "WhatsApp doğrulama kodu doğrulanamadı.",
         "registrationFailed": "WhatsApp telefon numarası doğrulaması başarısız oldu."
-      }
+      },
+      "queueProgress": "{total} üzerinden {current} doğrulanıyor"
     },
     "connect": {
       "errors": {
-        "accessTokenRequired": "WhatsApp erişim token'ı gereklidir.",
         "appSettingsNotFound": "WhatsApp uygulama ayarları bulunamadı.",
-        "failedToPersistIntegration": "WhatsApp entegrasyonu kaydedilemedi.",
-        "noPhoneNumberFound": "WhatsApp telefon numarası bulunamadı.",
-        "noPhoneNumbersFound": "Bu WhatsApp Business Hesabı için telefon numarası bulunamadı.",
-        "phoneNumberNotFound": "Seçilen WhatsApp telefon numarası bulunamadı.",
-        "unableToVerifyToken": "WhatsApp token'ı doğrulanamıyor.",
-        "wabaMismatch": "Seçilen WhatsApp Business Hesabı yetkilendirmeyle eşleşmiyor.",
         "wabaResolveFailed": "Yetkilendirmeden WhatsApp Business Hesabı çözümlenemedi."
       }
     },
@@ -3627,12 +3775,14 @@
       "label": "Şablon Üst Bilgisi"
     },
     "transferPhoneNumber": "Telefonu başka bir WhatsApp sağlayıcısından aktar",
-    "signupSessionExpired": "WhatsApp kayıt oturumunuzun süresi doldu. Lütfen bağlantıyı yeniden başlatın.",
     "capi": {
       "automaticEvents": {
         "title": "Otomatik Olaylar",
         "description": "Bu WhatsApp numarasından dönüşüm etkinliklerini Meta’ya otomatik olarak gönderin. İzin eksikse, vermek için hesabı yeniden bağlayın."
       }
+    },
+    "selectPage": {
+      "tryAgain": "Yeniden bağlanmayı dene"
     }
   },
   "zalo": {
@@ -3809,7 +3959,12 @@
   },
   "developerAccessToken": {
     "title": "API Erişim Token'ı",
-    "description": "Çalışma alanınızın genel API'lere erişmesine izin vermek için bir token oluşturun. Bu token'ı gizli tutun ve kimseyle paylaşmayın."
+    "description": "Çalışma alanınızın genel API'lere erişmesine izin vermek için bir token oluşturun. Bu token'ı gizli tutun ve kimseyle paylaşmayın.",
+    "createDialogTitle": "API belirteci oluştur",
+    "namePlaceholder": "ör. Zapier entegrasyonu",
+    "empty": "Henüz API belirteci yok.",
+    "defaultBadge": "Varsayılan",
+    "allScopes": "Tüm kapsamlar"
   },
   "contacts": {
     "title": "Kişiler",
@@ -4334,6 +4489,16 @@
     "duplicateError": "Bu sayfa ve form için zaten bir otomasyon mevcut.",
     "subscribeError": "Bu sayfa Facebook potansiyel müşteri bildirimlerine abone edilemediğinden otomasyon oluşturulamadı. Sayfayı \"Yeni Ekle\" ile yeniden bağlayıp tekrar deneyin."
   },
+  "clickToMessageAds": {
+    "title": "Click-to-Message Reklamları",
+    "description": "Reklamlar, kişileri doğrudan Messenger, Instagram veya WhatsApp'taki bir konuşmaya yönlendirir.",
+    "empty": {
+      "title": "Bu kanal için bağlı bir hesap yok",
+      "description": "Önce bir kanal hesabı bağlayın, ardından reklam oluşturmak için buraya geri dönün.",
+      "cta": "Kanal ayarlarına git"
+    },
+    "dashboardCta": "Reklamlar panosunda görüntüle"
+  },
   "ecommerce": {
     "title": "E-ticaret",
     "description": "E-ticaret mağazanızı oluşturun ve yönetin."
@@ -4435,6 +4600,17 @@
     },
     "queues": {
       "title": "Kuyruklar"
+    },
+    "workspaces": {
+      "title": "Çalışma alanları",
+      "description": "Sahibi platform destek erişimini etkinleştirmiş çalışma alanları burada açılabilir.",
+      "owner": "Sahip",
+      "tenant": "Kiracı",
+      "supportStatus": "Destek durumu",
+      "openAsSupport": "Destek olarak aç",
+      "supportEnabledUntil": "{time} tarihine kadar etkin",
+      "supportOff": "Kapalı",
+      "searchPlaceholder": "Ada, sahibinin e-postasına veya kimliğe göre ara"
     }
   },
   "platformCredentials": {
@@ -5261,13 +5437,12 @@
   },
   "metaConversions": {
     "title": "Conversions API",
-    "description": "Messenger, Instagram ve WhatsApp konuşmalarından LeadSubmitted etkinliklerini Meta'ya gönderin.",
+    "description": "Messenger, Instagram ve WhatsApp konuşmalarından dönüşüm etkinliklerini Meta'ya gönderin.",
     "datasetId": "Veri Kümesi ID",
     "reconnect": "İzinleri yeniden bağla",
     "connectViaFacebook": "Facebook üzerinden bağlan",
     "unsupportedExplanation": "Bu Instagram hesabı Instagram Business Girişi ile bağlandı. Meta Conversions API'yi kullanmak için hesabı Facebook üzerinden bağlayın.",
     "flowStep": {
-      "description": "Messenger, Instagram veya WhatsApp için bir LeadSubmitted etkinliği kuyruğa alın.",
       "whatsappNote": "WhatsApp etkinlikleri yalnızca click-to-WhatsApp reklamından başlayan konuşmalar için gönderilir."
     },
     "status": {
@@ -5294,12 +5469,50 @@
       "datasetRequired": "Erişim jetonu eklemeden önce bir Veri Kümesi ID'si kaydedin.",
       "invalidToken": "Bu jeton veri kümesine erişemedi.",
       "invalidDatasetId": "Geçerli bir Dataset ID girin (yalnızca rakamlar).",
-      "whatsappNotFound": "WhatsApp entegrasyonu bulunamadı."
+      "whatsappNotFound": "WhatsApp entegrasyonu bulunamadı.",
+      "testEventCodeRequired": "Bir test etkinliği göndermeden önce test etkinliği kodunu kaydedin.",
+      "noContactForTest": "Bu kanalda henüz uygun bir kişi yok. Test etkinliği, ilişkilendirilecek gerçek bir kişi gerektirir (WhatsApp için click-to-WhatsApp reklamından gelen bir kişi).",
+      "invalidTestEventCode": "Test etkinliği kodu yalnızca harf, rakam, tire veya alt çizgi içerebilir (en fazla 64)."
     },
     "fields": {
       "eventType": {
         "label": "Etkinlik Türü",
-        "leadSubmitted": "Potansiyel Müşteri Gönderildi"
+        "leadSubmitted": "Potansiyel Müşteri Gönderildi",
+        "purchase": "Satın Alma",
+        "initiateCheckout": "Ödemeyi Başlat",
+        "addToCart": "Sepete Ekle",
+        "viewContent": "İçeriği Görüntüle",
+        "orderCreated": "Sipariş Oluşturuldu",
+        "orderShipped": "Sipariş Kargoya Verildi",
+        "orderDelivered": "Sipariş Teslim Edildi",
+        "orderCanceled": "Sipariş İptal Edildi",
+        "orderReturned": "Sipariş İade Edildi",
+        "cartAbandoned": "Sepet Terk Edildi",
+        "qualifiedLead": "Nitelikli Potansiyel Müşteri",
+        "ratingProvided": "Değerlendirme Verildi",
+        "reviewProvided": "İnceleme Verildi",
+        "addPaymentInfo": "Ödeme Bilgisi Ekle",
+        "addToWishlist": "İstek Listesine Ekle",
+        "completeRegistration": "Kaydı Tamamla",
+        "contact": "İletişim",
+        "customizeProduct": "Ürünü Özelleştir",
+        "donate": "Bağış Yap",
+        "findLocation": "Konum Bul",
+        "lead": "Potansiyel Müşteri",
+        "schedule": "Randevu Al",
+        "search": "Arama",
+        "startTrial": "Denemeyi Başlat",
+        "submitApplication": "Başvuru Gönder",
+        "subscribe": "Abone Ol",
+        "custom": "Özel etkinlik…",
+        "groups": {
+          "commerce": "Ticaret",
+          "leads": "Potansiyel Müşteriler",
+          "orders": "Siparişler",
+          "feedback": "Geri Bildirim",
+          "leadsAndSignups": "Potansiyel Müşteriler ve Kayıtlar",
+          "other": "Diğer"
+        }
       },
       "value": "Değer",
       "valuePlaceholder": "ör. 250",
@@ -5317,7 +5530,16 @@
         "id": "Product ID",
         "quantity": "Quantity",
         "itemPrice": "Item price"
-      }
+      },
+      "customEventName": "Özel etkinlik adı",
+      "customEventNamePlaceholder": "örn. MyCustomEvent",
+      "contentType": {
+        "label": "İçerik türü",
+        "product": "Ürün",
+        "product_group": "Ürün Grubu"
+      },
+      "contentIds": "İçerik Kimlikleri",
+      "contentIdsPlaceholder": "örn. 123,456"
     },
     "datasetIdPlaceholder": "Etkinlik Yöneticisi'nden Veri Kümesi ID'sini yapıştırın",
     "saveDataset": "Kaydet",
@@ -5368,6 +5590,36 @@
     "limitedDataUse": {
       "label": "Limited Data Use (US privacy)",
       "description": "Restrict Meta's use of event data for users in applicable US states. Meta auto-detects the user's location from this event; no location data is sent by ChatbotX."
+    },
+    "actionSource": {
+      "label": "Eylem kaynağı",
+      "help": "Bu etkinliğin nerede gerçekleştiği. Meta'nın eylem kaynağı belgelerine bakın.",
+      "business_messaging": "İşletme Mesajlaşması",
+      "email": "E-posta",
+      "phone_call": "Telefon Görüşmesi",
+      "chat": "Sohbet",
+      "physical_store": "Fiziksel Mağaza",
+      "system_generated": "Sistem Tarafından Oluşturuldu",
+      "other": "Diğer"
+    },
+    "dialog": {
+      "title": "Meta CAPI",
+      "advanced": "Gelişmiş"
+    },
+    "testEvents": {
+      "title": "Test etkinlikleri",
+      "description": "Events Manager → Test events üzerinden test_event_code değerini yapıştırın. Ayarlı olduğu sürece bu kanaldaki her etkinlik, tam yüküyle (değer, para birimi, içerik kimlikleri) Test events görünümüne yönlendirilir ve raporlarda sayılmaz. İşiniz bitince temizleyin.",
+      "codeLabel": "Test etkinliği kodu",
+      "codePlaceholder": "örn. TEST12345",
+      "save": "Kodu kaydet",
+      "clear": "Temizle",
+      "saved": "Test etkinliği kodu kaydedildi.",
+      "cleared": "Test etkinliği kodu temizlendi. Etkinlikler tekrar canlı.",
+      "send": "Test etkinliği gönder",
+      "sent": "Test etkinliği sıraya alındı. Bir dakika içinde Events Manager içindeki Test events altında görünür.",
+      "sendHint": "Bu kanalın en son kişisine örnek bir Purchase (100 USD) gönderir.",
+      "activeNotice": "Test modu açık: kod temizlenene kadar bu kanaldaki etkinlikler raporlarda sayılmaz.",
+      "openTestEvents": "Test events'i aç"
     }
   },
   "minigames": {
@@ -5429,13 +5681,17 @@
       "jackpotBanner": "Jackpot",
       "luckyWheelHeader": "ŞANS ÇARKI",
       "gashaponHeader": "GASHAPON",
+      "drawLotsHeader": "KURA ÇEKİMİ",
+      "scratchOffHeader": "KAZI KAZAN",
+      "scratchOffCardTitle": "Şanslı yıldız kazı kazan biletleri",
       "comingSoon": "Bu oyun türü için ayrıntılı önizleme yakında sunulacak"
     },
     "form": {
       "generalSettingsTitle": "Genel Ayar",
       "appearanceTitle": "Görünüm",
       "playerSettingsTitle": "Oyuncu Ayarları",
-      "prizeSettingsTitle": "Ödül Ayarları"
+      "prizeSettingsTitle": "Ödül Ayarları",
+      "validationFailed": "Kaydetmeden önce vurgulanan alanları düzeltin."
     },
     "generalSettings": {
       "showName": "Görünür",
@@ -5443,10 +5699,7 @@
       "rulesDescription": "Kural Açıklaması",
       "openerTags": "Oyun bağlantısını açan kişileri etiketle",
       "playerTags": "Oyuncuları etiketle",
-      "newFriendTags": "Yeni arkadaşları etiketle",
-      "shareEnabled": "Arkadaşlarla paylaşmaya izin ver",
-      "shareMessage": "Paylaşım Mesajı",
-      "shareMessageHint": "Gerçek oyun bağlantısını eklemek için '{{shareUrl}}' kullanın — lütfen kaldırmayın."
+      "newFriendTags": "Yeni arkadaşları etiketle"
     },
     "appearance": {
       "backgroundColor": "Arka Plan Rengi",
@@ -5462,6 +5715,10 @@
     },
     "playerSettings": {
       "drawsPerPerson": "Kişi başına şans çekiliş hakkı sayısı",
+      "maxSharesPerPerson": "Davetlerden kazanılabilecek en fazla bonus çekiliş",
+      "maxSharesPerPersonHint": "Bu oyuncunun davet bağlantısıyla katılıp size mesaj gönderen her arkadaş, bu sınıra kadar ona 1 ek çekiliş hakkı kazandırır. Yönlendirme bonuslarını kapatmak için 0 girin. Bonus haklar bir sonraki sıfırlamadan önce kullanılmalıdır.",
+      "sharingNode": "Paylaşım adımı",
+      "sharingNodeHint": "Bir arkadaş bu oyuncunun paylaşım bağlantısını açtığında çalışan akış adımı. Paylaş düğmesini gizlemek için boş bırakın.",
       "resetPolicyLabel": "Çekilişleri sıfırla",
       "resetNever": "Çekiliş sayısını sıfırlama",
       "resetEveryNDays": "Çekiliş sayısını her şu kadar günde bir sıfırla",
@@ -5480,15 +5737,25 @@
       "forbiddenTitle": "Erişim reddedildi",
       "forbiddenDescription": "Bu bağlantı geçersiz veya süresi dolmuş.",
       "comingSoonTitle": "Çok yakında",
-      "comingSoonDescription": "Bu mini oyun türü henüz oynanamıyor."
+      "comingSoonDescription": "Bu mini oyun türü henüz oynanamıyor.",
+      "rateLimited": "Çok fazla istek. Lütfen biraz bekleyip tekrar deneyin."
+    },
+    "list": {
+      "gamesPlayed": "Oynanan oyunlar",
+      "participants": "Katılımcılar",
+      "winners": "Kazananlar",
+      "shares": "Davetler"
     },
     "history": {
       "title": "Geçmiş",
       "played": "Oynama sayısı",
       "remaining": "Kalan çekiliş",
+      "shares": "Davetler",
       "openedAt": "İlk açılış",
       "lastPlayedAt": "Son oynama",
       "unknownContact": "Bilinmeyen kişi",
+      "conversationNotFound": "Bu kişi için görüşme bulunamadı",
+      "popupBlocked": "Lütfen bu site için açılır pencerelere izin verin, ardından tekrar deneyin.",
       "record": "Kayıt",
       "recordDialog": {
         "title": "Oyun kaydı",

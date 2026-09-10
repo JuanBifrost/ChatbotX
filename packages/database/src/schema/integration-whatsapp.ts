@@ -11,7 +11,11 @@ import {
   timestamp,
   uniqueIndex,
 } from "drizzle-orm/pg-core"
-import { whatsappRegistrationStatuses } from "../partials"
+import type { z } from "zod"
+import {
+  type whatsappRegistrationErrorSchema,
+  whatsappRegistrationStatuses,
+} from "../partials"
 import {
   bigintAsString,
   sharedColumns,
@@ -20,16 +24,9 @@ import {
 import { inboxModel } from "./inbox"
 import { workspaceModel } from "./workspace"
 
-export type IntegrationWhatsappRegistrationError = {
-  code: string | number
-  subCode: string | number | null
-  message: string
-  type?: string
-  userTitle?: string
-  userMessage?: string
-  fbtraceId?: string
-  at: string
-}
+export type IntegrationWhatsappRegistrationError = z.infer<
+  typeof whatsappRegistrationErrorSchema
+>
 
 /**
  * Enforces that a Meta phone number backs exactly one integration.
@@ -66,6 +63,9 @@ export const integrationWhatsappModel = pgTable(
     datasetId: text(),
     capiAccessToken: jsonb().$type<EncryptedData>(),
     capiDisconnectedAt: timestamp(timestampConfig),
+    // Meta Events Manager "test_event_code": while set, every CAPI event for
+    // this integration is routed to the dataset's Test Events view.
+    capiTestEventCode: text(),
     registrationStatus: whatsappRegistrationStatus()
       .notNull()
       .default("pending_verification"),

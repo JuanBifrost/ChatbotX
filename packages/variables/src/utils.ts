@@ -4,6 +4,7 @@ import {
   conversationService,
   messageService,
   resolveTenantSettings,
+  workspaceApiTokenService,
 } from "@chatbotx.io/business"
 import {
   languageFromLocale,
@@ -271,16 +272,6 @@ const getCommentMessagePostId = (
   return typeof postId === "string" ? postId : null
 }
 
-// The contact's own language, in the order the platform learns it: the channel
-// language we recorded, then the locale their profile reports. Undefined when
-// the contact never told us, so the caller picks the fallback. Blank values
-// normalise away here rather than shadowing that fallback.
-const getContactLanguage = (
-  context: ContactVariableContext,
-): string | undefined =>
-  languageFromLocale(context.contactInbox?.language) ??
-  languageFromLocale(context.contact.locale)
-
 const getAppointment = async (
   context: ContactVariableContext,
 ): Promise<Awaited<ReturnType<typeof appointmentService.findBy>> | null> => {
@@ -329,10 +320,10 @@ export const getSystemFieldValue = async (
     case systemFieldTypes.enum.profile_pic:
       return await toPublicStorageUrl(contact.avatar, contact.workspaceId)
     case systemFieldTypes.enum.gender:
-      return resolveGenderLabel(
-        getContactLanguage(context) ?? workspace?.language,
-        contact.gender,
-      )
+      // Salutation follows the workspace language, not the contact's own
+      // locale: a Vietnamese workspace greets every contact as Anh/Chị, and
+      // everything else renders English (see resolveGenderLabel).
+      return resolveGenderLabel(workspace?.language, contact.gender)
     case systemFieldTypes.enum.user_country:
       return contact.country
     case systemFieldTypes.enum.user_state:
@@ -361,7 +352,8 @@ export const getSystemFieldValue = async (
       return await getContactLastInputType(contact.id)
     case systemFieldTypes.enum.user_channel:
       return capitalizeFirstLetter(
-        contactInbox?.channel ?? (await findPrimaryContactChannel(contact.id)),
+        contactInbox?.channel ??
+          (await findPrimaryContactChannel(contact.id, contact.workspaceId)),
       )
     case systemFieldTypes.enum.user_tags:
       return await listContactTagsString(contact.id)
@@ -411,7 +403,7 @@ export const getSystemFieldValue = async (
     case systemFieldTypes.enum["ai.queued.messages"]:
       return await getQueuedMessages(context)
     case systemFieldTypes.enum.user_notes:
-      return await listContactNotesString(contact.id)
+      return await listContactNotesString(contact.id, contact.workspaceId)
     case systemFieldTypes.enum.avatar:
       return await toPublicStorageUrl(contact.avatar, contact.workspaceId)
     case systemFieldTypes.enum.current_time:
@@ -460,7 +452,7 @@ export const getSystemFieldValue = async (
     case systemFieldTypes.enum.last_interaction:
       return formatDateTime(contactInbox?.lastIncomingMessageAt, timezone)
     case systemFieldTypes.enum.last_user_note:
-      return await getLatestContactNoteString(contact.id)
+      return await getLatestContactNoteString(contact.id, contact.workspaceId)
     case systemFieldTypes.enum.member_name:
       return await resolveAssigneeName(contact.id, contact.workspaceId)
     case systemFieldTypes.enum.team_name:
@@ -478,8 +470,33 @@ export const getSystemFieldValue = async (
       return contactInbox?.sourceId ?? null
     case systemFieldTypes.enum.webchat_parent_url:
       return contactInbox?.webchatParentUrl ?? null
+    // User-created workspace API tokens are hash-only and shown exactly once
+    // at generation, so they can never back this field. `{{api_key}}`
+    // resolves instead to the workspace's system-managed default token
+    // (WorkspaceApiToken.isDefault), which additionally carries an
+    // AES-GCM-encrypted copy recoverable server-side — see
+    // workspaceApiTokenService.resolveDefaultTokenPlaintext. A workspace
+    // that predates this model gets its default token lazily minted (or its
+    // legacy plaintext migrated forward from the deprecated
+    // Workspace.token) on first resolve.
     case systemFieldTypes.enum.api_key:
-      return workspace?.token ?? null
+      if (workspace && isWorkspaceScheduledForDeletion(workspace)) {
+        return null
+      }
+      // Mirrors the `default:` branch below: a decrypt failure (rotated
+      // ENCRYPTION_KEY_PREV, corrupted blob, AAD mismatch) must degrade this
+      // field to null instead of failing the whole message render.
+      try {
+        return await workspaceApiTokenService.resolveDefaultTokenPlaintext({
+          workspaceId: contact.workspaceId,
+        })
+      } catch (err) {
+        logger.error(
+          { err, workspaceId: contact.workspaceId },
+          "Failed to resolve {{api_key}} default token plaintext",
+        )
+        return null
+      }
     case systemFieldTypes.enum.last_ad:
       return getReferralValue(contactInbox, "adId")
     case systemFieldTypes.enum.last_ctwa:

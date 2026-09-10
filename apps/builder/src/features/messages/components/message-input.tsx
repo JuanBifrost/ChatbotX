@@ -382,7 +382,7 @@ export const MessageInput = () => {
 
   if (isMessengerHumanAgentWindowExpired) {
     return (
-      <div className="m-3 rounded-xl border pt-2">
+      <div className="m-3 shrink-0 rounded-xl border pt-2">
         <div className="flex flex-col items-center justify-center gap-3 px-4 py-6 text-center">
           <p className="text-muted-foreground text-sm">
             {t("messages.humanAgentWindowExpired")}
@@ -394,7 +394,7 @@ export const MessageInput = () => {
 
   if (isDirectChannelWindowClosed) {
     return (
-      <div className="m-3 rounded-xl border pt-2">
+      <div className="m-3 shrink-0 rounded-xl border pt-2">
         <div className="flex flex-col items-center justify-center gap-3 px-4 py-6 text-center">
           <p className="text-muted-foreground text-sm">
             {t("messages.messagingWindowClosed")}
@@ -405,7 +405,7 @@ export const MessageInput = () => {
   }
 
   return (
-    <div className="m-3 rounded-xl border pt-2">
+    <div className="m-3 shrink-0 rounded-xl border pt-2">
       <Form {...form}>
         <form
           aria-label="Message input form"
@@ -496,7 +496,7 @@ export const MessageInput = () => {
               )}
             </div>
           )}
-          <div className="flex w-full items-center ps-2.5">
+          <div className="scrollbar-hide flex w-full items-center gap-2 overflow-x-auto ps-2.5">
             <div className="min-w-0 flex-1">
               <InboxIcon
                 channel={
@@ -506,7 +506,7 @@ export const MessageInput = () => {
               />
             </div>
 
-            <div className="message-toolbar flex items-center gap-2">
+            <div className="message-toolbar flex shrink-0 items-center gap-2">
               {!hasFiles && <InputMenu setContent={setContent} />}
               {!isInstagramPostComment && (
                 <>

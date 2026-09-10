@@ -30,6 +30,8 @@ export const ScheduleJobData = {
   purgeCoexistStaging: "purgeCoexistStaging",
   purgeWhatsappSignupSessions: "purgeWhatsappSignupSessions",
   purgeWorkspaces: "purgeWorkspaces",
+  clearExpiredSupportAccess: "clearExpiredSupportAccess",
+  purgeBroadcasts: "purgeBroadcasts",
   purgeAutomationThrottle: "purgeAutomationThrottle",
   purgeErrorLogs: "purgeErrorLogs",
   refreshChannelTokens: "refreshChannelTokens",
@@ -47,6 +49,24 @@ export const ScheduleJobData = {
  * the derived every-N-minutes cron pattern remains valid.
  */
 export const PURGE_WORKSPACES_INTERVAL_MINUTES = 30
+
+/**
+ * Cadence (minutes) of the `purgeBroadcasts` cron. The cron pattern in
+ * `apps/worker/src/schedule/handlers/register-schedules.ts` is derived from
+ * this value. Keep it a divisor of 60 so the derived every-N-minutes cron
+ * pattern remains valid.
+ */
+export const PURGE_BROADCASTS_INTERVAL_MINUTES = 5
+
+/**
+ * Per-run concurrency for `purgeBroadcasts`: how many broadcasts have their
+ * `ContactOnBroadcast` rows purged in parallel inside one schedule-worker
+ * slot. Each stream is its own chunked delete loop
+ * (`purgeBroadcastRecipients`), so this bounds concurrent DB purge streams,
+ * not BullMQ worker slots — the cron itself still occupies exactly one of
+ * the schedule worker's shared slots.
+ */
+export const PURGE_BROADCAST_CONCURRENCY = 5
 
 export const broadcastSendJobId = (broadcastId: string) =>
   `broadcast-send-${broadcastId}`
@@ -163,6 +183,16 @@ export type ScheduleJobPurgeWorkspaces = {
   data: Record<string, never>
 }
 
+export type ScheduleJobClearExpiredSupportAccess = {
+  type: typeof ScheduleJobData.clearExpiredSupportAccess
+  data: Record<string, never>
+}
+
+export type ScheduleJobPurgeBroadcasts = {
+  type: typeof ScheduleJobData.purgeBroadcasts
+  data: Record<string, never>
+}
+
 export type ScheduleJobPurgeAutomationThrottle = {
   type: typeof ScheduleJobData.purgeAutomationThrottle
   data: Record<string, never>
@@ -211,6 +241,8 @@ export type ScheduleJobData =
   | ScheduleJobPurgeCoexistStaging
   | ScheduleJobPurgeWhatsappSignupSessions
   | ScheduleJobPurgeWorkspaces
+  | ScheduleJobClearExpiredSupportAccess
+  | ScheduleJobPurgeBroadcasts
   | ScheduleJobPurgeAutomationThrottle
   | ScheduleJobPurgeErrorLogs
   | ScheduleJobRefreshChannelTokens

@@ -77,7 +77,19 @@ Read it before non-trivial changes. This skill is the quick map + the traps.
    messenger-only. Hide an unsupported toggle in the builder form instead of shipping a
    dead switch.
 
-7. **`options.trackUserTags` is a no-op** (defined, not implemented). Every other option
+7. **A `private` flow reply runs on the DM conversation; a `public` one does not.** The
+   comment conversation is anchored to the post (`sourceId = postId`), but DM replies land
+   on the DM conversation (`sourceId IS NULL`). Enqueue `sendFlow` with the comment
+   conversation and the flow parks where no reply can reach it — first message delivers,
+   then the flow stalls at its first waiting step with **no error anywhere** (no throw, no
+   queue error, no `sendError`; `resolveIncomingTextRouting` just finds no challenge and
+   falls through to `automatedResponse`). Private uses
+   `resolveDirectMessageConversationId`; public deliberately keeps `ctx.conversationId`,
+   because the contact's next comment resolves back to that same conversation. Never
+   "unify" the two branches. `commentAnchor` is orthogonal — it only decides how the first
+   message is delivered.
+
+8. **`options.trackUserTags` is a no-op** (defined, not implemented). Every other option
    (including `replyToUsersWhoCommentedOnOtherPosts`) IS enforced — see the option table in
    the docs.
 
@@ -90,7 +102,8 @@ Read it before non-trivial changes. This skill is the quick map + the traps.
 3. Add the guard inside the loop in `processCommentAutomation`, **with a
    `logAutomationSkipped(..., reason)` before `continue`**.
 4. Surface the toggle in `apps/builder/src/features/fb-comments/components/fb-comment-form.tsx`
-   and add i18n keys to `apps/builder/messages/en.json` + `vi.json`.
+   and add i18n keys to **every** locale file in `apps/builder/messages/` (the i18n parity
+   check in `pnpm lint` fails on a missing key in any of the 20 locales).
 5. Extend `apps/worker/__tests__/comment-automation.test.ts`.
 
 ## Adding a new reply type (recipe)

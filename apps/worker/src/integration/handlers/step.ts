@@ -12,8 +12,10 @@ import {
   stepTypes,
   type WaitStepSchema,
 } from "@chatbotx.io/flow-config"
+import { createId } from "@chatbotx.io/utils"
 import {
   type ChatJobSendFlowStep,
+  HeavyJobAction,
   IntegrationJobAction,
   integrationQueue,
 } from "@chatbotx.io/worker-config"
@@ -40,20 +42,20 @@ import {
 import { markCouponUsed, setUpCoupon } from "./coupon"
 import { handleAIDeleteMessageHistory } from "./delete-message-history"
 import { subscribeDripSubscriber } from "./drip-handler"
-import { handleAIEditImage } from "./edit-image"
 import { handleAIExtractData } from "./extract-data/index"
 import { handleFacebookCustomAudience } from "./facebook-custom-audience-handler"
 import {
   type ExecuteStepProps,
   enqueueFlowStepMessage,
+  type HeavyStepProps,
   seekConnectedNode,
 } from "./flow-utils"
 import { handleFollowUp } from "./follow-up"
-import { handleAIGenerateImage } from "./generate-image"
 import { handleAIGenerateText } from "./generate-text"
 import { handleAIGenerateTextAgent } from "./generate-text-agent"
 import { addGetResponseContact } from "./get-response-handler"
 import { getUserData } from "./get-user-data"
+import { runViaHeavyWorker } from "./heavy-step-runner"
 import { syncKlaviyoProfile } from "./klaviyo-handler"
 import { addMailchimpMember } from "./mailchimp-handler"
 import { addMailerLiteSubscriber } from "./mailer-lite-handler"
@@ -71,7 +73,6 @@ import { questionnaires } from "./questionnaires"
 import { sendEmail } from "./send-email"
 import { addSendGridContact } from "./sendgrid-handler"
 import { scheduleSmartDelayResume } from "./smart-delay"
-import { handleAISpeechToText } from "./speech-to-text"
 
 import {
   clearSpreadsheetRow,
@@ -94,7 +95,6 @@ import {
   stepUnassignConversation,
   stepUnfollowConversation,
 } from "./step-handlers"
-import { handleAITextToSpeech } from "./text-to-speech"
 import {
   countCharacters,
   externalRequest,
@@ -143,6 +143,7 @@ async function splitTraffic({
   step,
   targetId,
   useLatestFlowVersion,
+  metadata,
   sendFrom,
   nodeVisits,
   commentAnchor,
@@ -177,6 +178,11 @@ async function splitTraffic({
         flowId: flowVersion.flowId,
         flowVersionId: useLatestFlowVersion ? undefined : flowVersion.id,
         nodeId: connectedEdge.target,
+        // Forward the current job's metadata across the split — without
+        // this, a broadcast-dispatched flow crossing a Split Traffic step
+        // lost its `broadcastId` attribution and the stop/resume guard in
+        // `runFlowNode` never fired for the branch taken here (fix round 1).
+        metadata,
         sendFrom,
         nodeVisits,
         commentAnchor,
@@ -195,6 +201,25 @@ async function splitTraffic({
 // the anchor: private falls back to the normal (messaging-window-gated) DM
 // send, public falls back to a normal flow DM instead of a comment reply.
 // Fixing this needs a schema change; out of scope for now.
+//
+// Accepted residual (fix round 1, stop/resume guard): `metadata` itself DOES
+// survive a wait pause — `ContactOnSmartDelay.metadata` is a real column and
+// `buildSendFlowResumeJob` (smart-delay.ts) reads it back, so the broadcast
+// stop/resume guard in `runFlowNode` still fires correctly on the resumed
+// job. What is intentionally NOT carried is `initialBroadcastDispatch`:
+// `SmartDelayResumeJobExtras` has no such field, by design — a wait-resume
+// is a continuation, not the producer's first dispatch, so replaying it
+// would duplicate the flow head. The consequence: a broadcast recipient
+// parked on a Wait step whose broadcast gets stopped is skipped without a
+// `sent` reset when the wait timer eventually fires (correct — no
+// duplicate), but that also means a later broadcast Resume never re-targets
+// this recipient (nothing ever reset its row), so its delivery is
+// permanently truncated at the wait boundary unless the timer happens to
+// fire while the broadcast is independently sendable again. Do not "fix" this
+// by threading `initialBroadcastDispatch` through the resume path — that
+// would reintroduce the same duplicate-delivery bug this guard exists to
+// prevent.
+//
 async function handleWait({
   conversation,
   flowVersion,
@@ -355,6 +380,27 @@ export type ExecuteStepResult = {
   result: unknown
 }
 
+function toHeavyStepProps<T extends { id: string }>(
+  props: ExecuteStepProps<T>,
+): HeavyStepProps<T> {
+  if (props.flowExecutionKey) {
+    return { ...props, flowExecutionKey: props.flowExecutionKey }
+  }
+
+  const flowExecutionKey = `flow-inline-${createId()}`
+  logger.warn(
+    {
+      flowExecutionKey,
+      conversationId: props.conversation.id,
+      contactInboxId: props.contactInbox.id,
+      stepId: props.step.id,
+    },
+    "Flow step is missing flowExecutionKey; generated fallback key",
+  )
+
+  return { ...props, flowExecutionKey }
+}
+
 export const flowStepHandlers: Record<
   StepType,
   | ((
@@ -399,13 +445,17 @@ export const flowStepHandlers: Record<
   [stepTypes.enum.openWebsite]: undefined,
   [stepTypes.enum.aiAnalyzeImage]: handleAIAnalyzeImage,
   [stepTypes.enum.aiDeleteMessageHistory]: handleAIDeleteMessageHistory,
-  [stepTypes.enum.aiEditImage]: handleAIEditImage,
-  [stepTypes.enum.aiGenerateImage]: handleAIGenerateImage,
+  [stepTypes.enum.aiEditImage]: (props) =>
+    runViaHeavyWorker(HeavyJobAction.aiEditImage, toHeavyStepProps(props)),
+  [stepTypes.enum.aiGenerateImage]: (props) =>
+    runViaHeavyWorker(HeavyJobAction.aiGenerateImage, toHeavyStepProps(props)),
   [stepTypes.enum.aiGenerateTextAgent]: handleAIGenerateTextAgent,
   [stepTypes.enum.aiGenerateText]: handleAIGenerateText,
   [stepTypes.enum.aiExtractData]: handleAIExtractData,
-  [stepTypes.enum.aiSpeechToText]: handleAISpeechToText,
-  [stepTypes.enum.aiTextToSpeech]: handleAITextToSpeech,
+  [stepTypes.enum.aiSpeechToText]: (props) =>
+    runViaHeavyWorker(HeavyJobAction.aiSpeechToText, toHeavyStepProps(props)),
+  [stepTypes.enum.aiTextToSpeech]: (props) =>
+    runViaHeavyWorker(HeavyJobAction.aiTextToSpeech, toHeavyStepProps(props)),
   [stepTypes.enum.optInEmail]: optInEmail,
   [stepTypes.enum.optOutEmail]: optOutEmail,
   [stepTypes.enum.performAction]: undefined,

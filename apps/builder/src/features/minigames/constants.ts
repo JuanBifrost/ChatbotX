@@ -3,6 +3,7 @@ import type {
   MinigameGeneralSettings,
   MinigameNonWinningMessageSettings,
   MinigamePlayerSettings,
+  MinigamePrizeItem,
   MinigamePrizeSettings,
   MinigameType,
   MinigameWinningMessageSettings,
@@ -37,11 +38,12 @@ export const MINIGAME_TYPE_CONFIGS: {
   },
 ]
 
-/** Only Jackpot, Lucky Wheel, and Gashapon have a working gameplay experience so far; the rest are disabled in the type picker. */
 export const MINIGAME_TYPES_ENABLED_FOR_CREATION: MinigameType[] = [
   "jackpot",
   "luckyWheel",
   "gashapon",
+  "drawLots",
+  "scratchOff",
 ]
 
 export function getDefaultMinigameGeneralSettings(): MinigameGeneralSettings {
@@ -56,8 +58,6 @@ export function getDefaultMinigameGeneralSettings(): MinigameGeneralSettings {
     openerTagIds: [],
     playerTagIds: [],
     newFriendTagIds: [],
-    shareEnabled: true,
-    shareMessage: "{{shareUrl}}",
   }
 }
 
@@ -70,6 +70,14 @@ const LUCKY_WHEEL_DEFAULT_START_BUTTON_IMAGE_URL =
 const GASHAPON_DEFAULT_BACKGROUND_IMAGE_URL =
   "/mini-game/gashapon/background.svg"
 const GASHAPON_DEFAULT_START_BUTTON_IMAGE_URL = "/mini-game/gashapon/button.svg"
+const DRAW_LOTS_DEFAULT_BACKGROUND_IMAGE_URL =
+  "/mini-game/draw-lots/background.png"
+const DRAW_LOTS_DEFAULT_START_BUTTON_IMAGE_URL =
+  "/mini-game/draw-lots/button.png"
+const SCRATCH_OFF_DEFAULT_BACKGROUND_IMAGE_URL =
+  "/mini-game/scratch-off/background.png"
+const SCRATCH_OFF_DEFAULT_START_BUTTON_IMAGE_URL =
+  "/mini-game/scratch-off/button.png"
 
 export function getDefaultMinigameAppearance(
   type?: MinigameType,
@@ -128,6 +136,42 @@ export function getDefaultMinigameAppearance(
     }
   }
 
+  if (type === "drawLots") {
+    return {
+      backgroundColor: "#E8D9B5",
+      machineColor: "#F5F564",
+      decorativeColor: "#C9302C",
+      ruleTextColor: "#FFFFFF",
+      backgroundImage: {
+        mode: "file",
+        url: DRAW_LOTS_DEFAULT_BACKGROUND_IMAGE_URL,
+      },
+      prizeDescriptionImage: { mode: "file", url: "" },
+      startButtonImage: {
+        mode: "file",
+        url: DRAW_LOTS_DEFAULT_START_BUTTON_IMAGE_URL,
+      },
+    }
+  }
+
+  if (type === "scratchOff") {
+    return {
+      backgroundColor: "#2F5FBF",
+      machineColor: "#FFE629",
+      decorativeColor: "#BD2000",
+      ruleTextColor: "#FFFFFF",
+      backgroundImage: {
+        mode: "file",
+        url: SCRATCH_OFF_DEFAULT_BACKGROUND_IMAGE_URL,
+      },
+      prizeDescriptionImage: { mode: "file", url: "" },
+      startButtonImage: {
+        mode: "file",
+        url: SCRATCH_OFF_DEFAULT_START_BUTTON_IMAGE_URL,
+      },
+    }
+  }
+
   return {
     backgroundColor: "#F5A623",
     machineColor: "#4A90D9",
@@ -142,20 +186,43 @@ export function getDefaultMinigameAppearance(
 export function getDefaultMinigamePlayerSettings(): MinigamePlayerSettings {
   return {
     drawsPerPerson: 1,
+    // Newly created minigames get referral bonuses on by default. The Zod
+    // default is deliberately `0` instead, so minigames saved before this
+    // field existed stay opt-out rather than silently handing out draws.
+    maxSharesPerPerson: 3,
+    // Sharing is off until an admin picks a node — there is no sensible
+    // default flow step to guess at.
+    sharingFlowId: null,
+    sharingNodeId: null,
     resetPolicy: "never",
   }
 }
 
 const DEFAULT_PRIZE_COUNT = 3
 
+/**
+ * A prize row that already satisfies `minigamePrizeItemSchema`. The name must
+ * never start out empty: `name` is `min(1)` and is only editable inside the
+ * prize dialog, so a blank one makes the form fail validation with the error
+ * attached to a field that isn't rendered — the Save button then looks dead.
+ */
+export function createDefaultMinigamePrize(
+  index: number,
+  winRate: number,
+): MinigamePrizeItem {
+  return {
+    id: createId(),
+    name: `Prize ${index + 1}`,
+    icon: { mode: "file", url: "" },
+    winRate,
+  }
+}
+
 export function getDefaultMinigamePrizeSettings(): MinigamePrizeSettings {
   return {
-    prizes: Array.from({ length: DEFAULT_PRIZE_COUNT }, (_, index) => ({
-      id: createId(),
-      name: `Prize ${index + 1}`,
-      icon: { mode: "file" as const, url: "" },
-      winRate: 25,
-    })),
+    prizes: Array.from({ length: DEFAULT_PRIZE_COUNT }, (_, index) =>
+      createDefaultMinigamePrize(index, 25),
+    ),
     nonWinning: {
       title: "Non-winning",
       loseRate: 25,

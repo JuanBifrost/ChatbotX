@@ -112,6 +112,22 @@ export type ConversationWithContactInboxes = ConversationModel & {
 }
 
 class ConversationService extends BaseService {
+  async markAgentReplied(input: { id: string; workspaceId: string; at: Date }) {
+    await db
+      .update(conversationModel)
+      .set({
+        agentLastReadAt: input.at,
+        lastActivityAt: input.at,
+        adminRepliedAt: input.at,
+      })
+      .where(
+        and(
+          eq(conversationModel.id, input.id),
+          eq(conversationModel.workspaceId, input.workspaceId),
+        ),
+      )
+    await this.invalidate({ workspaceId: input.workspaceId, ids: [input.id] })
+  }
   protected readonly cachePrefix: string = "conversations"
 
   // ─── Reads (cached) ──────────────────────────────────────────────────────
@@ -174,6 +190,34 @@ class ConversationService extends BaseService {
     // path via the Conversation_contactId_dm_key unique index, and TikTok's
     // non-null path because a TikTok contact has a single conversation.
     return conversations
+  }
+
+  /**
+   * Resolves the conversation for a specific ContactInbox by looking up its
+   * channel and delegating to `findDMByContact` — use when the caller already
+   * knows which ContactInbox a contact used, instead of guessing the channel.
+   */
+  async findDMByContactInbox(props: {
+    workspaceId: string
+    contactId: string
+    contactInboxId: string
+    tx?: DatabaseClient
+  }): Promise<ConversationModel | undefined> {
+    const { tx = db, workspaceId, contactId, contactInboxId } = props
+    const contactInbox = await contactInboxService.findBy({
+      where: { id: contactInboxId },
+      tx,
+    })
+    if (!contactInbox) {
+      return
+    }
+
+    return await this.findDMByContact({
+      workspaceId,
+      contactId,
+      channel: contactInbox.channel as ChannelType,
+      tx,
+    })
   }
 
   async updateChallenge(props: {
@@ -277,6 +321,69 @@ class ConversationService extends BaseService {
       where: { contactId, workspaceId },
       with: { contactInboxes: true },
     })) as ConversationWithContactInboxes | undefined
+  }
+
+  /**
+   * Shared by the public `/v1/contacts/{identifier}/messages|auto-replies|flows`
+   * handlers: resolve the contact's conversation and the specific
+   * `ContactInbox` to send through (or the first one when `inboxId` is
+   * omitted), throwing the same 404 either way instead of repeating both
+   * lookups + both `notFoundException` calls at every call site.
+   */
+  async resolveContactInboxForSend(props: {
+    contactId: string
+    workspaceId: string
+    inboxId?: string
+  }): Promise<{
+    conversation: ConversationWithContactInboxes
+    contactInbox: ContactInboxModel
+  }> {
+    const { contactId, workspaceId, inboxId } = props
+    const conversation = await this.findByContactWithInboxes({
+      contactId,
+      workspaceId,
+    })
+    if (!conversation) {
+      throw notFoundException("Conversation not found")
+    }
+
+    const contactInbox = inboxId
+      ? conversation.contactInboxes.find((ci) => ci.inboxId === inboxId)
+      : conversation.contactInboxes[0]
+    if (!contactInbox) {
+      throw notFoundException("Conversation not found")
+    }
+
+    return { conversation, contactInbox }
+  }
+
+  /**
+   * Shared by the authenticated `POST .../messages` handler and
+   * `createMessageAction`: resolve the `ContactInbox` to send an outgoing
+   * message through, scoped to an already-identified `conversationId` rather
+   * than `contactId` (see `resolveContactInboxForSend` for the public-API
+   * variant, which starts from `contactId` and falls back to the
+   * conversation's first `ContactInbox` instead of the most recently
+   * active one).
+   */
+  async resolveContactInboxForConversation(props: {
+    conversation: Pick<ConversationModel, "contactId">
+    workspaceId: string
+    inboxId?: string
+  }): Promise<ContactInboxModel> {
+    const { conversation, workspaceId, inboxId } = props
+    const contactInbox = inboxId
+      ? await contactInboxService.findBy({
+          where: { contactId: conversation.contactId, inboxId },
+        })
+      : await contactInboxService.findRecentByContactId({
+          workspaceId,
+          contactId: conversation.contactId,
+        })
+    if (!contactInbox) {
+      throw notFoundException("Inbox not found")
+    }
+    return contactInbox
   }
 
   async findLatestByContact(props: {
@@ -430,13 +537,16 @@ class ConversationService extends BaseService {
   }): Promise<ConversationModel> {
     const { workspaceId, contactId, sourceId, tx = db } = props
 
-    const existing = await tx.query.conversationModel.findFirst({
-      where: {
-        workspaceId,
-        contactId,
-        sourceId: sourceId === null ? { isNull: true } : sourceId,
-      },
-    })
+    const findExisting = () =>
+      tx.query.conversationModel.findFirst({
+        where: {
+          workspaceId,
+          contactId,
+          sourceId: sourceId === null ? { isNull: true } : sourceId,
+        },
+      })
+
+    const existing = await findExisting()
     if (existing) {
       return existing
     }
@@ -444,10 +554,22 @@ class ConversationService extends BaseService {
     const created = await tx
       .insert(conversationModel)
       .values({ id: createId(), workspaceId, contactId, sourceId })
+      .onConflictDoNothing()
       .returning()
       .then((result) => result[0])
+
     if (!created) {
-      throw new Error("Conversation not found")
+      // A concurrent writer (e.g. the message echo webhook opening the same DM
+      // while a comment automation resolves it) won the partial unique index —
+      // `Conversation_contactId_dm_key` for DMs, otherwise
+      // `Conversation_contactId_sourceId_key` — so the insert produced no row.
+      // Re-read rather than fail: the winner already broadcast
+      // `conversationCreated`, so this path must not broadcast again.
+      const concurrent = await findExisting()
+      if (!concurrent) {
+        throw new Error("Conversation not found")
+      }
+      return concurrent
     }
 
     await this.broadcastConversationEvent(workspaceId, {

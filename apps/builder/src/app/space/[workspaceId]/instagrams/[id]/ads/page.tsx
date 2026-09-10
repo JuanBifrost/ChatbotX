@@ -9,7 +9,6 @@ import {
   toAppAccessToken,
 } from "@chatbotx.io/integration-instagram-facebook"
 import { notFound } from "next/navigation"
-import { checkMessagingAdsConnectionState } from "@/features/ads-campaign/queries"
 import { InstagramCapiTab } from "@/features/integration-instagram/components/instagram-capi-tab"
 import { findIntegrationInstagram } from "@/features/integration-instagram/queries"
 import { withWorkspaceIdAndIdSchema } from "@/features/workspaces/schema/resource"
@@ -24,16 +23,10 @@ export default async function InstagramAdsPage(props: {
   }
 
   const { workspaceId, id } = data
-  const [workspace, integrationInstagram, messagingAdsConnectionState] =
-    await Promise.all([
-      workspaceService.findById({ id: workspaceId }),
-      findIntegrationInstagram({ workspaceId, id }),
-      checkMessagingAdsConnectionState({
-        workspaceId,
-        channel: "instagram",
-        integrationId: id,
-      }),
-    ])
+  const [workspace, integrationInstagram] = await Promise.all([
+    workspaceService.findById({ id: workspaceId }),
+    findIntegrationInstagram({ workspaceId, id }),
+  ])
   const instagramCredential =
     integrationInstagram.type === "facebook"
       ? await platformCredentialService.resolveForOwner({
@@ -78,8 +71,8 @@ export default async function InstagramAdsPage(props: {
         type: resolved.type,
         hasCapiScope: resolved.hasCapiScope,
         datasetId: resolved.datasetId,
+        capiTestEventCode: resolved.capiTestEventCode,
       }}
-      messagingAdsConnectionState={messagingAdsConnectionState}
     />
   )
 }

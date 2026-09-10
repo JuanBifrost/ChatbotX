@@ -1,7 +1,12 @@
 import { DrizzleQueryError } from "@chatbotx.io/database/client"
 import { ChannelError, ChannelErrorCategory } from "@chatbotx.io/sdk"
 import { describe, expect, test } from "vitest"
-import { ChatbotXException, toPublicErrorMessage } from "../src/errors"
+import {
+  ChatbotXException,
+  notFoundException,
+  toPublicErrorMessage,
+  validationException,
+} from "../src/errors"
 
 const FALLBACK = "The operation failed."
 
@@ -96,6 +101,23 @@ describe("toPublicErrorMessage", () => {
     )
   })
 
+  test("prints the user sentence once when the mapper already composed it into the message", () => {
+    // WhatsApp's mapper folds `error_user_msg` into `ChannelError.message` and
+    // still parks a copy on `originError` for its structured fields.
+    const error = new ChannelError(
+      "#(133010) Phone number is not verified. Phone number is not verified through SMS or voice.",
+      ChannelErrorCategory.AUTH_FAILED,
+      { code: 133_010 },
+    ).setOriginError({
+      userTitle: "Phone number is not verified",
+      userMessage: "Phone number is not verified through SMS or voice.",
+    })
+
+    expect(toPublicErrorMessage(error, FALLBACK)).toBe(
+      "#(133010) Phone number is not verified. Phone number is not verified through SMS or voice.",
+    )
+  })
+
   test("falls back to the title when the channel gave no user message", () => {
     const error = new ChannelError(
       "Messenger API call failed",
@@ -129,11 +151,66 @@ describe("toPublicErrorMessage", () => {
     expect(toPublicErrorMessage(error, FALLBACK)).toBe("Zalo request timed out")
   })
 
+  test("keeps the endpoint a persisted flow/webhook error names", () => {
+    // The URL in these messages is the one the operator configured; the
+    // connect row redacts it (see connect-outcome.test.ts) because there the
+    // URL is our own OAuth endpoint, not theirs.
+    const error = new ChatbotXException(
+      "Failed to POST https://api.customer.example/hook — 500",
+    )
+
+    expect(toPublicErrorMessage(error, FALLBACK)).toBe(
+      "Failed to POST https://api.customer.example/hook — 500",
+    )
+  })
+
+  test("still redacts credentials that ride along with a URL", () => {
+    const error = new ChatbotXException(
+      "GET https://graph.facebook.com/v21.0/me?access_token=SECRET failed",
+    )
+
+    expect(toPublicErrorMessage(error, FALLBACK)).toBe(
+      "GET https://graph.facebook.com/v21.0/me?access_token=[REDACTED] failed",
+    )
+  })
+
   test("falls back for values that carry no message at all", () => {
     expect(toPublicErrorMessage(undefined, FALLBACK)).toBe(FALLBACK)
     expect(toPublicErrorMessage({ message: "spoofed" }, FALLBACK)).toBe(
       FALLBACK,
     )
     expect(toPublicErrorMessage("", FALLBACK)).toBe(FALLBACK)
+  })
+})
+
+describe("validationException", () => {
+  // 422 (not 400) is what the public API's `validation` error contract in
+  // `apps/builder/src/lib/orpc/orpc-error-helper.ts` declares, so a change
+  // here silently breaks that documented status for every public route.
+  test("carries the validation code at status 422", () => {
+    const error = validationException("name", "Name is already taken")
+
+    expect(error).toBeInstanceOf(ChatbotXException)
+    expect(error.code).toBe("validation")
+    expect(error.httpStatusCode).toBe(422)
+    expect(error.field).toBe("name")
+    expect(error.message).toBe("Name is already taken")
+  })
+
+  test("keeps i18n params in `data` so the mapper can re-render the key", () => {
+    const error = validationException("_", "validation.maxItemsReached", {
+      max: 10,
+    })
+
+    expect(error.data).toEqual({ max: 10 })
+  })
+})
+
+describe("notFoundException", () => {
+  test("carries the notFound code at status 404", () => {
+    const error = notFoundException("Contact not found")
+
+    expect(error.code).toBe("notFound")
+    expect(error.httpStatusCode).toBe(404)
   })
 })

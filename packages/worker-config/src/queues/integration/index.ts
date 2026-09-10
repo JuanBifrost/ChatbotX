@@ -18,8 +18,11 @@ import {
 import { queueNames } from "../../lib/types"
 import type { BotResponseTrackingContext } from "../types"
 
+export * from "./coexist-job-ids"
+
 export const IntegrationJobAction = {
   sendFlow: "sendFlow",
+  resumeHeavyStep: "resumeHeavyStep",
   sendSequenceFlow: "sendSequenceFlow",
   runRef: "runRef",
   incomingMessage: "incomingMessage",
@@ -162,6 +165,8 @@ export type IntegrationJobRunFlowNode = {
     flowVersionId?: string
     nodeId?: string
     startFromStepId?: string
+    /** Stable logical execution identity for asynchronous flow continuations. */
+    flowExecutionKey?: string
     /**
      * Set when this job resumes a button/quickReply's own multi-step chain
      * (one step per job) rather than a node's. Without it, resolving by
@@ -174,11 +179,37 @@ export type IntegrationJobRunFlowNode = {
     nodeVisits?: NodeVisits
     trackingContext?: BotResponseTrackingContext
     metadata?: MetadataPayload
+    /**
+     * The flow stop/resume guard's ONE authoritative "initial broadcast
+     * dispatch" signal (`runFlowNode` in `apps/worker/src/integration/handlers/flow.ts`).
+     * Set to `true` ONLY by `process-broadcast-contacts.ts`'s very first
+     * `sendFlow` enqueue for a broadcast recipient — every re-dispatch
+     * (splitTraffic, startAnotherNode, startExternalFlow/Node, condition
+     * routing, per-step continuation, smart-delay/wait resume, …) must leave
+     * this unset. The guard resets the recipient for Resume only when this
+     * is `true`; a continuation that forgets to omit it would incorrectly
+     * replay the flow head, so every non-producer enqueue site must never
+     * set it. Omitting it fails toward skip-without-reset (under-delivery,
+     * never a duplicate send).
+     */
+    initialBroadcastDispatch?: boolean
     appointmentId?: string
     sendFrom?: "inbox"
     origin?: "channel"
     /** See {@link CommentAnchor}. */
     commentAnchor?: CommentAnchor
+  }
+}
+
+/**
+ * Durable continuation for a flow step that completed on the heavy worker.
+ * It reuses the normal send-flow payload so the flow engine remains the sole
+ * owner of success/error routing.
+ */
+export type IntegrationJobResumeHeavyStep = {
+  type: typeof IntegrationJobAction.resumeHeavyStep
+  data: IntegrationJobRunFlowNode["data"] & {
+    outcomeKey: string
   }
 }
 
@@ -593,6 +624,7 @@ export type IntegrationJobData =
   | IntegrationJobMessageReaction
   | IntegrationJobMessageStatus
   | IntegrationJobRunFlowNode
+  | IntegrationJobResumeHeavyStep
   | IntegrationJobSendFlowPostback
   | IntegrationJobSendFlowQuickReply
   | IntegrationJobAgentMarkAsRead

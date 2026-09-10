@@ -1,5 +1,6 @@
 import {
   and,
+  asc,
   type DatabaseClient,
   db,
   eq,
@@ -11,6 +12,7 @@ import {
   type SQL,
   sql,
 } from "@chatbotx.io/database/client"
+import { contactInboxRepository } from "@chatbotx.io/database/repositories"
 import type { ContactInboxReferral } from "@chatbotx.io/database/schema"
 import {
   CONTACT_INBOX_SOURCE_USER_ID_KEY,
@@ -176,6 +178,17 @@ class ContactInboxService extends BaseService {
   }
 
   /**
+   * Deliberately uncached: channel webhooks create/update ContactInbox
+   * identities and the sequence scheduler advances enrollments, neither of
+   * which routes through the `contact-inboxes:*` cache tags this service
+   * controls. A stale read here is worse for a caller acting on a channel
+   * identity list that's already changed than paying for the DB hit.
+   */
+  listByContactIdUncached(props: { workspaceId: string; contactId: string }) {
+    return contactInboxRepository.listWithInboxNameByContactId(props)
+  }
+
+  /**
    * The most recently active contact inbox for an inbox + source (e.g. a
    * webchat guest). Ordered by `lastMessageAt` desc so that when a guest has
    * reconnected and produced duplicate rows for the same `sourceId`, the live
@@ -267,24 +280,33 @@ class ContactInboxService extends BaseService {
 
   async listByContactId(props: {
     tx?: DatabaseClient
+    workspaceId: string
     contactId: string
   }): Promise<ContactInboxModel[]> {
-    const { tx = db, contactId } = props
-    const cacheKey = `contacts:${contactId}:contact-inboxes`
+    const { tx = db, workspaceId, contactId } = props
+    const cacheKey = `contacts:${workspaceId}:${contactId}:contact-inboxes`
 
     return await withCache(
       cacheKey,
       async () =>
-        await tx.query.contactInboxModel.findMany({
-          where: {
-            contactId,
-          },
-          orderBy: {
-            id: "asc",
-          },
-        }),
+        await tx
+          .select()
+          .from(contactInboxModel)
+          .where(
+            and(
+              eq(contactInboxModel.contactId, contactId),
+              this.workspaceScope(workspaceId),
+            ),
+          )
+          .orderBy(asc(contactInboxModel.id)),
       {
-        tags: [`contacts:${contactId}:contact-inboxes`],
+        // Tag with both the workspace-scoped key (so this cache entry can be
+        // invalidated on its own) and the shared per-contact tag that the
+        // tracking mutations below (`updateTracking`, `setPersona`, etc.)
+        // already invalidate via `getTrackingCacheTags` — keeping the legacy
+        // tag avoids a much wider refactor of every tracking write path just
+        // to rename it.
+        tags: [cacheKey, ...this.getTrackingCacheTags(contactId)],
       },
     )
   }
@@ -349,6 +371,7 @@ class ContactInboxService extends BaseService {
 
   async findRecentByContactId(props: {
     tx?: DatabaseClient
+    workspaceId: string
     contactId: string
   }): Promise<ContactInboxModel | undefined> {
     const allContactInboxes = await this.listByContactId(props)

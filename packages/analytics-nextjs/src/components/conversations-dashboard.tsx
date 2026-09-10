@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import type { AnalysisStoreProviderProps } from "../provider/analysis-store-context"
 import { AnalysisStoreProvider } from "../provider/analysis-store-context"
 import { AdminsAnalysis } from "./charts/admins-analysis"
 import { ArchivedConversationChart } from "./charts/archived-conversation-chart"
@@ -17,7 +18,7 @@ export function ConversationsDashboard({
   workspaceCreatedAt,
   nav,
 }: {
-  defaultSearchParams: { [x: string]: string }
+  defaultSearchParams: AnalysisStoreProviderProps["defaultSearchParams"]
   workspaceCreatedAt?: Date
   /** Optional side navigation, rendered one row below the filter bar. */
   nav?: ReactNode
@@ -29,9 +30,9 @@ export function ConversationsDashboard({
         workspaceCreatedAt={workspaceCreatedAt}
       />
 
-      <div className="flex gap-6">
+      <div className="flex flex-col gap-4 md:flex-row md:gap-6">
         {nav}
-        <div className="grid min-w-0 flex-1 grid-cols-2 gap-4">
+        <div className="grid min-w-0 flex-1 grid-cols-1 gap-4 md:grid-cols-2">
           {/* <AvgResponseMinutesChart /> */}
           {/* <AvgFirstResponseMinutesByAdminChart /> */}
           {/* <AvgResponseMinutesByAdminChart /> */}

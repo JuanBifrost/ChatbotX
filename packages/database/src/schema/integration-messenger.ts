@@ -24,6 +24,16 @@ import { flowModel } from "./flow"
 import { inboxModel } from "./inbox"
 import { workspaceModel } from "./workspace"
 
+/**
+ * Enforces that a Meta page backs exactly one integration.
+ *
+ * Exported so callers can recognise this specific collision: the table has
+ * more than one unique index, and this one means "already connected" rather
+ * than a bug (mirrors `WHATSAPP_PHONE_NUMBER_UNIQUE_CONSTRAINT`).
+ */
+export const MESSENGER_PAGE_ID_UNIQUE_CONSTRAINT =
+  "IntegrationMessenger_pageId_key"
+
 export const integrationMessengerModel = pgTable(
   "IntegrationMessenger",
   {
@@ -49,6 +59,9 @@ export const integrationMessengerModel = pgTable(
     datasetId: text(),
     capiAccessToken: jsonb().$type<EncryptedData>(),
     capiDisconnectedAt: timestamp(timestampConfig),
+    // Meta Events Manager "test_event_code": while set, every CAPI event for
+    // this integration is routed to the dataset's Test Events view.
+    capiTestEventCode: text(),
     workspaceId: bigintAsString()
       .notNull()
       .references(() => workspaceModel.id, {
@@ -81,7 +94,7 @@ export const integrationMessengerModel = pgTable(
       "btree",
       table.inboxId.asc().nullsLast(),
     ),
-    uniqueIndex("IntegrationMessenger_pageId_key").using(
+    uniqueIndex(MESSENGER_PAGE_ID_UNIQUE_CONSTRAINT).using(
       "btree",
       table.pageId.asc().nullsLast(),
     ),

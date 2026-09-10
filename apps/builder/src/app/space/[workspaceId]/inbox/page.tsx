@@ -1,6 +1,7 @@
 import { getIdFromParams } from "@chatbotx.io/utils"
 import { cookies } from "next/headers"
 import { notFound } from "next/navigation"
+import { FullBleed } from "@/components/full-bleed"
 import { ChatLayout } from "@/features/chat/chat-layout"
 import { ChatStoreProvider } from "@/features/chat/store/chat-store-provider"
 import { canViewContactEmailAndPhone } from "@/features/contacts/permissions"
@@ -9,7 +10,6 @@ import { FlowStoreProvider } from "@/features/flows/provider/flow-store-context"
 import { InboxStoreProvider } from "@/features/inboxes/provider/inbox-store-context"
 import { SavedReplyStoreProvider } from "@/features/saved-replies/provider/saved-reply-store-context"
 import { SequenceStoreProvider } from "@/features/sequences/provider/sequence-store-context"
-import { TagStoreProvider } from "@/features/tags/provider/tag-store-context"
 import { UserStoreProvider } from "@/features/users/provider/user-store-context"
 import { requireContactsAccess } from "@/lib/auth/require-workspace-permission"
 import { getCurrentUserAndTargetWorkspace } from "@/lib/auth/utils"
@@ -37,7 +37,7 @@ export default async function InboxPage({ params }: InboxPageProps) {
   )
 
   return (
-    <div className="-m-6">
+    <FullBleed>
       <ChatStoreProvider>
         <InboxStoreProvider workspaceId={workspaceId}>
           <UserStoreProvider workspaceId={workspaceId}>
@@ -46,22 +46,20 @@ export default async function InboxPage({ params }: InboxPageProps) {
                 autoInitialize={false}
                 workspaceId={workspaceId}
               >
-                <TagStoreProvider workspaceId={workspaceId}>
-                  <SequenceStoreProvider workspaceId={workspaceId}>
-                    <FlowStoreProvider workspaceId={workspaceId}>
-                      <ChatLayout
-                        canViewEmailAndPhone={canViewEmailAndPhone}
-                        layout={savedLayout}
-                        workspaceId={workspaceId}
-                      />
-                    </FlowStoreProvider>
-                  </SequenceStoreProvider>
-                </TagStoreProvider>
+                <SequenceStoreProvider workspaceId={workspaceId}>
+                  <FlowStoreProvider workspaceId={workspaceId}>
+                    <ChatLayout
+                      canViewEmailAndPhone={canViewEmailAndPhone}
+                      layout={savedLayout}
+                      workspaceId={workspaceId}
+                    />
+                  </FlowStoreProvider>
+                </SequenceStoreProvider>
               </SavedReplyStoreProvider>
             </CustomFieldStoreProvider>
           </UserStoreProvider>
         </InboxStoreProvider>
       </ChatStoreProvider>
-    </div>
+    </FullBleed>
   )
 }

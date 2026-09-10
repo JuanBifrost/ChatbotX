@@ -10,6 +10,8 @@ import type { MessengerAuthValue } from "@chatbotx.io/integration-messenger"
 import { RealtimeEventType } from "@chatbotx.io/partysocket-config"
 import { contactVariableService } from "@chatbotx.io/variables"
 import {
+  AIJobAction,
+  aiAgentQueue,
   ChatJobAction,
   chatQueue,
   IntegrationJobAction,
@@ -86,6 +88,7 @@ export async function executePublicReply(
     auth: MessengerAuthValue
     integrationType: string
     integrationIdentifier: string
+    automationId: string
     commentId: string
     channelType: CommentAutomationChannelType
     conversationId: string
@@ -139,6 +142,11 @@ export async function executePublicReply(
       {
         type: IntegrationJobAction.sendFlow,
         data: {
+          // Deliberately the comment-anchored conversation, unlike the private
+          // branch (#1063): a public flow answers on the post, and the
+          // contact's next comment resolves back to this very conversation
+          // through `receiveComment`, so its flow state is reachable here.
+          // Do not "fix" this to the DM conversation.
           conversationId: ctx.conversationId,
           contactInboxId: ctx.contactInboxId,
           flowId: publicReply.value,
@@ -152,11 +160,12 @@ export async function executePublicReply(
   }
 
   if (publicReply.type === "AIAgent" && publicReply.value) {
-    await integrationQueue.add(
-      IntegrationJobAction.commentAIReply,
+    await aiAgentQueue.add(
+      AIJobAction.commentAIReply,
       {
-        type: IntegrationJobAction.commentAIReply,
+        type: AIJobAction.commentAIReply,
         data: {
+          automationId: ctx.automationId,
           integrationType: ctx.integrationType,
           integrationIdentifier: ctx.integrationIdentifier,
           workspaceId: ctx.workspaceId,
@@ -172,7 +181,10 @@ export async function executePublicReply(
             ctx.parentMessageCreatedAt?.toISOString() ?? null,
         },
       },
-      { delay: ctx.delay },
+      {
+        delay: ctx.delay,
+        jobId: `comment-ai-reply-${ctx.automationId}-${ctx.commentId}-public`,
+      },
     )
   }
 }

@@ -14,53 +14,38 @@ not a replacement for reading adjacent code.
 
 ## Project Shape
 
-ChatbotX is a pnpm workspace + Turborepo monorepo.
+ChatbotX is a pnpm workspace + Turborepo monorepo. The authoritative layout table is
+**`AGENTS.md` → "Repository layout"** — read it there rather than trusting a second copy.
+To see what actually exists right now:
 
-```
-apps/
-  builder/     Next.js app: product UI, oRPC/OpenAPI, route handlers
-  worker/      BullMQ/Kafka background jobs
-  realtime/    PartyKit realtime server
-  cli/         chatbotx-cli
-  mcp-server/  MCP tools generated from OpenAPI
-
-packages/
-  business/       service layer and business orchestration
-  database/       Drizzle schema, relations, repositories, migrations
-  ui/             shared UI components
-  public-apis/    typed public API client
-  sdk/            integration contracts and shared schemas
-  worker-config/  queue names, job payloads, BullMQ queues
-  flow-config/    flow/node/step config schemas
-  ai, events, redis, kafka, filesystem, mail, imports, analytics, ...
-
-integrations/
-  messenger, whatsapp, zalo, tiktok, telegram, webchat, smtp, openai, google-sheets, ...
+```bash
+ls apps packages integrations
 ```
 
 ## Skill Router
 
-- Builder feature, page, action, query, or public route: use `feature-scaffold`.
-- oRPC or OpenAPI endpoint: use `orpc-api`.
-- Database schema, relations, migration, repository: use `drizzle-database`.
-- Service layer, app data-access boundary: use `business-data-access`.
-- UI component work, forms, tables, translations: use `builder-ui-i18n`.
-- Worker, BullMQ, Kafka, scheduled job: use `worker-development`.
-- Channel integration or webhook behavior: use `integration-channel`.
-- Flow step or state-based routing: use `flow-step-development`.
-- CLI, MCP server, generated public client: use `public-api-tooling`.
-- Dev server, build, lint, package management: use `turborepo-workflow`.
+The canonical task → skill routing table is **`CLAUDE.md` → "Skill → task mapping"**. Read
+it and pick the skill that matches the task; it lists every skill in `.agents/skills/`.
+
+Two routing notes that table does not spell out:
+
+- CLI, MCP server, and the generated public client all follow the public oRPC surface — use
+  `orpc-api`.
+- A broad request usually decomposes into several skills (e.g. a new feature with a table and
+  a queue = `feature-scaffold` + `drizzle-database` + `worker-development`). Read each before
+  writing that layer, not all of them up front.
 
 ## Basecode Scan Checklist
 
 1. Read the nearest `package.json`, route/module files, and sibling features.
-2. Identify the owning layer before editing:
-   - UI/app orchestration: `apps/builder`
-   - business rules: `packages/business`
-   - raw database queries: `packages/database/src/repositories`
+2. Identify the owning layer before editing — the chain is
+   `action | API handler → service → repository → DB`:
+   - UI/app orchestration (calls a service, never `db`): `apps/builder`
+   - business rules, cache invalidation, events (calls a repository): `packages/business`
+   - raw database queries, shard routing: `packages/database/src/repositories`
    - schema/migrations: `packages/database`
-   - async processing: `apps/worker` + `packages/worker-config`
-   - external channel protocol: `integrations/<channel>`
+   - async processing (calls a service, never `db`): `apps/worker` + `packages/worker-config`
+   - external channel protocol (calls a service, never `db`): `integrations/<channel>`
 3. Search for a similar feature and mirror naming, imports, error handling, and tests.
 4. Check `.agents/rules/*` for local invariants, especially data access and git.
 5. Keep changes scoped to the user request; do not refactor legacy exceptions unless required.

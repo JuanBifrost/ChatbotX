@@ -34,6 +34,12 @@ vi.mock("@chatbotx.io/database/schema", () => ({
   workspaceUsageModel: { workspaceId: "workspaceId-column" },
   ROOT_TENANT_ID: "1",
 }))
+// `workspace/service.ts` doesn't use `@chatbotx.io/database/repositories`, but
+// vitest's SSR deps optimizer bundles the whole `@chatbotx.io/database`
+// package graph together once any subpath is imported, which otherwise pulls
+// in `contactRepository`'s real contact-filter query graph (needs the real
+// schema, conflicting with the narrow mock above).
+vi.mock("@chatbotx.io/database/repositories", () => ({}))
 
 const tenantService = { findByOwner: vi.fn(async () => undefined as unknown) }
 vi.mock("../src/enterprise/tenant/service", () => ({ tenantService }))
@@ -325,24 +331,5 @@ describe("WorkspaceService.update — member cache invalidation", () => {
   })
 })
 
-describe("WorkspaceService.update — API token regeneration audit", () => {
-  beforeEach(() => {
-    workspaceMemberService.listUserIdsByWorkspaceId.mockResolvedValue([])
-  })
-
-  test("audits a token regeneration without leaking the raw token value", async () => {
-    await workspaceService.update({
-      id: "ws-1",
-      data: { token: "ws-1_super-secret-token" },
-    })
-
-    expect(dispatchAuditRecord).toHaveBeenCalledWith(
-      expect.objectContaining({
-        action: "update",
-        detail: "created/regenerated workspace API key",
-      }),
-    )
-    const [call] = dispatchAuditRecord.mock.calls
-    expect(JSON.stringify(call)).not.toContain("super-secret-token")
-  })
-})
+// Token-creation auditing moved with the write: see
+// workspace-api-token.service.test.ts (workspaceApiTokenService.createToken).

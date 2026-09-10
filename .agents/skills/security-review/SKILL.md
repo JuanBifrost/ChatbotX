@@ -20,14 +20,21 @@ The per-member permission jsonb (`WorkspaceMemberPermissions`: `superAdmin`, `an
 
 - **Route guard:** `requireWorkspacePermission(workspaceId, key)` / `requireContactsAccess` / `resolveGuardedWorkspaceId` in `apps/builder/src/lib/auth/require-workspace-permission.ts` — call `notFound()` on failure. Gate every new page/layout in a mapped segment (`PERMISSION_NAV` in `lib/auth/permission-routes.ts`). Note route groups split URL-equivalent routes (`products`/`(e-commerce)/products`), so both layouts need the guard.
 - **Nav filter:** `app-sidebar.tsx` hides items via `hasWorkspacePermission` (and `canAccessContactsSection` for the compound contacts gate).
-- **Data scope:** contacts queries thread `resolveContactPermissionScope` → `onlyAssignedContacts` row filter (via `conversation.assignedUserId`) + `emailAndPhone` PII masking. The CSV export mirrors this in the worker; `canExportEmailAndPhone` is a **required** job field so it can never fail open.
+- **Data scope:** the builder resolves scope once, in the app layer — `requireContactPermissionScope` (or `resolveContactPermissionScope`) turns member permissions into plain `scope`/`accessScope` params (`restrictToAssignedUserId`, `canViewEmailAndPhone`), then passes them into `contactService.list`/`count`/`findDetailOrFail`. The service applies `restrictToAssignedUserId` as a `conversation.assignedUserId` row filter and masks email/phone when denied — it never re-derives scope itself, and never knows whether the caller was a member or a token. The CSV export mirrors this in the worker; `canExportEmailAndPhone` is a **required** job field so it can never fail open.
 
-Invariants: `hasWorkspacePermission` treats missing jsonb keys as **denied** (fail-closed) and `superAdmin` bypasses every gate. `isCommunity()` normalizes stored permissions to full `getSuperAdminPermissions()` (no granular control in CE). `invite`/`update`/`delete` member actions require caller `superAdmin`. The workspace-token contacts surface (`listContactsForAPI`) is intentionally **unscoped** — verify new token surfaces don't leak member-scoped data.
+Invariants: `hasWorkspacePermission` treats missing jsonb keys as **denied** (fail-closed) and `superAdmin` bypasses every gate. `isCommunity()` normalizes stored permissions to full `getSuperAdminPermissions()` (no granular control in CE). `invite`/`update`/`delete` member actions require caller `superAdmin`. The workspace-token contacts surface (`contactService.list` called with no `scope`) is intentionally **unscoped** by member permissions — verify new token surfaces don't leak member-scoped data by calling the same service method the private path uses, with `scope` simply omitted.
+
+## 1c. Workspace API tokens (`docs/developer/workspace-api-tokens.md`)
+
+- Tokens are stored **hash-only** (SHA-256 `tokenHash` in `WorkspaceApiToken`); the sole plaintext-recoverable row is the `isDefault` token backing `{{api_key}}` (AES-GCM `encryptedToken`, AAD-bound to its workspace). Never persist, cache, or log a raw token or its hash — handler context only ever sees the projected `RequestApiToken`.
+- Every workspace-token endpoint MUST use `workspaceTokenAuthAPIForScope("<scope>")` — there is no unscoped stack export. `permission: "read_only"` tokens are limited to GET/HEAD in the middleware; mutations additionally pass the owner-quota gate.
+- All bearer-credential material comes from `@chatbotx.io/business/workspace-api-token/credentials` (CSPRNG). Flag any token/secret minted from `Math.random()`-backed helpers.
+- Minting/revoking tokens requires workspace `superAdmin` (`requireWorkspaceTokenSuperAdmin`) — a granular member must not escalate via a `full` token.
 
 ## 2. Prompt injection (untrusted channel content → agent context)
 
 - Customer messages (WhatsApp/Messenger/webchat), uploaded documents, and fetched URLs are **untrusted**. When their content reaches an AI prompt or RAG context, it must be framed as data, not instructions (clear delimiters, "the following is user-provided content").
-- Flag raw `content: row.content` passthrough from a context-source adapter into a model prompt (`apps/worker/.../context-sources/`, `packages/ai/`).
+- Flag raw `content: row.content` passthrough from a context-source adapter into a model prompt (`apps/worker/src/integration/handlers/automated-response/system-tools/context-sources/`, `packages/ai/`).
 
 ## 3. Tool / permission allowlist (`.claude/settings.local.json`)
 

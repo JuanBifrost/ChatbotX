@@ -9,7 +9,6 @@ import {
   toAppAccessToken,
 } from "@chatbotx.io/integration-messenger"
 import { notFound } from "next/navigation"
-import { checkMessagingAdsConnectionState } from "@/features/ads-campaign/queries"
 import { MessengerCapiTab } from "@/features/integration-messenger/components/messenger-capi-tab"
 import { findIntegrationMessenger } from "@/features/integration-messenger/queries"
 import { withWorkspaceIdAndIdSchema } from "@/features/workspaces/schema/resource"
@@ -24,16 +23,10 @@ export default async function MessengerAdsPage(props: {
   }
 
   const { workspaceId, id } = data
-  const [workspace, integrationMessenger, messagingAdsConnectionState] =
-    await Promise.all([
-      workspaceService.findById({ id: workspaceId }),
-      findIntegrationMessenger({ workspaceId, id }),
-      checkMessagingAdsConnectionState({
-        workspaceId,
-        channel: "messenger",
-        integrationId: id,
-      }),
-    ])
+  const [workspace, integrationMessenger] = await Promise.all([
+    workspaceService.findById({ id: workspaceId }),
+    findIntegrationMessenger({ workspaceId, id }),
+  ])
   const messengerCredential = await platformCredentialService.resolveForOwner({
     ownerId: await resolveOwnerForWorkspace(workspace),
     type: "messenger",
@@ -74,8 +67,8 @@ export default async function MessengerAdsPage(props: {
         id: resolved.id,
         hasCapiScope: resolved.hasCapiScope,
         datasetId: resolved.datasetId,
+        capiTestEventCode: resolved.capiTestEventCode,
       }}
-      messagingAdsConnectionState={messagingAdsConnectionState}
     />
   )
 }

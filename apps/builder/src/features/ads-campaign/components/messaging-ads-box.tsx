@@ -20,15 +20,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@chatbotx.io/ui/components/ui/select"
-import { AlertTriangleIcon, Loader2Icon, PlusIcon } from "lucide-react"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
+import {
+  AlertTriangleIcon,
+  Loader2Icon,
+  PlusIcon,
+  UnplugIcon,
+} from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useTranslations } from "next-intl"
 import { useAction } from "next-safe-action/hooks"
-import { useMemo, useState } from "react"
+import { type ReactNode, useMemo, useState } from "react"
 import { toast } from "sonner"
-import useSWR from "swr"
 import { DisconnectIntegrationDialog } from "@/features/common/components/disconnect-integration-dialog"
 import { client } from "@/lib/orpc/orpc"
+import { orpc } from "@/lib/orpc/query"
 import { connectMessagingAdsAction } from "../actions/connect.action"
 import { disconnectMessagingAdsAction } from "../actions/disconnect.action"
 import type { MessagingAdInsightResource } from "../schema/resource"
@@ -100,8 +106,16 @@ type Props = {
   workspaceId: string
   channel: WizardMessagingAdChannel
   integrationId: string
-  /** Server-fetched initial connection state — mirrors how CAPI connection state is passed to `*-capi-tab.tsx` today. */
+  /** Server-fetched initial connection state — resolved by the Click to Message Ads tool page (`messaging-ads/[channel]/page.tsx`). */
   initialConnectionState: ConnectionState
+  /**
+   * Optional control rendered on the box's toolbar row (left, opposite the
+   * insights date range) — the tool page injects its integration select
+   * here so switching Page / account / number happens inside the box it
+   * drives. A slot (not a channel-aware prop) keeps this box agnostic of how
+   * its host picks an integration.
+   */
+  integrationSelector?: ReactNode
 }
 
 const CHANNEL_LABEL_KEY: Record<
@@ -127,6 +141,7 @@ export function MessagingAdsBox({
   channel,
   integrationId,
   initialConnectionState,
+  integrationSelector,
 }: Props) {
   const t = useTranslations()
   const router = useRouter()
@@ -136,23 +151,20 @@ export function MessagingAdsBox({
     DEFAULT_INSIGHTS_DATE_PRESET,
   )
   const labelKeys = CHANNEL_LABEL_KEY[channel]
+  const queryClient = useQueryClient()
 
-  const list = useSWR(
-    initialConnectionState.connected
-      ? ["messaging-ads-list", workspaceId, channel, integrationId]
-      : null,
-    () =>
-      client.adsCampaignAPI.listMessagingAds({
-        workspaceId,
-        channel,
-        integrationId,
-      }),
+  const listInput = { workspaceId, channel, integrationId }
+  const list = useQuery(
+    orpc.adsCampaignAPI.listMessagingAds.queryOptions({
+      input: listInput,
+      enabled: initialConnectionState.connected,
+    }),
   )
 
-  // Insights load via a SEPARATE SWR (and thus a separate API call) from the
-  // list above, so the list itself renders immediately and performance data
-  // fills in once it arrives — never joined into `listMessagingAds`. Only
-  // enabled once the list has resolved AND has at least one row with a
+  // Insights load via a SEPARATE query (and thus a separate API call) from
+  // the list above, so the list itself renders immediately and performance
+  // data fills in once it arrives — never joined into `listMessagingAds`.
+  // Only enabled once the list has resolved AND has at least one row with a
   // `metaAdId` (an ad actually created on Meta) to fetch insights for.
   const insightGroups = useMemo(
     () => groupAdIdsByAdAccount(list.data?.data ?? []),
@@ -161,42 +173,40 @@ export function MessagingAdsBox({
   const insightGroupsKey = insightGroups
     .map((group) => `${group.adAccountId}:${[...group.adIds].sort().join(",")}`)
     .join("|")
-  const fetchInsights = async (): Promise<
-    Map<string, MessagingAdInsightResource>
-  > => {
-    const results = await Promise.all(
-      insightGroups.map((group) =>
-        client.adsCampaignAPI.getMessagingAdsInsights({
-          workspaceId,
-          channel,
-          integrationId,
-          adAccountId: group.adAccountId,
-          adIds: group.adIds,
-          datePreset,
-        }),
-      ),
-    )
-    const byAdId = new Map<string, MessagingAdInsightResource>()
-    for (const result of results) {
-      for (const item of result.data) {
-        byAdId.set(item.adId, item)
+  const insights = useQuery({
+    queryKey: [
+      ...orpc.adsCampaignAPI.getMessagingAdsInsights.key(),
+      { workspaceId, channel, integrationId, datePreset, insightGroupsKey },
+    ],
+    queryFn: async (): Promise<Map<string, MessagingAdInsightResource>> => {
+      const results = await Promise.all(
+        insightGroups.map((group) =>
+          client.adsCampaignAPI.getMessagingAdsInsights({
+            workspaceId,
+            channel,
+            integrationId,
+            adAccountId: group.adAccountId,
+            adIds: group.adIds,
+            datePreset,
+          }),
+        ),
+      )
+      const byAdId = new Map<string, MessagingAdInsightResource>()
+      for (const result of results) {
+        for (const item of result.data) {
+          byAdId.set(item.adId, item)
+        }
       }
-    }
-    return byAdId
-  }
-  const insights = useSWR(
-    insightGroups.length > 0
-      ? [
-          "messaging-ads-insights",
-          workspaceId,
-          channel,
-          integrationId,
-          datePreset,
-          insightGroupsKey,
-        ]
-      : null,
-    () => fetchInsights(),
-  )
+      return byAdId
+    },
+    enabled: insightGroups.length > 0,
+  })
+  const invalidateList = () =>
+    queryClient.invalidateQueries({
+      queryKey: orpc.adsCampaignAPI.listMessagingAds.key({
+        input: listInput,
+      }),
+    })
 
   const { executeAsync: onConnect, isPending: isConnecting } = useAction(
     connectMessagingAdsAction.bind(null, workspaceId, integrationId),
@@ -224,11 +234,17 @@ export function MessagingAdsBox({
   )
 
   // Show a spinner ONLY during a genuine load — the first list/insights fetch,
-  // or a date-preset change (a fresh insights key with no cache). Never on SWR's
-  // background revalidation (`isValidating` on focus/reconnect), which would
-  // read as "always loading". Data otherwise refreshes itself: SWR revalidates
-  // on focus and after every create/publish/pause/delete (`list.mutate()`).
+  // or a date-preset change (a fresh insights key with no cache). Never on
+  // TanStack's background refetch (`isFetching` on focus/reconnect), which
+  // would read as "always loading". Data otherwise refreshes itself: the
+  // default `refetchOnWindowFocus` covers focus, and every
+  // create/publish/pause/delete invalidates the list query explicitly
+  // (`invalidateList`).
   const isLoading = list.isLoading || insights.isLoading
+  // The insights date range only means something once at least one ad
+  // exists on Meta (same gate as the insights query above).
+  const showDatePreset =
+    initialConnectionState.connected && insightGroups.length > 0
 
   return (
     <Card>
@@ -242,7 +258,7 @@ export function MessagingAdsBox({
             <div className="flex items-center gap-2">
               {isLoading && (
                 <Loader2Icon
-                  aria-label={t("messages.loading")}
+                  aria-label={t("actions.loading")}
                   className="size-4 animate-spin text-muted-foreground"
                   role="status"
                 />
@@ -262,7 +278,8 @@ export function MessagingAdsBox({
                 onOpenChange={setDisconnectOpen}
                 open={disconnectOpen}
                 trigger={
-                  <Button size="sm" type="button" variant="ghost">
+                  <Button size="sm" type="button" variant="destructive">
+                    <UnplugIcon className="size-4" />
                     {t("actions.disconnect")}
                   </Button>
                 }
@@ -272,49 +289,15 @@ export function MessagingAdsBox({
         </div>
       </CardHeader>
 
-      <CardContent>
-        {initialConnectionState.reconnectNeeded && (
-          <Alert variant="warning">
-            <AlertTriangleIcon />
-            <AlertTitle>{t("adsCampaign.box.reconnectNeeded")}</AlertTitle>
-            <AlertDescription>
-              <Button
-                disabled={isConnecting}
-                onClick={async (event) => {
-                  event.preventDefault()
-                  await onConnect({ channel })
-                }}
-                size="sm"
-                variant="secondary"
-              >
-                {isConnecting && <Loader2Icon className="animate-spin" />}
-                {t("adsCampaign.box.reconnectCta")}
-              </Button>
-            </AlertDescription>
-          </Alert>
-        )}
-
-        {!(
-          initialConnectionState.connected ||
-          initialConnectionState.reconnectNeeded
-        ) && (
-          <Button
-            disabled={isConnecting}
-            onClick={async (event) => {
-              event.preventDefault()
-              await onConnect({ channel })
-            }}
-            type="button"
-          >
-            {isConnecting && <Loader2Icon className="animate-spin" />}
-            {t("adsCampaign.box.connectCta")}
-          </Button>
-        )}
-
-        {initialConnectionState.connected && (
-          <div className="flex flex-col gap-3">
-            {insightGroups.length > 0 && (
-              <div className="flex items-center justify-end gap-2">
+      <CardContent className="flex flex-col gap-4">
+        {/* Toolbar: which integration this box drives (left) and, once ads
+            exist on Meta, the insights date range (right) — mirrors the Ads
+            dashboard's filter row rather than crowding the header. */}
+        {(integrationSelector || showDatePreset) && (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>{integrationSelector}</div>
+            {showDatePreset && (
+              <div className="flex items-center gap-2">
                 <span className="text-muted-foreground text-xs">
                   {t("adsCampaign.insights.datePresetLabel")}
                 </span>
@@ -341,14 +324,56 @@ export function MessagingAdsBox({
                 </Select>
               </div>
             )}
-            <CampaignListTable
-              insightsByAdId={insights.data}
-              insightsLoading={insights.isLoading}
-              onChanged={() => list.mutate()}
-              rows={list.data?.data ?? []}
-              workspaceId={workspaceId}
-            />
           </div>
+        )}
+
+        {initialConnectionState.reconnectNeeded && (
+          <Alert variant="warning">
+            <AlertTriangleIcon />
+            <AlertTitle>{t("adsCampaign.box.reconnectNeeded")}</AlertTitle>
+            <AlertDescription>
+              <Button
+                disabled={isConnecting}
+                onClick={async (event) => {
+                  event.preventDefault()
+                  await onConnect({ channel })
+                }}
+                size="sm"
+                variant="secondary"
+              >
+                {isConnecting && <Loader2Icon className="animate-spin" />}
+                {t("adsCampaign.box.reconnectCta")}
+              </Button>
+            </AlertDescription>
+          </Alert>
+        )}
+
+        {!(
+          initialConnectionState.connected ||
+          initialConnectionState.reconnectNeeded
+        ) && (
+          <Button
+            className="self-start"
+            disabled={isConnecting}
+            onClick={async (event) => {
+              event.preventDefault()
+              await onConnect({ channel })
+            }}
+            type="button"
+          >
+            {isConnecting && <Loader2Icon className="animate-spin" />}
+            {t("adsCampaign.box.connectCta")}
+          </Button>
+        )}
+
+        {initialConnectionState.connected && (
+          <CampaignListTable
+            insightsByAdId={insights.data}
+            insightsLoading={insights.isLoading}
+            onChanged={invalidateList}
+            rows={list.data?.data ?? []}
+            workspaceId={workspaceId}
+          />
         )}
       </CardContent>
 
@@ -356,7 +381,7 @@ export function MessagingAdsBox({
         <CreateAdWizardDialog
           channel={channel}
           integrationId={integrationId}
-          onCreated={() => list.mutate()}
+          onCreated={invalidateList}
           onOpenChange={setWizardOpen}
           open={wizardOpen}
           workspaceId={workspaceId}
