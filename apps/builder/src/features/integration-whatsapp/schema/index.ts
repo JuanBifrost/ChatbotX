@@ -279,16 +279,32 @@ export const listPhoneNumbersRequest = z.object({
   accessToken: z.string(),
 })
 
+// Graph's default GET /{waba}/phone_numbers field set is sparse: it often
+// omits platform_type / throughput / webhook_configuration, and id can arrive
+// as a number. The previous required-object schema turned a successful Meta
+// response into oRPC "Output validation failed" (HTTP 500) on Manual Setup.
+const graphOptionalString = z
+  .string()
+  .nullish()
+  .transform((value) => value ?? "")
+const graphOptionalObject = z
+  .record(z.string(), z.unknown())
+  .nullish()
+  .transform((value) => value ?? {})
+const graphId = z
+  .union([z.string(), z.number()])
+  .transform((value) => String(value))
+
 const whatsappPhoneNumberResource = z.object({
-  verified_name: z.string(),
-  code_verification_status: z.string(),
+  id: graphId,
+  verified_name: graphOptionalString,
+  code_verification_status: graphOptionalString,
   name_status: z.string().optional(),
-  display_phone_number: z.string(),
-  quality_rating: z.string(),
-  platform_type: z.string(),
-  throughput: z.record(z.string(), z.unknown()),
-  webhook_configuration: z.record(z.string(), z.unknown()),
-  id: z.string(),
+  display_phone_number: graphOptionalString,
+  quality_rating: graphOptionalString,
+  platform_type: graphOptionalString,
+  throughput: graphOptionalObject,
+  webhook_configuration: graphOptionalObject,
 })
 
 export const listPhoneNumbersResponse = z.object({
