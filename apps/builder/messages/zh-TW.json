@@ -2627,7 +2627,8 @@
       "addCustomField": "新增新",
       "responseDumpEnabled": "Save full flow response",
       "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
-      "responseDumpField": "Full response custom field"
+      "responseDumpField": "Full response custom field",
+      "responseDumpFieldRequired": "Select a custom field for the full flow response"
     },
     "sendCarousel": {
       "addSlide": "新增幻燈片",

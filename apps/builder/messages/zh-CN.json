@@ -3195,7 +3195,8 @@
       "startScreen": "开始画面",
       "responseDumpEnabled": "Save full flow response",
       "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
-      "responseDumpField": "Full response custom field"
+      "responseDumpField": "Full response custom field",
+      "responseDumpFieldRequired": "Select a custom field for the full flow response"
     },
     "whatsappOptionList": {
       "addOption": "添加新",
