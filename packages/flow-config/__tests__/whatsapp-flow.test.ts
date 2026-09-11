@@ -143,6 +143,37 @@ describe("sanitizeWhatsappFlowActionData", () => {
     expect(result).toEqual({ nombre: "" })
     expect(result).not.toHaveProperty("needs_nombre")
   })
+
+  test("asks a new customer to type the pickup address when no saved rows remain", () => {
+    const result = sanitizeWhatsappFlowActionData({
+      needs_direccion: false,
+      default_origen_id: "",
+      direcciones: [
+        { id: "{{address_id_0}}", title: "{{address_text_0}}" },
+        gpsCurrent,
+      ],
+    })
+    expect(result).toMatchObject({
+      needs_direccion: true,
+      default_origen_id: "gps_current",
+      direcciones: [gpsCurrent],
+    })
+  })
+
+  test("keeps the address dropdown when Heimdall returned a saved pickup", () => {
+    const result = sanitizeWhatsappFlowActionData({
+      needs_direccion: true,
+      default_origen_id: "gps_current",
+      direcciones: [
+        { id: "1555732", title: "Oficinas Bifrost" },
+        gpsCurrent,
+      ],
+    })
+    expect(result).toMatchObject({
+      needs_direccion: false,
+      default_origen_id: "",
+    })
+  })
 })
 
 describe("whatsappFlow actionData JSON helpers", () => {

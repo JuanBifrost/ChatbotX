@@ -67,6 +67,21 @@ const sanitizeActionDataValue = (value: unknown): unknown => {
   return value
 }
 
+const GPS_CURRENT_ID = "gps_current"
+
+const hasSavedPickupAddress = (direcciones: unknown): boolean => {
+  if (!Array.isArray(direcciones)) {
+    return false
+  }
+  return direcciones.some((item) => {
+    if (!isPlainObject(item) || typeof item.id !== "string") {
+      return false
+    }
+    const id = item.id.trim()
+    return id.length > 0 && id !== GPS_CURRENT_ID
+  })
+}
+
 const applyNeedsFlags = (
   actionData: Record<string, unknown>,
 ): Record<string, unknown> => {
@@ -77,6 +92,13 @@ const applyNeedsFlags = (
     }
     next[flagKey] = isMissingTextValue(next[sourceKey])
   }
+  const hasSavedAddress = hasSavedPickupAddress(next.direcciones)
+  if ("needs_direccion" in next) {
+    next.needs_direccion = !hasSavedAddress
+  }
+  if ("default_origen_id" in next) {
+    next.default_origen_id = hasSavedAddress ? "" : GPS_CURRENT_ID
+  }
   return next
 }
 
@@ -84,7 +106,8 @@ const applyNeedsFlags = (
  * Drops dropdown rows whose `id` is blank or still a `{{variable}}` token.
  * Unresolved `{{variable}}` string leaves become `""` so Meta does not render
  * the token. `needs_nombre` / `needs_telefono` become booleans from whether
- * `nombre` / `customer_phone` are empty.
+ * `nombre` / `customer_phone` are empty. `needs_direccion` is true when the
+ * dropdown would only contain `gps_current`.
  */
 export const sanitizeWhatsappFlowActionData = (
   actionData: Record<string, unknown> | null | undefined,
