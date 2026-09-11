@@ -1,0 +1,42 @@
+# BIFROST / IRIS overlay — use with the production compose in ~/chatbotx:
+#
+#   docker compose -f docker-compose.yml -f docker-compose.bifrost.yml build builder worker
+#   docker compose -f docker-compose.yml -f docker-compose.bifrost.yml -p chatbotx up -d
+#
+# After `git pull` in ~/chatbotx-src, sync this file into ~/chatbotx:
+#   ./scripts/sync-bifrost-deploy-compose.sh
+#
+# Build context assumes ~/chatbotx (deploy) and ~/chatbotx-src (this repo) are siblings.
+
+services:
+  builder:
+    build:
+      context: ../chatbotx-src
+      dockerfile: apps/builder/docker/Dockerfile
+    image: chatbotx-builder:bifrost
+    # Test Now for Execute JavaScript runs in the builder server action and must
+    # reach the internal javascript-executor service (worker already had this network).
+    networks:
+      - main
+      - javascript-executor-network
+    depends_on:
+      javascript-executor:
+        condition: service_healthy
+
+  worker:
+    build:
+      context: ../chatbotx-src
+      dockerfile: apps/worker/docker/Dockerfile
+    image: chatbotx-worker:bifrost
+
+  realtime:
+    build:
+      context: ../chatbotx-src
+      dockerfile: apps/realtime/docker/Dockerfile
+    image: chatbotx-realtime:bifrost
+
+  javascript-executor:
+    build:
+      context: ../chatbotx-src
+      dockerfile: apps/javascript-executor/docker/Dockerfile
+    image: chatbotx-javascript-executor:bifrost
