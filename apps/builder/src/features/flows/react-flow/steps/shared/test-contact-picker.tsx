@@ -102,11 +102,18 @@ export const TestContactPicker = ({
     [search.data?.data],
   )
 
+  const selectedOption =
+    selected && value && selected.id === value
+      ? selected
+      : value
+        ? options.find((option) => option.id === value)
+        : undefined
+
   const triggerLabel =
-    selected?.id === value
-      ? selected.label
-      : (options.find((option) => option.id === value)?.label ??
-        (value ? t("contacts.unknownContact") : t("fields.testContact.placeholder")))
+    selectedOption?.label ??
+    (value
+      ? t("errorLogs.unknownContact")
+      : t("fields.testContact.placeholder"))
 
   const handleSelect = (option: TestContactOption) => {
     setSelected(option)
