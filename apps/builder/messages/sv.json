@@ -2328,7 +2328,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Använd ren JavaScript och returnera ett värde. Nätverk, filer, API:er och externa bibliotek är inte tillgängliga. Kontakt- och systemdata är tillgängliga via `input`-objektet.",
       "objectMapping": "Mappa valfri JSON-sökväg från returvärdet till valfritt anpassat fält, på samma sätt som Extern API-begäran. Du väljer sökvägar och fält.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -3188,7 +3189,10 @@
       "actionDataPlaceholder": "{\n  \"nombre\": \"{{userName}}\"\n}",
       "actionDataDescription": "JSON-objekt som skickas när flödet öppnas. Använd {{variables}}. Listradsposter med tomt id utelämnas.",
       "actionDataInvalidJson": "Startdata måste vara ett JSON-objekt eller tomt.",
-      "startScreen": "Startskärm"
+      "startScreen": "Startskärm",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "whatsappOptionList": {
       "addOption": "Lägg till ny",

@@ -1292,7 +1292,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Verwenden Sie reines JavaScript und geben Sie einen Wert zurück. Netzwerk, Dateien, APIs und externe Bibliotheken stehen nicht zur Verfügung. Kontakt- und Systemdaten sind über das `input`-Objekt verfügbar.",
       "objectMapping": "Ordne einen beliebigen JSON-Pfad des Rückgabewerts einem beliebigen benutzerdefinierten Feld zu — wie bei Externer API-Anfrage. Du wählst Pfade und Felder.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2326,7 +2327,10 @@
       "customField": "Benutzerdefiniertes Feld",
       "selectCustomFieldPlaceholder": "Benutzerdefiniertes Feld auswählen",
       "addMapping": "Zuordnung hinzufügen",
-      "addCustomField": "Neu hinzufügen"
+      "addCustomField": "Neu hinzufügen",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Karte hinzufügen",

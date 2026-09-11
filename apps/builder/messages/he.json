@@ -453,7 +453,10 @@
       "customField": "שדה מותאם אישית",
       "selectCustomFieldPlaceholder": "בחירת שדה מותאם אישית",
       "addMapping": "הוספת מיפוי",
-      "addCustomField": "הוספת חדש"
+      "addCustomField": "הוספת חדש",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "הוספת כרטיס",
@@ -3928,7 +3931,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "השתמשו ב-JavaScript טהור והחזירו ערך. רשת, קבצים, ממשקי API וספריות חיצוניות אינם זמינים. נתוני איש הקשר והמערכת זמינים באובייקט `input`.",
       "objectMapping": "מפו נתיב JSON כלשהו מהערך המוחזר לשדה מותאם אישית כלשהו, באותו אופן כמו בקשת API חיצונית. אתם בוחרים את הנתיבים ואת השדות.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",

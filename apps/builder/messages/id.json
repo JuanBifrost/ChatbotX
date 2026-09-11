@@ -1292,7 +1292,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Gunakan JavaScript murni dan kembalikan sebuah nilai. Jaringan, file, API, dan pustaka eksternal tidak tersedia. Data kontak dan sistem tersedia melalui objek `input`.",
       "objectMapping": "Petakan jalur JSON apa pun dari nilai yang dikembalikan ke field kustom mana pun, sama seperti Permintaan API Eksternal. Anda memilih jalur dan field-nya.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2326,7 +2327,10 @@
       "customField": "Kolom Kustom",
       "selectCustomFieldPlaceholder": "Pilih kolom kustom",
       "addMapping": "Tambah Pemetaan",
-      "addCustomField": "Tambah Baru"
+      "addCustomField": "Tambah Baru",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Tambah kartu",

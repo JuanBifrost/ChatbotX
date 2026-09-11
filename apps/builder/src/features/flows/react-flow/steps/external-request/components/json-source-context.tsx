@@ -20,6 +20,7 @@ type JsonSourceTab = "testResponse" | "pasteSample"
 type TestResult = {
   statusCode: number
   durationMs: number
+  inputSnapshot?: string
   responseBody: string
 }
 

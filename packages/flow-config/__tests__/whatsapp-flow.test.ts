@@ -17,6 +17,7 @@ describe("whatsappFlow actionData contract", () => {
   test("defaults include a null actionData payload", () => {
     const value = whatsappFlowStepDefaultFn()
     expect(value.flow.actionData).toBeNull()
+    expect(value.flow.responseDumpFieldId).toBeNull()
   })
 
   test("accepts a published step that has no actionData key yet", () => {

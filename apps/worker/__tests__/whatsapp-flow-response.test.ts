@@ -241,6 +241,7 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       contactInbox: makeContactInbox(),
       flowSourceId: "wa-flow-1",
       fieldMappings: [],
+      responseDumpFieldId: null,
       flowResponse: {},
     })
   })
@@ -267,6 +268,7 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       fieldMappings: [
         { paramKey: "name", paramLabel: "Name", customFieldId: null },
       ],
+      responseDumpFieldId: null,
       flowResponse: { name: "Alice" },
     })
   })
@@ -294,6 +296,7 @@ describe("applyWhatsappFlowResponseSideEffects", () => {
       fieldMappings: [
         { paramKey: "email", paramLabel: "Email", customFieldId: "cf-1" },
       ],
+      responseDumpFieldId: null,
       flowResponse: { email: "user@example.com" },
     })
   })

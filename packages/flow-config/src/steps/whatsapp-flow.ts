@@ -168,6 +168,7 @@ export const whatsappFlowDataSchema = z.object({
   startScreenId: z.string().nullable(),
   fieldMappings: z.array(whatsappFlowFieldMappingSchema),
   actionData: z.record(z.string(), z.unknown()).nullable().optional(),
+  responseDumpFieldId: zodBigintAsString().nullable().optional(),
 })
 export type WhatsappFlowData = z.infer<typeof whatsappFlowDataSchema>
 
@@ -214,6 +215,7 @@ export const whatsappFlowStepDefaultFn = (
     startScreenId: null,
     fieldMappings: [],
     actionData: null,
+    responseDumpFieldId: null,
   },
   ...props,
   id: createId(),

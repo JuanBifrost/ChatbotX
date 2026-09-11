@@ -1292,7 +1292,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Utilize JavaScript puro e devolva um valor. Rede, ficheiros, APIs e bibliotecas externas não estão disponíveis. Os dados do contacto e do sistema estão disponíveis no objeto `input`.",
       "objectMapping": "Mapeie qualquer caminho JSON do valor devolvido para qualquer campo personalizado, como no Pedido de API externa. Escolhe os caminhos e os campos.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2326,7 +2327,10 @@
       "customField": "Campo personalizado",
       "selectCustomFieldPlaceholder": "Selecione um campo personalizado",
       "addMapping": "Adicionar mapeamento",
-      "addCustomField": "Adicionar"
+      "addCustomField": "Adicionar",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Adicionar cartão",

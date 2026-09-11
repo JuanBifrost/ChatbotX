@@ -1105,7 +1105,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Gebruik pure JavaScript en retourneer een waarde. Netwerk, bestanden, API's en externe bibliotheken zijn niet beschikbaar. Contact- en systeemgegevens zijn beschikbaar via het `input`-object.",
       "objectMapping": "Wijs een willekeurig JSON-pad uit de returnwaarde toe aan een willekeurig aangepast veld, net als bij Externe API-aanvraag. Jij kiest de paden en de velden.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2326,7 +2327,10 @@
       "customField": "Aangepast veld",
       "selectCustomFieldPlaceholder": "Selecteer een aangepast veld",
       "addMapping": "Toewijzing toevoegen",
-      "addCustomField": "Nieuwe toevoegen"
+      "addCustomField": "Nieuwe toevoegen",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Kaart toevoegen",

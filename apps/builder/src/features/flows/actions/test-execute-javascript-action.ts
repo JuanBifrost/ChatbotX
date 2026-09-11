@@ -10,6 +10,7 @@ import {
   workspaceIdrequestParams,
 } from "@/features/common/schema"
 import { loadTestContactVariables } from "@/features/flows/lib/load-test-contact-variables"
+import { sanitizeJavascriptInputSnapshot } from "@/features/flows/lib/sanitize-javascript-input-snapshot"
 import { stringifySandboxValue } from "@/features/flows/lib/stringify-sandbox-value"
 import { workspaceActionClient } from "@/lib/safe-action"
 
@@ -60,6 +61,9 @@ export const testExecuteJavascriptAction = workspaceActionClient
       return {
         statusCode: 200,
         durationMs,
+        inputSnapshot: stringifySandboxValue(
+          sanitizeJavascriptInputSnapshot(input),
+        ),
         responseBody: stringifySandboxValue(result.value),
       }
     },

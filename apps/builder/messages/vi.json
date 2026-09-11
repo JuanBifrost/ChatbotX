@@ -1402,7 +1402,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Dùng JavaScript thuần túy và trả về một giá trị. Không thể dùng mạng, tệp, API hoặc thư viện bên ngoài. Dữ liệu liên hệ và hệ thống có sẵn trong đối tượng `input`.",
       "objectMapping": "Ánh xạ bất kỳ đường dẫn JSON nào từ giá trị trả về sang bất kỳ trường tùy chỉnh nào, giống Yêu cầu API bên ngoài. Bạn chọn đường dẫn và trường.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2463,7 +2464,10 @@
       "customField": "Trường tùy chỉnh",
       "selectCustomFieldPlaceholder": "Chọn trường tùy chỉnh",
       "addMapping": "Thêm ánh xạ",
-      "addCustomField": "Thêm mới"
+      "addCustomField": "Thêm mới",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Thêm thẻ",

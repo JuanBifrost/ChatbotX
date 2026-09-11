@@ -2040,7 +2040,8 @@
       "label": "JavaScript 代码",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "objectMapping": "将返回值中的任意 JSON 路径映射到任意自定义字段，方式与外部 API 请求相同。路径和字段由你选择。",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -3191,7 +3192,10 @@
       "actionDataPlaceholder": "{\n  \"nombre\": \"{{userName}}\"\n}",
       "actionDataDescription": "打开 Flow 时发送的 JSON 对象。可使用 {{variables}}。id 为空的下拉项会被省略。",
       "actionDataInvalidJson": "起始数据必须是 JSON 对象或留空。",
-      "startScreen": "开始画面"
+      "startScreen": "开始画面",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "whatsappOptionList": {
       "addOption": "添加新",

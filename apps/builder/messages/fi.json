@@ -1292,7 +1292,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Käytä puhdasta JavaScriptiä ja palauta arvo. Verkko, tiedostot, API:t ja ulkoiset kirjastot eivät ole käytettävissä. Yhteystiedot ja järjestelmätiedot ovat saatavilla `input`-objektissa.",
       "objectMapping": "Kartoita mikä tahansa JSON-polku paluuarvosta mihin tahansa mukautettuun kenttään, samoin kuin ulkoisessa API-pyynnössä. Sinä valitset polut ja kentät.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2326,7 +2327,10 @@
       "customField": "Mukautettu kenttä",
       "selectCustomFieldPlaceholder": "Valitse mukautettu kenttä",
       "addMapping": "Lisää yhdistäminen",
-      "addCustomField": "Lisää uusi"
+      "addCustomField": "Lisää uusi",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Lisää kortti",

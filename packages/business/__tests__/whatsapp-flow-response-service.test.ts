@@ -80,6 +80,32 @@ describe("whatsappFlowResponseService.applyResponse", () => {
     })
   })
 
+  test("writes the full flow response when responseDumpFieldId is set", async () => {
+    await whatsappFlowResponseService.applyResponse({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      contactInbox: { inboxId: "inbox-1" } as never,
+      flowSourceId: "meta-flow-1",
+      fieldMappings: [
+        { paramKey: "name", paramLabel: "Name", customFieldId: "cf-1" },
+      ],
+      responseDumpFieldId: "cf-dump",
+      flowResponse: { name: "Alice", hidden: true },
+    })
+
+    expect(setValues).toHaveBeenCalledWith({
+      workspaceId: "ws-1",
+      contactId: "contact-1",
+      fields: [
+        { customFieldId: "cf-1", value: "Alice" },
+        {
+          customFieldId: "cf-dump",
+          value: JSON.stringify({ name: "Alice", hidden: true }),
+        },
+      ],
+    })
+  })
+
   test("uses the provided integration id without looking it up", async () => {
     await whatsappFlowResponseService.applyResponse({
       workspaceId: "ws-1",

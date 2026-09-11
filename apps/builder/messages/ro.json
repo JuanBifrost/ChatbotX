@@ -172,7 +172,10 @@
       "customField": "Câmp personalizat",
       "selectCustomFieldPlaceholder": "Selectați câmpul personalizat",
       "addMapping": "Adaugă o asociere",
-      "addCustomField": "Adaugă"
+      "addCustomField": "Adaugă",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Adaugă cardul",
@@ -2076,7 +2079,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Utilizați JavaScript pur și returnați o valoare. Rețeaua, fișierele, API-urile și bibliotecile externe nu sunt disponibile. Datele contactului și ale sistemului sunt disponibile în obiectul `input`.",
       "objectMapping": "Mapează orice cale JSON din valoarea returnată pe orice câmp personalizat, la fel ca la Cererea API externă. Tu alegi căile și câmpurile.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",

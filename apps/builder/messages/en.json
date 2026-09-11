@@ -1438,7 +1438,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Use pure JavaScript and return a value. Network, files, APIs, and external libraries are unavailable. Contact and system data is available on the `input` object.",
       "objectMapping": "Map any JSON path from the returned value onto any custom field, the same way External API Request does. You choose the paths and the fields.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2650,7 +2651,10 @@
       "customField": "Custom Field",
       "selectCustomFieldPlaceholder": "Select custom field",
       "addMapping": "Add Mapping",
-      "addCustomField": "Add New"
+      "addCustomField": "Add New",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Add slide",

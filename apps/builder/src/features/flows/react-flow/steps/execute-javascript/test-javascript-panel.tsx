@@ -51,14 +51,26 @@ export const TestJavascriptPanel = () => {
       )}
 
       {testResult && (
-        <div className="flex flex-col gap-1 rounded-md border bg-muted/50 p-3 text-xs">
-          <div className="flex gap-2 font-medium">
-            <span>{t("fields.javascriptCode.returnValue")}</span>
-            <span>{testResult.durationMs}ms</span>
+        <div className="flex flex-col gap-3 text-xs">
+          {testResult.inputSnapshot ? (
+            <div className="flex flex-col gap-1 rounded-md border bg-muted/50 p-3">
+              <div className="font-medium">
+                {t("fields.javascriptCode.inputSnapshot")}
+              </div>
+              <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all">
+                {testResult.inputSnapshot}
+              </pre>
+            </div>
+          ) : null}
+          <div className="flex flex-col gap-1 rounded-md border bg-muted/50 p-3">
+            <div className="flex gap-2 font-medium">
+              <span>{t("fields.javascriptCode.returnValue")}</span>
+              <span>{testResult.durationMs}ms</span>
+            </div>
+            <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all">
+              {testResult.responseBody}
+            </pre>
           </div>
-          <pre className="max-h-40 overflow-auto whitespace-pre-wrap break-all">
-            {testResult.responseBody}
-          </pre>
         </div>
       )}
     </div>

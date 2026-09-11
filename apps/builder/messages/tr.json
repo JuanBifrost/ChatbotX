@@ -1429,7 +1429,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Saf JavaScript kullanın ve bir değer döndürün. Ağ, dosyalar, API'ler ve harici kitaplıklar kullanılamaz. Kişi ve sistem verileri `input` nesnesi üzerinden kullanılabilir.",
       "objectMapping": "Dönen değerdeki herhangi bir JSON yolunu herhangi bir özel alana eşleyin — Harici API İsteği ile aynı. Yolları ve alanları siz seçersiniz.",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2463,7 +2464,10 @@
       "customField": "Özel Alan",
       "selectCustomFieldPlaceholder": "Özel alan seçin",
       "addMapping": "Eşleme Ekle",
-      "addCustomField": "Yeni Ekle"
+      "addCustomField": "Yeni Ekle",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "Kart ekle",

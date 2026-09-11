@@ -1292,7 +1292,8 @@
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "純粋なJavaScriptを使用して値を返してください。ネットワーク、ファイル、API、外部ライブラリは利用できません。連絡先およびシステムデータは `input` オブジェクトから利用できます。",
       "objectMapping": "返された値の任意の JSON パスを任意のカスタムフィールドに割り当てます。外部 API リクエストと同じです。パスとフィールドは自分で選びます。",
-      "returnValue": "Return value"
+      "returnValue": "Return value",
+      "inputSnapshot": "Contact input"
     },
     "testContact": {
       "label": "Test contact",
@@ -2326,7 +2327,10 @@
       "customField": "カスタムフィールド",
       "selectCustomFieldPlaceholder": "カスタムフィールドを選択",
       "addMapping": "マッピングを追加",
-      "addCustomField": "新規追加"
+      "addCustomField": "新規追加",
+      "responseDumpEnabled": "Save full flow response",
+      "responseDumpDescription": "Stores the complete nfm_reply JSON in a long-text custom field (for example flow_last_response). Individual mappings above still apply.",
+      "responseDumpField": "Full response custom field"
     },
     "sendCarousel": {
       "addSlide": "スライドを追加",
