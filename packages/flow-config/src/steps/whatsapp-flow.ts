@@ -92,11 +92,14 @@ const applyNeedsFlags = (
     }
     next[flagKey] = isMissingTextValue(next[sourceKey])
   }
+  // Pickup: Meta treats a missing boolean as false, which keeps the dropdown.
+  // Infer from `direcciones` even when IRIS omitted the keys.
+  const hasDirecciones = "direcciones" in next
   const hasSavedAddress = hasSavedPickupAddress(next.direcciones)
-  if ("needs_direccion" in next) {
+  if ("needs_direccion" in next || hasDirecciones) {
     next.needs_direccion = !hasSavedAddress
   }
-  if ("default_origen_id" in next) {
+  if ("default_origen_id" in next || hasDirecciones) {
     next.default_origen_id = hasSavedAddress ? "" : GPS_CURRENT_ID
   }
   return next
@@ -106,8 +109,9 @@ const applyNeedsFlags = (
  * Drops dropdown rows whose `id` is blank or still a `{{variable}}` token.
  * Unresolved `{{variable}}` string leaves become `""` so Meta does not render
  * the token. `needs_nombre` / `needs_telefono` become booleans from whether
- * `nombre` / `customer_phone` are empty. `needs_direccion` is true when the
- * dropdown would only contain `gps_current`.
+ * `nombre` / `customer_phone` are empty. When `direcciones` is present,
+ * `needs_direccion` is true if the dropdown would only contain `gps_current`,
+ * even if IRIS omitted that key (Meta treats a missing boolean as false).
  */
 export const sanitizeWhatsappFlowActionData = (
   actionData: Record<string, unknown> | null | undefined,

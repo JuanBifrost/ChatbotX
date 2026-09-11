@@ -160,6 +160,21 @@ describe("sanitizeWhatsappFlowActionData", () => {
     })
   })
 
+  test("infers pickup flags from direcciones even when IRIS omitted the keys", () => {
+    const result = sanitizeWhatsappFlowActionData({
+      nombre: "Nuevo",
+      direcciones: [
+        { id: "{{address_id_0}}", title: "{{address_text_0}}" },
+        gpsCurrent,
+      ],
+    })
+    expect(result).toMatchObject({
+      needs_direccion: true,
+      default_origen_id: "gps_current",
+      direcciones: [gpsCurrent],
+    })
+  })
+
   test("keeps the address dropdown when Heimdall returned a saved pickup", () => {
     const result = sanitizeWhatsappFlowActionData({
       needs_direccion: true,
