@@ -1452,6 +1452,9 @@
     },
     "adSource": {
       "label": "Ad source"
+    },
+    "userCode": {
+      "label": "Codice utente"
     }
   },
   "actions": {

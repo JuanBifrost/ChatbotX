@@ -2923,6 +2923,9 @@
     },
     "adSource": {
       "label": "Ad source"
+    },
+    "userCode": {
+      "label": "用户代码"
     }
   },
   "flowAnalytics": {
