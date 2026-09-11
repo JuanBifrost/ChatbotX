@@ -46,6 +46,7 @@ export const waFlowMenus = (
         startScreenId: null,
         fieldMappings: [],
         actionData: null,
+        responseDumpFieldId: null,
       },
     },
   }))

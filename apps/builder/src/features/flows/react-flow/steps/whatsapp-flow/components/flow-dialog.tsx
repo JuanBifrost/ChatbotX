@@ -101,6 +101,9 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
   ) as string | null | undefined
   const [actionDataJson, setActionDataJson] = useState("")
   const [actionDataError, setActionDataError] = useState<string | null>(null)
+  const [responseDumpFieldError, setResponseDumpFieldError] = useState<
+    string | null
+  >(null)
   const [responseDumpEnabled, setResponseDumpEnabled] = useState(
     Boolean(currentResponseDumpFieldId),
   )
@@ -135,7 +138,6 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
         sourceId: currentSourceId ?? "",
         startScreenId: currentStartScreenId ?? null,
         fieldMappings: currentFieldMappings ?? [],
-        responseDumpFieldId: currentResponseDumpFieldId ?? null,
       },
     },
     mode: "onChange",
@@ -170,10 +172,14 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
     )
     setActionDataJson(stringifyWhatsappFlowActionData(currentActionData))
     setActionDataError(null)
-    setResponseDumpEnabled(
-      Boolean(parentForm.getValues(`${parentName}.flow.responseDumpFieldId`)),
-    )
-  }, [open, parentForm, parentName])
+    setResponseDumpFieldError(null)
+    const dumpFieldId =
+      parentForm.getValues(`${parentName}.flow.responseDumpFieldId`) ?? null
+    form.setValue("flow.responseDumpFieldId", dumpFieldId, {
+      shouldDirty: false,
+    })
+    setResponseDumpEnabled(Boolean(dumpFieldId))
+  }, [open, parentForm, parentName, form])
 
   const handleActionDataChange = useCallback(
     (event: ChangeEvent<HTMLTextAreaElement>) => {
@@ -317,6 +323,15 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
           customFieldId: existing?.customFieldId ?? null,
         }
       })
+      const dumpFieldId = form.getValues("flow.responseDumpFieldId")
+      if (responseDumpEnabled && !dumpFieldId) {
+        setResponseDumpFieldError(
+          t("flows.whatsappFlow.responseDumpFieldRequired"),
+        )
+        return
+      }
+      setResponseDumpFieldError(null)
+
       const setOptions = { shouldDirty: true, shouldValidate: true }
 
       parentForm.setValue(
@@ -347,7 +362,7 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
       )
       parentForm.setValue(
         `${parentName}.flow.responseDumpFieldId`,
-        responseDumpEnabled ? (values.flow.responseDumpFieldId ?? null) : null,
+        responseDumpEnabled ? dumpFieldId : null,
         setOptions,
       )
       onOpenChange(false)
@@ -357,6 +372,7 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
       parentForm,
       parentName,
       onOpenChange,
+      form,
       responseDumpEnabled,
       screens,
       t,
@@ -366,6 +382,7 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
   const handleResponseDumpEnabledChange = useCallback(
     (enabled: boolean) => {
       setResponseDumpEnabled(enabled)
+      setResponseDumpFieldError(null)
       if (!enabled) {
         form.setValue("flow.responseDumpFieldId", null, { shouldDirty: true })
       }
@@ -536,6 +553,11 @@ function FlowDialogInner({ open, onOpenChange, parentName }: FlowDialogProps) {
                       "flows.whatsappFlow.selectCustomFieldPlaceholder",
                     )}
                   />
+                ) : null}
+                {responseDumpFieldError ? (
+                  <p className="text-destructive text-sm">
+                    {responseDumpFieldError}
+                  </p>
                 ) : null}
               </div>
             )}

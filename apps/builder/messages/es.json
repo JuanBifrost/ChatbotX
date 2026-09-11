@@ -2467,7 +2467,8 @@
       "addCustomField": "Añadir Nuevo",
       "responseDumpEnabled": "Guardar respuesta completa del Flow",
       "responseDumpDescription": "Guarda el JSON completo del nfm_reply en un campo personalizado de texto largo (por ejemplo flow_last_response). Los mapeos individuales de arriba siguen aplicando.",
-      "responseDumpField": "Campo para respuesta completa"
+      "responseDumpField": "Campo para respuesta completa",
+      "responseDumpFieldRequired": "Selecciona un campo personalizado para la respuesta completa del Flow"
     },
     "sendCarousel": {
       "addSlide": "Añadir tarjeta",
