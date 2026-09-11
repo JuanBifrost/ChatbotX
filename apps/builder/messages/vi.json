@@ -1401,7 +1401,16 @@
       "label": "Mã JavaScript",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Dùng JavaScript thuần túy và trả về một giá trị. Không thể dùng mạng, tệp, API hoặc thư viện bên ngoài. Dữ liệu liên hệ và hệ thống có sẵn trong đối tượng `input`.",
-      "objectMapping": "Ánh xạ bất kỳ đường dẫn JSON nào từ giá trị trả về sang bất kỳ trường tùy chỉnh nào, giống Yêu cầu API bên ngoài. Bạn chọn đường dẫn và trường."
+      "objectMapping": "Ánh xạ bất kỳ đường dẫn JSON nào từ giá trị trả về sang bất kỳ trường tùy chỉnh nào, giống Yêu cầu API bên ngoài. Bạn chọn đường dẫn và trường.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "Phương thức"

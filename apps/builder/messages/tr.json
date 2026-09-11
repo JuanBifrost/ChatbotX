@@ -1428,7 +1428,16 @@
       "label": "JavaScript kodu",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Saf JavaScript kullanın ve bir değer döndürün. Ağ, dosyalar, API'ler ve harici kitaplıklar kullanılamaz. Kişi ve sistem verileri `input` nesnesi üzerinden kullanılabilir.",
-      "objectMapping": "Dönen değerdeki herhangi bir JSON yolunu herhangi bir özel alana eşleyin — Harici API İsteği ile aynı. Yolları ve alanları siz seçersiniz."
+      "objectMapping": "Dönen değerdeki herhangi bir JSON yolunu herhangi bir özel alana eşleyin — Harici API İsteği ile aynı. Yolları ve alanları siz seçersiniz.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "Yöntem"

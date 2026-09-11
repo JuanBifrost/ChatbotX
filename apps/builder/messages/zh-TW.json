@@ -612,7 +612,16 @@
       "label": "JavaScript 程式碼",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "使用純 JavaScript 並回傳一個值。無法使用網路、檔案、API 或外部函式庫。聯絡人與系統資料可透過 `input` 物件取得。",
-      "objectMapping": "將回傳值中的任意 JSON 路徑對應到任意自訂欄位，方式與外部 API 請求相同。路徑與欄位由你選擇。"
+      "objectMapping": "將回傳值中的任意 JSON 路徑對應到任意自訂欄位，方式與外部 API 請求相同。路徑與欄位由你選擇。",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "方法"

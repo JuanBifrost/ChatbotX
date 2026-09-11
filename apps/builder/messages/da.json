@@ -1291,7 +1291,16 @@
       "label": "JavaScript-kode",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Brug ren JavaScript og returner en værdi. Netværk, filer, API'er og eksterne biblioteker er ikke tilgængelige. Kontakt- og systemdata er tilgængelige via `input`-objektet.",
-      "objectMapping": "Tilknyt en vilkårlig JSON-sti fra den returnerede værdi til et vilkårligt tilpasset felt, på samme måde som Ekstern API-anmodning. Du vælger stierne og felterne."
+      "objectMapping": "Tilknyt en vilkårlig JSON-sti fra den returnerede værdi til et vilkårligt tilpasset felt, på samme måde som Ekstern API-anmodning. Du vælger stierne og felterne.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "Method"

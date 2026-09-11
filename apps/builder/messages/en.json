@@ -1437,7 +1437,16 @@
       "label": "JavaScript code",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Use pure JavaScript and return a value. Network, files, APIs, and external libraries are unavailable. Contact and system data is available on the `input` object.",
-      "objectMapping": "Map any JSON path from the returned value onto any custom field, the same way External API Request does. You choose the paths and the fields."
+      "objectMapping": "Map any JSON path from the returned value onto any custom field, the same way External API Request does. You choose the paths and the fields.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "Method"

@@ -29,14 +29,12 @@ import {
   SourceTimezoneStrategy,
 } from "@chatbotx.io/utils/datetime"
 import {
-  coerceCustomFieldValueForJavascript,
+  buildJavascriptSandboxInput,
   contactVariableService,
   extractVariables,
   getSystemFieldValue,
   interpolate,
-  interpolateIntoJavascript,
   resolveContactVariablesDeep,
-  resolveJavascriptInput,
 } from "@chatbotx.io/variables"
 import { faker } from "@faker-js/faker"
 import { formatInTimeZone } from "date-fns-tz"
@@ -531,46 +529,9 @@ export async function handleExecuteJavascript({
       contactInbox,
       conversation,
     })
-    // Coerced the same way resolveJavascriptInput coerces `{{name}}`
-    // lookups below, so a custom field is typed consistently in `input`
-    // regardless of whether the code reaches it via `input["name"]` or via
-    // a `{{name}}` placeholder rewritten to that same property access.
-    const input: Record<string, unknown> = Object.fromEntries(
-      [...variables.customFieldsMap.entries()].map(([name, field]) => [
-        name,
-        coerceCustomFieldValueForJavascript(field.value, field.type),
-      ]),
-    )
-
-    const systemFieldEntries = await Promise.all(
-      systemFieldTypes.options.map(
-        async (systemField) =>
-          [
-            systemField,
-            await getSystemFieldValue(variables, systemField),
-          ] as const,
-      ),
-    )
-    for (const [systemField, value] of systemFieldEntries) {
-      input[systemField] = value
-    }
-
-    // Authors can reference contact/system/custom/coupon fields as
-    // `{{name}}` in the code, same as the Tiptap picker inserts elsewhere.
-    // Every referenced name is resolved to a plain value and merged into
-    // `input` (coupons are the only name here not already in `input` above),
-    // then `step.code`'s placeholders are rewritten to `input["name"]`
-    // property-access expressions — never a spliced value — so a
-    // contact-controlled value can never be interpreted as JavaScript. See
-    // resolveJavascriptInput / interpolateIntoJavascript in
-    // @chatbotx.io/variables.
-    const jsInputEntries = await resolveJavascriptInput(step.code, variables)
-    for (const [name, value] of jsInputEntries) {
-      input[name] = value
-    }
-    const code = interpolateIntoJavascript(
+    const { code, input } = await buildJavascriptSandboxInput(
       step.code,
-      new Set(jsInputEntries.keys()),
+      variables,
     )
 
     await javascriptExecutionService.executeAndMap({

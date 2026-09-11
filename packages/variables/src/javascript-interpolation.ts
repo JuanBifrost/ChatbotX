@@ -481,3 +481,44 @@ export const resolveJavascriptInput = async (
 
   return resolved
 }
+
+/**
+ * Builds the sandbox payload the Execute JavaScript step (and its builder
+ * Test Now) send to the executor: every custom/system field on `input`,
+ * plus any `{{name}}` the code references, with those placeholders rewritten
+ * to `input["name"]` so contact-controlled values never become JavaScript.
+ */
+export const buildJavascriptSandboxInput = async (
+  code: string,
+  variables: ReplaceVariableProps,
+): Promise<{ code: string; input: Record<string, unknown> }> => {
+  const input: Record<string, unknown> = Object.fromEntries(
+    [...variables.customFieldsMap.entries()].map(([name, field]) => [
+      name,
+      coerceCustomFieldValueForJavascript(field.value, field.type),
+    ]),
+  )
+
+  const systemFieldEntries = await Promise.all(
+    systemFieldTypes.options.map(
+      async (systemField) =>
+        [
+          systemField,
+          await getSystemFieldValue(variables, systemField),
+        ] as const,
+    ),
+  )
+  for (const [systemField, value] of systemFieldEntries) {
+    input[systemField] = value
+  }
+
+  const jsInputEntries = await resolveJavascriptInput(code, variables)
+  for (const [name, value] of jsInputEntries) {
+    input[name] = value
+  }
+
+  return {
+    code: interpolateIntoJavascript(code, new Set(jsInputEntries.keys())),
+    input,
+  }
+}

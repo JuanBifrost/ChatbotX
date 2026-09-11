@@ -1428,7 +1428,16 @@
       "label": "رمز JavaScript",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "استخدم JavaScript خالصًا وأعد قيمة. الشبكة والملفات وواجهات البرمجة والمكتبات الخارجية غير متوفرة. بيانات جهة الاتصال والنظام متاحة عبر الكائن `input`.",
-      "objectMapping": "عيّن أي مسار JSON من القيمة المُرجعة إلى أي حقل مخصص، بنفس طريقة طلب واجهة برمجة التطبيقات الخارجية. أنت تختار المسارات والحقول."
+      "objectMapping": "عيّن أي مسار JSON من القيمة المُرجعة إلى أي حقل مخصص، بنفس طريقة طلب واجهة برمجة التطبيقات الخارجية. أنت تختار المسارات والحقول.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "الطريقة"

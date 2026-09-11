@@ -36,6 +36,7 @@ import {
   useJsonSourceContext,
 } from "../external-request/components/json-source-context"
 import { JsonSourcePanel } from "../external-request/components/json-source-panel"
+import { TestJavascriptPanel } from "./test-javascript-panel"
 
 const ExecuteJavascriptStepEditor = ({
   parentName,
@@ -173,6 +174,8 @@ const ExecuteJavascriptDialog = ({ parentName }: { parentName: string }) => {
 
             <Separator />
 
+            <TestJavascriptPanel />
+
             <JsonSourcePanel
               activeTargetLabel={
                 activeTargetIndex === null
@@ -180,7 +183,6 @@ const ExecuteJavascriptDialog = ({ parentName }: { parentName: string }) => {
                   : String(activeTargetIndex + 1)
               }
               onSelectPath={handleSelectPath}
-              showTestResponseTab={false}
             />
 
             <div>

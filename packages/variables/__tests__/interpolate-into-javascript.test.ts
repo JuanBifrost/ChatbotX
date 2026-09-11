@@ -35,9 +35,29 @@ vi.mock("@chatbotx.io/business/utils", () => ({
     new URL(path, baseUrl).toString(),
 }))
 
-const { interpolateIntoJavascript, resolveJavascriptInput } = await import(
-  "../src/javascript-interpolation"
-)
+vi.mock("../src/utils", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../src/utils")>()
+  return {
+    ...actual,
+    getSystemFieldValue: vi.fn(
+      async (
+        context: { contact: { firstName?: string | null } },
+        key: string,
+      ) => {
+        if (key === "first_name") {
+          return context.contact.firstName ?? null
+        }
+        return null
+      },
+    ),
+  }
+})
+
+const {
+  interpolateIntoJavascript,
+  resolveJavascriptInput,
+  buildJavascriptSandboxInput,
+} = await import("../src/javascript-interpolation")
 
 beforeEach(() => {
   vi.clearAllMocks()
@@ -562,6 +582,31 @@ describe("interpolateIntoJavascript + resolveJavascriptInput", () => {
         context,
       )
       expect(maxConcurrent).toBeGreaterThan(1)
+    })
+  })
+
+  describe("buildJavascriptSandboxInput", () => {
+    test("coerces every custom field onto input, not only ones referenced via {{...}}", async () => {
+      const context = createContext([
+        { key: "age", type: "number", value: "30" },
+        { key: "is_vip", type: "boolean", value: "true" },
+      ])
+      const { input } = await buildJavascriptSandboxInput(
+        "return input.age + 1",
+        context,
+      )
+      expect(input.age).toBe(30)
+      expect(input.is_vip).toBe(true)
+    })
+
+    test("merges resolved {{...}} names into input and rewrites the code", async () => {
+      const context = createContext([{ key: "age", type: "number", value: "30" }])
+      const { code, input } = await buildJavascriptSandboxInput(
+        "return {{age}} + 1;",
+        context,
+      )
+      expect(input.age).toBe(30)
+      expect(code).toBe('return input["age"] + 1;')
     })
   })
 })

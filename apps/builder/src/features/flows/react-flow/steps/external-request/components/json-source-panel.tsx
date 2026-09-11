@@ -19,8 +19,8 @@ type JsonSourcePanelProps = {
   onSelectPath: (path: string) => void
   activeTargetLabel: string | null
   /**
-   * External API Request can browse a live Test Now payload. Execute
-   * JavaScript has no HTTP round-trip, so it only offers Paste sample.
+   * External API Request and Execute JavaScript can browse a live Test Now
+   * payload. Pass false to offer Paste sample only.
    */
   showTestResponseTab?: boolean
 }

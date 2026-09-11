@@ -1291,7 +1291,16 @@
       "label": "JavaScript-Code",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Verwenden Sie reines JavaScript und geben Sie einen Wert zurück. Netzwerk, Dateien, APIs und externe Bibliotheken stehen nicht zur Verfügung. Kontakt- und Systemdaten sind über das `input`-Objekt verfügbar.",
-      "objectMapping": "Ordne einen beliebigen JSON-Pfad des Rückgabewerts einem beliebigen benutzerdefinierten Feld zu — wie bei Externer API-Anfrage. Du wählst Pfade und Felder."
+      "objectMapping": "Ordne einen beliebigen JSON-Pfad des Rückgabewerts einem beliebigen benutzerdefinierten Feld zu — wie bei Externer API-Anfrage. Du wählst Pfade und Felder.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "Methode"

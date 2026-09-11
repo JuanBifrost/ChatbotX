@@ -3927,7 +3927,16 @@
       "label": "קוד JavaScript",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "השתמשו ב-JavaScript טהור והחזירו ערך. רשת, קבצים, ממשקי API וספריות חיצוניות אינם זמינים. נתוני איש הקשר והמערכת זמינים באובייקט `input`.",
-      "objectMapping": "מפו נתיב JSON כלשהו מהערך המוחזר לשדה מותאם אישית כלשהו, באותו אופן כמו בקשת API חיצונית. אתם בוחרים את הנתיבים ואת השדות."
+      "objectMapping": "מפו נתיב JSON כלשהו מהערך המוחזר לשדה מותאם אישית כלשהו, באותו אופן כמו בקשת API חיצונית. אתם בוחרים את הנתיבים ואת השדות.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "שיטה"

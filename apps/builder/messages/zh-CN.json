@@ -2039,7 +2039,16 @@
       "description": "使用纯 JavaScript 并返回一个值。网络、文件、API 和外部库均不可用。可通过 `input` 对象访问联系人和系统数据。",
       "label": "JavaScript 代码",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
-      "objectMapping": "将返回值中的任意 JSON 路径映射到任意自定义字段，方式与外部 API 请求相同。路径和字段由你选择。"
+      "objectMapping": "将返回值中的任意 JSON 路径映射到任意自定义字段，方式与外部 API 请求相同。路径和字段由你选择。",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "jsonPath": {
       "placeholder": "输入 JSON 路径",

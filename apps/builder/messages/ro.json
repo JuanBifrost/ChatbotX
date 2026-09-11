@@ -2075,7 +2075,16 @@
       "label": "Cod JavaScript",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Utilizați JavaScript pur și returnați o valoare. Rețeaua, fișierele, API-urile și bibliotecile externe nu sunt disponibile. Datele contactului și ale sistemului sunt disponibile în obiectul `input`.",
-      "objectMapping": "Mapează orice cale JSON din valoarea returnată pe orice câmp personalizat, la fel ca la Cererea API externă. Tu alegi căile și câmpurile."
+      "objectMapping": "Mapează orice cale JSON din valoarea returnată pe orice câmp personalizat, la fel ca la Cererea API externă. Tu alegi căile și câmpurile.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "Metodă"

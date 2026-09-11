@@ -111,6 +111,10 @@ vi.mock("../external-request/components/json-source-panel", () => ({
   JsonSourcePanel: () => null,
 }))
 
+vi.mock("../execute-javascript/test-javascript-panel", () => ({
+  TestJavascriptPanel: () => null,
+}))
+
 vi.mock("@chatbotx.io/ui/components/ui/label", () => ({
   Label: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
 }))

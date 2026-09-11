@@ -1104,7 +1104,16 @@
       "label": "JavaScript-code",
       "placeholder": "return (input.first_name || 'there').toUpperCase()",
       "description": "Gebruik pure JavaScript en retourneer een waarde. Netwerk, bestanden, API's en externe bibliotheken zijn niet beschikbaar. Contact- en systeemgegevens zijn beschikbaar via het `input`-object.",
-      "objectMapping": "Wijs een willekeurig JSON-pad uit de returnwaarde toe aan een willekeurig aangepast veld, net als bij Externe API-aanvraag. Jij kiest de paden en de velden."
+      "objectMapping": "Wijs een willekeurig JSON-pad uit de returnwaarde toe aan een willekeurig aangepast veld, net als bij Externe API-aanvraag. Jij kiest de paden en de velden.",
+      "returnValue": "Return value"
+    },
+    "testContact": {
+      "label": "Test contact",
+      "placeholder": "Search by name",
+      "description": "Select a contact to resolve {{variables}} with their live custom fields. Update the contact under Contacts to try different values.",
+      "required": "Select a contact to run this test",
+      "clear": "Clear contact",
+      "empty": "No contacts found"
     },
     "httpMethod": {
       "label": "Methode"
