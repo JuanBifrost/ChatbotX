@@ -18,7 +18,9 @@ start_server() {
   # Backward-compatible env gating (no command passed): migrate/seed, then serve.
   if [ "${RUN_DB_MIGRATE:-}" = "true" ]; then run_migrate; fi
   if [ "${RUN_DB_SEED:-}" = "true" ]; then run_seed; fi
-  NODE_OPTIONS="--no-node-snapshot --enable-source-maps" HOSTNAME="${HOSTNAME:-0.0.0.0}" PORT="${PORT:-3000}" \
+  # Docker injects HOSTNAME=<container-id>; Next.js binds to that value and breaks
+  # host port mapping unless we force 0.0.0.0.
+  NODE_OPTIONS="--no-node-snapshot --enable-source-maps" HOSTNAME="0.0.0.0" PORT="${PORT:-3000}" \
     exec node apps/builder/server.js
 }
 
