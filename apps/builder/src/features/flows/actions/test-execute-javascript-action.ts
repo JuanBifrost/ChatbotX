@@ -1,6 +1,8 @@
 "use server"
 
+import { ChatbotXException } from "@chatbotx.io/business/errors"
 import { javascriptExecutionService } from "@chatbotx.io/business/javascript-execution"
+import { javascriptExecutionEnv } from "@chatbotx.io/business/javascript-execution"
 import { buildJavascriptSandboxInput } from "@chatbotx.io/variables"
 import { z } from "zod"
 import {
@@ -27,6 +29,18 @@ export const testExecuteJavascriptAction = workspaceActionClient
       bindArgsParsedInputs: WorkspaceIdRequestParams
       parsedInput: z.infer<typeof testExecuteJavascriptInputSchema>
     }) => {
+      const executorEnv = javascriptExecutionEnv()
+      if (
+        !executorEnv.JAVASCRIPT_EXECUTOR_URL ||
+        !executorEnv.JAVASCRIPT_EXECUTOR_TOKEN
+      ) {
+        throw new ChatbotXException(
+          "JavaScript executor is not configured on the builder. Set JAVASCRIPT_EXECUTOR_URL and JAVASCRIPT_EXECUTOR_TOKEN on the builder service and attach it to the javascript-executor network.",
+          "javascriptExecutionFailed",
+          500,
+        )
+      }
+
       const variables = await loadTestContactVariables({
         workspaceId,
         contactId: parsedInput.contactId,

@@ -28,12 +28,17 @@ services:
       dockerfile: apps/builder/docker/Dockerfile
     ports:
       - "3123:3000"
+    networks:
+      - chatbotx-network
+      - javascript-executor-network
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_healthy
       filesystem:
+        condition: service_healthy
+      javascript-executor:
         condition: service_healthy
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
@@ -43,6 +48,7 @@ services:
     environment:
       - RUN_DB_MIGRATE=true
       - RUN_DB_SEED=true
+      - JAVASCRIPT_EXECUTOR_URL=http://javascript-executor:3210
 
   # BullMQ Worker
   worker:

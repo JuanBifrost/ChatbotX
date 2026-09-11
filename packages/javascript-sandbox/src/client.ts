@@ -112,10 +112,12 @@ export const createJavascriptExecutorClient = (options: {
       const timedOut =
         error instanceof Error &&
         (error.name === "AbortError" || error.name === "TimeoutError")
+      const detail =
+        error instanceof Error && error.message ? `: ${error.message}` : ""
       throw new JavascriptSandboxError(
         timedOut
           ? "JavaScript executor request timed out"
-          : "JavaScript executor request failed",
+          : `JavaScript executor request failed${detail}`,
         "javascriptExecutionFailed",
       )
     }
