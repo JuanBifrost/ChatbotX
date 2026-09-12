@@ -1,16 +1,20 @@
 import {
+  automatedResponseService,
   broadcastService,
   whatsappFlowResponseService,
 } from "@chatbotx.io/business"
 import type { FlowVersionModel } from "@chatbotx.io/database/types"
-import type { WaTemplateButtonParam } from "@chatbotx.io/flow-config"
 import {
   type BroadcastTemplateFlowToken,
   decodeTemplateFlowToken,
+  encodeButtonPayload,
   type FlowStepTemplateFlowToken,
   findSendWaTemplateStep,
+  type SendWaTemplateMessageStepSchema,
+  splitWaTemplateStepButtons,
   TemplateFlowOrigin,
   type TemplateFlowToken,
+  type WaTemplateButtonParam,
   type WaTemplateParams,
 } from "@chatbotx.io/flow-config"
 import type { IntegrationJobCaptureTemplateFlowResponse } from "@chatbotx.io/worker-config"
@@ -26,12 +30,9 @@ type ResolvedTemplateFlowButton = {
   param: WaTemplateButtonParam
 }
 
-type TemplateFlowButtonResolver<TToken extends TemplateFlowToken> = (
-  token: TToken,
-  context: {
-    workspaceId: string
-  },
-) => Promise<ResolvedTemplateFlowButton | null>
+type ResolvedFlowStepTemplateFlowButton = ResolvedTemplateFlowButton & {
+  step: SendWaTemplateMessageStepSchema
+}
 
 const resolveButtonParam = (
   params: WaTemplateParams | null | undefined,
@@ -47,12 +48,17 @@ const resolveButtonParam = (
   return params?.button?.[token.buttonIndex] ?? null
 }
 
-const resolveFromBroadcast: TemplateFlowButtonResolver<
-  BroadcastTemplateFlowToken
-> = async (token, context) => {
+const resolveFromBroadcast = async (
+  token: BroadcastTemplateFlowToken,
+  context: {
+    workspaceId: string
+    inboxId: string
+  },
+): Promise<ResolvedTemplateFlowButton | null> => {
   const broadcast = await broadcastService.findByIdForResponse({
     workspaceId: context.workspaceId,
     broadcastId: token.broadcastId,
+    inboxId: context.inboxId,
   })
   if (!broadcast) {
     logger.warn(
@@ -83,9 +89,13 @@ const resolveFromBroadcast: TemplateFlowButtonResolver<
   }
 }
 
-const resolveFromFlowStep: TemplateFlowButtonResolver<
-  FlowStepTemplateFlowToken
-> = async (token, context) => {
+const resolveFromFlowStep = async (
+  token: FlowStepTemplateFlowToken,
+  context: {
+    workspaceId: string
+    inboxId: string
+  },
+): Promise<ResolvedFlowStepTemplateFlowButton | null> => {
   let flowVersion: FlowVersionModel
   try {
     ;({ flowVersion } = await detectFlowVersion({
@@ -126,16 +136,38 @@ const resolveFromFlowStep: TemplateFlowButtonResolver<
   return {
     flowSourceId: param.flowSourceId,
     param,
+    step,
   }
 }
 
-const buttonParamResolvers = {
-  [TemplateFlowOrigin.Broadcast]: resolveFromBroadcast,
-  [TemplateFlowOrigin.FlowStep]: resolveFromFlowStep,
-} satisfies {
-  [Origin in TemplateFlowOrigin]: TemplateFlowButtonResolver<
-    Extract<TemplateFlowToken, { origin: Origin }>
-  >
+const enqueueTemplateFlowContinuation = async (props: {
+  token: FlowStepTemplateFlowToken
+  conversation: { id: string }
+  contactInbox: { id: string }
+  messageId: string
+  step: SendWaTemplateMessageStepSchema
+}) => {
+  const { flowCompleteButton } = splitWaTemplateStepButtons(props.step.buttons)
+  if (!flowCompleteButton) {
+    return
+  }
+
+  const postback = encodeButtonPayload({
+    flowId: props.token.flowId,
+    flowVersionId: props.token.flowVersionId,
+    buttonId: flowCompleteButton.id,
+  })
+
+  await automatedResponseService.enqueueFlowAction({
+    kind: "postback",
+    data: {
+      conversationId: props.conversation,
+      contactInboxId: props.contactInbox,
+      action: postback,
+      ref: null,
+      messageId: props.messageId,
+    },
+  })
 }
 
 export async function captureTemplateFlowResponse(
@@ -170,10 +202,32 @@ export async function captureTemplateFlowResponse(
     return
   }
 
-  const resolver = buttonParamResolvers[
-    token.origin
-  ] as TemplateFlowButtonResolver<typeof token>
-  const resolved = await resolver(token, { workspaceId: data.workspaceId })
+  if (token.origin === TemplateFlowOrigin.Broadcast) {
+    const resolved = await resolveFromBroadcast(token, {
+      workspaceId: data.workspaceId,
+      inboxId: contactInbox.inboxId,
+    })
+    if (!resolved) {
+      return
+    }
+
+    await whatsappFlowResponseService.applyResponse({
+      workspaceId: data.workspaceId,
+      contactId: conversation.contactId,
+      contactInbox,
+      integrationWhatsappId: resolved.integrationWhatsappId,
+      flowSourceId: resolved.flowSourceId,
+      fieldMappings: resolved.param.fieldMappings ?? [],
+      responseDumpFieldId: resolved.param.responseDumpFieldId ?? null,
+      flowResponse: data.flowResponse,
+    })
+    return
+  }
+
+  const resolved = await resolveFromFlowStep(token, {
+    workspaceId: data.workspaceId,
+    inboxId: contactInbox.inboxId,
+  })
   if (!resolved) {
     return
   }
@@ -182,9 +236,17 @@ export async function captureTemplateFlowResponse(
     workspaceId: data.workspaceId,
     contactId: conversation.contactId,
     contactInbox,
-    integrationWhatsappId: resolved.integrationWhatsappId,
     flowSourceId: resolved.flowSourceId,
     fieldMappings: resolved.param.fieldMappings ?? [],
+    responseDumpFieldId: resolved.param.responseDumpFieldId ?? null,
     flowResponse: data.flowResponse,
+  })
+
+  await enqueueTemplateFlowContinuation({
+    token,
+    conversation,
+    contactInbox,
+    messageId: data.messageId,
+    step: resolved.step,
   })
 }
