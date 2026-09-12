@@ -1,5 +1,5 @@
+import { automatedResponseService } from "@chatbotx.io/automated-response"
 import {
-  automatedResponseService,
   broadcastService,
   whatsappFlowResponseService,
 } from "@chatbotx.io/business"

@@ -13,10 +13,13 @@ const detectConversationAndContactInbox = vi.fn()
 const detectFlowVersion = vi.fn()
 const loggerWarn = vi.fn()
 
-vi.mock("@chatbotx.io/business", () => ({
+vi.mock("@chatbotx.io/automated-response", () => ({
   automatedResponseService: {
     enqueueFlowAction: (...args: unknown[]) => enqueueFlowAction(...args),
   },
+}))
+
+vi.mock("@chatbotx.io/business", () => ({
   broadcastService: {
     findByIdForResponse: (...args: unknown[]) =>
       findBroadcastByIdForResponse(...args),
