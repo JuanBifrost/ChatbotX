@@ -35,6 +35,7 @@ import { coexistWhatsappBuffer } from "./handlers/coexist/whatsapp-buffer"
 import { coexistWhatsappFlush } from "./handlers/coexist/whatsapp-flush"
 import { processCommentAutomation } from "./handlers/comment-automation"
 import { updateContactAvatar } from "./handlers/contact/update-avatar"
+import { runContactScan } from "./handlers/contact-scan/engine"
 import { agentMarkAsRead, contactMarkAsRead } from "./handlers/conversation"
 import {
   runFlowNode,
@@ -121,6 +122,7 @@ async function startIntegrationWorker() {
                   message,
                   postbackAction,
                   quickReplyAction,
+                  templateFlowToken,
                   conversation,
                   channelType,
                 } = await receiveMessage(job.data.data)
@@ -129,8 +131,13 @@ async function startIntegrationWorker() {
                   return
                 }
 
+                // Template FLOW completions arrive as `nfm_reply` with a
+                // `watf:` token — not a decoded postback. Treat them like
+                // flow actions so keyword automation does not restart the
+                // default intro flow before `captureTemplateFlowResponse`
+                // enqueues the Flow completed branch.
                 const isNotPostbackOrQuickReply = !(
-                  postbackAction || quickReplyAction
+                  postbackAction || quickReplyAction || templateFlowToken
                 )
 
                 // An image/file message has contentType "text" — only its
@@ -361,6 +368,10 @@ async function startIntegrationWorker() {
               }
               case IntegrationJobAction.updateContactAvatar: {
                 await updateContactAvatar(job.data.data)
+                return
+              }
+              case IntegrationJobAction.contactScan: {
+                await runContactScan(job.data.data)
                 return
               }
               case IntegrationJobAction.processCommentAutomation: {

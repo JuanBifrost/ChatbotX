@@ -149,6 +149,15 @@ const enqueueTemplateFlowContinuation = async (props: {
 }) => {
   const { flowCompleteButton } = splitWaTemplateStepButtons(props.step.buttons)
   if (!flowCompleteButton) {
+    logger.warn(
+      {
+        flowId: props.token.flowId,
+        flowVersionId: props.token.flowVersionId,
+        stepId: props.step.id,
+        messageId: props.messageId,
+      },
+      "[template-flow-response] Flow completed branch missing on sendWaTemplateMessage step — re-publish after selecting a FLOW template",
+    )
     return
   }
 

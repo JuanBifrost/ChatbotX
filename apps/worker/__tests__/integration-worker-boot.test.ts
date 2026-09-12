@@ -1,6 +1,8 @@
+import { automatedResponseService } from "@chatbotx.io/automated-response"
 import { getAuditActor } from "@chatbotx.io/business/audit"
 import type { AdsConversionJobData } from "@chatbotx.io/worker-config"
 import { describe, expect, test, vi } from "vitest"
+import { resolveIncomingTextRouting } from "../src/integration/routing"
 
 // This test boots the real `src/integration/worker.ts` module (it starts
 // itself on import) to assert the TRUE single-queue merge: the integration
@@ -414,6 +416,44 @@ describe("Phase 1 AI reply compatibility forwarding", () => {
     expect(firstCall?.[2]?.jobId).toMatch(LEGACY_COMMENT_JOB_ID_PATTERN)
     expect(secondCall?.[2]?.jobId).toBe(firstCall?.[2]?.jobId)
     expect(firstCall?.[2]?.jobId).not.toContain(":")
+  })
+
+  test("skips keyword automated response when a template FLOW completion token is present", async () => {
+    vi.mocked(automatedResponseService.enqueue).mockClear()
+    vi.mocked(resolveIncomingTextRouting).mockClear()
+    workerState.getStoryReply.mockReturnValue(null)
+    workerState.receiveMessage.mockResolvedValue({
+      message: {
+        id: "message-1",
+        contactInboxId: "contact-inbox-1",
+        senderType: "contact",
+        contentType: "text",
+        attachments: [],
+        contentAttributes: { type: "whatsapp_flow_response" },
+        text: "Pedido confirmado",
+      },
+      conversation: { id: "conversation-1", workspaceId: "workspace-1" },
+      channelType: "whatsapp",
+      postbackAction: null,
+      quickReplyAction: null,
+      templateFlowToken: "watf:s:flow-1:version-1:step-1:0",
+    })
+    const [integrationWorker] = workerState.capturedWorkers
+
+    await integrationWorker?.processor({
+      id: "template-flow-complete",
+      data: {
+        type: "incomingMessage",
+        data: {
+          integrationType: "whatsapp",
+          integrationIdentifier: "wa-1",
+          payload: {},
+        },
+      },
+    })
+
+    expect(automatedResponseService.enqueue).not.toHaveBeenCalled()
+    expect(resolveIncomingTextRouting).not.toHaveBeenCalled()
   })
 
   test("forwards legacy story jobs with the producer job id", async () => {
