@@ -36,6 +36,7 @@ import {
   WHATSAPP_NATIVE_LOCATION_REQUEST,
 } from "@chatbotx.io/sdk"
 import { createId } from "@chatbotx.io/utils"
+import { resolveContactVariablesDeep } from "@chatbotx.io/variables"
 import { ChatJobAction, chatQueue } from "@chatbotx.io/worker-config"
 import { add, isBefore } from "date-fns"
 import { logger } from "../../lib/logger"
@@ -448,12 +449,26 @@ function getUserDataWebviewCopy(input: {
     : USER_DATA_WEBVIEW_COPY.en
 }
 
+async function resolvePromptText(
+  props: ExecuteStepProps<GetUserDataStepSchema>,
+  text: string,
+): Promise<string> {
+  const { conversation, contactInbox, appointmentId } = props
+
+  return resolveContactVariablesDeep(conversation.contactId, text, {
+    contactInbox,
+    conversation,
+    ...(appointmentId ? { appointmentId } : {}),
+  })
+}
+
 async function sendMessage(
   props: ExecuteStepProps<GetUserDataStepSchema>,
   text: string,
   attempts = 1,
 ) {
   const { conversation, contactInbox, flowVersion, step } = props
+  const resolvedText = await resolvePromptText(props, text)
   const nodeId = resolveChallengeNodeId(props)
   const flowVersionId = resolveChallengeFlowVersionId(props)
 
@@ -494,7 +509,7 @@ async function sendMessage(
     webviewMode &&
     URL_QUICK_REPLY_CAPABLE_CHANNELS.has(contactInbox.channel)
   ) {
-    await sendDateTimePrompt(props, text, {
+    await sendDateTimePrompt(props, resolvedText, {
       nodeId,
       flowVersionId,
       challengeId,
@@ -507,7 +522,7 @@ async function sendMessage(
     step.replyFormat === ReplyFormat.location &&
     NATIVE_LOCATION_REQUEST_CHANNELS.has(contactInbox.channel)
   ) {
-    await sendWhatsappLocationRequestPrompt(props, text)
+    await sendWhatsappLocationRequestPrompt(props, resolvedText)
     return
   }
 
@@ -515,7 +530,7 @@ async function sendMessage(
     id: step.id,
     nodeId,
     stepType: stepTypes.enum.sendText,
-    text,
+    text: resolvedText,
     buttons: [],
   }
 

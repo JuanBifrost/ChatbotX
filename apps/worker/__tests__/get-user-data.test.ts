@@ -113,6 +113,17 @@ vi.mock("../src/integration/utils/message", () => ({
   waitForChatJobCompletion,
 }))
 
+const resolveContactVariablesDeep = vi.fn(
+  async (_contactId: string, value: string) => value,
+)
+vi.mock("@chatbotx.io/variables", () => ({
+  resolveContactVariablesDeep: (
+    contactId: string,
+    value: unknown,
+    source: unknown,
+  ) => resolveContactVariablesDeep(contactId, value as string, source),
+}))
+
 vi.mock("@chatbotx.io/utils", async (importOriginal) => {
   const actual = await importOriginal<typeof import("@chatbotx.io/utils")>()
   return {
@@ -1368,6 +1379,37 @@ describe("getUserData — non-date replyFormats keep the text prompt path (regre
 describe("getUserData — WhatsApp native location request (RF08)", () => {
   beforeEach(() => {
     chatQueueAdd.mockClear()
+    resolveContactVariablesDeep.mockClear()
+    resolveContactVariablesDeep.mockImplementation(
+      async (_contactId: string, value: string) => value,
+    )
+  })
+
+  test("resolves custom-field placeholders before sending the location prompt", async () => {
+    resolveContactVariablesDeep.mockImplementationOnce(
+      async (_contactId: string, value: string) =>
+        value.replace("{{address_text}}", "Casa principal"),
+    )
+    const props = makeProps(ReplyFormat.location, {
+      message: "Envianos la ubicacion de la direccion: {{address_text}}",
+    })
+    props.ctx = { variables: { conversation: {} } }
+    props.contactInbox = { ...props.contactInbox, channel: "whatsapp" }
+
+    await getUserData(props)
+
+    expect(resolveContactVariablesDeep).toHaveBeenCalledWith(
+      props.conversation.contactId,
+      "Envianos la ubicacion de la direccion: {{address_text}}",
+      expect.objectContaining({
+        contactInbox: props.contactInbox,
+        conversation: props.conversation,
+      }),
+    )
+    const job = findChatJobCall("sendChatMessage")
+    expect(job.data.text).toBe(
+      "Envianos la ubicacion de la direccion: Casa principal",
+    )
   })
 
   test("whatsapp location format sends the reserved native location-request marker", async () => {
