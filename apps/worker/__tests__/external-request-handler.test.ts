@@ -91,6 +91,29 @@ afterEach(() => {
 })
 
 describe("externalRequest step handler", () => {
+  test("passes responseDumpFieldId to executeAndMap", async () => {
+    mocks.executeAndMap.mockResolvedValue({
+      statusCode: 200,
+      durationMs: 10,
+      responseBody: "{}",
+      responseHeaders: {},
+    })
+
+    const props = createProps()
+    props.step = {
+      ...props.step,
+      responseDumpFieldId: "cf-dump",
+    }
+
+    await externalRequest(props)
+
+    expect(mocks.executeAndMap).toHaveBeenCalledWith(
+      expect.objectContaining({
+        responseDumpFieldId: "cf-dump",
+      }),
+    )
+  })
+
   test("returns success and calls executeAndMap with resolved step", async () => {
     mocks.executeAndMap.mockResolvedValue({
       statusCode: 200,

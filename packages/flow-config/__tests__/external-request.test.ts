@@ -14,6 +14,7 @@ describe("External request flow contract", () => {
       url: "",
       headers: [],
       body: undefined,
+      responseDumpFieldId: null,
     })
     expect(value.states.map((state) => state.stateType)).toEqual([
       "success",

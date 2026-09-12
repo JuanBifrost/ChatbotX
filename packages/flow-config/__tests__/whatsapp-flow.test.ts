@@ -176,6 +176,27 @@ describe("sanitizeWhatsappFlowActionData", () => {
     })
   })
 
+  test("parses JSON array strings for dynamic flow dropdown keys", () => {
+    const metodos = JSON.stringify([
+      { id: "4", title: "Transferencia", description: "Nequi" },
+    ])
+    const vehiculos = JSON.stringify([
+      { id: "6", title: "Viajes", description: "Taxi" },
+    ])
+
+    const result = sanitizeWhatsappFlowActionData({
+      metodos_pago: metodos,
+      tipos_vehiculo: vehiculos,
+    })
+
+    expect(result?.metodos_pago).toEqual([
+      { id: "4", title: "Transferencia", description: "Nequi" },
+    ])
+    expect(result?.tipos_vehiculo).toEqual([
+      { id: "6", title: "Viajes", description: "Taxi" },
+    ])
+  })
+
   test("keeps the address dropdown when Heimdall returned a saved pickup", () => {
     const result = sanitizeWhatsappFlowActionData({
       needs_direccion: true,

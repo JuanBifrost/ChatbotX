@@ -142,6 +142,7 @@ export const externalRequestStepSchema = z
         outputFieldId: z.string().trim().min(1),
       }),
     ),
+    responseDumpFieldId: zodBigintAsString().nullable().optional(),
     states: z.tuple([successStateSchema, errorStateSchema]),
   })
   .superRefine(validateRequestFields)
@@ -162,5 +163,6 @@ export const externalRequestStepDefaultFn = (): ExternalRequestStepSchema => ({
       outputFieldId: "",
     },
   ],
+  responseDumpFieldId: null,
   states: [successStateDefaultFn(), errorStateDefaultFn()],
 })

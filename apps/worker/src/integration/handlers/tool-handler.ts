@@ -497,6 +497,7 @@ export async function externalRequest({
         body: resolvedBody,
       },
       mapping: resolvedStepWithoutBody.mapping,
+      responseDumpFieldId: resolvedStepWithoutBody.responseDumpFieldId ?? null,
     })
 
     if (result.statusCode >= 400) {

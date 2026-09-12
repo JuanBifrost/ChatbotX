@@ -2470,6 +2470,12 @@
       "responseDumpField": "Campo para respuesta completa",
       "responseDumpFieldRequired": "Selecciona un campo personalizado para la respuesta completa del Flow"
     },
+    "externalRequest": {
+      "responseDumpEnabled": "Guardar respuesta completa de la API",
+      "responseDumpDescription": "Guarda el cuerpo completo de la respuesta HTTP en un campo personalizado de texto largo (por ejemplo heimdall_capabilities_raw). Los mapeos JSON de arriba siguen aplicando.",
+      "responseDumpField": "Campo para respuesta completa",
+      "responseDumpFieldRequired": "Selecciona un campo personalizado para la respuesta completa de la API"
+    },
     "sendCarousel": {
       "addSlide": "Añadir tarjeta",
       "removeSlide": "Eliminar tarjeta",

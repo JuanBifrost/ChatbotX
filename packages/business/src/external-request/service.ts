@@ -197,22 +197,40 @@ class ExternalRequestService extends BaseService {
     contactId: string
     input: ExternalRequestInput
     mapping: ExternalRequestMapping[]
+    responseDumpFieldId?: string | null
   }): Promise<ExternalRequestResult> {
-    const { workspaceId, contactId, input, mapping } = props
+    const { workspaceId, contactId, input, mapping, responseDumpFieldId } =
+      props
     const result = await this.execute(input, { workspaceId, contactId })
 
     if (result.statusCode >= 400) {
       return result
     }
 
+    const fields: { customFieldId: string; value: string }[] = []
+
+    if (responseDumpFieldId && result.responseBody.length > 0) {
+      fields.push({
+        customFieldId: responseDumpFieldId,
+        value: result.responseBody,
+      })
+    }
+
     let responseJson: unknown
     try {
       responseJson = JSON.parse(result.responseBody)
     } catch {
+      if (fields.length > 0) {
+        await contactCustomFieldService.setValues({
+          workspaceId,
+          contactId,
+          fields,
+        })
+      }
       return result
     }
 
-    const fields = mapping.flatMap(({ jsonPath, outputFieldId }) => {
+    const mappedFields = mapping.flatMap(({ jsonPath, outputFieldId }) => {
       const value = getProperty(
         responseJson as Record<string, unknown>,
         jsonPath,
@@ -224,6 +242,8 @@ class ExternalRequestService extends BaseService {
         typeof value === "string" ? value : JSON.stringify(value)
       return [{ customFieldId: outputFieldId, value: encodedValue }]
     })
+
+    fields.push(...mappedFields)
 
     if (fields.length > 0) {
       await contactCustomFieldService.setValues({

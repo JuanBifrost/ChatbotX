@@ -261,6 +261,41 @@ describe("externalRequestService.executeAndMap", () => {
     })
   })
 
+  test("writes the full response body when responseDumpFieldId is set", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        async () =>
+          new Response(JSON.stringify({ data: [{ id: "4", name: "Cash" }] }), {
+            status: 200,
+          }),
+      ),
+    )
+
+    await externalRequestService.executeAndMap({
+      workspaceId: "workspace-1",
+      contactId: "contact-1",
+      input: {
+        method: "GET",
+        url: "https://api.example.com/data",
+        headers: [],
+      },
+      mapping: [],
+      responseDumpFieldId: "cf-dump",
+    })
+
+    expect(mocks.setValues).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      contactId: "contact-1",
+      fields: [
+        {
+          customFieldId: "cf-dump",
+          value: JSON.stringify({ data: [{ id: "4", name: "Cash" }] }),
+        },
+      ],
+    })
+  })
+
   test("returns the raw result untouched when the response is not valid JSON", async () => {
     vi.stubGlobal(
       "fetch",
@@ -280,5 +315,30 @@ describe("externalRequestService.executeAndMap", () => {
 
     expect(result.responseBody).toBe("not json")
     expect(mocks.setValues).not.toHaveBeenCalled()
+  })
+
+  test("still writes the dump when the response is not valid JSON", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => new Response("not json", { status: 200 })),
+    )
+
+    await externalRequestService.executeAndMap({
+      workspaceId: "workspace-1",
+      contactId: "contact-1",
+      input: {
+        method: "GET",
+        url: "https://api.example.com/data",
+        headers: [],
+      },
+      mapping: [{ jsonPath: "id", outputFieldId: "field-1" }],
+      responseDumpFieldId: "cf-dump",
+    })
+
+    expect(mocks.setValues).toHaveBeenCalledWith({
+      workspaceId: "workspace-1",
+      contactId: "contact-1",
+      fields: [{ customFieldId: "cf-dump", value: "not json" }],
+    })
   })
 })

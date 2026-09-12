@@ -459,6 +459,12 @@
       "responseDumpField": "Full response custom field",
       "responseDumpFieldRequired": "Select a custom field for the full flow response"
     },
+    "externalRequest": {
+      "responseDumpEnabled": "Save full API response",
+      "responseDumpDescription": "Stores the complete HTTP response body in a long-text custom field (for example heimdall_capabilities_raw). JSON path mappings above still apply.",
+      "responseDumpField": "Full response custom field",
+      "responseDumpFieldRequired": "Select a custom field for the full API response"
+    },
     "sendCarousel": {
       "addSlide": "הוספת כרטיס",
       "removeSlide": "הסרת כרטיס",

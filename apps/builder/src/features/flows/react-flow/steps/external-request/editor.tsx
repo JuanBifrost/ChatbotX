@@ -24,6 +24,7 @@ import {
 import { Form } from "@chatbotx.io/ui/components/ui/form"
 import { Label } from "@chatbotx.io/ui/components/ui/label"
 import { Separator } from "@chatbotx.io/ui/components/ui/separator"
+import { Switch } from "@chatbotx.io/ui/components/ui/switch"
 import { cn } from "@chatbotx.io/ui/lib/utils"
 import { zodResolver } from "@hookform/resolvers/zod"
 import { ArrowRight, CrosshairIcon, GlobeIcon, XIcon } from "lucide-react"
@@ -63,6 +64,15 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
   const [open, setOpen] = useState(false)
   const { getValues } = useFormContext()
   const commitStep = useParentStepCommit<ExternalRequestStepSchema>(parentName)
+  const currentResponseDumpFieldId = getValues(
+    `${parentName}.responseDumpFieldId`,
+  ) as string | null | undefined
+  const [responseDumpEnabled, setResponseDumpEnabled] = useState(
+    Boolean(currentResponseDumpFieldId),
+  )
+  const [responseDumpFieldError, setResponseDumpFieldError] = useState<
+    string | null
+  >(null)
 
   const form = useForm<
     z.input<typeof externalRequestStepSchema>,
@@ -104,6 +114,16 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
     }
   }, [open, setActiveTargetIndex, fields.length, activeTargetIndex])
 
+  useEffect(() => {
+    if (!open) {
+      return
+    }
+    const step = getValues(parentName) as ExternalRequestStepSchema
+    form.reset(step)
+    setResponseDumpEnabled(Boolean(step.responseDumpFieldId))
+    setResponseDumpFieldError(null)
+  }, [open, parentName, getValues, form])
+
   const handleAppendMapping = () => {
     append({ jsonPath: "", outputFieldId: "" })
     setActiveTargetIndex(fields.length)
@@ -127,6 +147,15 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
   }
 
   const onSubmit = (data: ExternalRequestStepSchema) => {
+    const dumpFieldId = data.responseDumpFieldId
+    if (responseDumpEnabled && !dumpFieldId) {
+      setResponseDumpFieldError(
+        t("flows.externalRequest.responseDumpFieldRequired"),
+      )
+      return
+    }
+    setResponseDumpFieldError(null)
+
     // Only the request fields are edited here; id/stepType and success/error
     // states stay as they are on the parent step.
     commitStep({
@@ -135,8 +164,17 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
       headers: data.headers,
       body: data.body,
       mapping: data.mapping,
+      responseDumpFieldId: responseDumpEnabled ? dumpFieldId : null,
     })
     setOpen(false)
+  }
+
+  const handleResponseDumpToggle = (checked: boolean) => {
+    setResponseDumpEnabled(checked)
+    setResponseDumpFieldError(null)
+    if (!checked) {
+      form.setValue("responseDumpFieldId", null, { shouldDirty: true })
+    }
   }
 
   const methodOptions = externalRequestMethods.options.map((value) => ({
@@ -306,6 +344,37 @@ const ExternalRequestDialog = ({ parentName }: { parentName: string }) => {
                   {t("actions.add")}
                 </Button>
               </div>
+            </div>
+
+            <Separator />
+
+            <div className="flex flex-col gap-2">
+              <div className="flex items-center gap-2">
+                <Switch
+                  aria-label={t("flows.externalRequest.responseDumpEnabled")}
+                  checked={responseDumpEnabled}
+                  onCheckedChange={handleResponseDumpToggle}
+                />
+                <Label className="font-medium text-sm">
+                  {t("flows.externalRequest.responseDumpEnabled")}
+                </Label>
+              </div>
+              <p className="text-muted-foreground text-sm">
+                {t("flows.externalRequest.responseDumpDescription")}
+              </p>
+              {responseDumpEnabled ? (
+                <CustomFieldSelect
+                  allowCreate
+                  label={t("flows.externalRequest.responseDumpField")}
+                  name="responseDumpFieldId"
+                  popoverClassName="w-72"
+                />
+              ) : null}
+              {responseDumpFieldError ? (
+                <p className="text-destructive text-sm">
+                  {responseDumpFieldError}
+                </p>
+              ) : null}
             </div>
 
             <DialogFooter>

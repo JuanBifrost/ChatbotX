@@ -40,6 +40,29 @@ const isMissingTextValue = (value: unknown): boolean => {
   return value.trim().length === 0
 }
 
+/** actionData keys whose values may arrive as JSON array strings from custom fields. */
+export const WHATSAPP_FLOW_JSON_ARRAY_KEYS = new Set([
+  "direcciones",
+  "metodos_pago",
+  "tipos_vehiculo",
+])
+
+const tryParseJsonArrayString = (value: unknown): unknown => {
+  if (typeof value !== "string") {
+    return value
+  }
+  const trimmed = value.trim()
+  if (!trimmed.startsWith("[")) {
+    return value
+  }
+  try {
+    const parsed: unknown = JSON.parse(trimmed)
+    return Array.isArray(parsed) ? parsed : value
+  } catch {
+    return value
+  }
+}
+
 const sanitizeActionDataValue = (value: unknown): unknown => {
   if (Array.isArray(value)) {
     return value.flatMap((item) => {
@@ -57,7 +80,10 @@ const sanitizeActionDataValue = (value: unknown): unknown => {
   if (isPlainObject(value)) {
     const next: Record<string, unknown> = {}
     for (const [key, child] of Object.entries(value)) {
-      next[key] = sanitizeActionDataValue(child)
+      const resolvedChild = WHATSAPP_FLOW_JSON_ARRAY_KEYS.has(key)
+        ? tryParseJsonArrayString(child)
+        : child
+      next[key] = sanitizeActionDataValue(resolvedChild)
     }
     return next
   }
